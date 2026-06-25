@@ -406,6 +406,38 @@ function getSelectedVariation(product, selectedVariants) {
   return getLowestAvailableVariation(product);
 }
 
+function getVariantPricePreview(product, selectedVariants, attributeName, option) {
+  const currency = product?.currency || product?.currency_code || "USD";
+
+  const previewSelection = {
+    ...(selectedVariants || {}),
+    [attributeName]: option,
+  };
+
+  const variation = getSelectedVariation(product, previewSelection);
+
+  const rawPrice =
+    variation?.price ??
+    variation?.sale_price ??
+    variation?.regular_price ??
+    null;
+
+  const formattedPrice = formatMoney(rawPrice, currency);
+
+  const isAvailable =
+    variation &&
+    variation?.purchasable !== false &&
+    (variation?.stock_status === "instock" ||
+      variation?.backorders_allowed === true);
+
+  return {
+    variation,
+    formattedPrice,
+    isAvailable,
+    label: formattedPrice || "Unavailable",
+  };
+}
+
 function buildInitialVariantSelection(product) {
   const initialVariants = {};
   const preferredVariation = getLowestAvailableVariation(product);
@@ -1587,6 +1619,13 @@ export default function ProductDetails({ slug }) {
                           const isSelected =
                             selectedVariants[attribute.name] === option;
 
+                          const optionPrice = getVariantPricePreview(
+                            product,
+                            selectedVariants,
+                            attribute.name,
+                            option
+                          );
+
                           return (
                             <button
                               key={option}
@@ -1594,7 +1633,7 @@ export default function ProductDetails({ slug }) {
                               onClick={() =>
                                 handleVariantChange(attribute.name, option)
                               }
-                              className={`group relative min-h-14 overflow-hidden rounded-2xl border px-4 py-3 text-left transition duration-300 active:scale-[0.98] ${
+                              className={`group relative min-h-16 overflow-hidden rounded-2xl border px-4 py-3 text-left transition duration-300 active:scale-[0.98] ${
                                 isSelected
                                   ? "border-red-400/55 bg-red-500/[0.13] text-white shadow-[0_0_34px_rgba(220,38,38,0.14)]"
                                   : "border-white/[0.07] bg-white/[0.025] text-white/48 hover:border-white/15 hover:bg-white/[0.045] hover:text-white"
@@ -1603,33 +1642,62 @@ export default function ProductDetails({ slug }) {
                               <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_42%)] opacity-0 transition group-hover:opacity-100" />
 
                               <span className="relative flex items-center justify-between gap-4">
-                                <span>
-                                  <span className="block text-[13px] font-black">
+                                <span className="min-w-0">
+                                  <span className="block text-[15px] font-black leading-none text-white">
                                     {option}
                                   </span>
-                                  <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/28">
+
+                                  <span className="mt-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/28">
                                     Variant Option
                                   </span>
                                 </span>
 
-                                <span
-                                  className={`flex h-6 w-6 items-center justify-center rounded-full border transition ${
-                                    isSelected
-                                      ? "border-red-300 bg-red-500 text-white"
-                                      : "border-white/10 text-transparent group-hover:border-white/30"
-                                  }`}
-                                >
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                                <span className="flex shrink-0 items-center gap-3">
+                                  <span className="text-right">
+                                    <span
+                                      className={`block text-[15px] font-black leading-none tracking-[-0.03em] ${
+                                        optionPrice.formattedPrice
+                                          ? isSelected
+                                            ? "text-white"
+                                            : "text-white/75"
+                                          : "text-white/30"
+                                      }`}
+                                    >
+                                      {optionPrice.label}
+                                    </span>
+
+                                    <span
+                                      className={`mt-1 block text-[8px] font-black uppercase tracking-[0.13em] ${
+                                        optionPrice.isAvailable
+                                          ? "text-emerald-300/65"
+                                          : "text-red-300/55"
+                                      }`}
+                                    >
+                                      {optionPrice.isAvailable
+                                        ? "Available"
+                                        : "Not ready"}
+                                    </span>
+                                  </span>
+
+                                  <span
+                                    className={`flex h-7 w-7 items-center justify-center rounded-full border transition ${
+                                      isSelected
+                                        ? "border-red-300 bg-red-500 text-white"
+                                        : "border-white/10 text-transparent group-hover:border-white/30"
+                                    }`}
                                   >
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      className="h-3.5 w-3.5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                  </span>
                                 </span>
                               </span>
                             </button>
