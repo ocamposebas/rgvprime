@@ -462,7 +462,9 @@ function ProductCard({ product }) {
     getProductVariations(product)
   );
   const [selectedVariationKey, setSelectedVariationKey] = useState(() => {
-    const firstVariation = getProductVariations(product).find(isVariationAvailable);
+    const firstVariation = getProductVariations(product).find(
+      isVariationAvailable
+    );
     return firstVariation ? getVariationKey(firstVariation, 0) : "";
   });
 
@@ -483,7 +485,9 @@ function ProductCard({ product }) {
       variations.find(
         (variation, index) =>
           getVariationKey(variation, index) === selectedVariationKey
-      ) || variations.find(isVariationAvailable) || variations[0]
+      ) ||
+      variations.find(isVariationAvailable) ||
+      variations[0]
     );
   }, [selectedVariationKey, variations]);
 
@@ -499,6 +503,45 @@ function ProductCard({ product }) {
     setOptionsOpen(false);
   }, [product]);
 
+  useEffect(() => {
+    if (!optionsOpen || !isVariableProduct) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOptionsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [optionsOpen, isVariableProduct]);
+
+  useEffect(() => {
+    if (!optionsOpen || !isVariableProduct || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 639px)").matches;
+
+    if (!isMobile) return undefined;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [optionsOpen, isVariableProduct]);
+
   async function loadVariations() {
     if (!isVariableProduct || variationStatus === "loading") return;
     if (variations.length) return;
@@ -507,9 +550,9 @@ function ProductCard({ product }) {
       setVariationStatus("loading");
 
       const response = await fetch(
-        `/api/products?slug=${encodeURIComponent(product.slug)}`,
+        `/api/products?slug=${encodeURIComponent(product.slug)}&refresh=1`,
         {
-          cache: "force-cache",
+          cache: "no-store",
         }
       );
 
@@ -589,208 +632,277 @@ function ProductCard({ product }) {
     setOptionsOpen(false);
   }
 
-  return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:bg-[#0d0d0d] hover:shadow-[0_28px_80px_rgba(0,0,0,0.42)] sm:rounded-3xl">
-      <a
-        href={productUrl}
-        className="relative flex h-[168px] items-center justify-center overflow-hidden bg-[#101010] p-3 sm:h-[275px] sm:p-5 lg:h-[315px]"
+  function VariationsPanel({ mode = "desktop" }) {
+    const isMobile = mode === "mobile";
+
+    return (
+      <div
+        className={
+          isMobile
+            ? "rounded-t-[1.65rem] border-t border-white/10 bg-[#070707] p-4 shadow-[0_-24px_80px_rgba(0,0,0,0.75)]"
+            : "mt-3 rounded-2xl border border-red-500/20 bg-black/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+        }
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.16),transparent_62%)] opacity-80 transition duration-300 group-hover:opacity-100" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
-
-        <img
-          src={image}
-          alt={product.name}
-          loading="lazy"
-          className="relative h-full w-full scale-[1.12] object-contain transition duration-500 group-hover:scale-[1.18]"
-        />
-
-        <span
-          className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
-        >
-          <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
-          />
-          {stockBadge.label}
-        </span>
-
-        <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white/75 backdrop-blur transition duration-300 group-hover:bg-red-600 group-hover:text-white sm:right-4 sm:top-4 sm:h-9 sm:w-9">
-          <EyeIcon />
-        </span>
-      </a>
-
-      <div className="flex flex-1 flex-col p-3 sm:p-5">
-        <div className="flex-1">
-          <p className="mb-1.5 line-clamp-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-400/80 sm:mb-2 sm:text-[10px] sm:tracking-[0.16em]">
-            {category}
-          </p>
-
-          <a href={productUrl}>
-            <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-[1.08] tracking-[-0.035em] text-white transition group-hover:text-red-100 sm:min-h-[46px] sm:text-lg sm:leading-tight">
-              {product.name}
-            </h3>
-          </a>
-
-          <p className="mt-1.5 line-clamp-2 min-h-[34px] text-[10px] leading-4 text-white/45 sm:mt-2 sm:min-h-[40px] sm:text-xs sm:leading-5">
-            {description}
-          </p>
-        </div>
-
-        <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
-          <div>
-            <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
-              Price
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-red-300">
+              Select strength
             </p>
 
-            <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-2xl">
-              {price}
-            </p>
+            {isMobile && (
+              <h3 className="mt-1 line-clamp-2 text-base font-black leading-tight text-white">
+                {product.name}
+              </h3>
+            )}
           </div>
 
-          {isVariableProduct ? (
+          {isMobile ? (
             <button
               type="button"
-              onClick={handleToggleOptions}
-              className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
-                optionsOpen
-                  ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
-                  : "bg-red-600 text-white hover:bg-red-500"
-              }`}
+              onClick={() => setOptionsOpen(false)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-white/60"
+              aria-label="Close options"
             >
-              MG Options
-              <span
-                className={`transition duration-300 ${optionsOpen ? "rotate-180" : ""}`}
-              >
-                <ChevronIcon />
-              </span>
-            </button>
-          ) : canAddToCart ? (
-            <button
-              type="button"
-              onClick={() => addItem(product, 1)}
-              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
-            >
-              <PlusIcon />
-              Add
+              ×
             </button>
           ) : (
             <a
               href={productUrl}
-              className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white/45 sm:h-11 sm:w-auto sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+              className="shrink-0 text-[9px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white"
             >
-              View
+              Details
             </a>
           )}
         </div>
 
-        {isVariableProduct && optionsOpen && (
-          <div className="mt-3 rounded-2xl border border-red-500/20 bg-black/35 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:mt-4 sm:p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-white/35 sm:text-[10px]">
-                Select strength
-              </p>
+        {variationStatus === "loading" && (
+          <div className="grid gap-2">
+            <div className="h-10 animate-pulse rounded-xl bg-white/[0.06]" />
+            <div className="h-10 animate-pulse rounded-xl bg-white/[0.04]" />
+          </div>
+        )}
 
-              <a
-                href={productUrl}
-                className="text-[8px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white sm:text-[9px]"
-              >
-                Details
-              </a>
-            </div>
+        {variationStatus === "error" && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
+            <p className="text-[10px] font-bold leading-4 text-red-100">
+              Options could not load here.
+            </p>
 
-            {variationStatus === "loading" && (
-              <div className="grid gap-2">
-                <div className="h-9 animate-pulse rounded-xl bg-white/[0.06]" />
-                <div className="h-9 animate-pulse rounded-xl bg-white/[0.04]" />
-              </div>
-            )}
+            <a
+              href={productUrl}
+              className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
+            >
+              Open product
+            </a>
+          </div>
+        )}
 
-            {variationStatus === "error" && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
-                <p className="text-[10px] font-bold leading-4 text-red-100">
-                  Options could not load here.
-                </p>
+        {variationStatus === "empty" && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+            <p className="text-[10px] font-bold leading-4 text-white/55">
+              No inline options were found for this product.
+            </p>
 
-                <a
-                  href={productUrl}
-                  className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
-                >
-                  Open product
-                </a>
-              </div>
-            )}
+            <a
+              href={productUrl}
+              className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
+            >
+              Open product
+            </a>
+          </div>
+        )}
 
-            {variationStatus === "empty" && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                <p className="text-[10px] font-bold leading-4 text-white/55">
-                  No inline options were found for this product.
-                </p>
+        {variationStatus === "success" && variations.length > 0 && (
+          <>
+            <div
+              className={
+                isMobile
+                  ? "grid max-h-[42vh] gap-2 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  : "grid grid-cols-2 gap-2"
+              }
+            >
+              {variations.map((variation, index) => {
+                const variationKey = getVariationKey(variation, index);
+                const label = getVariationLabel(product, variation, index);
+                const optionPrice = formatPrice(
+                  getVariationPrice(variation, product)
+                );
+                const available = isVariationAvailable(variation);
+                const active = variationKey === selectedVariationKey;
 
-                <a
-                  href={productUrl}
-                  className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
-                >
-                  Open product
-                </a>
-              </div>
-            )}
-
-            {variationStatus === "success" && variations.length > 0 && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  {variations.map((variation, index) => {
-                    const variationKey = getVariationKey(variation, index);
-                    const label = getVariationLabel(product, variation, index);
-                    const optionPrice = formatPrice(
-                      getVariationPrice(variation, product)
-                    );
-                    const available = isVariationAvailable(variation);
-                    const active = variationKey === selectedVariationKey;
-
-                    return (
-                      <button
-                        key={variationKey}
-                        type="button"
-                        disabled={!available}
-                        onClick={() => setSelectedVariationKey(variationKey)}
-                        className={`min-h-[50px] rounded-xl border px-2 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                          active
-                            ? "border-red-500 bg-red-600 text-white"
-                            : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
-                        }`}
-                      >
-                        <span className="block text-[10px] font-black uppercase leading-none tracking-[-0.02em] sm:text-xs">
+                return (
+                  <button
+                    key={variationKey}
+                    type="button"
+                    disabled={!available}
+                    onClick={() => setSelectedVariationKey(variationKey)}
+                    className={`min-h-[54px] rounded-xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      active
+                        ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
+                        : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-black uppercase leading-none tracking-[-0.02em]">
                           {label}
                         </span>
 
-                        <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.1em] opacity-65 sm:text-[9px]">
-                          {optionPrice || "View price"} · {getVariationStockLabel(variation)}
+                        <span className="mt-1.5 block truncate text-[9px] font-bold uppercase tracking-[0.1em] opacity-65">
+                          {getVariationStockLabel(variation)}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </span>
 
-                <button
-                  type="button"
-                  disabled={
-                    !selectedVariation || !isVariationAvailable(selectedVariation)
-                  }
-                  onClick={handleAddVariation}
-                  className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[9px] font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 sm:mt-3"
-                >
-                  <PlusIcon />
-                  Add selected
-                </button>
-              </>
-            )}
-          </div>
+                      <span className="shrink-0 text-right text-[12px] font-black text-white">
+                        {optionPrice || "View"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              disabled={
+                !selectedVariation || !isVariationAvailable(selectedVariation)
+              }
+              onClick={handleAddVariation}
+              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 ${
+                isMobile ? "h-12 text-[10px]" : "h-10 text-[9px]"
+              }`}
+            >
+              <PlusIcon />
+              Add selected
+            </button>
+          </>
         )}
       </div>
-    </article>
+    );
+  }
+
+  return (
+    <>
+      <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:bg-[#0d0d0d] hover:shadow-[0_28px_80px_rgba(0,0,0,0.42)] sm:rounded-3xl">
+        <a
+          href={productUrl}
+          className="relative flex h-[168px] items-center justify-center overflow-hidden bg-[#101010] p-3 sm:h-[275px] sm:p-5 lg:h-[315px]"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.16),transparent_62%)] opacity-80 transition duration-300 group-hover:opacity-100" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
+
+          <img
+            src={image}
+            alt={product.name}
+            loading="lazy"
+            className="relative h-full w-full scale-[1.12] object-contain transition duration-500 group-hover:scale-[1.18]"
+          />
+
+          <span
+            className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
+          >
+            <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
+            />
+            {stockBadge.label}
+          </span>
+
+          <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white/75 backdrop-blur transition duration-300 group-hover:bg-red-600 group-hover:text-white sm:right-4 sm:top-4 sm:h-9 sm:w-9">
+            <EyeIcon />
+          </span>
+        </a>
+
+        <div className="flex flex-1 flex-col p-3 sm:p-5">
+          <div className="flex-1">
+            <p className="mb-1.5 line-clamp-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-400/80 sm:mb-2 sm:text-[10px] sm:tracking-[0.16em]">
+              {category}
+            </p>
+
+            <a href={productUrl}>
+              <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-[1.08] tracking-[-0.035em] text-white transition group-hover:text-red-100 sm:min-h-[46px] sm:text-lg sm:leading-tight">
+                {product.name}
+              </h3>
+            </a>
+
+            <p className="mt-1.5 line-clamp-2 min-h-[34px] text-[10px] leading-4 text-white/45 sm:mt-2 sm:min-h-[40px] sm:text-xs sm:leading-5">
+              {description}
+            </p>
+          </div>
+
+          <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
+                Price
+              </p>
+
+              <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-2xl">
+                {price}
+              </p>
+            </div>
+
+            {isVariableProduct ? (
+              <button
+                type="button"
+                onClick={handleToggleOptions}
+                className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
+                  optionsOpen
+                    ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
+                    : "bg-red-600 text-white hover:bg-red-500"
+                }`}
+              >
+                MG Options
+                <span
+                  className={`transition duration-300 ${
+                    optionsOpen ? "rotate-180" : ""
+                  }`}
+                >
+                  <ChevronIcon />
+                </span>
+              </button>
+            ) : canAddToCart ? (
+              <button
+                type="button"
+                onClick={() => addItem(product, 1)}
+                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+              >
+                <PlusIcon />
+                Add
+              </button>
+            ) : (
+              <a
+                href={productUrl}
+                className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white/45 sm:h-11 sm:w-auto sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+              >
+                View
+              </a>
+            )}
+          </div>
+
+          {isVariableProduct && optionsOpen && (
+            <div className="hidden sm:block">
+              <VariationsPanel mode="desktop" />
+            </div>
+          )}
+        </div>
+      </article>
+
+      {isVariableProduct && optionsOpen && (
+        <div className="fixed inset-0 z-[80] sm:hidden">
+          <button
+            type="button"
+            aria-label="Close options"
+            onClick={() => setOptionsOpen(false)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+          />
+
+          <div className="absolute inset-x-0 bottom-0">
+            <VariationsPanel mode="mobile" />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
-
 function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
 
