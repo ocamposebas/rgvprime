@@ -128,6 +128,160 @@ function getStockBadge(product) {
   };
 }
 
+
+function cleanVariationText(value = "") {
+  return String(value || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getImageUrl(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+
+  return (
+    value.src ||
+    value.url ||
+    value.source_url ||
+    value.thumbnail ||
+    value?.image?.src ||
+    null
+  );
+}
+
+function getVariationKey(variation, index = 0) {
+  return String(
+    variation?.id ||
+      variation?.variation_id ||
+      variation?.sku ||
+      variation?.slug ||
+      `variation-${index}`
+  );
+}
+
+function getAttributeOptions(attributes) {
+  if (!attributes) return [];
+
+  if (Array.isArray(attributes)) {
+    return attributes
+      .map((attribute) => {
+        if (!attribute) return "";
+        if (typeof attribute === "string") return attribute;
+
+        return (
+          attribute.option ||
+          attribute.value ||
+          attribute.slug ||
+          attribute.name ||
+          ""
+        );
+      })
+      .map(cleanVariationText)
+      .filter(Boolean);
+  }
+
+  if (typeof attributes === "object") {
+    return Object.values(attributes)
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .map(cleanVariationText)
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function getProductVariations(product) {
+  const rawVariations =
+    product?.variations ||
+    product?.variation_options ||
+    product?.variationOptions ||
+    product?.variants ||
+    [];
+
+  if (!Array.isArray(rawVariations)) return [];
+
+  return rawVariations.filter(
+    (variation) => variation && typeof variation === "object"
+  );
+}
+
+function getVariationsFromApiPayload(payload) {
+  const productPayload =
+    payload?.product || payload?.data?.product || payload?.item || payload;
+
+  const variations =
+    getProductVariations(productPayload) ||
+    payload?.variations ||
+    payload?.data?.variations ||
+    [];
+
+  return Array.isArray(variations) ? variations : [];
+}
+
+function getVariationLabel(product, variation, index = 0) {
+  const options = getAttributeOptions(variation?.attributes);
+  const possibleLabels = [
+    variation?.label,
+    variation?.option,
+    variation?.title,
+    variation?.name,
+    ...options,
+  ];
+
+  const mgLabel = possibleLabels.find((value) =>
+    /\b\d+(?:\.\d+)?\s*(mg|mcg|g|iu)\b/i.test(String(value || ""))
+  );
+
+  if (mgLabel) return cleanVariationText(mgLabel);
+
+  if (options.length) return options.join(" / ");
+
+  const cleanedName = cleanVariationText(
+    String(variation?.name || "").replace(product?.name || "", "")
+  );
+
+  return cleanedName || `Option ${index + 1}`;
+}
+
+function getVariationPrice(variation, product) {
+  return (
+    variation?.price ||
+    variation?.sale_price ||
+    variation?.regular_price ||
+    product?.price ||
+    ""
+  );
+}
+
+function getVariationStockLabel(variation) {
+  const quantity =
+    variation?.stock_quantity !== null &&
+    variation?.stock_quantity !== undefined &&
+    variation?.stock_quantity !== ""
+      ? Number(variation.stock_quantity)
+      : null;
+
+  if (variation?.stock_status && variation.stock_status !== "instock") {
+    return "Sold Out";
+  }
+
+  if (quantity === null || Number.isNaN(quantity)) return "Available";
+  if (quantity > 0) return `${quantity} left`;
+
+  return "Sold Out";
+}
+
+function isVariationAvailable(variation) {
+  if (!variation) return false;
+  if (variation.purchasable === false) return false;
+  if (variation.stock_status && variation.stock_status !== "instock") {
+    return false;
+  }
+
+  return true;
+}
+
 function getPaginationItems(currentPage, totalPages) {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -300,16 +454,137 @@ function SortDropdown({ value, onChange }) {
 
 function ProductCard({ product }) {
   const { addItem } = useCart();
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [variationStatus, setVariationStatus] = useState(() =>
+    getProductVariations(product).length ? "success" : "idle"
+  );
+  const [variations, setVariations] = useState(() =>
+    getProductVariations(product)
+  );
+  const [selectedVariationKey, setSelectedVariationKey] = useState(() => {
+    const firstVariation = getProductVariations(product).find(isVariationAvailable);
+    return firstVariation ? getVariationKey(firstVariation, 0) : "";
+  });
 
-  const image = product.image || FALLBACK_IMAGE;
+  const image = getImageUrl(product.image) || FALLBACK_IMAGE;
   const productUrl = `/product/${product.slug}`;
   const stockBadge = getStockBadge(product);
   const category = getMainCategory(product);
   const description = getDescription(product);
   const price = getPriceLabel(product);
 
-  const canAddToCart =
-    product.type !== "variable" && product.stock_status === "instock";
+  const isVariableProduct = product.type === "variable";
+  const canAddToCart = !isVariableProduct && product.stock_status === "instock";
+
+  const selectedVariation = useMemo(() => {
+    if (!variations.length) return null;
+
+    return (
+      variations.find(
+        (variation, index) =>
+          getVariationKey(variation, index) === selectedVariationKey
+      ) || variations.find(isVariationAvailable) || variations[0]
+    );
+  }, [selectedVariationKey, variations]);
+
+  useEffect(() => {
+    const productVariations = getProductVariations(product);
+    const firstAvailableVariation = productVariations.find(isVariationAvailable);
+
+    setVariations(productVariations);
+    setVariationStatus(productVariations.length ? "success" : "idle");
+    setSelectedVariationKey(
+      firstAvailableVariation ? getVariationKey(firstAvailableVariation, 0) : ""
+    );
+    setOptionsOpen(false);
+  }, [product]);
+
+  async function loadVariations() {
+    if (!isVariableProduct || variationStatus === "loading") return;
+    if (variations.length) return;
+
+    try {
+      setVariationStatus("loading");
+
+      const response = await fetch(`/api/products/${product.slug}`, {
+        cache: "force-cache",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || "Could not load product options.");
+      }
+
+      const nextVariations = getVariationsFromApiPayload(data);
+      const firstAvailableVariation = nextVariations.find(isVariationAvailable);
+
+      setVariations(nextVariations);
+      setSelectedVariationKey(
+        firstAvailableVariation
+          ? getVariationKey(firstAvailableVariation, 0)
+          : nextVariations[0]
+            ? getVariationKey(nextVariations[0], 0)
+            : ""
+      );
+      setVariationStatus(nextVariations.length ? "success" : "empty");
+    } catch (error) {
+      console.error(error);
+      setVariationStatus("error");
+    }
+  }
+
+  function handleToggleOptions() {
+    setOptionsOpen((current) => {
+      const nextState = !current;
+
+      if (nextState) {
+        loadVariations();
+      }
+
+      return nextState;
+    });
+  }
+
+  function handleAddVariation() {
+    if (!selectedVariation || !isVariationAvailable(selectedVariation)) return;
+
+    const label = getVariationLabel(product, selectedVariation);
+    const variationPrice = getVariationPrice(selectedVariation, product);
+    const variationImage =
+      getImageUrl(selectedVariation.image) ||
+      getImageUrl(selectedVariation.images?.[0]) ||
+      image;
+    const variationId =
+      selectedVariation.id || selectedVariation.variation_id || selectedVariationKey;
+
+    addItem(
+      {
+        ...product,
+        ...selectedVariation,
+        id: variationId,
+        parent_id: product.id,
+        parentId: product.id,
+        product_id: product.id,
+        variation_id: variationId,
+        variationId,
+        type: "variation",
+        name: `${product.name} - ${label}`,
+        slug: product.slug,
+        price: variationPrice,
+        regular_price: selectedVariation.regular_price || variationPrice,
+        sale_price: selectedVariation.sale_price || "",
+        image: variationImage,
+        stock_status: selectedVariation.stock_status || product.stock_status,
+        stock_quantity: selectedVariation.stock_quantity ?? null,
+        attributes: selectedVariation.attributes || [],
+        selected_option: label,
+      },
+      1
+    );
+
+    setOptionsOpen(false);
+  }
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:bg-[#0d0d0d] hover:shadow-[0_28px_80px_rgba(0,0,0,0.42)] sm:rounded-3xl">
@@ -369,13 +644,23 @@ function ProductCard({ product }) {
             </p>
           </div>
 
-          {product.type === "variable" ? (
-            <a
-              href={productUrl}
-              className="inline-flex h-9 w-full items-center justify-center rounded-full bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:w-auto sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+          {isVariableProduct ? (
+            <button
+              type="button"
+              onClick={handleToggleOptions}
+              className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
+                optionsOpen
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-red-600 hover:bg-red-500"
+              }`}
             >
-              Options
-            </a>
+              MG Options
+              <span
+                className={`transition duration-300 ${optionsOpen ? "rotate-180" : ""}`}
+              >
+                <ChevronIcon />
+              </span>
+            </button>
           ) : canAddToCart ? (
             <button
               type="button"
@@ -394,6 +679,110 @@ function ProductCard({ product }) {
             </a>
           )}
         </div>
+
+        {isVariableProduct && optionsOpen && (
+          <div className="mt-3 rounded-2xl border border-red-500/20 bg-black/35 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:mt-4 sm:p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-white/35 sm:text-[10px]">
+                Select strength
+              </p>
+
+              <a
+                href={productUrl}
+                className="text-[8px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white sm:text-[9px]"
+              >
+                Details
+              </a>
+            </div>
+
+            {variationStatus === "loading" && (
+              <div className="grid gap-2">
+                <div className="h-9 animate-pulse rounded-xl bg-white/[0.06]" />
+                <div className="h-9 animate-pulse rounded-xl bg-white/[0.04]" />
+              </div>
+            )}
+
+            {variationStatus === "error" && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
+                <p className="text-[10px] font-bold leading-4 text-red-100">
+                  Options could not load here.
+                </p>
+
+                <a
+                  href={productUrl}
+                  className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
+                >
+                  Open product
+                </a>
+              </div>
+            )}
+
+            {variationStatus === "empty" && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                <p className="text-[10px] font-bold leading-4 text-white/55">
+                  No inline options were found for this product.
+                </p>
+
+                <a
+                  href={productUrl}
+                  className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
+                >
+                  Open product
+                </a>
+              </div>
+            )}
+
+            {variationStatus === "success" && variations.length > 0 && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {variations.map((variation, index) => {
+                    const variationKey = getVariationKey(variation, index);
+                    const label = getVariationLabel(product, variation, index);
+                    const optionPrice = formatPrice(
+                      getVariationPrice(variation, product)
+                    );
+                    const available = isVariationAvailable(variation);
+                    const active = variationKey === selectedVariationKey;
+
+                    return (
+                      <button
+                        key={variationKey}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => setSelectedVariationKey(variationKey)}
+                        className={`min-h-[50px] rounded-xl border px-2 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                          active
+                            ? "border-red-500 bg-red-600 text-white"
+                            : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
+                        }`}
+                      >
+                        <span className="block text-[10px] font-black uppercase leading-none tracking-[-0.02em] sm:text-xs">
+                          {label}
+                        </span>
+
+                        <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.1em] opacity-65 sm:text-[9px]">
+                          {optionPrice || "View price"} · {getVariationStockLabel(variation)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={
+                    !selectedVariation || !isVariationAvailable(selectedVariation)
+                  }
+                  onClick={handleAddVariation}
+                  className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-[9px] font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 sm:mt-3"
+                >
+                  <PlusIcon />
+                  Add selected
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -586,7 +975,7 @@ export default function ProductCatalog() {
         <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
-              Shop RGV Prime
+              Shop RGVPRIMER
             </p>
 
             <h1 className="text-4xl font-black uppercase leading-[0.88] tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
