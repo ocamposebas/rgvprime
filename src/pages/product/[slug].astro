@@ -1,0 +1,14 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SingleProductPage from "../../components/app/SingleProductPage.jsx";
+
+const { slug } = Astro.params;
+---
+
+<BaseLayout
+  title={`Buy ${slug.replace(/-/g, ' ').toUpperCase()} | RGV Prime`}
+  description="Research-use-only laboratory product."
+  image="/og-image.jpg"
+>
+  <SingleProductPage slug={slug} client:load />
+</BaseLayout>

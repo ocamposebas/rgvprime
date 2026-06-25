@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import TrackOrder from "../components/app/Trackorder.jsx";
+---
+
+<BaseLayout
+  title="RGVPRIME RESEARCH LLC | RGV Prime"
+  description="Browse all research-use-only products from RGV Prime Peps & Performance."
+  image="/og-image.jpg"
+>
+  <TrackOrder  client:load />
+</BaseLayout>

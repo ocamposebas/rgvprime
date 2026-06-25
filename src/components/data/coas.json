@@ -1,0 +1,66 @@
+{
+  "companies": [
+    {
+      "name": "RGVElite",
+      "aliases": ["RGV Elite", "RGVE", "RGV Prime", "RGVPrime"],
+      "files": [
+        {
+          "code": "RGVE2604060177",
+          "lot": "RGVE2604060177",
+          "product": "GHK-Cu 50mg",
+          "sku": "GHK-Cu",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060177.pdf"
+        },
+        {
+          "code": "RGVE2604060178",
+          "lot": "RGVE2604060178",
+          "product": "KLOW 80mg",
+          "sku": "KLOW",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060178.pdf"
+        },
+        {
+          "code": "RGVE2604060179",
+          "lot": "RGVE2604060179",
+          "product": "NAD+",
+          "sku": "NAD",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060179.pdf"
+        },
+        {
+          "code": "RGVE2604060180",
+          "lot": "RGVE2604060180",
+          "product": "Lipo-C/B12 10ml",
+          "sku": "Lipo-C/B12",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060180.pdf"
+        },
+        {
+          "code": "RGVE2604290144",
+          "lot": "RGVE2604290144",
+          "product": "Glutathione 1500mg",
+          "sku": "Glutathione",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290144.pdf"
+        },
+        {
+          "code": "RGVE2604290145",
+          "lot": "RGVE2604290145",
+          "product": "KPV 10mg",
+          "sku": "KPV",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290145.pdf"
+        },
+        {
+          "code": "RGVE2604290146",
+          "lot": "RGVE2604290146",
+          "product": "MT2 10mg",
+          "sku": "MT2",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290146.pdf"
+        },
+        {
+          "code": "RGVE2604290147",
+          "lot": "RGVE2604290147",
+          "product": "5-Amino 1MQ 50mg",
+          "sku": "5-Amino",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290147.pdf"
+        }
+      ]
+    }
+  ]
+}

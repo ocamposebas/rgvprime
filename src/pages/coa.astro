@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/nav/Navbar.jsx";
+import SiteFooter from "../components/footer/SiteFooter.jsx";
+import COASection from "../components/coa/COASection.jsx";
+---
+
+<BaseLayout
+  title="RGVPRIME RESEARCH LLC | COA"
+  description="Search Certificates of Analysis for RGV Prime Peps & Performance research-use-only products."
+  image="/og-image.jpg"
+>
+  <Navbar client:load />
+
+  <main class="relative min-h-screen bg-black pt-[115px] pb-[150px] sm:pt-[120px] lg:pt-[125px]">
+    <COASection client:load />
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

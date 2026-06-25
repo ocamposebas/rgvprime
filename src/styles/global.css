@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #050505;
+  --bg-soft: #0b0b0d;
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.68);
+  --border: rgba(255, 255, 255, 0.12);
+
+  --accent-red: #ff243d;
+  --accent-orange: #ff7a18;
+  --accent-gold: #ffc857;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(255, 36, 61, 0.13), transparent 34rem),
+    radial-gradient(circle at top right, rgba(255, 122, 24, 0.12), transparent 32rem),
+    linear-gradient(180deg, #050505 0%, #090909 45%, #050505 100%);
+  color: var(--text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+.site-shell {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+.site-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at top, black 0%, transparent 72%);
+}
+
+.site-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.72)),
+    radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.55) 78%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(255, 36, 61, 0.35);
+  color: white;
+}
+
+.container-page {
+  width: min(1280px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #ffc857 35%, #ff243d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass-card {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 768px) {
+  .container-page {
+    width: min(100% - 24px, 1280px);
+  }
+}

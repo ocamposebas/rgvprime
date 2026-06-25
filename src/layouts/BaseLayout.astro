@@ -1,0 +1,120 @@
+---
+import "../styles/global.css";
+import Agegate from "../components/agegate/AgeGate"
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
+  canonical?: string;
+}
+
+const siteName = "RGV Prime";
+const brandName = "RGV Prime Peps & Performance";
+
+/*
+  Cambia esto cuando tengas el dominio real del cliente.
+  Ejemplo:
+  const siteUrl = "https://rgvprime.com";
+*/
+const siteUrl = "https://rgvprime.com";
+
+const {
+  title = "RGV Prime | Peps & Performance",
+  description = "RGV Prime Peps & Performance offers premium performance-focused products with a bold, clean, and modern customer experience.",
+  image = "/og-image.jpg",
+  noindex = false,
+  canonical,
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+const canonicalUrl = canonical || new URL(currentPath, siteUrl).toString();
+const ogImageUrl = new URL(image, siteUrl).toString();
+
+const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: brandName,
+  url: siteUrl,
+  logo: new URL("/logo.png", siteUrl).toString(),
+  sameAs: [],
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: brandName,
+  url: siteUrl,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- BASIC -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+
+    <!-- CANONICAL -->
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- INDEXING -->
+    {
+      noindex ? (
+        <meta name="robots" content="noindex, nofollow" />
+      ) : (
+        <meta name="robots" content="index, follow" />
+      )
+    }
+
+    <!-- FAVICONS -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- THEME -->
+    <meta name="theme-color" content="#050505" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- OPEN GRAPH -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+
+    <!-- TWITTER / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <!-- PRECONNECTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- JSON-LD SEO -->
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+  </head>
+
+  <body>
+    <div class="site-shell">
+      <Agegate client:load/>
+      <slot />
+    </div>
+  </body>
+</html>
