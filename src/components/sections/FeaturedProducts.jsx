@@ -19,7 +19,7 @@ function formatPrice(price) {
 }
 
 function getSimpleDescription(product) {
-  const cleanDescription = stripHtml(product.short_description);
+  const cleanDescription = stripHtml(product.short_description || "");
 
   if (!cleanDescription) {
     return "Research-use-only product for laboratory use.";
@@ -85,6 +85,43 @@ function getStockBadge(product) {
     className:
       "border-red-500/35 bg-red-600/20 text-red-200 shadow-[0_0_24px_rgba(220,38,38,0.25)]",
   };
+}
+
+function getProductSlug(product = {}) {
+  if (product.slug) {
+    return String(product.slug).trim().replace(/^\/+|\/+$/g, "");
+  }
+
+  if (product.permalink) {
+    try {
+      const url = new URL(product.permalink, "https://example.com");
+      const parts = url.pathname.split("/").filter(Boolean);
+      const productIndex = parts.lastIndexOf("product");
+
+      if (productIndex >= 0 && parts[productIndex + 1]) {
+        return parts[productIndex + 1];
+      }
+
+      return parts[parts.length - 1] || "";
+    } catch {
+      const cleanPermalink = String(product.permalink)
+        .split("?")[0]
+        .split("#")[0]
+        .replace(/\/+$/g, "");
+
+      return cleanPermalink.split("/").filter(Boolean).pop() || "";
+    }
+  }
+
+  return "";
+}
+
+function getProductUrl(product = {}) {
+  const slug = getProductSlug(product);
+
+  if (!slug) return "/shop";
+
+  return `/product/${slug}`;
 }
 
 function EyeIcon() {
@@ -278,6 +315,7 @@ export default function FeaturedProducts() {
                 {products.map((product) => {
                   const image = product.image || FALLBACK_IMAGE;
                   const description = getSimpleDescription(product);
+                  const productUrl = getProductUrl(product);
 
                   const price =
                     product.type === "variable"
@@ -296,7 +334,7 @@ export default function FeaturedProducts() {
                     >
                       <article className="group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]">
                         <a
-                          href={product.permalink || `/product/${product.slug}`}
+                          href={productUrl}
                           className="relative flex h-52 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
                         >
                           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
@@ -341,7 +379,7 @@ export default function FeaturedProducts() {
                           </div>
 
                           <a
-                            href={product.permalink || `/product/${product.slug}`}
+                            href={productUrl}
                             className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-4 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500"
                           >
                             View Product

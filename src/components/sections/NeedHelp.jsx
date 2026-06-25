@@ -146,9 +146,20 @@ function getPdfPreviewUrl(url = "") {
 
   if (!cleanUrl) return "";
 
-  if (cleanUrl.includes("#")) return cleanUrl;
+  const hashIndex = cleanUrl.indexOf("#");
+  const baseUrl = hashIndex >= 0 ? cleanUrl.slice(0, hashIndex) : cleanUrl;
+  const existingHash = hashIndex >= 0 ? cleanUrl.slice(hashIndex + 1) : "";
 
-  return `${cleanUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+  const params = new URLSearchParams(existingHash);
+
+  params.set("toolbar", "0");
+  params.set("navpanes", "0");
+  params.set("scrollbar", "0");
+  params.set("page", "1");
+  params.set("view", "Fit");
+  params.set("zoom", "page-fit");
+
+  return `${baseUrl}#${params.toString()}`;
 }
 
 function buildCarouselItems(items = []) {
@@ -303,10 +314,10 @@ function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 })
   return (
     <div
       ref={wrapperRef}
-      className="absolute inset-0 overflow-hidden bg-[#080505]"
+      className="coa-preview-frame absolute inset-0 overflow-hidden bg-[#080505]"
     >
       <div
-        className="coa-pdf-placeholder absolute inset-0 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center"
+        className="coa-pdf-placeholder absolute inset-0 z-20 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center"
         style={{
           opacity: frameReady ? 0 : 1,
           pointerEvents: frameReady ? "none" : "auto",
@@ -330,21 +341,23 @@ function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 })
       </div>
 
       {shouldLoad && previewUrl ? (
-        <iframe
-          key={previewUrl}
-          src={previewUrl}
-          title={`${title} COA preview`}
-          loading={index <= 1 ? "eager" : "lazy"}
-          onLoad={() => {
-            markPdfPreviewLoaded(previewUrl);
-            setFrameReady(true);
-          }}
-          className="absolute inset-0 h-full w-full border-0 bg-[#080505] transition-opacity duration-500"
-          style={{
-            opacity: frameReady ? 1 : 0,
-            pointerEvents: "none",
-          }}
-        />
+        <div className="coa-pdf-stage absolute inset-0 z-10 overflow-hidden">
+          <iframe
+            key={previewUrl}
+            src={previewUrl}
+            title={`${title} COA preview`}
+            loading={index <= 1 ? "eager" : "lazy"}
+            onLoad={() => {
+              markPdfPreviewLoaded(previewUrl);
+              setFrameReady(true);
+            }}
+            className="coa-pdf-iframe absolute inset-0 h-full w-full border-0 bg-[#080505] transition-opacity duration-500"
+            style={{
+              opacity: frameReady ? 1 : 0,
+              pointerEvents: "none",
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -414,8 +427,8 @@ export default function NeedHelp() {
         <div className="coa-shell relative overflow-hidden rounded-[2.25rem] border border-white/[0.08] bg-white/[0.035] py-7 shadow-[0_35px_120px_rgba(0,0,0,0.5)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(220,38,38,0.16),transparent_38%)]" />
 
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-20 bg-gradient-to-r from-[#030303] to-transparent sm:w-28" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-20 bg-gradient-to-l from-[#030303] to-transparent sm:w-28" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-[#030303] to-transparent sm:w-28" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-[#030303] to-transparent sm:w-28" />
 
           {coaItems.length > 0 ? (
             <div className="relative flex overflow-hidden">
@@ -433,20 +446,20 @@ export default function NeedHelp() {
                       key={`${pdfLink}-${index}`}
                       className="coa-card group relative w-[235px] shrink-0 overflow-hidden rounded-[1.65rem] border border-white/[0.08] bg-black/45 p-3 transition duration-300 hover:-translate-y-1 hover:border-red-400/25 hover:bg-red-950/15 sm:w-[270px] lg:w-[300px]"
                     >
-                      <div className="relative aspect-[0.76] overflow-hidden rounded-[1.25rem] border border-white/[0.07] bg-[#080505]">
+                      <div className="coa-preview-window relative overflow-hidden rounded-[1.25rem] border border-white/[0.07] bg-[#080505]">
                         <PdfPreviewFrame
                           previewUrl={previewUrl}
                           title={title}
                           index={index}
                         />
 
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+                        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-75" />
 
-                        <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+                        <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-red-600 px-3 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
                           PDF
                         </div>
 
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-3">
                           <span className="inline-flex rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-md">
                             View COA
                           </span>
@@ -524,6 +537,25 @@ export default function NeedHelp() {
           contain: layout paint;
         }
 
+        .coa-preview-window {
+          aspect-ratio: 0.707 / 1;
+          min-height: 318px;
+        }
+
+        .coa-preview-frame,
+        .coa-pdf-stage,
+        .coa-pdf-iframe {
+          backface-visibility: hidden;
+          transform: translate3d(0, 0, 0);
+        }
+
+        .coa-pdf-iframe {
+          display: block;
+          inline-size: 100%;
+          block-size: 100%;
+          transform-origin: center center;
+        }
+
         .coa-pdf-placeholder {
           transition: opacity 0.45s ease;
         }
@@ -551,6 +583,11 @@ export default function NeedHelp() {
           }
 
           .coa-shell {
+            margin-left: -6px;
+            margin-right: -6px;
+            padding-top: 18px;
+            padding-bottom: 18px;
+            border-radius: 1.75rem;
             box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
           }
 
@@ -558,20 +595,39 @@ export default function NeedHelp() {
             filter: blur(95px) !important;
           }
 
-          .coa-card iframe {
-            transform: translateZ(0);
+          .coa-preview-window {
+            aspect-ratio: 0.68 / 1;
+            min-height: 318px;
           }
         }
 
         @media (max-width: 480px) {
           .coa-carousel-track {
             gap: 14px;
-            padding-left: 18px;
-            padding-right: 18px;
+            padding-left: 16px;
+            padding-right: 16px;
           }
 
           .coa-card {
-            width: 220px;
+            width: min(74vw, 230px);
+            padding: 10px;
+            border-radius: 1.35rem;
+          }
+
+          .coa-preview-window {
+            aspect-ratio: 0.66 / 1;
+            min-height: 318px;
+            border-radius: 1rem;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .coa-card {
+            width: min(76vw, 215px);
+          }
+
+          .coa-preview-window {
+            min-height: 305px;
           }
         }
 
