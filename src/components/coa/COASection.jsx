@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import coaData from "../data/coas.json";
 
 const steps = [
@@ -26,6 +26,14 @@ function cn(...classes) {
 
 function normalize(value) {
   return String(value || "").toLowerCase().trim();
+}
+
+function hasHistory(file) {
+  return Array.isArray(file?.history) && file.history.length > 0;
+}
+
+function getHistoryKey(file) {
+  return `${file.code || "coa"}-${file.lot || file.url || "history"}`;
 }
 
 function SearchIcon() {
@@ -84,8 +92,50 @@ function ArrowIcon() {
   );
 }
 
+function HistoryIcon({ open = false }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn(
+        "h-4 w-4 transition-transform duration-300",
+        open && "rotate-180"
+      )}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function SelectIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export default function COASection() {
   const [query, setQuery] = useState("");
+  const [openHistory, setOpenHistory] = useState({});
+  const [compoundOpen, setCompoundOpen] = useState(false);
+  const [compoundSearch, setCompoundSearch] = useState("");
+
+  const compoundRef = useRef(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -96,10 +146,33 @@ export default function COASection() {
     }
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (compoundRef.current && !compoundRef.current.contains(event.target)) {
+        setCompoundOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setCompoundOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   const allCoas = useMemo(() => {
     return coaData.companies.flatMap((company) =>
       company.files.map((file) => ({
         ...file,
+        history: Array.isArray(file.history) ? file.history : [],
         company: company.name,
         aliases: company.aliases || [],
       }))
@@ -111,12 +184,41 @@ export default function COASection() {
     return [...new Set(products)].sort((a, b) => a.localeCompare(b));
   }, [allCoas]);
 
+  const selectedCompound = useMemo(() => {
+    return (
+      compoundFilters.find(
+        (compound) => normalize(compound) === normalize(query)
+      ) || ""
+    );
+  }, [compoundFilters, query]);
+
+  const visibleCompoundFilters = useMemo(() => {
+    const search = normalize(compoundSearch);
+
+    if (!search) return compoundFilters;
+
+    return compoundFilters.filter((compound) =>
+      normalize(compound).includes(search)
+    );
+  }, [compoundFilters, compoundSearch]);
+
   const filteredCoas = useMemo(() => {
     const search = normalize(query);
 
     if (!search) return allCoas;
 
     return allCoas.filter((file) => {
+      const historyText = (file.history || [])
+        .flatMap((item) => [
+          item.code,
+          item.lot,
+          item.product,
+          item.sku,
+          item.url,
+        ])
+        .map(normalize)
+        .join(" ");
+
       const searchableText = [
         file.company,
         ...(file.aliases || []),
@@ -124,6 +226,7 @@ export default function COASection() {
         file.lot,
         file.product,
         file.sku,
+        historyText,
       ]
         .map(normalize)
         .join(" ");
@@ -154,14 +257,27 @@ export default function COASection() {
     updateUrlQuery(query);
   }
 
-  function handleFilterClick(value) {
+  function handleCompoundSelect(value) {
     setQuery(value);
     updateUrlQuery(value);
+    setCompoundOpen(false);
+    setCompoundSearch("");
   }
 
   function clearSearch() {
     setQuery("");
     updateUrlQuery("");
+    setCompoundSearch("");
+    setCompoundOpen(false);
+  }
+
+  function toggleHistory(file) {
+    const key = getHistoryKey(file);
+
+    setOpenHistory((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
   }
 
   return (
@@ -205,99 +321,144 @@ export default function COASection() {
             duration: 0.7,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mx-auto mt-7 w-full max-w-[720px] sm:mt-9"
+          className="mx-auto mt-7 w-full max-w-[760px] sm:mt-9"
         >
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-2 shadow-[0_22px_70px_rgba(0,0,0,0.38)] backdrop-blur sm:rounded-[1.7rem]"
-          >
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px]">
-              <label className="relative block min-w-0">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
-                  <SearchIcon />
-                </span>
+          <div className="relative rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-2.5 shadow-[0_22px_70px_rgba(0,0,0,0.38)] backdrop-blur sm:rounded-[1.8rem] sm:p-3">
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_150px]">
+                <label className="relative block min-w-0">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                    <SearchIcon />
+                  </span>
 
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search product, SKU, or lot..."
-                  className="h-12 w-full min-w-0 rounded-[1.15rem] border border-white/0 bg-black/25 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-red-500/35 focus:bg-white/[0.035] sm:h-14 sm:rounded-[1.25rem]"
-                />
-              </label>
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search product, SKU, or lot..."
+                    className="h-12 w-full min-w-0 rounded-[1.15rem] border border-white/0 bg-black/25 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-red-500/35 focus:bg-white/[0.035] sm:h-14 sm:rounded-[1.25rem]"
+                  />
+                </label>
 
-              <button
-                type="submit"
-                className="h-12 rounded-[1.15rem] bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-red-500 active:scale-[0.98] sm:h-14 sm:rounded-[1.25rem]"
-              >
-                Search
-              </button>
-            </div>
-          </form>
-        </motion.div>
+                <button
+                  type="submit"
+                  className="h-12 rounded-[1.15rem] bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white transition hover:bg-red-500 active:scale-[0.98] sm:h-14 sm:rounded-[1.25rem]"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            delay: 0.16,
-            duration: 0.65,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-          className="mx-auto mt-6 w-full max-w-[920px]"
-        >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
-              Filter by compound
-            </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div ref={compoundRef} className="relative z-40 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setCompoundOpen((current) => !current)}
+                  aria-expanded={compoundOpen}
+                  className="flex h-11 w-full items-center justify-between gap-3 rounded-[1.05rem] border border-white/10 bg-black/20 px-4 text-left text-xs font-black uppercase tracking-[0.1em] text-white/60 outline-none transition hover:border-red-500/25 hover:text-white focus:border-red-500/35"
+                >
+                  <span className="min-w-0 truncate">
+                    {selectedCompound || "Browse by compound"}
+                  </span>
 
-            {query && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="shrink-0 text-[10px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          <div className="-mx-1 overflow-hidden">
-            <div className="flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] md:flex-wrap md:justify-center md:overflow-visible [&::-webkit-scrollbar]:hidden">
-              <button
-                type="button"
-                onClick={clearSearch}
-                aria-pressed={!query}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-2 text-[9px] font-black uppercase leading-none tracking-[0.11em] transition sm:px-4 sm:text-[10px]",
-                  !query
-                    ? "border-red-500 bg-red-600 text-white shadow-[0_12px_30px_rgba(220,38,38,0.22)]"
-                    : "border-white/10 bg-white/[0.035] text-white/50 hover:border-red-500/35 hover:text-white"
-                )}
-              >
-                All COAs
-              </button>
-
-              {compoundFilters.map((compound) => {
-                const isActive = normalize(query) === normalize(compound);
-
-                return (
-                  <button
-                    key={compound}
-                    type="button"
-                    onClick={() => handleFilterClick(compound)}
-                    aria-pressed={isActive}
+                  <span
                     className={cn(
-                      "max-w-[210px] shrink-0 truncate rounded-full border px-3.5 py-2 text-[9px] font-black uppercase leading-none tracking-[0.11em] transition sm:max-w-[260px] sm:px-4 sm:text-[10px]",
-                      isActive
-                        ? "border-red-500 bg-red-600 text-white shadow-[0_12px_30px_rgba(220,38,38,0.22)]"
-                        : "border-white/10 bg-white/[0.035] text-white/50 hover:border-red-500/35 hover:text-white"
+                      "shrink-0 text-white/30 transition-transform duration-300",
+                      compoundOpen && "rotate-180"
                     )}
                   >
-                    {compound}
-                  </button>
-                );
-              })}
+                    <SelectIcon />
+                  </span>
+                </button>
+
+                <AnimatePresence>
+                  {compoundOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                      transition={{
+                        duration: 0.18,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#080808]/95 shadow-[0_24px_70px_rgba(0,0,0,0.65)] backdrop-blur-xl"
+                    >
+                      <div className="border-b border-white/10 p-2">
+                        <input
+                          type="text"
+                          value={compoundSearch}
+                          onChange={(event) =>
+                            setCompoundSearch(event.target.value)
+                          }
+                          placeholder="Search compound..."
+                          className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.035] px-3 text-xs font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-red-500/35"
+                        />
+                      </div>
+
+                      <div className="max-h-[260px] overflow-y-auto p-2 [scrollbar-color:rgba(239,68,68,0.45)_rgba(255,255,255,0.06)] [scrollbar-width:thin]">
+                        <button
+                          type="button"
+                          onClick={() => handleCompoundSelect("")}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-[0.12em] transition",
+                            !query
+                              ? "bg-red-600 text-white"
+                              : "text-white/55 hover:bg-white/[0.055] hover:text-white"
+                          )}
+                        >
+                          All COAs
+                        </button>
+
+                        {visibleCompoundFilters.length > 0 ? (
+                          visibleCompoundFilters.map((compound) => {
+                            const isActive =
+                              normalize(selectedCompound) ===
+                              normalize(compound);
+
+                            return (
+                              <button
+                                key={compound}
+                                type="button"
+                                onClick={() =>
+                                  handleCompoundSelect(compound)
+                                }
+                                className={cn(
+                                  "mt-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-[0.12em] transition",
+                                  isActive
+                                    ? "bg-red-600 text-white"
+                                    : "text-white/55 hover:bg-white/[0.055] hover:text-white"
+                                )}
+                              >
+                                <span className="min-w-0 truncate">
+                                  {compound}
+                                </span>
+
+                                {isActive && (
+                                  <span className="ml-3 h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                                )}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="px-3 py-5 text-center text-xs font-semibold text-white/35">
+                            No compounds found.
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {query && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="h-11 rounded-[1.05rem] border border-white/10 bg-white/[0.035] px-4 text-[10px] font-black uppercase tracking-[0.13em] text-white/45 transition hover:border-red-500/30 hover:text-white"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -324,62 +485,159 @@ export default function COASection() {
             </div>
 
             <span className="w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/50">
-              {filteredCoas.length} result{filteredCoas.length === 1 ? "" : "s"}
+              {filteredCoas.length} result
+              {filteredCoas.length === 1 ? "" : "s"}
             </span>
           </div>
 
           {filteredCoas.length > 0 ? (
             <div className="grid gap-3">
-              {filteredCoas.map((file) => (
-                <div
-                  key={`${file.code}-${file.lot || file.url}`}
-                  className="group grid min-w-0 gap-4 rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-3.5 transition hover:border-red-500/35 hover:bg-white/[0.045] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4"
-                >
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="mt-0.5 hidden h-10 w-10 shrink-0 place-items-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 sm:grid">
-                        <FileIcon />
-                      </div>
+              {filteredCoas.map((file) => {
+                const historyKey = getHistoryKey(file);
+                const isHistoryOpen = Boolean(openHistory[historyKey]);
+                const fileHasHistory = hasHistory(file);
 
+                return (
+                  <div
+                    key={historyKey}
+                    className="group min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.025] transition hover:border-red-500/35 hover:bg-white/[0.045]"
+                  >
+                    <div className="grid min-w-0 gap-4 p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4">
                       <div className="min-w-0">
-                        <h3 className="break-words text-base font-black tracking-[-0.02em] text-white">
-                          {file.product || file.code}
-                        </h3>
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="mt-0.5 hidden h-10 w-10 shrink-0 place-items-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 sm:grid">
+                            <FileIcon />
+                          </div>
 
-                        <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                          {file.lot && (
-                            <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                              Lot: {file.lot}
-                            </span>
-                          )}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="break-words text-base font-black tracking-[-0.02em] text-white">
+                                {file.product || file.code}
+                              </h3>
 
-                          {file.code && (
-                            <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                              Code: {file.code}
-                            </span>
-                          )}
+                              {fileHasHistory && (
+                                <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-200">
+                                  History available
+                                </span>
+                              )}
+                            </div>
 
-                          {file.sku && (
-                            <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                              SKU: {file.sku}
-                            </span>
-                          )}
+                            <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
+                              {file.lot && (
+                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                                  Lot: {file.lot}
+                                </span>
+                              )}
+
+                              {file.code && (
+                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                                  Code: {file.code}
+                                </span>
+                              )}
+
+                              {file.sku && (
+                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                                  SKU: {file.sku}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white no-underline transition hover:bg-red-500 active:scale-[0.98] sm:w-auto"
-                  >
-                    Open PDF
-                    <ArrowIcon />
-                  </a>
-                </div>
-              ))}
+                      <div className="grid gap-2 sm:min-w-[160px]">
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white no-underline transition hover:bg-red-500 active:scale-[0.98]"
+                        >
+                          Open PDF
+                          <ArrowIcon />
+                        </a>
+
+                        {fileHasHistory && (
+                          <button
+                            type="button"
+                            onClick={() => toggleHistory(file)}
+                            aria-expanded={isHistoryOpen}
+                            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-red-500/35 hover:text-white active:scale-[0.98]"
+                          >
+                            {isHistoryOpen ? "Hide history" : "View history"}
+                            <HistoryIcon open={isHistoryOpen} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {fileHasHistory && isHistoryOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{
+                            duration: 0.28,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t border-white/10 bg-black/20 p-3.5 sm:p-4">
+                            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                              Previous Certificates
+                            </p>
+
+                            <div className="grid gap-2">
+                              {file.history.map((item) => (
+                                <div
+                                  key={`${item.code}-${item.lot || item.url}`}
+                                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                                >
+                                  <div className="min-w-0">
+                                    <h4 className="break-words text-sm font-black text-white/90">
+                                      {item.product || file.product || item.code}
+                                    </h4>
+
+                                    <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
+                                      {item.lot && (
+                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                                          Lot: {item.lot}
+                                        </span>
+                                      )}
+
+                                      {item.code && (
+                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                                          Code: {item.code}
+                                        </span>
+                                      )}
+
+                                      {item.sku && (
+                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                                          SKU: {item.sku}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 text-[9px] font-black uppercase tracking-[0.13em] text-red-100 no-underline transition hover:border-red-500/35 hover:bg-red-500/15 hover:text-white active:scale-[0.98] sm:w-auto"
+                                  >
+                                    Open old PDF
+                                    <ArrowIcon />
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-6 text-center sm:p-7">

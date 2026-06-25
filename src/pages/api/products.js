@@ -40,7 +40,7 @@ function getCatalogCacheControl() {
 }
 
 function getDetailCacheControl() {
-  return "public, max-age=60, s-maxage=600, stale-while-revalidate=1800";
+  return "public, max-age=30, s-maxage=300, stale-while-revalidate=900";
 }
 
 function getErrorCacheControl() {
@@ -73,12 +73,27 @@ function normalizeBoolean(value) {
   return null;
 }
 
+function shouldBypassCache(value) {
+  const cleanValue = String(value || "").toLowerCase().trim();
+  return (
+    cleanValue === "1" ||
+    cleanValue === "true" ||
+    cleanValue === "yes" ||
+    cleanValue === "fresh" ||
+    cleanValue === "no-cache"
+  );
+}
+
 function getCatalogCacheKey({ limit, featured }) {
   return JSON.stringify({
     type: "catalog",
     limit,
     featured,
   });
+}
+
+function getDetailCacheKey(slug) {
+  return String(slug || "").trim().toLowerCase();
 }
 
 function getCachedCatalog(cacheKey, allowStale = false) {
@@ -104,7 +119,8 @@ function setCachedCatalog(cacheKey, data) {
 }
 
 function getCachedDetail(slug, allowStale = false) {
-  const cached = cacheStore.details.get(slug);
+  const cacheKey = getDetailCacheKey(slug);
+  const cached = cacheStore.details.get(cacheKey);
 
   if (!cached) return null;
 
@@ -119,7 +135,9 @@ function getCachedDetail(slug, allowStale = false) {
 }
 
 function setCachedDetail(slug, data) {
-  cacheStore.details.set(slug, {
+  const cacheKey = getDetailCacheKey(slug);
+
+  cacheStore.details.set(cacheKey, {
     time: Date.now(),
     data,
   });
@@ -206,8 +224,12 @@ function mapProductForDetail(product) {
 function mapVariationForDetail(variation) {
   return {
     id: variation.id,
+    name: variation.name || "",
+    slug: variation.slug || "",
     sku: variation.sku,
     type: variation.type || "variation",
+    status: variation.status,
+    purchasable: variation.purchasable,
     price: variation.price,
     regular_price: variation.regular_price,
     sale_price: variation.sale_price,
@@ -312,13 +334,19 @@ function buildWooVariationEndpoint({ productId, wcUrl }) {
   );
 
   endpoint.searchParams.set("per_page", "100");
+  endpoint.searchParams.set("orderby", "menu_order");
+  endpoint.searchParams.set("order", "asc");
 
   endpoint.searchParams.set(
     "_fields",
     [
       "id",
+      "name",
+      "slug",
       "sku",
       "type",
+      "status",
+      "purchasable",
       "price",
       "regular_price",
       "sale_price",
@@ -433,6 +461,36 @@ async function parseWooProducts(response) {
   }
 }
 
+function productLooksVariable(rawProduct, product) {
+  if (!rawProduct && !product) return false;
+
+  const type = rawProduct?.type || product?.type;
+
+  if (type === "variable") return true;
+
+  if (Array.isArray(rawProduct?.variations) && rawProduct.variations.length > 0) {
+    return true;
+  }
+
+  if (Array.isArray(product?.variations) && product.variations.length > 0) {
+    return true;
+  }
+
+  const attributes = Array.isArray(rawProduct?.attributes)
+    ? rawProduct.attributes
+    : Array.isArray(product?.attributes)
+      ? product.attributes
+      : [];
+
+  return attributes.some((attribute) => {
+    if (!attribute) return false;
+
+    if (attribute.variation === true) return true;
+
+    return Array.isArray(attribute.options) && attribute.options.length > 1;
+  });
+}
+
 async function fetchWooProductVariations({
   productId,
   wcUrl,
@@ -458,11 +516,22 @@ async function fetchWooProductVariations({
     const variationResult = await parseWooProducts(variationResponse);
 
     if (!variationResult.ok || !Array.isArray(variationResult.products)) {
+      console.error("WooCommerce variations response invalid:", {
+        status: variationResult.status,
+        statusText: variationResult.statusText,
+        message: variationResult.message,
+        details: variationResult.details,
+      });
+
       return [];
     }
 
     return variationResult.products.map(mapVariationForDetail);
   } catch (error) {
+    if (error?.name === "AbortError") {
+      throw error;
+    }
+
     console.error("WooCommerce variations request failed:", error);
     return [];
   }
@@ -474,23 +543,27 @@ export async function GET({ request }) {
   const slug = requestUrl.searchParams.get("slug");
   const limit = sanitizeLimit(requestUrl.searchParams.get("limit"));
   const featured = normalizeBoolean(requestUrl.searchParams.get("featured"));
+  const refresh = shouldBypassCache(requestUrl.searchParams.get("refresh"));
+  const debug = shouldBypassCache(requestUrl.searchParams.get("debug"));
 
   const isDetailRequest = Boolean(slug);
   const catalogCacheKey = getCatalogCacheKey({ limit, featured });
 
-  const freshCachedData = isDetailRequest
-    ? getCachedDetail(slug, false)
-    : getCachedCatalog(catalogCacheKey, false);
+  if (!refresh) {
+    const freshCachedData = isDetailRequest
+      ? getCachedDetail(slug, false)
+      : getCachedCatalog(catalogCacheKey, false);
 
-  if (freshCachedData) {
-    return jsonResponse(
-      {
-        ...freshCachedData,
-        cache: "memory",
-      },
-      200,
-      isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-    );
+    if (freshCachedData) {
+      return jsonResponse(
+        {
+          ...freshCachedData,
+          cache: "memory",
+        },
+        200,
+        isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
+      );
+    }
   }
 
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
@@ -498,19 +571,21 @@ export async function GET({ request }) {
   const consumerSecret = import.meta.env.WC_CONSUMER_SECRET;
 
   if (!wcUrl || !consumerKey || !consumerSecret) {
-    const staleCachedData = isDetailRequest
-      ? getCachedDetail(slug, true)
-      : getCachedCatalog(catalogCacheKey, true);
+    if (!refresh) {
+      const staleCachedData = isDetailRequest
+        ? getCachedDetail(slug, true)
+        : getCachedCatalog(catalogCacheKey, true);
 
-    if (staleCachedData) {
-      return jsonResponse(
-        {
-          ...staleCachedData,
-          cache: "stale",
-        },
-        200,
-        isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-      );
+      if (staleCachedData) {
+        return jsonResponse(
+          {
+            ...staleCachedData,
+            cache: "stale",
+          },
+          200,
+          isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
+        );
+      }
     }
 
     return jsonResponse(
@@ -537,7 +612,7 @@ export async function GET({ request }) {
   });
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7500);
+  const timeout = setTimeout(() => controller.abort(), 12000);
 
   try {
     const response = await fetchWooCommerce(
@@ -552,19 +627,21 @@ export async function GET({ request }) {
     if (!result.ok) {
       clearTimeout(timeout);
 
-      const staleCachedData = isDetailRequest
-        ? getCachedDetail(slug, true)
-        : getCachedCatalog(catalogCacheKey, true);
+      if (!refresh) {
+        const staleCachedData = isDetailRequest
+          ? getCachedDetail(slug, true)
+          : getCachedCatalog(catalogCacheKey, true);
 
-      if (staleCachedData) {
-        return jsonResponse(
-          {
-            ...staleCachedData,
-            cache: "stale",
-          },
-          200,
-          isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-        );
+        if (staleCachedData) {
+          return jsonResponse(
+            {
+              ...staleCachedData,
+              cache: "stale",
+            },
+            200,
+            isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
+          );
+        }
       }
 
       return jsonResponse(
@@ -602,8 +679,10 @@ export async function GET({ request }) {
         );
       }
 
-      if (product.type === "variable") {
-        const variationDetails = await fetchWooProductVariations({
+      let variationDetails = [];
+
+      if (productLooksVariable(rawProduct, product)) {
+        variationDetails = await fetchWooProductVariations({
           productId: product.id,
           wcUrl,
           consumerKey,
@@ -611,9 +690,7 @@ export async function GET({ request }) {
           signal: controller.signal,
         });
 
-        if (variationDetails.length > 0) {
-          product.variations = variationDetails;
-        }
+        product.variations = variationDetails;
       }
 
       clearTimeout(timeout);
@@ -623,10 +700,33 @@ export async function GET({ request }) {
         count: 1,
         product,
         products: [product],
-        cache: "fresh",
+        cache: refresh ? "refresh" : "fresh",
       };
 
-      setCachedDetail(slug, payload);
+      if (debug) {
+        payload.debug = {
+          productId: product.id,
+          productType: product.type,
+          rawVariationIds: Array.isArray(rawProduct?.variations)
+            ? rawProduct.variations
+            : [],
+          variationCount: variationDetails.length,
+          variationPreview: variationDetails.map((variation) => ({
+            id: variation.id,
+            sku: variation.sku,
+            price: variation.price,
+            regular_price: variation.regular_price,
+            sale_price: variation.sale_price,
+            stock_status: variation.stock_status,
+            purchasable: variation.purchasable,
+            attributes: variation.attributes,
+          })),
+        };
+      }
+
+      if (!refresh) {
+        setCachedDetail(slug, payload);
+      }
 
       return jsonResponse(payload, 200, getDetailCacheControl());
     }
@@ -639,30 +739,34 @@ export async function GET({ request }) {
       success: true,
       count: mappedProducts.length,
       products: mappedProducts,
-      cache: "fresh",
+      cache: refresh ? "refresh" : "fresh",
       limit,
       featured,
     };
 
-    setCachedCatalog(catalogCacheKey, payload);
+    if (!refresh) {
+      setCachedCatalog(catalogCacheKey, payload);
+    }
 
     return jsonResponse(payload, 200, getCatalogCacheControl());
   } catch (error) {
     clearTimeout(timeout);
 
-    const staleCachedData = isDetailRequest
-      ? getCachedDetail(slug, true)
-      : getCachedCatalog(catalogCacheKey, true);
+    if (!refresh) {
+      const staleCachedData = isDetailRequest
+        ? getCachedDetail(slug, true)
+        : getCachedCatalog(catalogCacheKey, true);
 
-    if (staleCachedData) {
-      return jsonResponse(
-        {
-          ...staleCachedData,
-          cache: "stale",
-        },
-        200,
-        isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-      );
+      if (staleCachedData) {
+        return jsonResponse(
+          {
+            ...staleCachedData,
+            cache: "stale",
+          },
+          200,
+          isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
+        );
+      }
     }
 
     const isTimeout = error.name === "AbortError";

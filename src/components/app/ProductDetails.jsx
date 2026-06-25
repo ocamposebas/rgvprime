@@ -83,11 +83,79 @@ function normalizeVariantValue(value = "") {
   return String(value || "")
     .toLowerCase()
     .trim()
-    .replace(/^pa[_-]/, "")
-    .replace(/^attribute[_-]/, "")
     .replace(/&amp;/g, "&")
+    .replace(/^attribute[:_\-\s]*/i, "")
+    .replace(/^pa[:_\-\s]*/i, "")
+    .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
-    .replace(/-/g, " ");
+    .replace(/\s*(mcg|mg|g|iu)\b/g, "$1")
+    .trim();
+}
+
+function normalizeAttributeName(value = "") {
+  return normalizeVariantValue(value)
+    .replace(/^(attribute|pa)\s+/i, "")
+    .trim();
+}
+
+function getStrengthMatch(value = "") {
+  const text = normalizeVariantValue(value);
+  const match = text.match(/(\d+(?:\.\d+)?)(mcg|mg|g|iu)\b/i);
+
+  if (!match) return null;
+
+  const amount = Number(match[1]);
+  const unit = String(match[2] || "").toLowerCase();
+
+  if (!Number.isFinite(amount)) return null;
+
+  const multiplier =
+    unit === "g" ? 1000 : unit === "mcg" ? 0.001 : unit === "mg" ? 1 : 1;
+
+  return {
+    amount,
+    unit,
+    sortValue: amount * multiplier,
+    raw: `${amount}${unit}`,
+  };
+}
+
+function valuesLookEquivalent(a = "", b = "") {
+  const cleanA = normalizeVariantValue(a);
+  const cleanB = normalizeVariantValue(b);
+
+  if (!cleanA || !cleanB) return false;
+  if (cleanA === cleanB) return true;
+
+  const strengthA = getStrengthMatch(cleanA);
+  const strengthB = getStrengthMatch(cleanB);
+
+  if (strengthA && strengthB) {
+    return Math.abs(strengthA.sortValue - strengthB.sortValue) < 0.000001;
+  }
+
+  return cleanA.includes(cleanB) || cleanB.includes(cleanA);
+}
+
+function compareVariantValues(a = "", b = "") {
+  const strengthA = getStrengthMatch(a);
+  const strengthB = getStrengthMatch(b);
+
+  if (strengthA && strengthB && strengthA.sortValue !== strengthB.sortValue) {
+    return strengthA.sortValue - strengthB.sortValue;
+  }
+
+  if (strengthA && !strengthB) return -1;
+  if (!strengthA && strengthB) return 1;
+
+  return String(a || "").localeCompare(String(b || ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function sortVariantOptions(options = []) {
+  return [...(Array.isArray(options) ? options : [])].sort(compareVariantValues);
 }
 
 function getVariationImage(variation) {
@@ -103,7 +171,70 @@ function getVariationImage(variation) {
 }
 
 function getVariationAttributeOption(attribute) {
-  return attribute?.option ?? attribute?.value ?? "";
+  return (
+    attribute?.option ??
+    attribute?.value ??
+    attribute?.slug ??
+    ""
+  );
+}
+
+function getVariationOptionValues(variation) {
+  if (!variation || typeof variation !== "object") return [];
+
+  const values = [];
+
+  if (Array.isArray(variation.attributes)) {
+    variation.attributes.forEach((attribute) => {
+      const option = getVariationAttributeOption(attribute);
+
+      if (option) values.push(option);
+    });
+  }
+
+  [
+    variation.label,
+    variation.option,
+    variation.title,
+    variation.name,
+    variation.sku,
+  ].forEach((value) => {
+    if (value) values.push(value);
+  });
+
+  return values.filter(Boolean);
+}
+
+function getVariationStrengthValue(variation) {
+  const values = getVariationOptionValues(variation);
+  const strengths = values
+    .map((value) => getStrengthMatch(value))
+    .filter(Boolean)
+    .map((strength) => strength.sortValue);
+
+  if (!strengths.length) return Number.POSITIVE_INFINITY;
+
+  return Math.min(...strengths);
+}
+
+function sortVariationsByStrength(variations = []) {
+  return [...variations].sort((a, b) => {
+    const strengthA = getVariationStrengthValue(a);
+    const strengthB = getVariationStrengthValue(b);
+
+    if (strengthA !== strengthB) return strengthA - strengthB;
+
+    const priceA = Number(a?.price || a?.sale_price || a?.regular_price || 0);
+    const priceB = Number(b?.price || b?.sale_price || b?.regular_price || 0);
+
+    if (priceA !== priceB) return priceA - priceB;
+
+    return String(a?.sku || a?.id || "").localeCompare(
+      String(b?.sku || b?.id || ""),
+      undefined,
+      { numeric: true, sensitivity: "base" }
+    );
+  });
 }
 
 function getVariationList(product) {
@@ -113,6 +244,44 @@ function getVariationList(product) {
           variation && typeof variation === "object" && !Array.isArray(variation)
       )
     : [];
+}
+
+function getLowestAvailableVariation(product) {
+  const variations = sortVariationsByStrength(getVariationList(product));
+
+  return (
+    variations.find(
+      (variation) =>
+        variation?.stock_status === "instock" || variation?.backorders_allowed === true
+    ) || variations[0] || null
+  );
+}
+
+function getMatchingProductAttributeName(product, variationAttribute, option) {
+  const attributes = Array.isArray(product?.attributes) ? product.attributes : [];
+  const variationName = normalizeAttributeName(
+    variationAttribute?.name || variationAttribute?.slug || ""
+  );
+
+  const directAttribute = attributes.find((attribute) => {
+    const attrName = normalizeAttributeName(attribute?.name || attribute?.slug || "");
+
+    return (
+      attrName &&
+      variationName &&
+      (attrName === variationName || attrName.includes(variationName) || variationName.includes(attrName))
+    );
+  });
+
+  if (directAttribute?.name) return directAttribute.name;
+
+  const optionAttribute = attributes.find(
+    (attribute) =>
+      Array.isArray(attribute?.options) &&
+      attribute.options.some((item) => valuesLookEquivalent(item, option))
+  );
+
+  return optionAttribute?.name || variationAttribute?.name || variationAttribute?.slug || "Option";
 }
 
 function variationMatchesSelection(variation, selectedVariants) {
@@ -130,81 +299,146 @@ function variationMatchesSelection(variation, selectedVariants) {
     return false;
   }
 
+  const allVariationValues = getVariationOptionValues(variation);
+
   return selectedEntries.every(([selectedName, selectedValue]) => {
-    const cleanSelectedName = normalizeVariantValue(selectedName);
+    const cleanSelectedName = normalizeAttributeName(selectedName);
     const cleanSelectedValue = normalizeVariantValue(selectedValue);
 
     const directMatch = variationAttributes.some((attribute) => {
-      const attrName = normalizeVariantValue(attribute?.name || attribute?.slug);
-      const attrOption = normalizeVariantValue(
-        getVariationAttributeOption(attribute)
-      );
+      const attrName = normalizeAttributeName(attribute?.name || attribute?.slug);
+      const attrOption = normalizeVariantValue(getVariationAttributeOption(attribute));
 
       const nameMatches =
+        !attrName ||
+        !cleanSelectedName ||
         attrName === cleanSelectedName ||
         attrName.includes(cleanSelectedName) ||
         cleanSelectedName.includes(attrName);
 
-      const valueMatches = attrOption === cleanSelectedValue || attrOption === "";
+      const valueMatches =
+        valuesLookEquivalent(attrOption, cleanSelectedValue) ||
+        valuesLookEquivalent(attribute?.name, cleanSelectedValue) ||
+        valuesLookEquivalent(attribute?.slug, cleanSelectedValue);
 
       return nameMatches && valueMatches;
     });
 
     if (directMatch) return true;
 
-    return variationAttributes.some((attribute) => {
-      const attrOption = normalizeVariantValue(
-        getVariationAttributeOption(attribute)
-      );
-
-      return attrOption === cleanSelectedValue;
-    });
+    return allVariationValues.some((value) =>
+      valuesLookEquivalent(value, cleanSelectedValue)
+    );
   });
 }
 
 function getSelectedVariation(product, selectedVariants) {
-  const variations = getVariationList(product);
+  const variations = sortVariationsByStrength(getVariationList(product));
 
   if (variations.length === 0) return null;
 
-  return (
-    variations.find((variation) =>
-      variationMatchesSelection(variation, selectedVariants)
-    ) || null
+  const exactMatch = variations.find((variation) =>
+    variationMatchesSelection(variation, selectedVariants)
   );
+
+  if (exactMatch) return exactMatch;
+
+  const selectedValues = Object.values(selectedVariants || {}).filter(Boolean);
+
+  if (selectedValues.length > 0) {
+    const valueMatch = variations.find((variation) =>
+      selectedValues.every((selectedValue) =>
+        getVariationOptionValues(variation).some((variationValue) =>
+          valuesLookEquivalent(variationValue, selectedValue)
+        )
+      )
+    );
+
+    if (valueMatch) return valueMatch;
+
+    const selectedStrength = selectedValues
+      .map((value) => getStrengthMatch(value))
+      .filter(Boolean)
+      .map((strength) => strength.sortValue)[0];
+
+    if (selectedStrength !== undefined) {
+      const strengthMatch = variations.find((variation) => {
+        const variationStrength = getVariationStrengthValue(variation);
+
+        return (
+          Number.isFinite(variationStrength) &&
+          Math.abs(variationStrength - selectedStrength) < 0.000001
+        );
+      });
+
+      if (strengthMatch) return strengthMatch;
+    }
+
+    const attributeEntries = Object.entries(selectedVariants || {}).filter(
+      ([, value]) => value !== null && value !== undefined && value !== ""
+    );
+
+    for (const [attributeName, selectedValue] of attributeEntries) {
+      const attribute = Array.isArray(product?.attributes)
+        ? product.attributes.find((item) =>
+            normalizeAttributeName(item?.name || item?.slug || "") ===
+              normalizeAttributeName(attributeName) ||
+            normalizeAttributeName(item?.name || item?.slug || "").includes(
+              normalizeAttributeName(attributeName)
+            ) ||
+            normalizeAttributeName(attributeName).includes(
+              normalizeAttributeName(item?.name || item?.slug || "")
+            )
+          )
+        : null;
+
+      const sortedOptions = sortVariantOptions(attribute?.options || []);
+      const selectedIndex = sortedOptions.findIndex((option) =>
+        valuesLookEquivalent(option, selectedValue)
+      );
+
+      if (selectedIndex >= 0 && variations[selectedIndex]) {
+        return variations[selectedIndex];
+      }
+    }
+  }
+
+  return getLowestAvailableVariation(product);
 }
 
 function buildInitialVariantSelection(product) {
   const initialVariants = {};
-  const variations = getVariationList(product);
+  const preferredVariation = getLowestAvailableVariation(product);
+  const preferredOptions = getVariationOptionValues(preferredVariation);
 
-  const preferredVariation =
-    variations.find((variation) => variation.stock_status === "instock") ||
-    variations[0];
+  if (Array.isArray(product?.attributes) && product.attributes.length > 0) {
+    product.attributes.forEach((attr) => {
+      if (!attr?.name) return;
 
-  if (
-    preferredVariation &&
-    Array.isArray(preferredVariation.attributes) &&
-    preferredVariation.attributes.length > 0
-  ) {
-    preferredVariation.attributes.forEach((attribute) => {
-      const option = getVariationAttributeOption(attribute);
+      const options = sortVariantOptions(attr.options || []);
+      const matchingPreferredOption = options.find((option) =>
+        preferredOptions.some((preferredOption) =>
+          valuesLookEquivalent(option, preferredOption)
+        )
+      );
 
-      if (attribute?.name && option) {
-        initialVariants[attribute.name] = option;
+      if (matchingPreferredOption || options[0]) {
+        initialVariants[attr.name] = matchingPreferredOption || options[0];
       }
     });
   }
 
-  if (Array.isArray(product?.attributes)) {
-    product.attributes.forEach((attr) => {
-      if (
-        attr?.name &&
-        !initialVariants[attr.name] &&
-        Array.isArray(attr.options) &&
-        attr.options.length > 0
-      ) {
-        initialVariants[attr.name] = attr.options[0];
+  if (
+    Object.keys(initialVariants).length === 0 &&
+    preferredVariation &&
+    Array.isArray(preferredVariation.attributes)
+  ) {
+    preferredVariation.attributes.forEach((attribute) => {
+      const option = getVariationAttributeOption(attribute);
+      const attributeName = getMatchingProductAttributeName(product, attribute, option);
+
+      if (attributeName && option) {
+        initialVariants[attributeName] = option;
       }
     });
   }
@@ -862,7 +1096,10 @@ export default function ProductDetails({ slug }) {
         }
 
         const response = await fetch(
-          `/api/products?slug=${encodeURIComponent(cleanSlug)}`
+          `/api/products?slug=${encodeURIComponent(cleanSlug)}&refresh=1&_=${Date.now()}`,
+          {
+            cache: "no-store",
+          }
         );
 
         const data = await response.json().catch(() => null);
@@ -1346,7 +1583,7 @@ export default function ProductDetails({ slug }) {
                       </label>
 
                       <div className="grid gap-2 sm:grid-cols-2">
-                        {attribute.options.map((option) => {
+                        {sortVariantOptions(attribute.options).map((option) => {
                           const isSelected =
                             selectedVariants[attribute.name] === option;
 
