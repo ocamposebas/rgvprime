@@ -156,8 +156,9 @@ function getPdfPreviewUrl(url = "") {
   params.set("navpanes", "0");
   params.set("scrollbar", "0");
   params.set("page", "1");
-  params.set("view", "Fit");
-  params.set("zoom", "page-fit");
+  params.set("view", "FitH");
+  params.set("zoom", "page-width");
+  params.set("pagemode", "none");
 
   return `${baseUrl}#${params.toString()}`;
 }
@@ -431,7 +432,7 @@ export default function NeedHelp() {
           <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-[#030303] to-transparent sm:w-28" />
 
           {coaItems.length > 0 ? (
-            <div className="relative flex overflow-hidden">
+            <div className="coa-carousel-viewport relative flex overflow-hidden">
               <div
                 className="coa-carousel-track flex w-max gap-5 px-5"
                 style={{ "--duration": animationDuration }}
@@ -524,6 +525,10 @@ export default function NeedHelp() {
       </div>
 
       <style>{`
+        .coa-carousel-viewport {
+          overscroll-behavior-x: contain;
+        }
+
         .coa-carousel-track {
           animation: coaCarouselMove var(--duration, 46s) linear infinite;
           backface-visibility: hidden;
@@ -538,22 +543,27 @@ export default function NeedHelp() {
         }
 
         .coa-preview-window {
-          aspect-ratio: 0.707 / 1;
-          min-height: 318px;
+          aspect-ratio: 210 / 297;
+          min-height: 0;
+          isolation: isolate;
         }
 
         .coa-preview-frame,
         .coa-pdf-stage,
         .coa-pdf-iframe {
           backface-visibility: hidden;
+        }
+
+        .coa-pdf-stage {
           transform: translate3d(0, 0, 0);
+          transform-origin: top left;
         }
 
         .coa-pdf-iframe {
           display: block;
           inline-size: 100%;
           block-size: 100%;
-          transform-origin: center center;
+          transform-origin: top left;
         }
 
         .coa-pdf-placeholder {
@@ -577,9 +587,35 @@ export default function NeedHelp() {
         }
 
         @media (max-width: 768px) {
+          .coa-carousel-viewport {
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-padding-inline: 16px;
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
+            cursor: grab;
+            scrollbar-width: none;
+          }
+
+          .coa-carousel-viewport::-webkit-scrollbar {
+            display: none;
+          }
+
           .coa-carousel-track {
-            animation-duration: 40s;
+            animation: coaCarouselMove var(--duration, 46s) linear infinite;
+            animation-duration: 42s;
+            transform: translate3d(0, 0, 0);
             will-change: transform;
+          }
+
+          .coa-carousel-viewport:active .coa-carousel-track {
+            animation-play-state: paused;
+          }
+
+          .coa-card {
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
           }
 
           .coa-shell {
@@ -596,8 +632,13 @@ export default function NeedHelp() {
           }
 
           .coa-preview-window {
-            aspect-ratio: 0.68 / 1;
-            min-height: 318px;
+            aspect-ratio: 210 / 297;
+          }
+
+          .coa-pdf-stage {
+            inline-size: 136%;
+            block-size: 136%;
+            transform: scale(0.735);
           }
         }
 
@@ -609,25 +650,32 @@ export default function NeedHelp() {
           }
 
           .coa-card {
-            width: min(74vw, 230px);
+            width: min(78vw, 245px);
             padding: 10px;
             border-radius: 1.35rem;
           }
 
           .coa-preview-window {
-            aspect-ratio: 0.66 / 1;
-            min-height: 318px;
+            aspect-ratio: 210 / 297;
             border-radius: 1rem;
+          }
+
+          .coa-pdf-stage {
+            inline-size: 148%;
+            block-size: 148%;
+            transform: scale(0.676);
           }
         }
 
         @media (max-width: 380px) {
           .coa-card {
-            width: min(76vw, 215px);
+            width: min(82vw, 225px);
           }
 
-          .coa-preview-window {
-            min-height: 305px;
+          .coa-pdf-stage {
+            inline-size: 154%;
+            block-size: 154%;
+            transform: scale(0.65);
           }
         }
 

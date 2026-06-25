@@ -506,9 +506,12 @@ function ProductCard({ product }) {
     try {
       setVariationStatus("loading");
 
-      const response = await fetch(`/api/products/${product.slug}`, {
-        cache: "force-cache",
-      });
+      const response = await fetch(
+        `/api/products?slug=${encodeURIComponent(product.slug)}`,
+        {
+          cache: "force-cache",
+        }
+      );
 
       const data = await response.json();
 
@@ -650,8 +653,8 @@ function ProductCard({ product }) {
               onClick={handleToggleOptions}
               className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
                 optionsOpen
-                  ? "bg-white text-black hover:bg-white/90"
-                  : "bg-red-600 hover:bg-red-500"
+                  ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
+                  : "bg-red-600 text-white hover:bg-red-500"
               }`}
             >
               MG Options
