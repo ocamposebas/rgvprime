@@ -1743,18 +1743,35 @@ export default function AccountPortal() {
     window.history.replaceState({}, "", cleanUrl);
   }
 
-  function handleLogout() {
-    setUser(null);
-    setOrders([]);
-    setResetParams({
-      key: "",
-      login: "",
+async function handleLogout() {
+  try {
+    await fetch("/api/account/logout", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-store",
+      },
+      credentials: "same-origin",
+      cache: "no-store",
     });
-    setMode("login");
-
-    window.location.href =
-      "/api/account/logout?next=/account%3Fmode%3Dlogin%26logged_out%3D1";
+  } catch (error) {
+    console.error("Logout failed:", error);
   }
+
+  setUser(null);
+  setOrders([]);
+  setResetParams({
+    key: "",
+    login: "",
+  });
+  setMode("login");
+
+  window.history.replaceState(
+    {},
+    "",
+    "/account?mode=login&logged_out=1"
+  );
+}
   if (booting) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-44 text-white sm:px-6 sm:pt-48 lg:px-8 lg:pt-52">
