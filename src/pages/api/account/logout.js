@@ -7,6 +7,8 @@ import {
 
 export const prerender = false;
 
+const COOKIE_PATHS = ["/", "/account", "/api", "/api/account"];
+
 function noStore(response) {
   response.headers.set(
     "Cache-Control",
@@ -21,7 +23,30 @@ function expiredCookie(name, path = "/") {
   return `${name}=; Path=${path}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Lax`;
 }
 
-function clearPortalCookie(cookies, url, response) {
+function safeNext(url) {
+  const next = url.searchParams.get("next") || "/account?mode=login&logged_out=1";
+
+  if (!next.startsWith("/") || next.startsWith("//")) {
+    return "/account?mode=login&logged_out=1";
+  }
+
+  return next;
+}
+
+async function destroySession(token) {
+  if (!token) return;
+
+  try {
+    await portalRequest("logout", {
+      method: "POST",
+      token,
+    });
+  } catch (error) {
+    console.error("LOGOUT WORDPRESS ERROR:", error);
+  }
+}
+
+function clearPortalSession(cookies, url, response) {
   cookies.set(PORTAL_COOKIE, "", clearCookieOptions(url));
 
   try {
@@ -30,24 +55,27 @@ function clearPortalCookie(cookies, url, response) {
     });
   } catch {}
 
-  response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, "/"));
-  response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, "/account"));
-  response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, "/api"));
-  response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, "/api/account"));
+  for (const path of COOKIE_PATHS) {
+    response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, path));
+  }
 }
 
-export async function POST({ cookies, url }) {
+async function logout({ cookies, url, redirect = false }) {
   const token = cookies.get(PORTAL_COOKIE)?.value || "";
 
-  try {
-    if (token) {
-      await portalRequest("logout", {
-        method: "POST",
-        token,
-      });
-    }
-  } catch (error) {
-    console.error("LOGOUT API ERROR:", error);
+  await destroySession(token);
+
+  if (redirect) {
+    const response = new Response(null, {
+      status: 303,
+      headers: {
+        Location: safeNext(url),
+      },
+    });
+
+    clearPortalSession(cookies, url, response);
+
+    return noStore(response);
   }
 
   const response = json({
@@ -55,7 +83,21 @@ export async function POST({ cookies, url }) {
     message: "Signed out securely.",
   });
 
-  clearPortalCookie(cookies, url, response);
+  clearPortalSession(cookies, url, response);
 
   return noStore(response);
+}
+
+export async function GET(context) {
+  return logout({
+    ...context,
+    redirect: true,
+  });
+}
+
+export async function POST(context) {
+  return logout({
+    ...context,
+    redirect: false,
+  });
 }
