@@ -1727,18 +1727,41 @@ export default function AccountPortal() {
     window.history.replaceState({}, "", cleanUrl);
   }
 
-  async function handleLogout() {
-    try {
-      await fetch("/api/account/logout", {
-        method: "POST",
-      });
-    } catch {}
+async function handleLogout() {
+  setBooting(true);
 
+  try {
+    await fetch("/api/account/logout", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-store",
+      },
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error("Logout failed:", error);
+  } finally {
     setUser(null);
     setOrders([]);
+    setResetParams({
+      key: "",
+      login: "",
+    });
     setMode("login");
-  }
 
+    try {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    } catch {}
+
+    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, "", cleanUrl);
+
+    window.location.replace("/account?logged_out=1");
+  }
+}
   if (booting) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-44 text-white sm:px-6 sm:pt-48 lg:px-8 lg:pt-52">
