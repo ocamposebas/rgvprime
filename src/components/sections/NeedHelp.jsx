@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import coaData from "../data/coas.json";
 
-const warmedPdfUrls = new Set();
 const loadedPdfPreviewUrls = new Set();
-const PDF_PREVIEW_STORAGE_KEY = "rgvprimer_loaded_coa_pdf_previews";
-
-let globalPreviewLoadStarted = false;
 
 function isObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
@@ -83,10 +79,7 @@ function extractAllPdfItems(data) {
     }
 
     if (Array.isArray(value)) {
-      value.forEach((item) => {
-        visit(item, context);
-      });
-
+      value.forEach((item) => visit(item, context));
       return;
     }
 
@@ -163,7 +156,7 @@ function getPdfPreviewUrl(url = "") {
   return `${baseUrl}#${params.toString()}`;
 }
 
-function buildCarouselItems(items = []) {
+function buildDesktopCarouselItems(items = []) {
   if (!items.length) return [];
 
   const minimumItems = 8;
@@ -181,136 +174,78 @@ function buildCarouselItems(items = []) {
   return [...normalizedItems, ...normalizedItems];
 }
 
-function runWhenIdle(callback) {
-  if (typeof window === "undefined") return;
-
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(callback, { timeout: 1800 });
-    return;
-  }
-
-  window.setTimeout(callback, 450);
-}
-
-function getStoredLoadedPreviews() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.sessionStorage.getItem(PDF_PREVIEW_STORAGE_KEY);
-    const parsed = JSON.parse(raw || "[]");
-
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function hasPdfPreviewLoaded(previewUrl = "") {
-  if (!previewUrl || typeof window === "undefined") return false;
-
-  if (loadedPdfPreviewUrls.has(previewUrl)) return true;
-
-  const stored = getStoredLoadedPreviews();
-
-  return stored.includes(previewUrl);
-}
-
-function markPdfPreviewLoaded(previewUrl = "") {
-  if (!previewUrl || typeof window === "undefined") return;
-
-  loadedPdfPreviewUrls.add(previewUrl);
-
-  try {
-    const stored = new Set(getStoredLoadedPreviews());
-    stored.add(previewUrl);
-
-    window.sessionStorage.setItem(
-      PDF_PREVIEW_STORAGE_KEY,
-      JSON.stringify(Array.from(stored).slice(-120))
-    );
-  } catch {
-    // Storage puede estar bloqueado; no pasa nada.
-  }
-}
-
-function prefetchPdfUrls(items = []) {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
-
-  const uniqueUrls = Array.from(
-    new Set(items.map((item) => item.pdfLink).filter(Boolean))
-  );
-
-  uniqueUrls.forEach((url, index) => {
-    if (warmedPdfUrls.has(url)) return;
-
-    warmedPdfUrls.add(url);
-
-    window.setTimeout(() => {
-      const link = document.createElement("link");
-      link.rel = "prefetch";
-      link.href = url;
-      link.as = "document";
-      document.head.appendChild(link);
-    }, 250 + index * 120);
-  });
-}
-
-function startGlobalPdfPreviewLoading() {
-  if (typeof window === "undefined") return;
-  if (globalPreviewLoadStarted) return;
-
-  globalPreviewLoadStarted = true;
-
-  window.dispatchEvent(new CustomEvent("coa:load-all-pdf-previews"));
-}
-
-function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 }) {
+function PdfPreviewFrame({
+  previewUrl = "",
+  title = "COA Document",
+  index = 0,
+  priority = false,
+}) {
   const wrapperRef = useRef(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(priority);
   const [frameReady, setFrameReady] = useState(false);
 
   useEffect(() => {
-    setShouldLoad(false);
     setFrameReady(false);
+    setShouldLoad(priority || loadedPdfPreviewUrls.has(previewUrl));
 
-    if (!previewUrl) return;
+    if (!previewUrl || typeof window === "undefined") return;
 
     let didCancel = false;
     let timeoutId;
+    let observer;
 
-    const loadPreview = () => {
+    const startLoading = () => {
       if (didCancel) return;
 
-      const alreadyLoaded = hasPdfPreviewLoaded(previewUrl);
-      const staggerDelay = alreadyLoaded ? 80 : 500 + index * 140;
+      const alreadyLoaded = loadedPdfPreviewUrls.has(previewUrl);
+      const delay = priority || alreadyLoaded ? 60 : 220 + index * 70;
 
       timeoutId = window.setTimeout(() => {
-        runWhenIdle(() => {
-          if (!didCancel) {
-            setShouldLoad(true);
-          }
-        });
-      }, staggerDelay);
+        if (!didCancel) {
+          setShouldLoad(true);
+        }
+      }, delay);
     };
 
-    if (hasPdfPreviewLoaded(previewUrl) || globalPreviewLoadStarted) {
-      loadPreview();
+    if (priority || loadedPdfPreviewUrls.has(previewUrl)) {
+      startLoading();
+    } else if ("IntersectionObserver" in window && wrapperRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const isVisible = entries.some((entry) => entry.isIntersecting);
+
+          if (isVisible) {
+            startLoading();
+
+            if (observer) {
+              observer.disconnect();
+            }
+          }
+        },
+        {
+          root: null,
+          rootMargin: "320px 260px",
+          threshold: 0.05,
+        }
+      );
+
+      observer.observe(wrapperRef.current);
     } else {
-      window.addEventListener("coa:load-all-pdf-previews", loadPreview, {
-        once: true,
-      });
+      startLoading();
     }
 
     return () => {
       didCancel = true;
 
-      window.removeEventListener("coa:load-all-pdf-previews", loadPreview);
-
       if (timeoutId) {
         window.clearTimeout(timeoutId);
       }
+
+      if (observer) {
+        observer.disconnect();
+      }
     };
-  }, [previewUrl, index]);
+  }, [previewUrl, index, priority]);
 
   return (
     <div
@@ -318,13 +253,13 @@ function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 })
       className="coa-preview-frame absolute inset-0 overflow-hidden bg-[#080505]"
     >
       <div
-        className="coa-pdf-placeholder absolute inset-0 z-20 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center"
+        className="coa-pdf-placeholder absolute inset-0 z-20 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center transition-opacity duration-500"
         style={{
           opacity: frameReady ? 0 : 1,
           pointerEvents: frameReady ? "none" : "auto",
         }}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(220,38,38,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(220,38,38,0.2),transparent_44%),linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015))]" />
         <div className="pointer-events-none absolute inset-x-8 top-8 h-px bg-gradient-to-r from-transparent via-red-300/35 to-transparent" />
         <div className="pointer-events-none absolute inset-x-8 bottom-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -332,29 +267,30 @@ function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 })
           COA
         </div>
 
-        <strong className="relative mt-5 max-w-[175px] text-sm font-black uppercase leading-5 text-white">
+        <strong className="relative mt-5 max-w-[190px] text-sm font-black uppercase leading-5 text-white">
           {title}
         </strong>
 
         <span className="relative mt-4 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
-          Preview preparing
+          Loading preview
         </span>
       </div>
 
       {shouldLoad && previewUrl ? (
-        <div className="coa-pdf-stage absolute inset-0 z-10 overflow-hidden">
+        <div className="coa-pdf-stage absolute z-10 overflow-hidden">
           <iframe
             key={previewUrl}
             src={previewUrl}
             title={`${title} COA preview`}
-            loading={index <= 1 ? "eager" : "lazy"}
+            loading={priority ? "eager" : "lazy"}
             onLoad={() => {
-              markPdfPreviewLoaded(previewUrl);
+              loadedPdfPreviewUrls.add(previewUrl);
               setFrameReady(true);
             }}
-            className="coa-pdf-iframe absolute inset-0 h-full w-full border-0 bg-[#080505] transition-opacity duration-500"
+            className="coa-pdf-iframe absolute inset-0 h-full w-full border-0 bg-[#080505]"
             style={{
               opacity: frameReady ? 1 : 0,
+              transition: "opacity 520ms ease",
               pointerEvents: "none",
             }}
           />
@@ -364,36 +300,166 @@ function PdfPreviewFrame({ previewUrl = "", title = "COA Document", index = 0 })
   );
 }
 
+function CoaCard({ item, index, priority = false, mobile = false }) {
+  const title = item.title || `COA ${index + 1}`;
+  const pdfLink = item.pdfLink;
+  const previewUrl = getPdfPreviewUrl(pdfLink);
+
+  return (
+    <article
+      data-coa-mobile-card={mobile ? "true" : undefined}
+      className="coa-card group relative w-[245px] shrink-0 overflow-hidden rounded-[1.65rem] border border-white/[0.08] bg-black/45 p-3 transition duration-300 hover:-translate-y-1 hover:border-red-400/25 hover:bg-red-950/15 sm:w-[280px] lg:w-[310px]"
+    >
+      <div className="coa-preview-window relative overflow-hidden rounded-[1.25rem] border border-white/[0.07] bg-[#080505]">
+        <PdfPreviewFrame
+          previewUrl={previewUrl}
+          title={title}
+          index={index}
+          priority={priority}
+        />
+
+        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-transparent to-black/10 opacity-80" />
+
+        <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-red-600 px-3 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+          PDF
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-3">
+          <span className="inline-flex rounded-full border border-white/15 bg-black/60 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-md">
+            Open COA
+          </span>
+        </div>
+      </div>
+
+      <div className="px-1 pb-1 pt-4">
+        <h3 className="coa-title-clamp text-sm font-black uppercase tracking-[-0.02em] text-white">
+          {title}
+        </h3>
+
+        <p className="mt-1 text-xs font-bold text-white/35">
+          Certificate available
+        </p>
+      </div>
+
+      <a
+        href={pdfLink}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Open ${title} COA PDF`}
+        className="absolute inset-0 z-30 rounded-[1.65rem]"
+      >
+        <span className="sr-only">Open {title} COA PDF</span>
+      </a>
+    </article>
+  );
+}
+
 export default function NeedHelp() {
+  const mobileScrollRef = useRef(null);
+  const mobileAutoTimerRef = useRef(null);
+  const mobileResumeTimerRef = useRef(null);
+  const mobilePausedRef = useRef(false);
+
   const coaItems = useMemo(() => extractAllPdfItems(coaData), []);
-  const carouselItems = useMemo(() => buildCarouselItems(coaItems), [coaItems]);
-  const baseCount = carouselItems.length ? carouselItems.length / 2 : 0;
-  const animationDuration = `${Math.max(38, baseCount * 5.2)}s`;
+  const desktopCarouselItems = useMemo(
+    () => buildDesktopCarouselItems(coaItems),
+    [coaItems]
+  );
 
-  useEffect(() => {
-    if (!coaItems.length) return;
+  const baseCount = desktopCarouselItems.length
+    ? desktopCarouselItems.length / 2
+    : 0;
 
-    const startAfterPageLoad = () => {
-      runWhenIdle(() => {
-        prefetchPdfUrls(coaItems);
+  const animationDuration = `${Math.max(48, baseCount * 6)}s`;
 
-        window.setTimeout(() => {
-          startGlobalPdfPreviewLoading();
-        }, 900);
-      });
-    };
+  const pauseMobileAuto = () => {
+    mobilePausedRef.current = true;
 
-    if (document.readyState === "complete") {
-      startAfterPageLoad();
-      return;
+    if (mobileResumeTimerRef.current) {
+      window.clearTimeout(mobileResumeTimerRef.current);
+    }
+  };
+
+  const resumeMobileAuto = (delay = 4200) => {
+    if (typeof window === "undefined") return;
+
+    if (mobileResumeTimerRef.current) {
+      window.clearTimeout(mobileResumeTimerRef.current);
     }
 
-    window.addEventListener("load", startAfterPageLoad, { once: true });
+    mobileResumeTimerRef.current = window.setTimeout(() => {
+      mobilePausedRef.current = false;
+    }, delay);
+  };
+
+  const scrollMobileTo = (direction = 1) => {
+    const el = mobileScrollRef.current;
+    if (!el || typeof window === "undefined") return;
+
+    const cards = Array.from(
+      el.querySelectorAll('[data-coa-mobile-card="true"]')
+    );
+
+    if (!cards.length) return;
+
+    const viewportCenter = el.scrollLeft + el.clientWidth / 2;
+
+    let currentIndex = 0;
+    let closestDistance = Infinity;
+
+    cards.forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(cardCenter - viewportCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        currentIndex = index;
+      }
+    });
+
+    const nextIndex =
+      direction > 0
+        ? (currentIndex + 1) % cards.length
+        : (currentIndex - 1 + cards.length) % cards.length;
+
+    const nextCard = cards[nextIndex];
+
+    el.scrollTo({
+      left: nextCard.offsetLeft - (el.clientWidth - nextCard.offsetWidth) / 2,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    if (!coaItems.length || typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+
+    const startAuto = () => {
+      if (mobileAutoTimerRef.current) {
+        window.clearInterval(mobileAutoTimerRef.current);
+      }
+
+      mobileAutoTimerRef.current = window.setInterval(() => {
+        if (!mediaQuery.matches) return;
+        if (mobilePausedRef.current) return;
+
+        scrollMobileTo(1);
+      }, 3600);
+    };
+
+    startAuto();
 
     return () => {
-      window.removeEventListener("load", startAfterPageLoad);
+      if (mobileAutoTimerRef.current) {
+        window.clearInterval(mobileAutoTimerRef.current);
+      }
+
+      if (mobileResumeTimerRef.current) {
+        window.clearTimeout(mobileResumeTimerRef.current);
+      }
     };
-  }, [coaItems]);
+  }, [coaItems.length]);
 
   return (
     <section className="relative overflow-hidden bg-[#030303] py-20 text-white sm:py-24 lg:py-28">
@@ -405,14 +471,14 @@ export default function NeedHelp() {
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1240px] px-6 sm:px-8 lg:px-10">
-        <div className="mx-auto mb-12 max-w-3xl text-center">
+      <div className="relative z-10 mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-10">
+        <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-12">
           <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-300">
             <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.9)]" />
             COA Library
           </div>
 
-          <h2 className="text-4xl font-black leading-[0.92] tracking-[-0.065em] text-white sm:text-5xl lg:text-6xl">
+          <h2 className="text-[2.55rem] font-black leading-[0.92] tracking-[-0.065em] text-white sm:text-5xl lg:text-6xl">
             COAs available.
             <span className="block text-white/35">
               Preview before ordering.
@@ -425,72 +491,84 @@ export default function NeedHelp() {
           </p>
         </div>
 
-        <div className="coa-shell relative overflow-hidden rounded-[2.25rem] border border-white/[0.08] bg-white/[0.035] py-7 shadow-[0_35px_120px_rgba(0,0,0,0.5)]">
+        <div className="coa-shell relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-white/[0.035] py-6 shadow-[0_35px_120px_rgba(0,0,0,0.5)] sm:rounded-[2.25rem] sm:py-7">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(220,38,38,0.16),transparent_38%)]" />
 
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-[#030303] to-transparent sm:w-28" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-[#030303] to-transparent sm:w-28" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 hidden w-28 bg-gradient-to-r from-[#030303] to-transparent md:block" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 hidden w-28 bg-gradient-to-l from-[#030303] to-transparent md:block" />
 
           {coaItems.length > 0 ? (
-            <div className="coa-carousel-viewport relative flex overflow-hidden">
-              <div
-                className="coa-carousel-track flex w-max gap-5 px-5"
-                style={{ "--duration": animationDuration }}
-              >
-                {carouselItems.map((item, index) => {
-                  const title = item.title || `COA ${index + 1}`;
-                  const pdfLink = item.pdfLink;
-                  const previewUrl = getPdfPreviewUrl(pdfLink);
-
-                  return (
-                    <article
-                      key={`${pdfLink}-${index}`}
-                      className="coa-card group relative w-[235px] shrink-0 overflow-hidden rounded-[1.65rem] border border-white/[0.08] bg-black/45 p-3 transition duration-300 hover:-translate-y-1 hover:border-red-400/25 hover:bg-red-950/15 sm:w-[270px] lg:w-[300px]"
-                    >
-                      <div className="coa-preview-window relative overflow-hidden rounded-[1.25rem] border border-white/[0.07] bg-[#080505]">
-                        <PdfPreviewFrame
-                          previewUrl={previewUrl}
-                          title={title}
-                          index={index}
-                        />
-
-                        <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-75" />
-
-                        <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-red-600 px-3 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-                          PDF
-                        </div>
-
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-3">
-                          <span className="inline-flex rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-md">
-                            View COA
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="px-1 pb-1 pt-4">
-                        <h3 className="truncate text-sm font-black uppercase tracking-[-0.02em] text-white">
-                          {title}
-                        </h3>
-
-                        <p className="mt-1 text-xs font-bold text-white/35">
-                          Certificate available
-                        </p>
-                      </div>
-
-                      <a
-                        href={pdfLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Open ${title} COA PDF`}
-                        className="absolute inset-0 z-30 rounded-[1.65rem]"
-                      >
-                        <span className="sr-only">Open {title} COA PDF</span>
-                      </a>
-                    </article>
-                  );
-                })}
+            <>
+              <div className="coa-desktop-viewport relative hidden overflow-hidden md:flex">
+                <div
+                  className="coa-carousel-track flex w-max gap-5 px-5"
+                  style={{ "--duration": animationDuration }}
+                >
+                  {desktopCarouselItems.map((item, index) => (
+                    <CoaCard
+                      key={`desktop-${item.pdfLink}-${index}`}
+                      item={item}
+                      index={index % Math.max(coaItems.length, 1)}
+                      priority={index <= 1}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+
+              <div
+                ref={mobileScrollRef}
+                className="coa-mobile-viewport relative flex overflow-x-auto overflow-y-hidden md:hidden"
+                onPointerDown={pauseMobileAuto}
+                onPointerUp={() => resumeMobileAuto(4200)}
+                onPointerCancel={() => resumeMobileAuto(4200)}
+                onTouchStart={pauseMobileAuto}
+                onTouchEnd={() => resumeMobileAuto(4200)}
+              >
+                <div className="flex w-max gap-4 px-4">
+                  {coaItems.map((item, index) => (
+                    <CoaCard
+                      key={`mobile-${item.pdfLink}-${index}`}
+                      item={item}
+                      index={index}
+                      priority={index <= 1}
+                      mobile
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-center gap-3 px-5 md:hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    pauseMobileAuto();
+                    scrollMobileTo(-1);
+                    resumeMobileAuto(4200);
+                  }}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-white/70 transition active:scale-95"
+                  aria-label="Previous COA"
+                >
+                  ‹
+                </button>
+
+                <span className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/35">
+                  Auto / Swipe
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    pauseMobileAuto();
+                    scrollMobileTo(1);
+                    resumeMobileAuto(4200);
+                  }}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-white/70 transition active:scale-95"
+                  aria-label="Next COA"
+                >
+                  ›
+                </button>
+              </div>
+            </>
           ) : (
             <div className="px-6 py-12 text-center">
               <p className="text-sm font-bold text-white/45">
@@ -525,12 +603,20 @@ export default function NeedHelp() {
       </div>
 
       <style>{`
-        .coa-carousel-viewport {
+        .coa-desktop-viewport,
+        .coa-mobile-viewport {
           overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .coa-desktop-viewport::-webkit-scrollbar,
+        .coa-mobile-viewport::-webkit-scrollbar {
+          display: none;
         }
 
         .coa-carousel-track {
-          animation: coaCarouselMove var(--duration, 46s) linear infinite;
+          animation: coaCarouselMove var(--duration, 54s) linear infinite;
           backface-visibility: hidden;
           transform: translate3d(0, 0, 0);
           will-change: transform;
@@ -555,19 +641,30 @@ export default function NeedHelp() {
         }
 
         .coa-pdf-stage {
-          transform: translate3d(0, 0, 0);
-          transform-origin: top left;
+          left: 50%;
+          top: 50%;
+          width: 106%;
+          height: 106%;
+          transform: translate3d(-50%, -50%, 0);
+          transform-origin: center center;
+          background: #080505;
         }
 
         .coa-pdf-iframe {
           display: block;
           inline-size: 100%;
           block-size: 100%;
-          transform-origin: top left;
+          transform: translate3d(0, 0, 0);
+          transform-origin: center center;
         }
 
-        .coa-pdf-placeholder {
-          transition: opacity 0.45s ease;
+        .coa-title-clamp {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-height: 2.35rem;
+          line-height: 1.15rem;
         }
 
         @keyframes coaCarouselMove {
@@ -587,95 +684,70 @@ export default function NeedHelp() {
         }
 
         @media (max-width: 768px) {
-          .coa-carousel-viewport {
-            overflow-x: auto;
-            overflow-y: hidden;
+          .coa-mobile-viewport {
             scroll-snap-type: x mandatory;
-            scroll-padding-inline: 16px;
+            scroll-padding-inline: 18px;
             touch-action: pan-x;
-            -webkit-overflow-scrolling: touch;
-            cursor: grab;
-            scrollbar-width: none;
-          }
-
-          .coa-carousel-viewport::-webkit-scrollbar {
-            display: none;
-          }
-
-          .coa-carousel-track {
-            animation: coaCarouselMove var(--duration, 46s) linear infinite;
-            animation-duration: 42s;
-            transform: translate3d(0, 0, 0);
-            will-change: transform;
-          }
-
-          .coa-carousel-viewport:active .coa-carousel-track {
-            animation-play-state: paused;
+            scroll-behavior: smooth;
           }
 
           .coa-card {
+            width: min(77vw, 255px);
             scroll-snap-align: center;
             scroll-snap-stop: always;
-          }
-
-          .coa-shell {
-            margin-left: -6px;
-            margin-right: -6px;
-            padding-top: 18px;
-            padding-bottom: 18px;
-            border-radius: 1.75rem;
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
-          }
-
-          .coa-soft-glow {
-            filter: blur(95px) !important;
-          }
-
-          .coa-preview-window {
-            aspect-ratio: 210 / 297;
-          }
-
-          .coa-pdf-stage {
-            inline-size: 136%;
-            block-size: 136%;
-            transform: scale(0.735);
-          }
-        }
-
-        @media (max-width: 480px) {
-          .coa-carousel-track {
-            gap: 14px;
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-
-          .coa-card {
-            width: min(78vw, 245px);
-            padding: 10px;
             border-radius: 1.35rem;
+            padding: 10px;
+          }
+
+          .coa-card:hover {
+            transform: translate3d(0, 0, 0);
           }
 
           .coa-preview-window {
-            aspect-ratio: 210 / 297;
             border-radius: 1rem;
           }
 
           .coa-pdf-stage {
-            inline-size: 148%;
-            block-size: 148%;
-            transform: scale(0.676);
+            width: 112%;
+            height: 112%;
+            transform: translate3d(-50%, -50%, 0) scale(0.94);
+          }
+
+          .coa-shell {
+            margin-left: -4px;
+            margin-right: -4px;
+            padding-top: 18px;
+            padding-bottom: 18px;
+            border-radius: 1.65rem;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+          }
+
+          .coa-soft-glow {
+            filter: blur(90px) !important;
           }
         }
 
-        @media (max-width: 380px) {
+        @media (max-width: 420px) {
           .coa-card {
-            width: min(82vw, 225px);
+            width: min(79vw, 238px);
           }
 
           .coa-pdf-stage {
-            inline-size: 154%;
-            block-size: 154%;
-            transform: scale(0.65);
+            width: 118%;
+            height: 118%;
+            transform: translate3d(-50%, -50%, 0) scale(0.9);
+          }
+        }
+
+        @media (max-width: 360px) {
+          .coa-card {
+            width: min(82vw, 220px);
+          }
+
+          .coa-pdf-stage {
+            width: 124%;
+            height: 124%;
+            transform: translate3d(-50%, -50%, 0) scale(0.86);
           }
         }
 
