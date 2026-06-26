@@ -5,7 +5,7 @@ import { useCart } from "../cart/CartContext";
 const announcementItems = [
   "Premium performance essentials",
   "Fast & secure shopping",
-  "RGV Prime Peps & Performance",
+  "RGVPRIME Peps & Performance",
   "Simple checkout experience",
   "Quality-focused products",
   "Built for performance",
@@ -745,15 +745,28 @@ export default function Navbar({ transparent = false }) {
   useEffect(() => {
     let active = true;
 
-    async function loadAccount() {
+    function setGuestAccount() {
+      if (!active) return;
+
+      setAccountUser(null);
+      setAccountStatus("guest");
+      setAccountMenuOpen(false);
+    }
+
+    async function loadAccount({ silent = false } = {}) {
       try {
-        setAccountStatus("loading");
+        if (!silent) {
+          setAccountStatus("loading");
+        }
 
         const response = await fetch("/api/account/me", {
           method: "GET",
           headers: {
             Accept: "application/json",
+            "Cache-Control": "no-store",
           },
+          credentials: "same-origin",
+          cache: "no-store",
         });
 
         const text = await response.text();
@@ -771,21 +784,50 @@ export default function Navbar({ transparent = false }) {
           setAccountUser(data.user);
           setAccountStatus("authenticated");
         } else {
-          setAccountUser(null);
-          setAccountStatus("guest");
+          setGuestAccount();
         }
       } catch {
-        if (!active) return;
-        setAccountUser(null);
-        setAccountStatus("guest");
+        setGuestAccount();
+      }
+    }
+
+    function handlePortalLogout() {
+      setGuestAccount();
+    }
+
+    function handlePortalLogin() {
+      loadAccount({ silent: true });
+    }
+
+    function handleStorageEvent(event) {
+      if (event.key !== "rgv-account-event") return;
+
+      const value = String(event.newValue || "");
+
+      if (value.startsWith("logout:")) {
+        setGuestAccount();
+        return;
+      }
+
+      if (value.startsWith("login:")) {
+        loadAccount({ silent: true });
       }
     }
 
     loadAccount();
 
+    window.addEventListener("rgv-account-logout", handlePortalLogout);
+    window.addEventListener("rgv-account-login", handlePortalLogin);
+    window.addEventListener("storage", handleStorageEvent);
+    window.addEventListener("focus", handlePortalLogin);
+
     return () => {
       active = false;
       window.clearTimeout(accountMenuTimerRef.current);
+      window.removeEventListener("rgv-account-logout", handlePortalLogout);
+      window.removeEventListener("rgv-account-login", handlePortalLogin);
+      window.removeEventListener("storage", handleStorageEvent);
+      window.removeEventListener("focus", handlePortalLogin);
     };
   }, []);
 
@@ -864,21 +906,47 @@ export default function Navbar({ transparent = false }) {
   }
 
   async function handleAccountLogout() {
+    const fallbackLogoutUrl =
+      "/api/account/logout?next=/account%3Fmode%3Dlogin%26logged_out%3D1";
+
+    let logoutOk = false;
+
+    setAccountStatus("loading");
+
     try {
-      await fetch("/api/account/logout", {
+      const response = await fetch("/api/account/logout", {
         method: "POST",
         headers: {
           Accept: "application/json",
+          "Cache-Control": "no-store",
         },
+        credentials: "same-origin",
+        cache: "no-store",
       });
-    } catch {}
+
+      logoutOk = response.ok;
+    } catch (error) {
+      console.error("Navbar logout failed:", error);
+    }
+
+    if (!logoutOk) {
+      window.location.assign(fallbackLogoutUrl);
+      return;
+    }
 
     setAccountUser(null);
     setAccountStatus("guest");
     setAccountMenuOpen(false);
+    setMenuOpen(false);
+
+    try {
+      window.localStorage.setItem("rgv-account-event", `logout:${Date.now()}`);
+    } catch {}
+
+    window.dispatchEvent(new Event("rgv-account-logout"));
 
     if (window.location.pathname.startsWith("/account")) {
-      window.location.href = "/account";
+      window.history.replaceState({}, "", "/account?mode=login&logged_out=1");
     }
   }
 
@@ -987,12 +1055,12 @@ export default function Navbar({ transparent = false }) {
           <div className="relative z-10 mx-auto flex h-20 max-w-[1440px] items-center justify-between px-4 sm:px-5 md:px-8 lg:px-10">
             <a
               href="/"
-              aria-label="RGV Prime Home"
+              aria-label="RGVPRIME Home"
               className="flex min-w-0 shrink-0 items-center"
             >
               <img
                 src="/logo.webp"
-                alt="RGV Prime"
+                alt="RGVPRIME"
                 className="h-14 w-auto shrink-0 object-contain transition-all duration-500 sm:h-16 md:h-20"
               />
             </a>

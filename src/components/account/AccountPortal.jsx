@@ -1741,36 +1741,61 @@ export default function AccountPortal() {
 
     const cleanUrl = `${window.location.origin}${window.location.pathname}`;
     window.history.replaceState({}, "", cleanUrl);
+
+    try {
+      window.localStorage.setItem("rgv-account-event", `login:${Date.now()}`);
+    } catch {}
+
+    window.dispatchEvent(new Event("rgv-account-login"));
   }
-async function handleLogout() {
-  try {
-    await fetch("/api/account/logout", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-store",
-      },
-      credentials: "same-origin",
-      cache: "no-store",
+
+  async function handleLogout() {
+    const fallbackLogoutUrl =
+      "/api/account/logout?next=/account%3Fmode%3Dlogin%26logged_out%3D1";
+
+    let logoutOk = false;
+
+    try {
+      const response = await fetch("/api/account/logout", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-store",
+        },
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+
+      logoutOk = response.ok;
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+
+    if (!logoutOk) {
+      window.location.assign(fallbackLogoutUrl);
+      return;
+    }
+
+    setUser(null);
+    setOrders([]);
+    setResetParams({
+      key: "",
+      login: "",
     });
-  } catch (error) {
-    console.error("Logout failed:", error);
+    setMode("login");
+
+    try {
+      window.localStorage.setItem("rgv-account-event", `logout:${Date.now()}`);
+    } catch {}
+
+    window.dispatchEvent(new Event("rgv-account-logout"));
+
+    window.history.replaceState(
+      {},
+      "",
+      "/account?mode=login&logged_out=1"
+    );
   }
-
-  setUser(null);
-  setOrders([]);
-  setResetParams({
-    key: "",
-    login: "",
-  });
-  setMode("login");
-
-  window.history.replaceState(
-    {},
-    "",
-    "/account?mode=login&logged_out=1"
-  );
-}
   if (booting) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-44 text-white sm:px-6 sm:pt-48 lg:px-8 lg:pt-52">
