@@ -1728,6 +1728,14 @@ export default function AccountPortal() {
   }
 
 async function handleLogout() {
+  setUser(null);
+  setOrders([]);
+  setResetParams({
+    key: "",
+    login: "",
+  });
+  setMode("login");
+
   try {
     await fetch("/api/account/logout", {
       method: "POST",
@@ -1742,23 +1750,7 @@ async function handleLogout() {
     console.error("Logout failed:", error);
   }
 
-  setUser(null);
-  setOrders([]);
-  setResetParams({
-    key: "",
-    login: "",
-  });
-  setMode("login");
-
-  try {
-    window.localStorage.clear();
-    window.sessionStorage.clear();
-  } catch {}
-
-  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
-  window.history.replaceState({}, "", cleanUrl);
-
-  window.location.href = "/account?mode=login&logged_out=1";
+  window.location.replace("/account?mode=login&logged_out=1");
 }
   if (booting) {
     return (
