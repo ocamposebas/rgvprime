@@ -1728,8 +1728,6 @@ export default function AccountPortal() {
   }
 
 async function handleLogout() {
-  setBooting(true);
-
   try {
     await fetch("/api/account/logout", {
       method: "POST",
@@ -1737,30 +1735,30 @@ async function handleLogout() {
         Accept: "application/json",
         "Cache-Control": "no-store",
       },
-      credentials: "include",
+      credentials: "same-origin",
       cache: "no-store",
     });
   } catch (error) {
     console.error("Logout failed:", error);
-  } finally {
-    setUser(null);
-    setOrders([]);
-    setResetParams({
-      key: "",
-      login: "",
-    });
-    setMode("login");
-
-    try {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    } catch {}
-
-    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
-    window.history.replaceState({}, "", cleanUrl);
-
-    window.location.replace("/account?logged_out=1");
   }
+
+  setUser(null);
+  setOrders([]);
+  setResetParams({
+    key: "",
+    login: "",
+  });
+  setMode("login");
+
+  try {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  } catch {}
+
+  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+  window.history.replaceState({}, "", cleanUrl);
+
+  window.location.href = "/account?mode=login&logged_out=1";
 }
   if (booting) {
     return (
