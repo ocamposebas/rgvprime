@@ -1742,7 +1742,6 @@ export default function AccountPortal() {
     const cleanUrl = `${window.location.origin}${window.location.pathname}`;
     window.history.replaceState({}, "", cleanUrl);
   }
-
 async function handleLogout() {
   try {
     await fetch("/api/account/logout", {
