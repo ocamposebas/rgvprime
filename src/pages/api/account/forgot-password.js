@@ -1,53 +1,70 @@
-import { portalRequest } from "../../../lib/portalApi";
+import { json, portalRequest } from "../../../lib/portalApi";
 
 export const prerender = false;
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+function noStore(response) {
+  response.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, max-age=0"
+  );
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+
+  return response;
 }
 
-export async function POST({ request }) {
-  try {
-    const body = await request.json().catch(() => ({}));
+function getPublicSiteUrl(url) {
+  const fromEnv =
+    import.meta.env.PUBLIC_SITE_URL ||
+    import.meta.env.SITE_URL ||
+    "";
 
-    if (!body.login || !body.key || !body.password) {
-      return json(
+  if (fromEnv) {
+    return String(fromEnv).replace(/\/+$/, "");
+  }
+
+  return `${url.protocol}//${url.host}`;
+}
+
+export async function POST({ request, url }) {
+  let body = {};
+
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  const login = String(body?.login || "").trim();
+
+  if (!login) {
+    return noStore(
+      json(
         {
           success: false,
-          message: "Missing reset information. Request a new reset link.",
+          message: "Enter your account email.",
         },
-        400
-      );
-    }
-
-    const data = await portalRequest("reset-password", {
-      body: {
-        login: body.login,
-        key: body.key,
-        password: body.password,
-      },
-    });
-
-    return json({
-      success: true,
-      message: data?.message || "Password updated successfully.",
-    });
-  } catch (error) {
-    console.error("RESET PASSWORD API ERROR:", error);
-
-    return json(
-      {
-        success: false,
-        message:
-          error?.message ||
-          "This reset link is invalid or expired. Request a new reset link.",
-      },
-      500
+        422
+      )
     );
   }
+
+  try {
+    await portalRequest("forgot-password", {
+      method: "POST",
+      body: {
+        login,
+        site_url: getPublicSiteUrl(url),
+      },
+    });
+  } catch (error) {
+    console.error("FORGOT PASSWORD ERROR:", error);
+  }
+
+  return noStore(
+    json({
+      success: true,
+      message: "If an account exists, a secure reset link has been sent.",
+    })
+  );
 }
