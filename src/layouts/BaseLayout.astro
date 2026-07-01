@@ -1,7 +1,7 @@
 ---
 import "../styles/global.css";
 import Agegate from "../components/agegate/AgeGate"
-
+import GlobalPreloader from "../components/preloader/preloader";
 interface Props {
   title?: string;
   description?: string;
@@ -13,11 +13,6 @@ interface Props {
 const siteName = "RGV Prime";
 const brandName = "RGV Prime Peps & Performance";
 
-/*
-  Cambia esto cuando tengas el dominio real del cliente.
-  Ejemplo:
-  const siteUrl = "https://rgvprime.com";
-*/
 const siteUrl = "https://rgvprime.com";
 
 const {
@@ -112,6 +107,7 @@ const websiteSchema = {
   </head>
 
   <body>
+    <GlobalPreloader client:load/>
     <div class="site-shell">
       <Agegate client:load/>
       <slot />
