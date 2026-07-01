@@ -1,0 +1,419 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const lastUpdated = "June 30, 2026";
+
+const quickLinks = [
+  { label: "Research Use", href: "#research-use" },
+  { label: "Terms", href: "#terms" },
+  { label: "Shipping", href: "#shipping" },
+  { label: "Refunds", href: "#refunds" },
+  { label: "Privacy", href: "#privacy" },
+  { label: "Claims", href: "#claims" },
+];
+
+const legalSections = [
+  {
+    id: "research-use",
+    eyebrow: "Research Use Disclaimer",
+    title: "Research Use Only Notice",
+    intro:
+      "All products offered, displayed, referenced, or sold by RGVPRIMER RESEARCH LLC are provided exclusively for qualified laboratory, analytical, and in-vitro research purposes.",
+    clauses: [
+      {
+        title: "Restricted Purpose",
+        body:
+          "Products are strictly intended for research use only. They are not intended, labeled, promoted, represented, or sold for human consumption, veterinary use, diagnostic use, therapeutic use, cosmetic use, food use, dietary supplement use, clinical use, household use, or any form of personal application.",
+      },
+      {
+        title: "Acknowledgment by Website Use",
+        body:
+          "By accessing this website, browsing any page, creating an account, submitting information, placing an order, or otherwise continuing to use this website, you expressly acknowledge and agree that you understand the research-use-only nature of all products offered by RGVPRIMER RESEARCH LLC.",
+      },
+      {
+        title: "Qualified Handling Required",
+        body:
+          "Customer represents and warrants that any products purchased will be received, stored, handled, documented, used, and disposed of only by qualified individuals or entities familiar with applicable laboratory standards, safety protocols, institutional requirements, and regulatory obligations.",
+      },
+      {
+        title: "No Medical or Scientific Advice",
+        body:
+          "No content on this website, including product names, product descriptions, images, labels, certificates, documentation, marketing copy, email communication, or customer support communication, shall be interpreted as medical advice, dosage guidance, treatment guidance, diagnostic guidance, health advice, or a recommendation for any non-research use.",
+      },
+      {
+        title: "Regulatory Statement",
+        body:
+          "Statements appearing on this website have not been evaluated by the U.S. Food and Drug Administration. Products are not intended to diagnose, treat, cure, mitigate, or prevent any disease, condition, disorder, or health-related issue.",
+      },
+    ],
+  },
+  {
+    id: "terms",
+    eyebrow: "Terms & Conditions",
+    title: "Website Terms and Conditions",
+    intro:
+      "These Terms and Conditions govern access to, use of, and transactions made through the RGVPRIMER RESEARCH LLC website.",
+    clauses: [
+      {
+        title: "Binding Agreement",
+        body:
+          "By accessing, browsing, registering, purchasing, or otherwise using this website, you agree to be legally bound by these Terms and Conditions, all posted policies, disclaimers, notices, and any additional terms presented at checkout or through website functionality.",
+      },
+      {
+        title: "Customer Responsibility",
+        body:
+          "Customer is solely responsible for determining whether the purchase, importation, possession, handling, storage, use, and disposal of any product complies with all applicable federal, state, local, institutional, laboratory, and professional requirements.",
+      },
+      {
+        title: "Order Review and Refusal",
+        body:
+          "RGVPRIMER RESEARCH LLC reserves the right, in its sole discretion, to review, hold, cancel, refuse, limit, or decline any order for any reason, including but not limited to suspected misuse, inaccurate information, payment concerns, compliance concerns, inventory discrepancies, pricing errors, fraud prevention, or indications inconsistent with research-use-only requirements.",
+      },
+      {
+        title: "Website Accuracy",
+        body:
+          "Product descriptions, availability, pricing, specifications, images, documentation, and website content are provided for general informational purposes and may be updated, corrected, restricted, or removed at any time without prior notice.",
+      },
+      {
+        title: "Prohibited Use",
+        body:
+          "Customer shall not use this website, its content, or any product purchased from RGVPRIMER RESEARCH LLC for any unlawful, unsafe, misleading, medical, diagnostic, therapeutic, veterinary, dietary, cosmetic, recreational, personal, or non-research purpose.",
+      },
+      {
+        title: "Limitation of Liability",
+        body:
+          "To the fullest extent permitted by applicable law, RGVPRIMER RESEARCH LLC shall not be liable for any direct, indirect, incidental, consequential, special, punitive, or exemplary damages arising from misuse, mishandling, improper storage, unauthorized use, unlawful use, carrier delays, customer error, or any conduct occurring after products leave the control of RGVPRIMER RESEARCH LLC.",
+      },
+    ],
+  },
+  {
+    id: "shipping",
+    eyebrow: "Shipping Policy",
+    title: "Shipping, Fulfillment and Delivery",
+    intro:
+      "This Shipping Policy applies to all orders placed through the RGVPRIMER RESEARCH LLC website.",
+    clauses: [
+      {
+        title: "Processing",
+        body:
+          "Orders are processed only after payment confirmation and internal review. Processing times may vary based on order volume, verification requirements, product availability, operational limitations, holidays, weather conditions, carrier service interruptions, or other circumstances affecting fulfillment.",
+      },
+      {
+        title: "Carrier Control",
+        body:
+          "Once a shipment is accepted by the carrier, delivery timing, tracking scans, routing, transit conditions, delivery attempts, and final delivery are controlled by the carrier. RGVPRIMER RESEARCH LLC is not responsible for delays, missed scans, routing changes, weather disruptions, carrier handling, delivery exceptions, or carrier-related service failures after acceptance by the carrier.",
+      },
+      {
+        title: "Address Accuracy",
+        body:
+          "Customer is solely responsible for providing a complete, accurate, and deliverable shipping address at checkout. RGVPRIMER RESEARCH LLC is not responsible for failed delivery, returned shipments, delays, lost packages, or additional costs resulting from incorrect, incomplete, undeliverable, or restricted address information provided by the customer.",
+      },
+      {
+        title: "Shipping Charges",
+        body:
+          "Shipping charges are non-refundable once an order has been packed, transferred, tendered to, or accepted by the carrier, except where otherwise required by applicable law or where RGVPRIMER RESEARCH LLC is unable to fulfill the order.",
+      },
+      {
+        title: "Returned or Refused Shipments",
+        body:
+          "If a shipment is returned due to customer error, refusal, failed delivery attempts, incorrect address information, restricted access, or similar delivery-related circumstances, additional shipping charges, handling charges, or review requirements may apply before any reshipment is approved.",
+      },
+      {
+        title: "Tracking Information",
+        body:
+          "Tracking numbers and carrier updates are provided for convenience. Tracking information may not update immediately and may experience delays. Lack of immediate tracking movement does not necessarily indicate that an order has not shipped.",
+      },
+    ],
+  },
+  {
+    id: "refunds",
+    eyebrow: "Refund Policy",
+    title: "Refunds, Returns and Cancellations",
+    intro:
+      "Due to the nature of research-use-only products and the importance of chain-of-custody integrity, all refund, return, cancellation, and replacement requests are subject to strict review.",
+    clauses: [
+      {
+        title: "Final Sale Policy",
+        body:
+          "All sales are considered final once an order has been processed, packed, transferred, tendered to, or shipped. RGVPRIMER RESEARCH LLC does not accept returns or exchanges for buyer’s remorse, change of mind, improper ordering, lack of qualification, customer misunderstanding, failure to read product information, or any non-defective customer-related reason.",
+      },
+      {
+        title: "No Restocking After Shipment",
+        body:
+          "For quality control, safety, documentation, and chain-of-custody reasons, products that have left the control of RGVPRIMER RESEARCH LLC cannot be returned, restocked, resold, or exchanged.",
+      },
+      {
+        title: "Cancellation Requests",
+        body:
+          "Cancellation requests must be submitted as soon as possible after order placement. Submission of a cancellation request does not guarantee cancellation. If an order has already been processed, packed, transferred, or shipped, it may no longer be eligible for cancellation.",
+      },
+      {
+        title: "Shipping Fees",
+        body:
+          "Shipping fees are not refundable once the package has been packed, transferred, tendered to, or accepted by the carrier, except where required by applicable law or where RGVPRIMER RESEARCH LLC is unable to fulfill the order.",
+      },
+      {
+        title: "Approved Remedies",
+        body:
+          "Where a claim is approved after review, RGVPRIMER RESEARCH LLC may, in its sole discretion, provide a replacement, store credit, partial refund, full refund, or other commercially reasonable resolution depending on the facts and documentation available.",
+      },
+      {
+        title: "Denied Claims",
+        body:
+          "RGVPRIMER RESEARCH LLC reserves the right to deny any claim that is incomplete, unsupported, inconsistent with order records, submitted outside the required timeframe, fraudulent, abusive, carrier-related, caused by customer error, or otherwise ineligible under these policies.",
+      },
+    ],
+  },
+  {
+    id: "privacy",
+    eyebrow: "Privacy Policy",
+    title: "Privacy and Data Practices",
+    intro:
+      "RGVPRIMER RESEARCH LLC respects customer privacy and uses collected information only for legitimate business, operational, security, and compliance purposes.",
+    clauses: [
+      {
+        title: "Information Collected",
+        body:
+          "RGVPRIMER RESEARCH LLC may collect information necessary to operate the website, process orders, verify transactions, provide customer support, prevent fraud, maintain account functionality, improve website performance, and comply with applicable obligations.",
+      },
+      {
+        title: "Types of Information",
+        body:
+          "Information collected may include name, email address, phone number, billing information, shipping information, order history, account details, device information, IP address, payment-related transaction data, communications, and website activity.",
+      },
+      {
+        title: "Use of Information",
+        body:
+          "Customer information may be used for order processing, shipping, payment verification, fraud prevention, customer service, account management, analytics, website functionality, security, compliance, administrative communications, and optional marketing communications where permitted.",
+      },
+      {
+        title: "Service Providers",
+        body:
+          "RGVPRIMER RESEARCH LLC may share limited information with trusted service providers necessary to operate the business, including payment processors, shipping carriers, hosting providers, analytics services, email platforms, fraud-prevention tools, customer support systems, and other operational vendors.",
+      },
+      {
+        title: "No Sale of Personal Information",
+        body:
+          "RGVPRIMER RESEARCH LLC does not sell customer personal information. Information is used and shared only as reasonably necessary for business operations, customer service, website functionality, security, compliance, or as otherwise permitted by applicable law.",
+      },
+      {
+        title: "Customer Requests",
+        body:
+          "Customers may contact RGVPRIMER RESEARCH LLC through the official contact page for assistance regarding account information, order information, communication preferences, or privacy-related inquiries.",
+      },
+    ],
+  },
+  {
+    id: "claims",
+    eyebrow: "Claims Procedure",
+    title: "Damaged, Incorrect or Incomplete Orders",
+    intro:
+      "Any issue involving a damaged, incorrect, missing, or incomplete order must be reported promptly and supported by sufficient documentation.",
+    clauses: [
+      {
+        title: "Reporting Window",
+        body:
+          "Claims involving damaged, incorrect, missing, or incomplete items must be submitted within forty-eight (48) hours of carrier-confirmed delivery. Claims submitted after this period may be denied.",
+      },
+      {
+        title: "Required Documentation",
+        body:
+          "Customer must provide the order number, clear photographs of the outer package, shipping label, internal packaging, product label, product condition, and any visible damage or discrepancy. RGVPRIMER RESEARCH LLC may request additional information before reviewing or approving any claim.",
+      },
+      {
+        title: "Carrier Issues",
+        body:
+          "Claims involving carrier delay, delivery scan issues, package theft, misdelivery, weather delay, or delivery exception may require carrier investigation. RGVPRIMER RESEARCH LLC does not guarantee reimbursement, replacement, or credit for carrier-related issues outside its control.",
+      },
+      {
+        title: "Fraud Prevention",
+        body:
+          "RGVPRIMER RESEARCH LLC reserves the right to deny, limit, or investigate claims that appear fraudulent, repetitive, abusive, altered, unsupported, or inconsistent with fulfillment, shipping, payment, or carrier records.",
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Policies | RGVPRIMER RESEARCH LLC"
+  description="Review the official policies for RGVPRIMER RESEARCH LLC, including research-use disclaimer, shipping, refunds, claims, terms, and privacy."
+>
+  <main class="relative min-h-screen overflow-hidden bg-[#030303] text-white">
+    {/* BACKGROUND */}
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(220,38,38,0.16),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(127,29,29,0.12),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_24%)]"></div>
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"></div>
+
+    <section class="relative z-10 mx-auto max-w-[1200px] px-6 pb-24 pt-28 sm:px-8 lg:px-12 lg:pt-32">
+      {/* HERO */}
+      <div class="grid gap-10 lg:grid-cols-[1fr_0.72fr] lg:items-end">
+        <div class="max-w-3xl">
+          <p class="text-xs font-black uppercase tracking-[0.32em] text-red-400">
+            RGVPRIMER RESEARCH LLC
+          </p>
+
+          <h1 class="mt-5 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+            Policies & Legal Information
+          </h1>
+
+          <p class="mt-6 text-sm leading-7 text-white/60 sm:text-base sm:leading-8">
+            Please review these policies carefully before accessing this
+            website, creating an account, submitting information, or placing an
+            order. Continued use of this website constitutes acknowledgment and
+            acceptance of the terms, notices, limitations, and disclaimers set
+            forth below.
+          </p>
+
+          <p class="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-white/35">
+            Last updated: {lastUpdated}
+          </p>
+        </div>
+
+        <aside class="rounded-[2rem] border border-red-500/20 bg-red-500/[0.055] p-6 shadow-[0_24px_90px_rgba(0,0,0,0.35)]">
+          <p class="text-xs font-black uppercase tracking-[0.22em] text-red-300">
+            Formal Notice
+          </p>
+
+          <p class="mt-4 text-sm leading-7 text-white/62">
+            All products are offered exclusively for qualified laboratory and
+            in-vitro research purposes. No product is offered, intended, or
+            permitted for human consumption or any non-research application.
+          </p>
+        </aside>
+      </div>
+
+      {/* NAV */}
+      <nav
+        class="mt-12 flex flex-wrap gap-3 border-y border-white/10 py-5"
+        aria-label="Policy navigation"
+      >
+        {quickLinks.map((item) => (
+          <a
+            href={item.href}
+            class="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white/52 transition hover:border-red-500/45 hover:bg-red-500/[0.08] hover:text-white"
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+
+      {/* LEGAL INTRO */}
+      <section class="mt-12 rounded-[2.25rem] border border-white/10 bg-white/[0.035] p-6 shadow-[0_26px_90px_rgba(0,0,0,0.28)] sm:p-8 lg:p-10">
+        <div class="grid gap-8 lg:grid-cols-[0.4fr_1fr]">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[0.22em] text-red-400">
+              Governing Notice
+            </p>
+
+            <h2 class="mt-3 text-2xl font-black tracking-tight text-white">
+              Acceptance of Policies
+            </h2>
+          </div>
+
+          <div class="space-y-4 text-sm leading-7 text-white/58 sm:text-[15px] sm:leading-8">
+            <p>
+              By continuing to access or use this website, you acknowledge that
+              you have read, understood, and agreed to be bound by these
+              policies. If you do not agree with these policies, you must
+              discontinue use of the website and refrain from placing an order.
+            </p>
+
+            <p>
+              These policies are incorporated into all transactions with
+              RGVPRIMER RESEARCH LLC and apply to all website visitors,
+              customers, account holders, purchasers, recipients, and any person
+              or entity acting on their behalf.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTIONS */}
+      <div class="mt-8 space-y-7">
+        {legalSections.map((section, index) => (
+          <section
+            id={section.id}
+            class="scroll-mt-28 overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#080808]/90 shadow-[0_28px_100px_rgba(0,0,0,0.32)]"
+          >
+            <div class="border-b border-white/10 bg-white/[0.025] p-6 sm:p-8">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p class="text-xs font-black uppercase tracking-[0.22em] text-red-400">
+                    {section.eyebrow}
+                  </p>
+
+                  <h2 class="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    {section.title}
+                  </h2>
+                </div>
+
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.08] text-xs font-black text-red-300">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+
+              <p class="mt-5 max-w-4xl text-sm leading-7 text-white/58 sm:text-[15px] sm:leading-8">
+                {section.intro}
+              </p>
+            </div>
+
+            <div class="divide-y divide-white/10">
+              {section.clauses.map((clause) => (
+                <article class="grid gap-4 p-6 sm:p-8 lg:grid-cols-[0.33fr_1fr]">
+                  <h3 class="text-sm font-black uppercase tracking-[0.14em] text-white/82">
+                    {clause.title}
+                  </h3>
+
+                  <p class="text-sm leading-7 text-white/58 sm:text-[15px] sm:leading-8">
+                    {clause.body}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {/* FINAL NOTICE */}
+      <section class="mt-8 rounded-[2.25rem] border border-red-500/20 bg-red-500/[0.055] p-6 sm:p-8 lg:p-10">
+        <p class="text-xs font-black uppercase tracking-[0.22em] text-red-300">
+          Final Acknowledgment
+        </p>
+
+        <h2 class="mt-3 text-2xl font-black tracking-tight text-white">
+          Continued Use Constitutes Agreement
+        </h2>
+
+        <p class="mt-5 max-w-5xl text-sm leading-7 text-white/62 sm:text-[15px] sm:leading-8">
+          By remaining on this website, accessing product information, creating
+          an account, communicating with RGVPRIMER RESEARCH LLC, or placing an
+          order, you acknowledge and agree that you understand the limitations,
+          restrictions, disclaimers, and responsibilities described in these
+          policies.
+        </p>
+
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a
+            href="/contact"
+            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-red-500"
+          >
+            Contact Us
+          </a>
+
+          <a
+            href="/track-order"
+            class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:border-red-500/35 hover:bg-white/[0.08]"
+          >
+            Track Order
+          </a>
+        </div>
+      </section>
+
+      <p class="mt-8 text-center text-[11px] leading-6 text-white/28">
+        This page is provided for business policy and website disclosure
+        purposes. It does not constitute legal advice. RGVPRIMER RESEARCH LLC
+        may update these policies at any time.
+      </p>
+    </section>
+  </main>
+</BaseLayout>

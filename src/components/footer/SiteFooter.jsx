@@ -4,23 +4,24 @@ const footerLinks = [
     links: [
       { label: "Products", href: "/shop" },
       { label: "COA", href: "/coa" },
+      { label: "Track Order", href: "/track-order" },
       { label: "Contact", href: "/contact" },
     ],
   },
   {
     title: "Support",
     links: [
-      { label: "Shipping Policy", href: "/shipping-policy" },
-      { label: "Refund Policy", href: "/refund-policy" },
+      { label: "Shipping Policy", href: "/policies#shipping" },
+      { label: "Refund Policy", href: "/policies#refunds" },
       { label: "FAQ", href: "/faq" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Terms & Conditions", href: "/terms" },
-      { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Research Use Disclaimer", href: "/research-use-disclaimer" },
+      { label: "Terms & Conditions", href: "/policies#terms" },
+      { label: "Privacy Policy", href: "/policies#privacy" },
+      { label: "Research Use Disclaimer", href: "/policies#research-use" },
     ],
   },
 ];
@@ -38,17 +39,18 @@ export default function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-14">
           {/* BRAND */}
           <div>
-            <a href="/" aria-label="RGV Prime Home" className="inline-flex">
+            <a href="/" aria-label="RGVPRIMER Research Home" className="inline-flex">
               <img
                 src="/logo.webp"
-                alt="RGV Prime"
+                alt="RGVPRIMER Research LLC"
                 className="h-20 w-auto object-contain sm:h-24"
               />
             </a>
 
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/55">
-              RGV Prime Peps & Performance provides research-use-only products
-              intended strictly for laboratory and in-vitro research purposes.
+              RGVPRIMER RESEARCH LLC provides research-use-only products
+              intended strictly for qualified laboratory and in-vitro research
+              purposes.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -57,6 +59,13 @@ export default function SiteFooter() {
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-red-500"
               >
                 Shop Products
+              </a>
+
+              <a
+                href="/track-order"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-500/25 bg-red-500/[0.07] px-5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:border-red-500/45 hover:bg-red-500/[0.12]"
+              >
+                Track Order
               </a>
 
               <a
@@ -117,7 +126,7 @@ export default function SiteFooter() {
         {/* BOTTOM */}
         <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <p className="text-xs text-white/35">
-            © {currentYear} RGVPRIME RESEARCH LLC & Performance. All rights reserved.
+            © {currentYear} RGVPRIMER RESEARCH LLC. All rights reserved.
           </p>
 
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/30">
