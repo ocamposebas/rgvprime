@@ -20,7 +20,6 @@ export default function HomePage() {
       <NeedHelp />
       <HowToOrder />
       <Faq/>
-      <SiteFooter />
       <CartDrawer checkoutPath="/checkout" />
     </CartProvider>
   );
