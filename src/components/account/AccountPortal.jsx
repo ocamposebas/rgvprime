@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -1682,6 +1683,7 @@ export default function AccountPortal() {
     const loggedOut = params.get("logged_out") === "1";
 
     if (loggedOut) {
+      resetMeCache();
       setUser(null);
       setOrders([]);
       setResetParams({
@@ -1702,27 +1704,10 @@ export default function AccountPortal() {
 
     async function loadMe() {
       try {
-        const response = await fetch("/api/account/me", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Cache-Control": "no-store",
-          },
-          credentials: "same-origin",
-          cache: "no-store",
-        });
+        const result = await getMeOnce();
+        const data = result?.data || {};
 
-        const text = await response.text();
-
-        let data = null;
-
-        try {
-          data = text ? JSON.parse(text) : {};
-        } catch {
-          data = {};
-        }
-
-        if (response.ok && data.success && data.user) {
+        if (result?.ok && data.success && data.user) {
           setUser(data.user);
           setOrders(Array.isArray(data.orders) ? data.orders : []);
         }
@@ -1736,6 +1721,7 @@ export default function AccountPortal() {
   }, []);
 
   function handleAuthSuccess(data) {
+    resetMeCache();
     setUser(data.user);
     setOrders(Array.isArray(data.orders) ? data.orders : []);
 
@@ -1776,6 +1762,7 @@ export default function AccountPortal() {
       return;
     }
 
+    resetMeCache();
     setUser(null);
     setOrders([]);
     setResetParams({

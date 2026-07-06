@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useCart } from "../cart/CartContext";
+import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
 const announcementItems = [
   "Research performance essentials",
   "Fast & secure shopping",
-  "RGVPRIMER Peps & Performance",
+  "RGVPRIME Peps & Performance",
   "Simple checkout experience",
   "Quality-focused products",
   "Built for performance",
@@ -820,6 +821,8 @@ export default function Navbar({ transparent = false }) {
 
   useEffect(() => {
     let active = true;
+    let idleId = null;
+    let focusTimer = null;
 
     function setGuestAccount() {
       if (!active) return;
@@ -829,34 +832,18 @@ export default function Navbar({ transparent = false }) {
       setAccountMenuOpen(false);
     }
 
-    async function loadAccount({ silent = false } = {}) {
+    async function loadAccount({ silent = false, force = false } = {}) {
       try {
         if (!silent) {
           setAccountStatus("loading");
         }
 
-        const response = await fetch("/api/account/me", {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Cache-Control": "no-store",
-          },
-          credentials: "same-origin",
-          cache: "no-store",
-        });
-
-        const text = await response.text();
-        let data = {};
-
-        try {
-          data = text ? JSON.parse(text) : {};
-        } catch {
-          data = {};
-        }
+        const result = await getMeOnce({ force });
+        const data = result?.data || {};
 
         if (!active) return;
 
-        if (response.ok && data.success && data.user) {
+        if (result?.ok && data.success && data.user) {
           setAccountUser(data.user);
           setAccountStatus("authenticated");
         } else {
@@ -867,12 +854,31 @@ export default function Navbar({ transparent = false }) {
       }
     }
 
+    function scheduleInitialLoad() {
+      const run = () => {
+        loadAccount();
+      };
+
+      if ("requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(run, {
+          timeout: 1400,
+        });
+      } else {
+        idleId = window.setTimeout(run, 800);
+      }
+    }
+
     function handlePortalLogout() {
+      resetMeCache();
       setGuestAccount();
     }
 
     function handlePortalLogin() {
-      loadAccount({ silent: true });
+      resetMeCache();
+      loadAccount({
+        silent: true,
+        force: true,
+      });
     }
 
     function handleStorageEvent(event) {
@@ -881,29 +887,48 @@ export default function Navbar({ transparent = false }) {
       const value = String(event.newValue || "");
 
       if (value.startsWith("logout:")) {
-        setGuestAccount();
+        handlePortalLogout();
         return;
       }
 
       if (value.startsWith("login:")) {
-        loadAccount({ silent: true });
+        handlePortalLogin();
       }
     }
 
-    loadAccount();
+    function handleWindowFocus() {
+      window.clearTimeout(focusTimer);
+
+      focusTimer = window.setTimeout(() => {
+        loadAccount({
+          silent: true,
+        });
+      }, 600);
+    }
+
+    scheduleInitialLoad();
 
     window.addEventListener("rgv-account-logout", handlePortalLogout);
     window.addEventListener("rgv-account-login", handlePortalLogin);
     window.addEventListener("storage", handleStorageEvent);
-    window.addEventListener("focus", handlePortalLogin);
+    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       active = false;
+
       window.clearTimeout(accountMenuTimerRef.current);
+      window.clearTimeout(focusTimer);
+
+      if ("cancelIdleCallback" in window && typeof idleId === "number") {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId);
+      }
+
       window.removeEventListener("rgv-account-logout", handlePortalLogout);
       window.removeEventListener("rgv-account-login", handlePortalLogin);
       window.removeEventListener("storage", handleStorageEvent);
-      window.removeEventListener("focus", handlePortalLogin);
+      window.removeEventListener("focus", handleWindowFocus);
     };
   }, []);
 
@@ -1013,6 +1038,7 @@ export default function Navbar({ transparent = false }) {
       return;
     }
 
+    resetMeCache();
     setAccountUser(null);
     setAccountStatus("guest");
     setAccountMenuOpen(false);
@@ -1134,12 +1160,12 @@ export default function Navbar({ transparent = false }) {
           <div className="relative z-10 mx-auto flex h-20 max-w-[1440px] items-center justify-between px-4 sm:px-5 md:px-8 lg:px-10">
             <a
               href="/"
-              aria-label="RGVPRIMER Home"
+              aria-label="RGVPRIME Home"
               className="flex min-w-0 shrink-0 items-center"
             >
               <img
                 src="/logo.webp"
-                alt="RGVPRIMER"
+                alt="RGVPRIME"
                 className="h-14 w-auto shrink-0 object-contain transition-all duration-500 sm:h-16 md:h-20"
               />
             </a>
