@@ -1,7 +1,9 @@
 ---
 import "../styles/global.css";
-import Agegate from "../components/agegate/AgeGate"
+
+import Agegate from "../components/agegate/AgeGate";
 import GlobalPreloader from "../components/preloader/preloader";
+
 interface Props {
   title?: string;
   description?: string;
@@ -10,14 +12,13 @@ interface Props {
   canonical?: string;
 }
 
-const siteName = "RGV Prime";
-const brandName = "RGV Prime Peps & Performance";
-
-const siteUrl = "https://rgvprime.com";
+const siteName = "RGVPRIME RESEARCH LLC";
+const brandName = "RGVPRIME RESEARCH LLC";
+const siteUrl = "https://rgvprimellc.com";
 
 const {
-  title = "RGV Prime | Peps & Performance",
-  description = "RGV Prime Peps & Performance offers premium performance-focused products with a bold, clean, and modern customer experience.",
+  title = "RGVPRIME RESEARCH LLC | Research Products",
+  description = "RGVPRIME RESEARCH LLC provides research-use products through a clean, secure, and modern customer experience.",
   image = "/og-image.jpg",
   noindex = false,
   canonical,
@@ -34,7 +35,7 @@ const organizationSchema = {
   "@type": "Organization",
   name: brandName,
   url: siteUrl,
-  logo: new URL("/logo.png", siteUrl).toString(),
+  logo: new URL("/logo.webp", siteUrl).toString(),
   sameAs: [],
 };
 
@@ -43,11 +44,6 @@ const websiteSchema = {
   "@type": "WebSite",
   name: brandName,
   url: siteUrl,
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${siteUrl}/search?q={search_term_string}`,
-    "query-input": "required name=search_term_string",
-  },
 };
 ---
 
@@ -97,19 +93,32 @@ const websiteSchema = {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
 
-    <!-- PRECONNECTS -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- OPTIONAL LOGO PRELOAD -->
+    <link
+      rel="preload"
+      as="image"
+      href="/logo-small.webp"
+      imagesrcset="/logo-small.webp 336w, /logo-small@2x.webp 672w"
+      imagesizes="336px"
+    />
 
     <!-- JSON-LD SEO -->
-    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
-    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(organizationSchema)}
+    />
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(websiteSchema)}
+    />
   </head>
 
   <body>
-    <GlobalPreloader client:load/>
+    <GlobalPreloader client:load />
+
     <div class="site-shell">
-      <Agegate client:load/>
+      <Agegate client:load />
       <slot />
     </div>
   </body>
