@@ -4,12 +4,10 @@ import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
 const announcementItems = [
-  "Research performance essentials",
-  "Fast & secure shopping",
   "RGVPRIME Peps & Performance",
-  "Simple checkout experience",
-  "Quality-focused products",
-  "Built for performance",
+  "Fast & Secure Shopping",
+  "Research Use Only",
+  "Quality-Focused Products",
 ];
 
 const navLinks = [
@@ -552,37 +550,124 @@ function AccountDropdown({
   );
 }
 
-function AnnouncementItem({ text, showDot = true }) {
+function AnnouncementItem({ text }) {
   return (
-    <div className="flex h-8 shrink-0 items-center px-5 text-[9px] font-bold uppercase tracking-[0.16em] text-white/80 sm:h-9 sm:px-8 sm:text-[11px] md:text-xs">
+    <div className="rgv-announcement-item">
       <span>{text}</span>
-      {showDot && <span className="ml-5 text-red-500 sm:ml-8">●</span>}
+      <span className="rgv-announcement-dot" aria-hidden="true" />
+    </div>
+  );
+}
+
+function AnnouncementGroup({ ariaHidden = false }) {
+  return (
+    <div
+      className="rgv-announcement-group"
+      aria-hidden={ariaHidden ? "true" : undefined}
+    >
+      {[...announcementItems, ...announcementItems].map((text, index) => (
+        <AnnouncementItem key={`${text}-${index}`} text={text} />
+      ))}
     </div>
   );
 }
 
 function AnnouncementTrack() {
   return (
-    <motion.div
-      className="flex h-full w-max items-center whitespace-nowrap"
-      initial={{ x: "100vw" }}
-      animate={{ x: "-100%" }}
-      transition={{
-        duration: 42,
-        ease: "linear",
-        repeat: Infinity,
-        repeatType: "loop",
-        repeatDelay: 0.8,
-      }}
-    >
-      {announcementItems.map((text, index) => (
-        <AnnouncementItem
-          key={text}
-          text={text}
-          showDot={index < announcementItems.length - 1}
-        />
-      ))}
-    </motion.div>
+    <div className="rgv-announcement-wrap">
+      <div className="rgv-announcement-track">
+        <AnnouncementGroup />
+        <AnnouncementGroup ariaHidden />
+      </div>
+
+      <style>{`
+        @keyframes rgvAnnouncementScroll {
+          from {
+            transform: translate3d(0, 0, 0);
+          }
+
+          to {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+
+        .rgv-announcement-wrap {
+          position: relative;
+          height: 100%;
+          width: 100%;
+          overflow: hidden;
+          mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+          -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+        }
+
+        .rgv-announcement-track {
+          display: flex;
+          align-items: center;
+          height: 100%;
+          width: max-content;
+          white-space: nowrap;
+          will-change: transform;
+          animation: rgvAnnouncementScroll 68s linear infinite;
+        }
+
+        .rgv-announcement-group {
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+          height: 100%;
+          white-space: nowrap;
+        }
+
+        .rgv-announcement-item {
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+          gap: 34px;
+          padding: 0 34px;
+          font-size: 11px;
+          font-weight: 900;
+          line-height: 1;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.82);
+        }
+
+        .rgv-announcement-dot {
+          display: block;
+          height: 6px;
+          width: 6px;
+          flex: 0 0 auto;
+          border-radius: 999px;
+          background: rgb(239, 68, 68);
+          box-shadow: 0 0 16px rgba(239, 68, 68, 0.85);
+        }
+
+        @media (max-width: 640px) {
+          .rgv-announcement-track {
+            animation-duration: 54s;
+          }
+
+          .rgv-announcement-item {
+            gap: 22px;
+            padding: 0 22px;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+          }
+
+          .rgv-announcement-dot {
+            height: 5px;
+            width: 5px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .rgv-announcement-track {
+            animation: none;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+      `}</style>
+    </div>
   );
 }
 
