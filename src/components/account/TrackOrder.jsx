@@ -527,7 +527,7 @@ export default function TrackOrder() {
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-300/12 bg-red-500/[0.07] px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-100">
               <span className="h-1.5 w-1.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.8)]" />
-              RGVPRIMER ORDER TRACKING
+              RGVPRIME ORDER TRACKING
             </div>
 
             <h1 className="max-w-4xl text-5xl font-black leading-[0.92] tracking-[-0.085em] text-white sm:text-6xl lg:text-7xl">

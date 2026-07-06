@@ -89,7 +89,7 @@ export default function Hero() {
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.9)]" />
 
             <p className="max-w-[82vw] truncate text-[8px] font-black uppercase leading-5 tracking-[0.18em] text-red-300 sm:text-[10px] sm:tracking-[0.28em] md:text-[11px]">
-              RGV Prime Peps & Performance
+              RGVPRIME Performance Research
             </p>
           </motion.div>
 

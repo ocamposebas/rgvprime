@@ -45,7 +45,7 @@ export default function ContactExperience() {
               <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
-                    Contact RGVPRIMER
+                    Contact RGVPRIME
                   </p>
 
                   <h1 className="text-4xl font-black uppercase leading-[0.88] tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
@@ -105,7 +105,7 @@ export default function ContactExperience() {
                 </p>
 
                 <p className="mt-3 max-w-4xl text-xs leading-6 text-white/45 sm:text-sm sm:leading-7">
-                  Products displayed by RGVPRIMER RESEARCH LLC are intended
+                  Products displayed by RGVPRIME RESEARCH LLC are intended
                   strictly for laboratory and in-vitro research purposes only.
                   They are not for human consumption, veterinary use, diagnostic
                   use, therapeutic use, cosmetic use, food use, dietary

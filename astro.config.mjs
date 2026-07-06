@@ -9,6 +9,9 @@ export default defineConfig({
     mode: "standalone",
   }),
   integrations: [react()],
+  build: {
+    inlineStylesheets: "always",
+  },
   vite: {
     plugins: [tailwindcss()],
   },

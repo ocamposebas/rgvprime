@@ -1090,7 +1090,7 @@ export default function ProductCatalog() {
         <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
-              Shop RGVPRIMER
+              Shop RGVPRIME
             </p>
 
             <h1 className="text-4xl font-black uppercase leading-[0.88] tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">

@@ -31,24 +31,21 @@ export default function SiteFooter() {
 
   return (
     <footer className="relative overflow-hidden bg-[#030303] text-white">
-      {/* BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(220,38,38,0.12),transparent_30%),radial-gradient(circle_at_85%_20%,rgba(127,29,29,0.1),transparent_34%)]" />
 
       <div className="relative z-10 mx-auto max-w-[1320px] px-6 py-14 sm:px-8 lg:px-12 lg:py-16">
-        {/* TOP */}
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-14">
-          {/* BRAND */}
           <div>
-            <a href="/" aria-label="RGVPRIMER Research Home" className="inline-flex">
+            <a href="/" aria-label="RGVPRIME Research Home" className="inline-flex">
               <img
                 src="/logo.webp"
-                alt="RGVPRIMER Research LLC"
+                alt="RGVPRIME Research LLC"
                 className="h-20 w-auto object-contain sm:h-24"
               />
             </a>
 
             <p className="mt-5 max-w-xl text-sm leading-7 text-white/55">
-              RGVPRIMER RESEARCH LLC provides research-use-only products
+              RGVPRIME RESEARCH LLC provides research-use-only products
               intended strictly for qualified laboratory and in-vitro research
               purposes.
             </p>
@@ -77,7 +74,6 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          {/* LINKS */}
           <div className="grid gap-8 sm:grid-cols-3">
             {footerLinks.map((group) => (
               <div key={group.title}>
@@ -102,7 +98,6 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        {/* DISCLAIMER */}
         <div className="mt-12 rounded-3xl border border-red-500/20 bg-red-500/[0.055] p-5 sm:p-6">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
             For laboratory and research use only.
@@ -123,10 +118,9 @@ export default function SiteFooter() {
           </p>
         </div>
 
-        {/* BOTTOM */}
         <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <p className="text-xs text-white/35">
-            © {currentYear} RGVPRIMER RESEARCH LLC. All rights reserved.
+            © {currentYear} RGVPRIME RESEARCH LLC. All rights reserved.
           </p>
 
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/30">

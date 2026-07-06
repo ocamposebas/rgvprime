@@ -8,10 +8,21 @@ import {
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 
+const OLD_FOREIGN_CART_KEYS = [
+  "lab_cart",
+  "phaseone_cart",
+  "phaseone_pending_checkout",
+  "phaseone_checkout_shipping",
+  "phaseone_checkout_email",
+];
+
 const fallbackCart = {
   items: [],
+  cartItems: [],
   itemCount: 0,
   subtotal: 0,
+  cartTotal: 0,
+  paidSubtotal: 0,
   isCartOpen: false,
   openCart: () => {},
   closeCart: () => {},
@@ -29,15 +40,71 @@ function toNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function getProductImage(product = {}) {
+  return (
+    product.image ||
+    product.image_url ||
+    product.imageUrl ||
+    product.thumbnail ||
+    product.images?.[0]?.src ||
+    product.images?.[0]?.url ||
+    product.product?.image ||
+    product.product?.images?.[0]?.src ||
+    "/logo.webp"
+  );
+}
+
+function resolveProductId(product = {}) {
+  return (
+    product.product_id ||
+    product.productId ||
+    product.wc_product_id ||
+    product.woo_product_id ||
+    product.databaseId ||
+    product.id ||
+    0
+  );
+}
+
+function resolveVariationId(product = {}) {
+  return (
+    product.variation_id ||
+    product.variationId ||
+    product.selectedVariationId ||
+    product.variant_id ||
+    product.variantId ||
+    product.selectedVariant?.id ||
+    product.variation?.id ||
+    0
+  );
+}
+
 function normalizeProduct(product, quantity = 1) {
+  const productId = Number(resolveProductId(product) || 0);
+  const variationId = Number(resolveVariationId(product) || 0);
+  const cartId = variationId ? `${productId}:${variationId}` : String(productId);
+  const name = product.name || product.title || product.product_name || "Product";
+  const image = getProductImage(product);
+  const price = toNumber(product.price || product.sale_price || product.regular_price || 0);
+
   return {
-    id: String(product.id),
-    name: product.name || "Product",
+    id: String(cartId),
+    product_id: productId,
+    productId,
+    wc_product_id: productId,
+    variation_id: variationId,
+    variationId,
+    name,
+    title: name,
     slug: product.slug || "",
     type: product.type || "simple",
-    price: toNumber(product.price || product.regular_price || 0),
-    image: product.image || "/logo.webp",
-    permalink: product.permalink || `/product/${product.slug}`,
+    price,
+    regular_price: toNumber(product.regular_price || product.price || 0),
+    sale_price: toNumber(product.sale_price || product.price || 0),
+    image,
+    image_url: image,
+    permalink: product.permalink || `/product/${product.slug || ""}`,
+    sku: product.sku || "",
     stock_status: product.stock_status || "instock",
     stock_quantity:
       product.stock_quantity !== null &&
@@ -45,7 +112,22 @@ function normalizeProduct(product, quantity = 1) {
       product.stock_quantity !== ""
         ? Number(product.stock_quantity)
         : null,
-    quantity,
+    quantity: Number(quantity || product.quantity || 1),
+    selectedOption: product.selectedOption || product.selected_option || "",
+    selectedAttributes:
+      product.selectedAttributes ||
+      product.selectedOptions ||
+      product.variation ||
+      product.variation_attributes ||
+      {},
+    variation:
+      product.variation ||
+      product.variation_attributes ||
+      product.selectedAttributes ||
+      product.selectedOptions ||
+      {},
+    cartKey: cartId,
+    cart_key: cartId,
   };
 }
 
@@ -62,6 +144,14 @@ function getMaxQuantity(item) {
   return 99;
 }
 
+function cleanOldCartStorage() {
+  if (typeof window === "undefined") return;
+
+  OLD_FOREIGN_CART_KEYS.forEach((key) => {
+    window.localStorage.removeItem(key);
+  });
+}
+
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -69,17 +159,25 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     try {
+      cleanOldCartStorage();
+
       const savedCart = window.localStorage.getItem(CART_STORAGE_KEY);
 
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
 
         if (Array.isArray(parsed)) {
-          setItems(parsed);
+          const normalizedItems = parsed
+            .map((item) => normalizeProduct(item, Number(item.quantity || 1)))
+            .filter((item) => item.product_id > 0 && item.quantity > 0);
+
+          setItems(normalizedItems);
         }
       }
     } catch (error) {
       console.error("Cart storage error:", error);
+      setItems([]);
+      window.localStorage.removeItem(CART_STORAGE_KEY);
     } finally {
       setHasHydrated(true);
     }
@@ -110,6 +208,11 @@ export function CartProvider({ children }) {
   function addItem(product, quantity = 1) {
     const newItem = normalizeProduct(product, quantity);
 
+    if (!newItem.product_id) {
+      console.error("Invalid product added to cart:", product);
+      return;
+    }
+
     if (newItem.stock_status !== "instock") {
       openCart();
       return;
@@ -123,14 +226,14 @@ export function CartProvider({ children }) {
           ...currentItems,
           {
             ...newItem,
-            quantity: Math.min(quantity, getMaxQuantity(newItem)),
+            quantity: Math.min(Number(quantity || 1), getMaxQuantity(newItem)),
           },
         ];
       }
 
       const maxQuantity = getMaxQuantity(existingItem);
       const nextQuantity = Math.min(
-        existingItem.quantity + quantity,
+        Number(existingItem.quantity || 1) + Number(quantity || 1),
         maxQuantity
       );
 
@@ -149,7 +252,15 @@ export function CartProvider({ children }) {
 
   function removeItem(productId) {
     setItems((currentItems) =>
-      currentItems.filter((item) => item.id !== String(productId))
+      currentItems.filter((item) => {
+        const cleanId = String(productId);
+
+        return (
+          item.id !== cleanId &&
+          String(item.product_id) !== cleanId &&
+          String(item.variation_id) !== cleanId
+        );
+      })
     );
   }
 
@@ -163,7 +274,13 @@ export function CartProvider({ children }) {
 
     setItems((currentItems) =>
       currentItems.map((item) => {
-        if (item.id !== String(productId)) return item;
+        const cleanId = String(productId);
+        const matches =
+          item.id === cleanId ||
+          String(item.product_id) === cleanId ||
+          String(item.variation_id) === cleanId;
+
+        if (!matches) return item;
 
         return {
           ...item,
@@ -175,23 +292,30 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setItems([]);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(CART_STORAGE_KEY);
+      cleanOldCartStorage();
+    }
   }
 
   const itemCount = useMemo(() => {
-    return items.reduce((total, item) => total + item.quantity, 0);
+    return items.reduce((total, item) => total + Number(item.quantity || 0), 0);
   }, [items]);
 
   const subtotal = useMemo(() => {
-    return items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+    return items.reduce((total, item) => {
+      return total + Number(item.price || 0) * Number(item.quantity || 1);
+    }, 0);
   }, [items]);
 
   const value = {
     items,
+    cartItems: items,
     itemCount,
     subtotal,
+    cartTotal: subtotal,
+    paidSubtotal: subtotal,
     isCartOpen,
     openCart,
     closeCart,
@@ -207,4 +331,4 @@ export function CartProvider({ children }) {
 
 export function useCart() {
   return useContext(CartContext);
-}   
+}

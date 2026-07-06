@@ -9,9 +9,9 @@ import SiteFooter from "../footer/SiteFooter";
 const faqs = [
   {
     tag: "General",
-    question: "What makes RGVPRIMER different?",
+    question: "What makes RGVPRIME different?",
     answer:
-      "RGVPRIMER keeps the experience clean, organized, and professional, with clear product details, documentation access, and a simple ordering flow.",
+      "RGVPRIME keeps the experience clean, organized, and professional, with clear product details, documentation access, and a simple ordering flow.",
   },
   {
     tag: "COA",
@@ -35,7 +35,7 @@ const faqs = [
     tag: "Research Use",
     question: "Are the products for research use only?",
     answer:
-      "Yes. Products displayed by RGVPRIMER RESEARCH LLC are intended strictly for laboratory and in-vitro research purposes only. They are not for human consumption, veterinary use, diagnostic use, therapeutic use, cosmetic use, food use, dietary supplement use, or clinical application.",
+      "Yes. Products displayed by RGVPRIME RESEARCH LLC are intended strictly for laboratory and in-vitro research purposes only. They are not for human consumption, veterinary use, diagnostic use, therapeutic use, cosmetic use, food use, dietary supplement use, or clinical application.",
   },
   {
     tag: "Tracking",
@@ -61,7 +61,7 @@ export default function FAQExperience() {
               {/* HEADER */}
               <div className="border-b border-white/10 pb-7 text-center">
                 <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
-                  RGVPRIMER FAQ
+                  RGVPRIME FAQ
                 </p>
 
                 <h1 className="mx-auto max-w-[760px] text-4xl font-black uppercase leading-[0.9] tracking-[-0.055em] text-white sm:text-5xl lg:text-6xl">

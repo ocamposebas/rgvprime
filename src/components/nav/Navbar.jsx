@@ -3,9 +3,9 @@ import { motion } from "motion/react";
 import { useCart } from "../cart/CartContext";
 
 const announcementItems = [
-  "Premium performance essentials",
+  "Research performance essentials",
   "Fast & secure shopping",
-  "RGVPRIME Peps & Performance",
+  "RGVPRIMER Peps & Performance",
   "Simple checkout experience",
   "Quality-focused products",
   "Built for performance",
@@ -60,8 +60,29 @@ function getProductUrl(product) {
   return `/product/${product?.id || ""}`;
 }
 
+function getImageUrl(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+
+  return (
+    value.src ||
+    value.url ||
+    value.source_url ||
+    value.thumbnail ||
+    value.medium ||
+    value.large ||
+    value?.image?.src ||
+    null
+  );
+}
+
 function getProductImage(product) {
-  return product.image || product.images?.[0]?.src || FALLBACK_IMAGE;
+  return (
+    getImageUrl(product?.image) ||
+    getImageUrl(product?.images?.[0]) ||
+    getImageUrl(product?.images?.[0]?.src) ||
+    FALLBACK_IMAGE
+  );
 }
 
 function getCategory(product) {
@@ -310,6 +331,39 @@ function ArrowIcon() {
   );
 }
 
+function SearchResultImage({ src, alt, priority = false }) {
+  const [loaded, setLoaded] = useState(false);
+  const [imageSrc, setImageSrc] = useState(src || FALLBACK_IMAGE);
+
+  useEffect(() => {
+    setLoaded(false);
+    setImageSrc(src || FALLBACK_IMAGE);
+  }, [src]);
+
+  return (
+    <div className="relative flex h-[66px] w-[66px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#101010] p-2 sm:h-[76px] sm:w-[76px]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_62%)]" />
+
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-white/[0.045]" />}
+
+      <img
+        src={imageSrc}
+        alt={alt || ""}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={priority ? "high" : "auto"}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setImageSrc(FALLBACK_IMAGE);
+          setLoaded(true);
+        }}
+        className={`relative h-full w-full object-contain transition duration-500 group-hover:scale-105 ${
+          loaded ? "opacity-100 blur-0" : "opacity-0 blur-sm"
+        }`}
+      />
+    </div>
+  );
+}
 
 function LogoutIcon() {
   return (
@@ -563,6 +617,24 @@ function SearchModal({
     return scored;
   }, [products, query]);
 
+  useEffect(() => {
+    if (!open || status !== "success" || !results.length) return;
+
+    const warmImages = results.slice(0, 6).map((product) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = getProductImage(product);
+      return image;
+    });
+
+    return () => {
+      warmImages.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+      });
+    };
+  }, [open, status, results]);
+
   if (!open) return null;
 
   return (
@@ -618,14 +690,21 @@ function SearchModal({
             />
           </label>
 
-          <div className="mt-3 max-h-[min(62vh,520px)] overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.2)_transparent]">
+          <div className="mt-3 max-h-[min(62vh,520px)] overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(239,68,68,0.55)_transparent]">
             {status === "loading" && (
               <div className="grid gap-2">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div
                     key={index}
-                    className="h-20 animate-pulse rounded-2xl border border-white/10 bg-white/[0.035]"
-                  />
+                    className="grid grid-cols-[66px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-2.5"
+                  >
+                    <div className="h-[66px] w-[66px] animate-pulse rounded-xl bg-white/[0.055]" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 animate-pulse rounded-full bg-white/[0.06]" />
+                      <div className="h-4 w-4/5 animate-pulse rounded-full bg-white/[0.07]" />
+                      <div className="h-3 w-32 animate-pulse rounded-full bg-white/[0.05]" />
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -660,7 +739,7 @@ function SearchModal({
                   </p>
                 )}
 
-                {results.map((product) => {
+                {results.map((product, index) => {
                   const productUrl = getProductUrl(product);
                   const image = getProductImage(product);
                   const category = getCategory(product);
@@ -673,14 +752,11 @@ function SearchModal({
                       onClick={onClose}
                       className="group grid min-w-0 grid-cols-[66px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-2.5 text-white no-underline transition hover:border-red-500/35 hover:bg-white/[0.055] sm:grid-cols-[76px_minmax(0,1fr)_auto]"
                     >
-                      <div className="flex h-16 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/35 p-2 sm:h-18">
-                        <img
-                          src={image}
-                          alt={product.name}
-                          loading="lazy"
-                          className="h-full w-full object-contain transition group-hover:scale-105"
-                        />
-                      </div>
+                      <SearchResultImage
+                        src={image}
+                        alt={product.name}
+                        priority={!query.trim() || index < 3}
+                      />
 
                       <div className="min-w-0">
                         <p className="truncate text-[9px] font-black uppercase tracking-[0.14em] text-red-300/80">
@@ -866,7 +942,10 @@ export default function Navbar({ transparent = false }) {
     try {
       setProductsStatus("loading");
 
-      const response = await fetch("/api/products");
+      const response = await fetch("/api/products", {
+        cache: "force-cache",
+      });
+
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -1055,12 +1134,12 @@ export default function Navbar({ transparent = false }) {
           <div className="relative z-10 mx-auto flex h-20 max-w-[1440px] items-center justify-between px-4 sm:px-5 md:px-8 lg:px-10">
             <a
               href="/"
-              aria-label="RGVPRIME Home"
+              aria-label="RGVPRIMER Home"
               className="flex min-w-0 shrink-0 items-center"
             >
               <img
                 src="/logo.webp"
-                alt="RGVPRIME"
+                alt="RGVPRIMER"
                 className="h-14 w-auto shrink-0 object-contain transition-all duration-500 sm:h-16 md:h-20"
               />
             </a>
