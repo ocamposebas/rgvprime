@@ -16,6 +16,7 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "COA", href: "/coa" },
+  { label: "Track Order", href: "/track-order" },
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";
@@ -551,12 +552,37 @@ function AccountDropdown({
   );
 }
 
-function AnnouncementItem({ text }) {
+function AnnouncementItem({ text, showDot = true }) {
   return (
     <div className="flex h-8 shrink-0 items-center px-5 text-[9px] font-bold uppercase tracking-[0.16em] text-white/80 sm:h-9 sm:px-8 sm:text-[11px] md:text-xs">
       <span>{text}</span>
-      <span className="ml-5 text-red-500 sm:ml-8">●</span>
+      {showDot && <span className="ml-5 text-red-500 sm:ml-8">●</span>}
     </div>
+  );
+}
+
+function AnnouncementTrack() {
+  return (
+    <motion.div
+      className="flex h-full w-max items-center whitespace-nowrap"
+      initial={{ x: "100vw" }}
+      animate={{ x: "-100%" }}
+      transition={{
+        duration: 42,
+        ease: "linear",
+        repeat: Infinity,
+        repeatType: "loop",
+        repeatDelay: 0.8,
+      }}
+    >
+      {announcementItems.map((text, index) => (
+        <AnnouncementItem
+          key={text}
+          text={text}
+          showDot={index < announcementItems.length - 1}
+        />
+      ))}
+    </motion.div>
   );
 }
 
@@ -811,13 +837,6 @@ export default function Navbar({ transparent = false }) {
   const accountMenuTimerRef = useRef(null);
 
   const { openCart, itemCount } = useCart();
-
-  const duplicatedItems = [
-    ...announcementItems,
-    ...announcementItems,
-    ...announcementItems,
-    ...announcementItems,
-  ];
 
   useEffect(() => {
     let active = true;
@@ -1101,21 +1120,7 @@ export default function Navbar({ transparent = false }) {
               "background 650ms cubic-bezier(.16,1,.3,1), border-color 650ms cubic-bezier(.16,1,.3,1)",
           }}
         >
-          <motion.div
-            className="flex h-full w-max items-center whitespace-nowrap"
-            initial={{ x: 0 }}
-            animate={{ x: "-50%" }}
-            transition={{
-              duration: 70,
-              ease: "linear",
-              repeat: Infinity,
-              repeatType: "loop",
-            }}
-          >
-            {duplicatedItems.map((text, index) => (
-              <AnnouncementItem key={`${text}-${index}`} text={text} />
-            ))}
-          </motion.div>
+          <AnnouncementTrack />
         </div>
 
         <nav
