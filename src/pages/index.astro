@@ -1,12 +1,29 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HomePage from "../components/app/HomePage.jsx";
+
+let featuredProducts = [];
+
+try {
+  const response = await fetch(new URL("/api/featured-products", Astro.url.origin), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    featuredProducts = Array.isArray(data.products) ? data.products : [];
+  }
+} catch {
+  featuredProducts = [];
+}
 ---
 
 <BaseLayout
   title="RGVPRIME RESEARCH LLC | Peps & Performance"
-  description="Premium research-use-only peptides from RGV Prime Peps & Performance."
+  description="Premium research-use-only peptides from RGVPRIME RESEARCH LLC."
   image="/og-image.jpg"
 >
-  <HomePage client:load />
+  <HomePage client:load featuredProducts={featuredProducts} />
 </BaseLayout>

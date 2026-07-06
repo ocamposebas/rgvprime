@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const FALLBACK_IMAGE = "/logo.webp";
 
@@ -142,76 +142,70 @@ function EyeIcon() {
   );
 }
 
-export default function FeaturedProducts() {
-  const [products, setProducts] = useState([]);
-  const [status, setStatus] = useState("loading");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [itemsPerView, setItemsPerView] = useState(4);
+export default function FeaturedProducts({ initialProducts } = {}) {
+  const hasInitialProducts =
+    Array.isArray(initialProducts) && initialProducts.length > 0;
+
+  const [products, setProducts] = useState(() =>
+    hasInitialProducts ? initialProducts.slice(0, 4) : []
+  );
+
+  const [status, setStatus] = useState(() =>
+    hasInitialProducts ? "success" : "loading"
+  );
 
   useEffect(() => {
+    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
+      setProducts(initialProducts.slice(0, 4));
+      setStatus("success");
+      return;
+    }
+
+    let cancelled = false;
+
     async function loadProducts() {
       try {
-        const response = await fetch("/api/featured-products");
+        setStatus("loading");
+
+        const response = await fetch("/api/featured-products", {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
         const data = await response.json();
 
         if (!response.ok || !data.success) {
           throw new Error(data.message || "Could not load products.");
         }
 
-        setProducts((data.products || []).slice(0, 4));
-        setStatus("success");
+        if (!cancelled) {
+          setProducts((data.products || []).slice(0, 4));
+          setStatus("success");
+        }
       } catch (error) {
         console.error(error);
-        setStatus("error");
+
+        if (!cancelled) {
+          setProducts([]);
+          setStatus("error");
+        }
       }
     }
 
     loadProducts();
-  }, []);
-
-  useEffect(() => {
-    function updateItemsPerView() {
-      if (window.innerWidth < 640) {
-        setItemsPerView(1);
-      } else if (window.innerWidth < 1024) {
-        setItemsPerView(2);
-      } else {
-        setItemsPerView(4);
-      }
-    }
-
-    updateItemsPerView();
-    window.addEventListener("resize", updateItemsPerView);
 
     return () => {
-      window.removeEventListener("resize", updateItemsPerView);
+      cancelled = true;
     };
-  }, []);
-
-  const maxIndex = useMemo(() => {
-    return Math.max(products.length - itemsPerView, 0);
-  }, [products.length, itemsPerView]);
-
-  useEffect(() => {
-    setCurrentIndex((prev) => Math.min(prev, maxIndex));
-  }, [maxIndex]);
-
-  const canSlide = products.length > itemsPerView;
-
-  function goPrev() {
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
-  }
-
-  function goNext() {
-    setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
-  }
+  }, [initialProducts]);
 
   return (
     <section className="relative overflow-hidden bg-[#050505] py-14 text-white sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(220,38,38,0.12),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(127,29,29,0.1),transparent_32%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-600/35 to-transparent" />
 
-      <div className="relative z-10 mx-auto max-w-[1320px] px-6 sm:px-8 lg:px-12 xl:px-8">
+      <div className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-8 lg:px-12 xl:px-8">
         <div className="mx-auto mb-7 max-w-3xl text-center sm:mb-8">
           <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-red-500">
             Best Sellers
@@ -226,44 +220,20 @@ export default function FeaturedProducts() {
           </p>
         </div>
 
-        {status === "success" && canSlide && (
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={currentIndex === 0}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xl font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Previous products"
-            >
-              ‹
-            </button>
-
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={currentIndex === maxIndex}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-red-500/30 bg-red-600 text-xl font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Next products"
-            >
-              ›
-            </button>
-          </div>
-        )}
-
         {status === "loading" && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"
               >
-                <div className="h-52 animate-pulse bg-white/[0.04] sm:h-56" />
+                <div className="h-40 animate-pulse bg-white/[0.04] sm:h-56" />
 
-                <div className="space-y-3 p-4">
+                <div className="space-y-3 p-3 sm:p-4">
                   <div className="h-5 w-2/3 animate-pulse rounded bg-white/10" />
                   <div className="h-4 w-full animate-pulse rounded bg-white/[0.06]" />
-                  <div className="h-14 w-full animate-pulse rounded-xl bg-white/10" />
-                  <div className="h-11 w-full animate-pulse rounded-xl bg-white/10" />
+                  <div className="h-12 w-full animate-pulse rounded-xl bg-white/10" />
+                  <div className="h-10 w-full animate-pulse rounded-xl bg-white/10" />
                 </div>
               </div>
             ))}
@@ -303,112 +273,86 @@ export default function FeaturedProducts() {
 
         {status === "success" && products.length > 0 && (
           <>
-            <div className="-mx-2 overflow-x-hidden px-2 py-4">
-              <div
-                className="flex transition-transform duration-500 ease-out"
-                style={{
-                  transform: `translateX(-${
-                    currentIndex * (100 / itemsPerView)
-                  }%)`,
-                }}
-              >
-                {products.map((product) => {
-                  const image = product.image || FALLBACK_IMAGE;
-                  const description = getSimpleDescription(product);
-                  const productUrl = getProductUrl(product);
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              {products.map((product, index) => {
+                const image = product.image || FALLBACK_IMAGE;
+                const description = getSimpleDescription(product);
+                const productUrl = getProductUrl(product);
 
-                  const price =
-                    product.type === "variable"
-                      ? `From ${formatPrice(product.price)}`
-                      : formatPrice(product.price);
+                const price =
+                  product.type === "variable"
+                    ? `From ${formatPrice(product.price)}`
+                    : formatPrice(product.price);
 
-                  const stockBadge = getStockBadge(product);
+                const stockBadge = getStockBadge(product);
 
-                  return (
-                    <div
-                      key={product.id}
-                      className="shrink-0 px-2"
-                      style={{
-                        width: `${100 / itemsPerView}%`,
-                      }}
+                return (
+                  <article
+                    key={product.id || product.slug || product.name}
+                    className="group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]"
+                  >
+                    <a
+                      href={productUrl}
+                      className="relative flex h-40 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
                     >
-                      <article className="group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]">
-                        <a
-                          href={productUrl}
-                          className="relative flex h-52 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
 
-                          <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/10 blur-3xl transition duration-300 group-hover:bg-red-600/20" />
+                      <div className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/10 blur-3xl transition duration-300 group-hover:bg-red-600/20 sm:h-44 sm:w-44" />
 
-                          <img
-                            src={image}
-                            alt={product.name}
-                            loading="lazy"
-                            className="relative h-[115%] w-[115%] max-w-none scale-[1.12] object-contain transition duration-500 group-hover:scale-[1.2]"
-                          />
+                      <img
+                        src={image}
+                        alt={product.image_alt || product.name}
+                        loading={index < 2 ? "eager" : "lazy"}
+                        fetchPriority={index < 2 ? "high" : "auto"}
+                        decoding="async"
+                        draggable="false"
+                        width="520"
+                        height="780"
+                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 50vw, 25vw"
+                        className="relative h-[112%] w-[112%] max-w-none scale-[1.08] object-contain transition duration-500 group-hover:scale-[1.15]"
+                      />
 
-                          <span
-                            className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] backdrop-blur ${stockBadge.className}`}
-                          >
-                            {stockBadge.label}
-                          </span>
+                      <span
+                        className={`absolute left-2 top-2 rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${stockBadge.className}`}
+                      >
+                        {stockBadge.label}
+                      </span>
 
-                          <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/65 text-white/80 backdrop-blur transition duration-300 group-hover:border-red-500/35 group-hover:bg-red-600 group-hover:text-white">
-                            <EyeIcon />
-                          </span>
-                        </a>
+                      <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/65 text-white/80 backdrop-blur transition duration-300 group-hover:border-red-500/35 group-hover:bg-red-600 group-hover:text-white sm:right-3 sm:top-3">
+                        <EyeIcon />
+                      </span>
+                    </a>
 
-                        <div className="p-4">
-                          <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-tight tracking-[-0.03em] text-white">
-                            {product.name}
-                          </h3>
+                    <div className="p-3 sm:p-4">
+                      <h3 className="line-clamp-2 min-h-[40px] text-sm font-black leading-tight tracking-[-0.03em] text-white sm:min-h-[44px] sm:text-base">
+                        {product.name}
+                      </h3>
 
-                          <p className="mt-2 line-clamp-2 min-h-[40px] text-xs leading-5 text-white/55">
-                            {description}
-                          </p>
+                      <p className="mt-2 line-clamp-2 min-h-[38px] text-[11px] leading-5 text-white/55 sm:min-h-[40px] sm:text-xs">
+                        {description}
+                      </p>
 
-                          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
-                              Price
-                            </p>
+                      <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2.5 sm:mt-4 sm:p-3">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
+                          Price
+                        </p>
 
-                            <p className="mt-1 text-2xl font-black tracking-[-0.04em] text-white">
-                              {price}
-                            </p>
-                          </div>
+                        <p className="mt-1 text-xl font-black tracking-[-0.04em] text-white sm:text-2xl">
+                          {price}
+                        </p>
+                      </div>
 
-                          <a
-                            href={productUrl}
-                            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-4 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500"
-                          >
-                            View Product
-                          </a>
-                        </div>
-                      </article>
+                      <a
+                        href={productUrl}
+                        className="mt-3 flex min-h-10 w-full items-center justify-center rounded-xl bg-red-600 px-3 text-[10px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:min-h-11 sm:px-4 sm:text-xs"
+                      >
+                        View Product
+                      </a>
                     </div>
-                  );
-                })}
-              </div>
+                  </article>
+                );
+              })}
             </div>
-
-            {canSlide && (
-              <div className="mt-3 flex items-center justify-center gap-2">
-                {Array.from({ length: maxIndex + 1 }).map((_, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setCurrentIndex(index)}
-                    aria-label={`Go to product slide ${index + 1}`}
-                    className={`h-2 rounded-full transition-all ${
-                      currentIndex === index
-                        ? "w-8 bg-red-600"
-                        : "w-2 bg-white/20 hover:bg-white/35"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
 
             <div className="mt-7 text-center">
               <a
