@@ -245,6 +245,29 @@ const legalSections = [
     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"></div>
 
     <section class="relative z-10 mx-auto max-w-[1200px] px-6 pb-24 pt-28 sm:px-8 lg:px-12 lg:pt-32">
+      {/* PAGE NAV */}
+      <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          data-back-button
+          class="group inline-flex w-fit items-center gap-3 rounded-full border border-white/10 bg-white/[0.035] px-4 py-2.5 text-xs font-black uppercase tracking-[0.14em] text-white/55 transition hover:border-red-500/35 hover:bg-red-500/[0.08] hover:text-white"
+        >
+          <span class="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/70 transition group-hover:border-red-500/35 group-hover:text-red-300">
+            ←
+          </span>
+          Back
+        </button>
+
+        <nav
+          class="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/35"
+          aria-label="Breadcrumb"
+        >
+          <a href="/" class="transition hover:text-white">Home</a>
+          <span class="text-white/18">/</span>
+          <span class="text-red-300">Policies</span>
+        </nav>
+      </div>
+
       {/* HERO */}
       <div class="grid gap-10 lg:grid-cols-[1fr_0.72fr] lg:items-end">
         <div class="max-w-3xl">
@@ -416,4 +439,17 @@ const legalSections = [
       </p>
     </section>
   </main>
+
+  <script is:inline>
+    const backButton = document.querySelector("[data-back-button]");
+
+    backButton?.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+
+      window.location.href = "/";
+    });
+  </script>
 </BaseLayout>
