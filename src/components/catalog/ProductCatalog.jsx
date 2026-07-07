@@ -12,7 +12,7 @@ const statusFilters = [
 ];
 
 const sortOptions = [
-  { label: "Featured", value: "featured" },
+  { label: "Default Order", value: "featured" },
   { label: "Price Low", value: "price-low" },
   { label: "Price High", value: "price-high" },
   { label: "Name A-Z", value: "name" },
@@ -20,27 +20,93 @@ const sortOptions = [
 ];
 
 const customProductOrder = [
-  { label: "R3ta", terms: ["reta", "retarutide", "retatrutide"] },
-  { label: "Tirz", terms: ["tirz", "tirzepatide"] },
-  { label: "Mots C", terms: ["mots c", "mots-c", "motsc"] },
-  { label: "NAD", terms: ["nad", "nad plus", "nad+"] },
-  { label: "SS31", terms: ["ss31", "ss 31", "ss-31"] },
-  { label: "Tesamorelin", terms: ["tesamorelin", "tesa"] },
-  { label: "CJC/IPA", terms: ["cjc ipa", "cjc/ipa", "cjc ipamorelin", "ipamorelin"] },
-  { label: "Adamax", terms: ["adamax"] },
-  { label: "Semax", terms: ["semax"] },
-  { label: "Selank", terms: ["selank"] },
-  { label: "GHK-Cu 50/100", terms: ["ghk cu", "ghk-cu", "ghkcu"] },
-  { label: "Klow", terms: ["klow"] },
-  { label: "Glow", terms: ["glow"] },
-  { label: "Raw GHK", terms: ["raw ghk"] },
+  {
+    label: "R3ta",
+    terms: ["r3ta", "reta", "retatrutide", "retarutide"],
+  },
+  {
+    label: "Tirz",
+    terms: ["tirz", "tirzepatide", "tirzep", "tirza", "tz"],
+  },
+  {
+    label: "Mots C",
+    terms: ["mots c", "mots-c", "motsc", "mots"],
+  },
+  {
+    label: "NAD",
+    terms: ["nad", "nad plus", "nad+"],
+  },
+  {
+    label: "SS31",
+    terms: ["ss31", "ss 31", "ss-31"],
+  },
+  {
+    label: "Tesamorelin",
+    terms: ["tesamorelin", "tesa", "tesam"],
+  },
+  {
+    label: "CJC/IPA",
+    terms: ["cjc ipa", "cjc/ipa", "cjc ipamorelin", "ipamorelin", "ipa", "cjc"],
+  },
+  {
+    label: "Adamax",
+    terms: ["adamax"],
+  },
+  {
+    label: "Semax",
+    terms: ["semax"],
+  },
+  {
+    label: "Selank",
+    terms: ["selank"],
+  },
+  {
+    label: "GHK-Cu 50/100",
+    terms: ["ghk cu", "ghk-cu", "ghkcu", "ghk 50", "ghk 100"],
+  },
+  {
+    label: "Klow",
+    terms: ["klow"],
+  },
+  {
+    label: "Glow",
+    terms: ["glow"],
+  },
+  {
+    label: "Raw GHK",
+    terms: ["raw ghk", "rawghk"],
+  },
   {
     label: "Korean Glutathione 1200mg",
-    terms: ["korean glutathione 1200", "korean glutathione", "glutathione 1200"],
+    terms: [
+      "korean glutathione 1200",
+      "korean glutathione",
+      "glutathione 1200",
+      "glutathione",
+      "gluta",
+    ],
   },
-  { label: "Lipo-C/B12", terms: ["lipo c b12", "lipo-c/b12", "lipocb12"] },
-  { label: "Fat Blaster", terms: ["fat blaster"] },
-  { label: "Hospira Bac Water", terms: ["hospira bac water", "hospira bacteriostatic water", "bac water"] },
+  {
+    label: "Lipo-C/B12",
+    terms: ["lipo c b12", "lipo-c/b12", "lipocb12", "lipo c", "lipo b12"],
+  },
+  {
+    label: "Fat Blaster",
+    terms: ["fat blaster", "fatblaster"],
+  },
+  {
+    label: "Hospira Bac Water",
+    terms: [
+      "hospira bac water",
+      "hospira bacteriostatic water",
+      "hospira bac",
+      "bac water",
+      "bacteriostatic water",
+      "bac 30ml",
+      "bac",
+      "hospira",
+    ],
+  },
 ];
 
 function normalizeOrderText(value = "") {
@@ -82,15 +148,73 @@ function matchesOrderTerm(text, compactText, term) {
   return false;
 }
 
+function getProductOrderAliases(item) {
+  return [item?.label, ...(item?.terms || [])].filter(Boolean);
+}
+
+function normalizeSearchAliasText(value = "") {
+  return normalizeOrderText(value).replace(/3/g, "e");
+}
+
+function getSearchVariants(value = "") {
+  const normalized = normalizeOrderText(value);
+  const aliasNormalized = normalizeSearchAliasText(value);
+  const variants = [normalized, aliasNormalized]
+    .flatMap((item) => [item, item.replace(/\s+/g, "")])
+    .filter((item) => item.length >= 2);
+
+  return [...new Set(variants)];
+}
+
 function getCustomProductRank(product) {
   const text = getProductOrderText(product);
   const compactText = text.replace(/\s+/g, "");
 
   const index = customProductOrder.findIndex((item) =>
-    item.terms.some((term) => matchesOrderTerm(text, compactText, term))
+    getProductOrderAliases(item).some((term) =>
+      matchesOrderTerm(text, compactText, term)
+    )
   );
 
   return index === -1 ? customProductOrder.length : index;
+}
+
+function getProductSearchText(product) {
+  const productText = getProductOrderText(product);
+  const productRank = getCustomProductRank(product);
+  const aliasText =
+    productRank >= 0 && productRank < customProductOrder.length
+      ? getProductOrderAliases(customProductOrder[productRank]).join(" ")
+      : "";
+
+  return normalizeOrderText(
+    [
+      productText,
+      aliasText,
+      normalizeSearchAliasText(productText),
+      normalizeSearchAliasText(aliasText),
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
+
+function productMatchesSearch(product, value = "") {
+  const searchVariants = getSearchVariants(value);
+
+  if (!searchVariants.length) return true;
+
+  const productSearchText = getProductSearchText(product);
+  const productCompactText = productSearchText.replace(/\s+/g, "");
+
+  return searchVariants.some((term) => {
+    const compactTerm = term.replace(/\s+/g, "");
+
+    return (
+      productSearchText.includes(term) ||
+      (compactTerm.length >= 3 && productCompactText.includes(compactTerm))
+    );
+  });
 }
 
 function stripHtml(html = "") {
@@ -1117,20 +1241,8 @@ export default function ProductCatalog() {
   }, [searchTerm, activeFilter, sortBy]);
 
   const filteredProducts = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
     const result = products.filter((product) => {
-      const productName = product.name?.toLowerCase() || "";
-      const productSlug = product.slug?.toLowerCase() || "";
-      const productDescription = stripHtml(product.short_description || "")
-        .toLowerCase()
-        .trim();
-
-      const matchesSearch =
-        !normalizedSearch ||
-        productName.includes(normalizedSearch) ||
-        productSlug.includes(normalizedSearch) ||
-        productDescription.includes(normalizedSearch);
+      const matchesSearch = productMatchesSearch(product, searchTerm);
 
       const stockBadge = getStockBadge(product);
 
@@ -1249,7 +1361,7 @@ export default function ProductCatalog() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search products..."
+                placeholder="Search reta, tirz, bac..."
                 className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/25 focus:border-red-500/45"
               />
             </label>
