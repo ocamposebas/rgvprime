@@ -20,7 +20,7 @@ const sortOptions = [
 ];
 
 const customProductOrder = [
-  { label: "Reta", terms: ["reta", "retarutide", "retatrutide"] },
+  { label: "R3ta", terms: ["reta", "retarutide", "retatrutide"] },
   { label: "Tirz", terms: ["tirz", "tirzepatide"] },
   { label: "Mots C", terms: ["mots c", "mots-c", "motsc"] },
   { label: "NAD", terms: ["nad", "nad plus", "nad+"] },
