@@ -2,7 +2,7 @@
 import "../styles/global.css";
 
 import Agegate from "../components/agegate/AgeGate";
-import GlobalPreloader from "../components/preloader/preloader";
+import GlobalPreloader from "../components/preloader/GlobalPreloader.astro";
 
 interface Props {
   title?: string;
@@ -50,7 +50,6 @@ const websiteSchema = {
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- BASIC -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
@@ -58,10 +57,8 @@ const websiteSchema = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
 
-    <!-- CANONICAL -->
     <link rel="canonical" href={canonicalUrl} />
 
-    <!-- INDEXING -->
     {
       noindex ? (
         <meta name="robots" content="noindex, nofollow" />
@@ -70,16 +67,13 @@ const websiteSchema = {
       )
     }
 
-    <!-- FAVICONS -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- THEME -->
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
 
-    <!-- OPEN GRAPH -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:title" content={fullTitle} />
@@ -87,22 +81,20 @@ const websiteSchema = {
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImageUrl} />
 
-    <!-- TWITTER / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
 
-    <!-- OPTIONAL LOGO PRELOAD -->
     <link
       rel="preload"
       as="image"
       href="/logo-small.webp"
       imagesrcset="/logo-small.webp 336w, /logo-small@2x.webp 672w"
       imagesizes="336px"
+      fetchpriority="high"
     />
 
-    <!-- JSON-LD SEO -->
     <script
       type="application/ld+json"
       set:html={JSON.stringify(organizationSchema)}
@@ -115,7 +107,7 @@ const websiteSchema = {
   </head>
 
   <body>
-    <GlobalPreloader client:load />
+    <GlobalPreloader logoSrc="/logo.webp" />
 
     <div class="site-shell">
       <Agegate client:load />

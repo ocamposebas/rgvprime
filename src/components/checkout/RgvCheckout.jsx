@@ -28,7 +28,7 @@ const WP_URL =
   WOO_URL;
 
 const ZELLE_PAYMENT_RECIPIENT =
-  import.meta.env.PUBLIC_ZELLE_PAYMENT_RECIPIENT || "Info@rgvprimellc.com";
+  import.meta.env.PUBLIC_ZELLE_PAYMENT_RECIPIENT || "sales@rgvprimellc.com";
 
 const ZELLE_PAYMENT_NAME =
   import.meta.env.PUBLIC_ZELLE_PAYMENT_NAME || "RGVPRIME RESEARCH LLC";
@@ -75,8 +75,8 @@ const PAYMENT_METHODS = [
     id: "card",
     label: "Card",
     eyebrow: "Fast route",
-    title: "Secure card checkout",
-    description: "Continue through WooCommerce.",
+    title: "Card",
+    description: "Pay by card through our secure checkout.",
     badge: "Secure",
     icon: CreditCard,
   },
@@ -84,9 +84,9 @@ const PAYMENT_METHODS = [
     id: "zelle",
     label: "Zelle",
     eyebrow: "Manual route",
-    title: "Zelle order reserve",
+    title: "Zelle",
     description:
-      "Create your order here, unlock 5% off, then send payment using only the order number.",
+      "Create your order here, save 5%, and upload your receipt. Processing may take up to 24 hours.",
     badge: "5% OFF",
     icon: Building2,
   },
@@ -800,7 +800,7 @@ export default function RgvCheckout() {
     });
 
     if (!checkoutUrl) {
-      setError("Checkout URL is missing. Check PUBLIC_WOOCOMMERCE_URL.");
+      setError("Secure checkout is temporarily unavailable. Please contact support.");
       return;
     }
 
@@ -909,7 +909,7 @@ export default function RgvCheckout() {
 
       setManualOrder(nextOrder);
       setPaymentNotice(
-        `Order #${nextOrder.order_number} created. Payment instructions are shown below and were emailed to ${finalBilling.email}.`
+        `Order #${nextOrder.order_number} created. Payment instructions are shown below and were emailed to ${finalBilling.email}. Zelle processing can take up to 24 hours after receipt upload.`
       );
     } catch (err) {
       setError(err?.message || "Unable to create the Zelle order. Please try again.");
@@ -974,7 +974,7 @@ export default function RgvCheckout() {
         throw new Error(data?.message || data?.error || "Unable to upload receipt.");
       }
 
-      setReceiptMessage("Receipt uploaded successfully. Your order is pending verification.");
+      setReceiptMessage("Receipt uploaded successfully. Your Zelle order is pending verification and can take up to 24 hours to process.");
     } catch (err) {
       setReceiptMessage(err?.message || "Unable to upload receipt. Please try again.");
     } finally {
@@ -1007,7 +1007,7 @@ export default function RgvCheckout() {
         <section className="rgvx-shell rgvx-thanks-shell">
           <div className="rgvx-topbar">
             <a href="/shop" className="rgvx-ghost-link">
-              <ArrowLeft size={14} /> Continue shopping
+              <ArrowLeft size={14} /> Back to shop
             </a>
 
             <div className="rgvx-lock-pill">
@@ -1027,7 +1027,7 @@ export default function RgvCheckout() {
                 <h1>Pay with Zelle</h1>
                 <span>
                   Send the exact amount, use the memo below, then upload your receipt.
-                  That is all we need to verify your order.
+                  Zelle orders can take up to 24 hours to process after verification.
                 </span>
               </div>
 
@@ -1103,7 +1103,7 @@ export default function RgvCheckout() {
                       <strong>Upload your receipt</strong>
                       <p>
                         After sending the payment, upload your confirmation screenshot or PDF here.
-                        We will review it and update your order after validation.
+                        We will review it and update your order after validation. Zelle orders can take up to 24 hours to process.
                       </p>
                     </div>
                   </div>
@@ -1165,7 +1165,7 @@ export default function RgvCheckout() {
                 <Mail size={15} />
                 <span>Email</span>
                 <strong>{manualEmail || manualBilling.email}</strong>
-                <small>Payment instructions were also sent to this email.</small>
+                <small>Payment instructions were also sent to this email. Zelle processing can take up to 24 hours.</small>
               </div>
             </footer>
           </section>
@@ -1183,11 +1183,11 @@ export default function RgvCheckout() {
       <section className="rgvx-shell">
         <div className="rgvx-topbar">
           <a href="/shop" className="rgvx-ghost-link">
-            <ArrowLeft size={14} /> Continue shopping
+            <ArrowLeft size={14} /> Back to shop
           </a>
 
           <div className="rgvx-lock-pill">
-            <Lock size={13} /> Protected checkout
+            <Lock size={13} /> Secure
           </div>
         </div>
 
@@ -1196,7 +1196,7 @@ export default function RgvCheckout() {
             <p>RGVPRIME RESEARCH</p>
             <h1>Checkout</h1>
             <span>
-              Choose a payment method and complete only the details needed for that route.
+              Review your order, choose a payment method, then complete the final step.
             </span>
           </div>
 
@@ -1210,9 +1210,9 @@ export default function RgvCheckout() {
           <section className="rgvx-flow">
             <div className="rgvx-flow-section first">
               <div className="rgvx-section-heading">
-                <p>Payment</p>
-                <h2>How would you like to pay?</h2>
-                <span>Card goes to Tagada. Zelle stays here and creates the order first.</span>
+                <p>Step 2</p>
+                <h2>Choose payment</h2>
+                <span>Choose Card for secure payment, or Zelle to create the order here first.</span>
               </div>
 
               <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
@@ -1253,9 +1253,9 @@ export default function RgvCheckout() {
                 <div className="rgvx-zelle-banner">
                   <Building2 size={18} />
                   <div>
-                    <strong>Zelle 5% discount active</strong>
+                    <strong>Zelle selected · 5% discount</strong>
                     <span>
-                      Add contact and delivery details. Payment instructions appear after the order is created.
+                      Enter contact and delivery details. After receipt upload, Zelle orders can take up to 24 hours to process.
                     </span>
                   </div>
                 </div>
@@ -1265,7 +1265,7 @@ export default function RgvCheckout() {
                     <Mail size={16} />
                     <div>
                       <strong>Contact</strong>
-                      <small>Email used for order updates and payment instructions.</small>
+                      <small>Email for order updates and payment instructions.</small>
                     </div>
                   </div>
 
@@ -1296,7 +1296,7 @@ export default function RgvCheckout() {
                     <MapPin size={16} />
                     <div>
                       <strong>Delivery</strong>
-                      <small>Required only for Zelle because the order is created here.</small>
+                      <small>Required only for Zelle orders.</small>
                     </div>
                   </div>
 
@@ -1441,11 +1441,11 @@ export default function RgvCheckout() {
                       : "Opening card checkout"
                     : isZelleSelected
                       ? "Create Zelle order"
-                      : "Continue to Tagada"}
+                      : "Continue to secure checkout"}
                 </strong>
                 <small>
                   {isZelleSelected
-                    ? "Payment instructions and receipt upload will appear next."
+                    ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
                     : "You will be redirected to secure card checkout."}
                 </small>
               </span>
@@ -1456,7 +1456,7 @@ export default function RgvCheckout() {
           <aside className="rgvx-order-summary">
             <div className="rgvx-summary-head">
               <div>
-                <p>Current order</p>
+                <p>Step 1 · Review order</p>
                 <h2>{formatMoney(isZelleSelected ? estimatedDue : cartTotal)}</h2>
               </div>
               <PackageCheck size={18} />
@@ -4650,6 +4650,406 @@ const styles = `
   @media (max-width: 420px) {
     .rgvx-page {
       padding-top: 136px !important;
+    }
+  }
+
+
+  .rgvx-page {
+    background:
+      radial-gradient(circle at 8% -10%, rgba(220, 38, 38, 0.18), transparent 34%),
+      radial-gradient(circle at 100% 8%, rgba(127, 29, 29, 0.18), transparent 30%),
+      linear-gradient(135deg, #020202 0%, #070202 48%, #030303 100%) !important;
+  }
+
+  .rgvx-clean-header > div > span {
+    max-width: 560px;
+  }
+
+  .rgvx-payment-option strong {
+    letter-spacing: -0.025em;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-page {
+      padding: 134px 16px 54px !important;
+    }
+
+    .rgvx-shell {
+      width: min(560px, 100%) !important;
+    }
+
+    .rgvx-topbar {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      margin-bottom: 28px !important;
+    }
+
+    .rgvx-ghost-link,
+    .rgvx-lock-pill {
+      width: auto !important;
+      min-height: 34px !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 999px !important;
+      background: rgba(0, 0, 0, 0.18) !important;
+      padding: 0 11px !important;
+      font-size: 8.5px !important;
+      letter-spacing: 0.09em !important;
+      white-space: nowrap !important;
+      backdrop-filter: blur(10px) !important;
+    }
+
+    .rgvx-lock-pill {
+      margin-left: auto !important;
+    }
+
+    .rgvx-clean-header {
+      display: block !important;
+      margin-bottom: 28px !important;
+    }
+
+    .rgvx-clean-header p {
+      font-size: 8.5px !important;
+      letter-spacing: 0.18em !important;
+    }
+
+    .rgvx-clean-header h1 {
+      margin-top: 7px !important;
+      font-size: clamp(36px, 12vw, 48px) !important;
+      letter-spacing: -0.058em !important;
+      line-height: 0.96 !important;
+    }
+
+    .rgvx-clean-header > div > span {
+      max-width: 100% !important;
+      margin-top: 10px !important;
+      color: rgba(255, 255, 255, 0.58) !important;
+      font-size: 13px !important;
+      line-height: 1.55 !important;
+    }
+
+    .rgvx-header-note {
+      display: none !important;
+    }
+
+    .rgvx-clean-layout {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 34px !important;
+    }
+
+    .rgvx-order-summary {
+      order: 1 !important;
+      position: static !important;
+      width: 100% !important;
+      max-height: none !important;
+      overflow: visible !important;
+      border: 1px solid rgba(255, 255, 255, 0.095) !important;
+      border-radius: 28px !important;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.13), transparent 42%),
+        rgba(7, 7, 7, 0.76) !important;
+      padding: 18px !important;
+      box-shadow: 0 18px 58px rgba(0, 0, 0, 0.28) !important;
+      backdrop-filter: blur(16px) !important;
+    }
+
+    .rgvx-flow {
+      order: 2 !important;
+      display: grid !important;
+      gap: 24px !important;
+    }
+
+    .rgvx-summary-head {
+      align-items: center !important;
+      padding-bottom: 18px !important;
+    }
+
+    .rgvx-summary-head h2 {
+      margin-top: 6px !important;
+      font-size: clamp(38px, 13vw, 48px) !important;
+      line-height: 0.9 !important;
+    }
+
+    .rgvx-summary-head svg {
+      width: 38px !important;
+      height: 38px !important;
+      border: 1px solid rgba(220, 38, 38, 0.28) !important;
+      border-radius: 15px !important;
+      padding: 9px !important;
+      color: rgb(248, 113, 113) !important;
+      background: rgba(220, 38, 38, 0.08) !important;
+    }
+
+    .rgvx-items-list {
+      max-height: none !important;
+      gap: 14px !important;
+      overflow: visible !important;
+      padding: 18px 0 !important;
+    }
+
+    .rgvx-summary-item {
+      grid-template-columns: 50px minmax(0, 1fr) auto !important;
+      gap: 12px !important;
+      min-height: 58px !important;
+    }
+
+    .rgvx-item-image {
+      width: 50px !important;
+      height: 50px !important;
+      border-radius: 16px !important;
+    }
+
+    .rgvx-summary-item strong {
+      font-size: 12.5px !important;
+      line-height: 1.22 !important;
+    }
+
+    .rgvx-summary-item em {
+      font-size: 12px !important;
+    }
+
+    .rgvx-free-progress {
+      gap: 11px !important;
+      padding: 18px 0 !important;
+    }
+
+    .progress-track {
+      height: 7px !important;
+    }
+
+    .rgvx-totals {
+      position: static !important;
+      gap: 13px !important;
+      margin: 0 !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      padding: 18px 0 0 !important;
+      backdrop-filter: none !important;
+    }
+
+    .rgvx-totals .total strong {
+      font-size: 26px !important;
+    }
+
+    .rgvx-mini-coupon {
+      gap: 11px !important;
+      margin-top: 16px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      padding: 0 !important;
+    }
+
+    .rgvx-mini-code-input {
+      grid-template-columns: minmax(0, 1fr) 92px !important;
+      gap: 10px !important;
+    }
+
+    .rgvx-mini-code-input input,
+    .rgvx-mini-code-input button {
+      min-height: 46px !important;
+      border-radius: 16px !important;
+    }
+
+    .rgvx-flow-section,
+    .rgvx-zelle-area,
+    .rgvx-policy {
+      border-top: 0 !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
+    .rgvx-flow-section.first {
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 28px !important;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.10), transparent 44%),
+        rgba(7, 7, 7, 0.68) !important;
+      padding: 18px !important;
+    }
+
+    .rgvx-section-heading {
+      margin-bottom: 17px !important;
+    }
+
+    .rgvx-section-heading p {
+      font-size: 8.5px !important;
+      letter-spacing: 0.18em !important;
+    }
+
+    .rgvx-section-heading h2 {
+      margin-top: 5px !important;
+      font-size: 28px !important;
+      letter-spacing: -0.045em !important;
+    }
+
+    .rgvx-section-heading span {
+      margin-top: 8px !important;
+      font-size: 12.5px !important;
+      line-height: 1.55 !important;
+      color: rgba(255, 255, 255, 0.55) !important;
+    }
+
+    .rgvx-payment-switch {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px !important;
+    }
+
+    .rgvx-payment-option {
+      display: flex !important;
+      min-height: 92px !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      border-radius: 21px !important;
+      padding: 14px 10px !important;
+      text-align: center !important;
+      transform: none !important;
+    }
+
+    .rgvx-payment-option > svg {
+      display: none !important;
+    }
+
+    .rgvx-payment-option span {
+      display: grid !important;
+      gap: 4px !important;
+    }
+
+    .rgvx-payment-option strong {
+      font-size: 15px !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    .rgvx-payment-option small {
+      max-width: 150px !important;
+      margin: 0 !important;
+      font-size: 10.5px !important;
+      line-height: 1.35 !important;
+    }
+
+    .rgvx-payment-option em {
+      margin: 0 !important;
+      padding: 5px 8px !important;
+      font-size: 8px !important;
+      letter-spacing: 0.09em !important;
+    }
+
+    .rgvx-zelle-area {
+      display: grid !important;
+      gap: 22px !important;
+    }
+
+    .rgvx-zelle-banner,
+    .rgvx-shipping-line {
+      align-items: flex-start !important;
+      border-radius: 22px !important;
+      padding: 15px !important;
+    }
+
+    .rgvx-form-section {
+      gap: 14px !important;
+    }
+
+    .rgvx-block-title strong {
+      font-size: 16px !important;
+    }
+
+    .rgvx-block-title small {
+      font-size: 12px !important;
+      line-height: 1.45 !important;
+    }
+
+    .rgvx-form-grid,
+    .rgvx-form-grid.two,
+    .rgvx-form-grid.three {
+      grid-template-columns: 1fr !important;
+      gap: 13px !important;
+    }
+
+    .rgvx-field > span {
+      font-size: 9.5px !important;
+      letter-spacing: 0.13em !important;
+    }
+
+    input,
+    select {
+      min-height: 52px !important;
+      border-radius: 17px !important;
+      font-size: 14px !important;
+    }
+
+    .rgvx-marketing-inline {
+      font-size: 11.5px !important;
+    }
+
+    .rgvx-policy {
+      display: flex !important;
+      gap: 10px !important;
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 18px !important;
+      background: rgba(255, 255, 255, 0.035) !important;
+      padding: 14px !important;
+      font-size: 11px !important;
+      line-height: 1.45 !important;
+    }
+
+    .rgvx-final-button {
+      min-height: 66px !important;
+      margin-top: -2px !important;
+      border-radius: 21px !important;
+      padding: 0 17px !important;
+      box-shadow: 0 20px 48px rgba(220, 38, 38, 0.22) !important;
+    }
+
+    .rgvx-final-button strong {
+      font-size: 12px !important;
+      letter-spacing: 0.07em !important;
+    }
+
+    .rgvx-final-button small {
+      font-size: 10.5px !important;
+      line-height: 1.35 !important;
+    }
+
+    .rgvx-floating-total-bar {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .rgvx-page {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+
+    .rgvx-clean-header h1 {
+      font-size: 38px !important;
+    }
+
+    .rgvx-summary-head h2 {
+      font-size: 40px !important;
+    }
+
+    .rgvx-payment-option {
+      min-height: 84px !important;
+    }
+
+    .rgvx-payment-option small {
+      display: none !important;
+    }
+
+    .rgvx-mini-code-input {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-mini-code-input button {
+      width: 100% !important;
     }
   }
 

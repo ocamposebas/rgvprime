@@ -102,7 +102,7 @@ export default function Hero() {
               duration: 0.8,
               ease: [0.16, 1, 0.3, 1],
             }}
-            className="mx-auto max-w-4xl text-[2.55rem] font-black uppercase leading-[0.88] tracking-[-0.065em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.55rem] [font-family:Inter,ui-sans-serif,system-ui,sans-serif]"
+            className="mx-auto max-w-4xl text-[2rem] font-black uppercase leading-[0.95] tracking-[-0.045em] text-white sm:text-[3rem] md:text-[3.65rem] lg:text-[4.25rem] [font-family:Inter,ui-sans-serif,system-ui,sans-serif]"
           >
             RGVPRIME LLC
             <br />

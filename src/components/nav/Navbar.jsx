@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
-import { label } from "motion/react-client";
 
 const announcementItems = [
   "RGVPRIME Peps & Performance",
@@ -567,8 +566,8 @@ function AnnouncementGroup({ ariaHidden = false }) {
       className="rgv-announcement-group"
       aria-hidden={ariaHidden ? "true" : undefined}
     >
-      {[...announcementItems, ...announcementItems].map((text, index) => (
-        <AnnouncementItem key={`${text}-${index}`} text={text} />
+      {announcementItems.map((text) => (
+        <AnnouncementItem key={text} text={text} />
       ))}
     </div>
   );
@@ -598,8 +597,20 @@ function AnnouncementTrack() {
           height: 100%;
           width: 100%;
           overflow: hidden;
-          mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
-          -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+          mask-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            #000 8%,
+            #000 92%,
+            transparent 100%
+          );
+          -webkit-mask-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            #000 8%,
+            #000 92%,
+            transparent 100%
+          );
         }
 
         .rgv-announcement-track {
@@ -607,31 +618,41 @@ function AnnouncementTrack() {
           align-items: center;
           height: 100%;
           width: max-content;
+          min-width: max-content;
           white-space: nowrap;
+          transform: translate3d(0, 0, 0);
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
           will-change: transform;
-          animation: rgvAnnouncementScroll 68s linear infinite;
+          animation: rgvAnnouncementScroll 46s linear infinite;
         }
 
         .rgv-announcement-group {
           display: flex;
-          flex-shrink: 0;
+          flex: 0 0 auto;
           align-items: center;
           height: 100%;
+          min-width: max-content;
           white-space: nowrap;
         }
 
         .rgv-announcement-item {
-          display: flex;
-          flex-shrink: 0;
+          display: inline-flex;
+          flex: 0 0 auto;
           align-items: center;
           gap: 34px;
           padding: 0 34px;
+          color: rgba(255, 255, 255, 0.82);
           font-size: 11px;
           font-weight: 900;
           line-height: 1;
           letter-spacing: 0.24em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.82);
+          transform: translate3d(0, 0, 0);
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: geometricPrecision;
         }
 
         .rgv-announcement-dot {
@@ -646,7 +667,7 @@ function AnnouncementTrack() {
 
         @media (max-width: 640px) {
           .rgv-announcement-track {
-            animation-duration: 54s;
+            animation-duration: 38s;
           }
 
           .rgv-announcement-item {
@@ -917,22 +938,22 @@ export default function Navbar({ transparent = false }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState([]);
   const [productsStatus, setProductsStatus] = useState("idle");
-  const [scrollProgress, setScrollProgress] = useState(transparent ? 0 : 1);
+  const headerRef = useRef(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [accountStatus, setAccountStatus] = useState("loading");
+  const [accountStatus, setAccountStatus] = useState("guest");
   const [accountUser, setAccountUser] = useState(null);
   const accountMenuTimerRef = useRef(null);
+  const accountCheckedRef = useRef(false);
 
   const { openCart, itemCount } = useCart();
 
   useEffect(() => {
     let active = true;
-    let idleId = null;
-    let focusTimer = null;
 
     function setGuestAccount() {
       if (!active) return;
 
+      accountCheckedRef.current = true;
       setAccountUser(null);
       setAccountStatus("guest");
       setAccountMenuOpen(false);
@@ -949,6 +970,8 @@ export default function Navbar({ transparent = false }) {
 
         if (!active) return;
 
+        accountCheckedRef.current = true;
+
         if (result?.ok && data.success && data.user) {
           setAccountUser(data.user);
           setAccountStatus("authenticated");
@@ -960,20 +983,6 @@ export default function Navbar({ transparent = false }) {
       }
     }
 
-    function scheduleInitialLoad() {
-      const run = () => {
-        loadAccount();
-      };
-
-      if ("requestIdleCallback" in window) {
-        idleId = window.requestIdleCallback(run, {
-          timeout: 1400,
-        });
-      } else {
-        idleId = window.setTimeout(run, 800);
-      }
-    }
-
     function handlePortalLogout() {
       resetMeCache();
       setGuestAccount();
@@ -981,6 +990,7 @@ export default function Navbar({ transparent = false }) {
 
     function handlePortalLogin() {
       resetMeCache();
+      accountCheckedRef.current = false;
       loadAccount({
         silent: true,
         force: true,
@@ -1002,70 +1012,96 @@ export default function Navbar({ transparent = false }) {
       }
     }
 
-    function handleWindowFocus() {
-      window.clearTimeout(focusTimer);
-
-      focusTimer = window.setTimeout(() => {
-        loadAccount({
-          silent: true,
-        });
-      }, 600);
-    }
-
-    scheduleInitialLoad();
-
     window.addEventListener("rgv-account-logout", handlePortalLogout);
     window.addEventListener("rgv-account-login", handlePortalLogin);
     window.addEventListener("storage", handleStorageEvent);
-    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       active = false;
 
       window.clearTimeout(accountMenuTimerRef.current);
-      window.clearTimeout(focusTimer);
-
-      if ("cancelIdleCallback" in window && typeof idleId === "number") {
-        window.cancelIdleCallback(idleId);
-      } else {
-        window.clearTimeout(idleId);
-      }
 
       window.removeEventListener("rgv-account-logout", handlePortalLogout);
       window.removeEventListener("rgv-account-login", handlePortalLogin);
       window.removeEventListener("storage", handleStorageEvent);
-      window.removeEventListener("focus", handleWindowFocus);
     };
   }, []);
 
-  useEffect(() => {
-    if (!transparent) {
-      setScrollProgress(1);
-      return;
+  async function loadAccountOnDemand({ force = false } = {}) {
+    if (!force && (accountCheckedRef.current || accountStatus === "loading")) return;
+
+    setAccountStatus("loading");
+
+    try {
+      const result = await getMeOnce({ force });
+      const data = result?.data || {};
+
+      accountCheckedRef.current = true;
+
+      if (result?.ok && data.success && data.user) {
+        setAccountUser(data.user);
+        setAccountStatus("authenticated");
+        return;
+      }
+
+      setAccountUser(null);
+      setAccountStatus("guest");
+    } catch {
+      accountCheckedRef.current = true;
+      setAccountUser(null);
+      setAccountStatus("guest");
     }
+  }
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
 
     let ticking = false;
+    let frameId = null;
+
+    const setNavProgress = (progress) => {
+      header.style.setProperty("--rgv-nav-progress", String(progress));
+      header.style.setProperty("--rgv-header-bg", String(0.58 * progress));
+      header.style.setProperty("--rgv-header-bg-soft", String(0.26 * progress));
+      header.style.setProperty("--rgv-bar-bg", String(0.88 * progress));
+      header.style.setProperty("--rgv-nav-black", String(0.82 * progress));
+      header.style.setProperty("--rgv-nav-red", String(0.34 * progress));
+      header.style.setProperty("--rgv-border", String(0.14 * progress));
+      header.style.setProperty("--rgv-shadow", String(0.26 * progress));
+      header.style.setProperty("--rgv-effect", String(0.16 * progress));
+      header.style.setProperty("--rgv-shine", String(0.08 * progress));
+    };
+
+    const applyProgress = () => {
+      const progress = menuOpen || !transparent ? 1 : Math.min(window.scrollY / 160, 1);
+
+      setNavProgress(progress);
+      ticking = false;
+      frameId = null;
+    };
 
     const handleScroll = () => {
       if (ticking) return;
 
       ticking = true;
-
-      window.requestAnimationFrame(() => {
-        const progress = Math.min(window.scrollY / 130, 1);
-        setScrollProgress(progress);
-        ticking = false;
-      });
+      frameId = window.requestAnimationFrame(applyProgress);
     };
 
-    handleScroll();
+    applyProgress();
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
     };
-  }, [transparent]);
+  }, [transparent, menuOpen]);
 
   async function loadProductsForSearch() {
     if (productsStatus === "loading" || productsStatus === "success") return;
@@ -1100,6 +1136,7 @@ export default function Navbar({ transparent = false }) {
   function openAccountMenu() {
     window.clearTimeout(accountMenuTimerRef.current);
     setAccountMenuOpen(true);
+    loadAccountOnDemand();
   }
 
   function closeAccountMenu() {
@@ -1112,7 +1149,13 @@ export default function Navbar({ transparent = false }) {
   function toggleAccountMenu() {
     window.clearTimeout(accountMenuTimerRef.current);
     setMenuOpen(false);
-    setAccountMenuOpen((current) => !current);
+
+    const next = !accountMenuOpen;
+    setAccountMenuOpen(next);
+
+    if (next) {
+      loadAccountOnDemand();
+    }
   }
 
   async function handleAccountLogout() {
@@ -1145,6 +1188,7 @@ export default function Navbar({ transparent = false }) {
     }
 
     resetMeCache();
+    accountCheckedRef.current = true;
     setAccountUser(null);
     setAccountStatus("guest");
     setAccountMenuOpen(false);
@@ -1161,50 +1205,45 @@ export default function Navbar({ transparent = false }) {
     }
   }
 
-  const activeProgress = menuOpen ? 1 : transparent ? scrollProgress : 1;
-
-  const headerBgOpacity = 0.58 * activeProgress;
-  const barBgOpacity = 0.88 * activeProgress;
-  const navBlackOpacity = 0.82 * activeProgress;
-  const navRedOpacity = 0.34 * activeProgress;
-  const borderOpacity = 0.14 * activeProgress;
-  const shadowOpacity = 0.34 * activeProgress;
-  const blurAmount = 18 * activeProgress;
-  const navEffectOpacity = 0.16 * activeProgress;
-  const shineOpacity = 0.1 * activeProgress;
-
-  const chipBgOpacity = 0.04 + 0.14 * activeProgress;
-  const chipBorderOpacity = 0.08 + 0.08 * activeProgress;
+  const initialNavProgress = menuOpen || !transparent ? 1 : 0;
 
   const glassStyle = {
-    background: `rgba(0,0,0,${chipBgOpacity})`,
-    borderColor: `rgba(255,255,255,${chipBorderOpacity})`,
-    backdropFilter: `blur(${Math.max(6, blurAmount)}px)`,
-    WebkitBackdropFilter: `blur(${Math.max(6, blurAmount)}px)`,
+    background: "rgba(0,0,0,0.14)",
+    borderColor: "rgba(255,255,255,0.12)",
+    backdropFilter: "blur(14px)",
+    WebkitBackdropFilter: "blur(14px)",
   };
 
   return (
     <>
       <header
-        className="fixed left-0 top-0 z-[90] w-full text-white"
+        ref={headerRef}
+        className="fixed left-0 top-0 z-[90] w-full text-white will-change-transform"
         style={{
-          background: `linear-gradient(180deg, rgba(0,0,0,${headerBgOpacity}) 0%, rgba(0,0,0,${
-            headerBgOpacity * 0.45
-          }) 72%, rgba(0,0,0,0) 100%)`,
-          backdropFilter: `blur(${blurAmount}px)`,
-          WebkitBackdropFilter: `blur(${blurAmount}px)`,
-          boxShadow: `0 20px 80px rgba(0,0,0,${shadowOpacity})`,
-          transition:
-            "background 650ms cubic-bezier(.16,1,.3,1), box-shadow 650ms cubic-bezier(.16,1,.3,1), backdrop-filter 650ms cubic-bezier(.16,1,.3,1)",
+          "--rgv-nav-progress": String(initialNavProgress),
+          "--rgv-header-bg": String(0.58 * initialNavProgress),
+          "--rgv-header-bg-soft": String(0.26 * initialNavProgress),
+          "--rgv-bar-bg": String(0.88 * initialNavProgress),
+          "--rgv-nav-black": String(0.82 * initialNavProgress),
+          "--rgv-nav-red": String(0.34 * initialNavProgress),
+          "--rgv-border": String(0.14 * initialNavProgress),
+          "--rgv-shadow": String(0.26 * initialNavProgress),
+          "--rgv-effect": String(0.16 * initialNavProgress),
+          "--rgv-shine": String(0.08 * initialNavProgress),
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,var(--rgv-header-bg)) 0%, rgba(0,0,0,var(--rgv-header-bg-soft)) 72%, rgba(0,0,0,0) 100%)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          boxShadow: "0 20px 70px rgba(0,0,0,var(--rgv-shadow))",
+          transform: "translate3d(0,0,0)",
         }}
       >
         <div
           className="relative h-8 w-full overflow-hidden border-b sm:h-9"
           style={{
-            background: `linear-gradient(90deg, rgba(69,10,10,${barBgOpacity}), rgba(8,8,8,${barBgOpacity}), rgba(69,10,10,${barBgOpacity}))`,
-            borderColor: `rgba(255,255,255,${borderOpacity})`,
-            transition:
-              "background 650ms cubic-bezier(.16,1,.3,1), border-color 650ms cubic-bezier(.16,1,.3,1)",
+            background:
+              "linear-gradient(90deg, rgba(69,10,10,var(--rgv-bar-bg)), rgba(8,8,8,var(--rgv-bar-bg)), rgba(69,10,10,var(--rgv-bar-bg)))",
+            borderColor: "rgba(255,255,255,var(--rgv-border))",
           }}
         >
           <AnnouncementTrack />
@@ -1213,23 +1252,19 @@ export default function Navbar({ transparent = false }) {
         <nav
           className="relative w-full overflow-visible border-b"
           style={{
-            background: `linear-gradient(90deg, rgba(69,10,10,${navRedOpacity}) 0%, rgba(3,3,3,${navBlackOpacity}) 28%, rgba(18,6,6,${navBlackOpacity}) 52%, rgba(69,10,10,${navRedOpacity}) 100%)`,
-            borderColor: `rgba(255,255,255,${borderOpacity})`,
-            transition:
-              "background 650ms cubic-bezier(.16,1,.3,1), border-color 650ms cubic-bezier(.16,1,.3,1)",
+            background:
+              "linear-gradient(90deg, rgba(69,10,10,var(--rgv-nav-red)) 0%, rgba(3,3,3,var(--rgv-nav-black)) 28%, rgba(18,6,6,var(--rgv-nav-black)) 52%, rgba(69,10,10,var(--rgv-nav-red)) 100%)",
+            borderColor: "rgba(255,255,255,var(--rgv-border))",
           }}
         >
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(220,38,38,0.16),transparent_30%),radial-gradient(circle_at_88%_50%,rgba(127,29,29,0.16),transparent_34%)]"
-            style={{
-              opacity: navEffectOpacity,
-              transition: "opacity 650ms cubic-bezier(.16,1,.3,1)",
-            }}
+            style={{ opacity: "var(--rgv-effect)" }}
           />
 
           <motion.div
             className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-red-500/10 to-transparent"
-            style={{ opacity: shineOpacity }}
+            style={{ opacity: "var(--rgv-shine)" }}
             animate={{ x: ["0%", "320%"] }}
             transition={{
               duration: 8,
@@ -1241,12 +1276,12 @@ export default function Navbar({ transparent = false }) {
 
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
-            style={{ opacity: activeProgress }}
+            style={{ opacity: "var(--rgv-nav-progress)" }}
           />
 
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent"
-            style={{ opacity: activeProgress }}
+            style={{ opacity: "var(--rgv-nav-progress)" }}
           />
 
           <div className="relative z-10 mx-auto flex h-20 max-w-[1440px] items-center justify-between px-4 sm:px-5 md:px-8 lg:px-10">
@@ -1315,7 +1350,14 @@ export default function Navbar({ transparent = false }) {
 
               <button
                 type="button"
-                onClick={() => setMenuOpen((prev) => !prev)}
+                onClick={() => {
+                  const next = !menuOpen;
+                  setMenuOpen(next);
+
+                  if (next) {
+                    loadAccountOnDemand();
+                  }
+                }}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 className="ml-1 flex h-10 w-10 items-center justify-center rounded-full border text-white transition hover:bg-white/10 md:hidden"
                 style={glassStyle}
@@ -1356,7 +1398,12 @@ export default function Navbar({ transparent = false }) {
                 Search
               </button>
 
-              {accountUser ? (
+              {accountStatus === "loading" ? (
+                <div className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/60 sm:col-span-2">
+                  <UserIcon />
+                  Checking Account
+                </div>
+              ) : accountUser ? (
                 <>
                   <a
                     href="/account"
