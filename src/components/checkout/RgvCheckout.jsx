@@ -27,11 +27,9 @@ const WP_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
   WOO_URL;
 
-const ZELLE_PAYMENT_RECIPIENT =
-  import.meta.env.PUBLIC_ZELLE_PAYMENT_RECIPIENT || "sales@rgvprimellc.com";
+const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
 
-const ZELLE_PAYMENT_NAME =
-  import.meta.env.PUBLIC_ZELLE_PAYMENT_NAME || "RGVPRIME RESEARCH LLC";
+const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
 const FREE_SHIPPING_MINIMUM = Number(
   import.meta.env.PUBLIC_RGV_FREE_SHIPPING_MINIMUM || 35
