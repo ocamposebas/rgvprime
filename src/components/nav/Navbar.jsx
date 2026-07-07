@@ -1262,22 +1262,7 @@ export default function Navbar({ transparent = false }) {
             style={{ opacity: "var(--rgv-effect)" }}
           />
 
-          <motion.div
-            className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-red-500/10 to-transparent"
-            style={{ opacity: "var(--rgv-shine)" }}
-            animate={{ x: ["0%", "320%"] }}
-            transition={{
-              duration: 8,
-              ease: "linear",
-              repeat: Infinity,
-              repeatType: "loop",
-            }}
-          />
 
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
-            style={{ opacity: "var(--rgv-nav-progress)" }}
-          />
 
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent"

@@ -19,6 +19,80 @@ const sortOptions = [
   { label: "Stock", value: "stock" },
 ];
 
+const customProductOrder = [
+  { label: "Reta", terms: ["reta", "retarutide", "retatrutide"] },
+  { label: "Tirz", terms: ["tirz", "tirzepatide"] },
+  { label: "Mots C", terms: ["mots c", "mots-c", "motsc"] },
+  { label: "NAD", terms: ["nad", "nad plus", "nad+"] },
+  { label: "SS31", terms: ["ss31", "ss 31", "ss-31"] },
+  { label: "Tesamorelin", terms: ["tesamorelin", "tesa"] },
+  { label: "CJC/IPA", terms: ["cjc ipa", "cjc/ipa", "cjc ipamorelin", "ipamorelin"] },
+  { label: "Adamax", terms: ["adamax"] },
+  { label: "Semax", terms: ["semax"] },
+  { label: "Selank", terms: ["selank"] },
+  { label: "GHK-Cu 50/100", terms: ["ghk cu", "ghk-cu", "ghkcu"] },
+  { label: "Klow", terms: ["klow"] },
+  { label: "Glow", terms: ["glow"] },
+  { label: "Raw GHK", terms: ["raw ghk"] },
+  {
+    label: "Korean Glutathione 1200mg",
+    terms: ["korean glutathione 1200", "korean glutathione", "glutathione 1200"],
+  },
+  { label: "Lipo-C/B12", terms: ["lipo c b12", "lipo-c/b12", "lipocb12"] },
+  { label: "Fat Blaster", terms: ["fat blaster"] },
+  { label: "Hospira Bac Water", terms: ["hospira bac water", "hospira bacteriostatic water", "bac water"] },
+];
+
+function normalizeOrderText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\+/g, " plus ")
+    .replace(/&/g, " and ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getProductOrderText(product) {
+  return normalizeOrderText(
+    [
+      product?.name,
+      product?.slug,
+      product?.sku,
+      product?.short_description,
+      product?.description,
+      ...(product?.categories || []).map((item) => item?.name),
+      ...(product?.categories || []).map((item) => item?.slug),
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
+
+function matchesOrderTerm(text, compactText, term) {
+  const cleanTerm = normalizeOrderText(term);
+  const compactTerm = cleanTerm.replace(/\s+/g, "");
+
+  if (!cleanTerm) return false;
+  if (text.includes(cleanTerm)) return true;
+  if (compactTerm.length >= 4 && compactText.includes(compactTerm)) return true;
+
+  return false;
+}
+
+function getCustomProductRank(product) {
+  const text = getProductOrderText(product);
+  const compactText = text.replace(/\s+/g, "");
+
+  const index = customProductOrder.findIndex((item) =>
+    item.terms.some((term) => matchesOrderTerm(text, compactText, term))
+  );
+
+  return index === -1 ? customProductOrder.length : index;
+}
+
 function stripHtml(html = "") {
   return html.replace(/<[^>]*>?/gm, "").trim();
 }
@@ -452,7 +526,33 @@ function SortDropdown({ value, onChange }) {
   );
 }
 
-function ProductCard({ product }) {
+function ProductImage({ src, alt, priority = false }) {
+  const [imageSrc, setImageSrc] = useState(src || FALLBACK_IMAGE);
+
+  useEffect(() => {
+    setImageSrc(src || FALLBACK_IMAGE);
+  }, [src]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt || "Product image"}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      fetchPriority={priority ? "high" : "auto"}
+      width="600"
+      height="600"
+      onError={() => {
+        if (imageSrc !== FALLBACK_IMAGE) {
+          setImageSrc(FALLBACK_IMAGE);
+        }
+      }}
+      className="relative h-full w-full scale-[1.12] object-contain opacity-100 transition duration-500 group-hover:scale-[1.18]"
+    />
+  );
+}
+
+function ProductCard({ product, priority = false }) {
   const { addItem } = useCart();
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [variationStatus, setVariationStatus] = useState(() =>
@@ -469,6 +569,7 @@ function ProductCard({ product }) {
   });
 
   const image = getImageUrl(product.image) || FALLBACK_IMAGE;
+  const imageAlt = product.image_alt || product.name || "Product image";
   const productUrl = `/product/${product.slug}`;
   const stockBadge = getStockBadge(product);
   const category = getMainCategory(product);
@@ -791,12 +892,7 @@ function ProductCard({ product }) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.16),transparent_62%)] opacity-80 transition duration-300 group-hover:opacity-100" />
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
 
-          <img
-            src={image}
-            alt={product.name}
-            loading="lazy"
-            className="relative h-full w-full scale-[1.12] object-contain transition duration-500 group-hover:scale-[1.18]"
-          />
+          <ProductImage src={image} alt={imageAlt} priority={priority} />
 
           <span
             className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
@@ -976,27 +1072,44 @@ export default function ProductCatalog() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    let active = true;
+
     async function loadProducts() {
       try {
-        const response = await fetch("/api/products", {
+        setStatus("loading");
+
+        const response = await fetch("/api/products?limit=45", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
           cache: "force-cache",
         });
 
         const data = await response.json();
 
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Could not load products.");
+        if (!active) return;
+
+        if (!response.ok || data?.success !== true) {
+          throw new Error(data?.message || "Could not load products.");
         }
 
-        setProducts(data.products || []);
+        setProducts(Array.isArray(data.products) ? data.products : []);
         setStatus("success");
       } catch (error) {
-        console.error(error);
+        if (!active) return;
+
+        console.error("Product catalog load failed:", error);
+        setProducts([]);
         setStatus("error");
       }
     }
 
     loadProducts();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1042,13 +1155,18 @@ export default function ProductCatalog() {
       if (sortBy === "stock") {
         const stockA = Number(a.stock_quantity || 0);
         const stockB = Number(b.stock_quantity || 0);
+
         return stockB - stockA;
       }
 
+      const orderA = getCustomProductRank(a);
+      const orderB = getCustomProductRank(b);
+
+      if (orderA !== orderB) return orderA - orderB;
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
 
-      return 0;
+      return a.name.localeCompare(b.name);
     });
   }, [products, searchTerm, activeFilter, sortBy]);
 
@@ -1210,8 +1328,12 @@ export default function ProductCatalog() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {paginatedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {paginatedProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  priority={index < 8}
+                />
               ))}
             </div>
 
