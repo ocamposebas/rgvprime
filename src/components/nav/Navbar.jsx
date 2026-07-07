@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
+import { label } from "motion/react-client";
 
 const announcementItems = [
   "RGVPRIME Peps & Performance",
@@ -15,6 +16,7 @@ const navLinks = [
   { label: "Shop", href: "/shop" },
   { label: "COA", href: "/coa" },
   { label: "Track Order", href: "/track-order" },
+  { label: "Faq", href: "/faq"} 
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";

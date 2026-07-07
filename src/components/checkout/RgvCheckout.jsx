@@ -76,7 +76,7 @@ const PAYMENT_METHODS = [
     label: "Card",
     eyebrow: "Fast route",
     title: "Secure card checkout",
-    description: "Continue through WooCommerce / Tagada to complete card payment.",
+    description: "Continue through WooCommerce.",
     badge: "Secure",
     icon: CreditCard,
   },
