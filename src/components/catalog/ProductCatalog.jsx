@@ -998,7 +998,7 @@ function ProductCard({ product, priority = false }) {
               }`}
             >
               <PlusIcon />
-              Add selected
+              Add to Cart
             </button>
           </>
         )}
@@ -1086,7 +1086,7 @@ function ProductCard({ product, priority = false }) {
                 className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
               >
                 <PlusIcon />
-                Add
+                Add to Cart
               </button>
             ) : (
               <a
