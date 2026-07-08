@@ -565,6 +565,10 @@ function getPaymentProofEndpoint() {
   return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/payment-proof`;
 }
 
+function getCouponValidateEndpoint() {
+  return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/validate-coupon`;
+}
+
 function Field({ label, children, wide = false }) {
   return (
     <label className={`rgvx-field ${wide ? "wide" : ""}`}>
@@ -581,6 +585,9 @@ export default function RgvCheckout() {
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
+  const [couponStatus, setCouponStatus] = useState("idle");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponValidation, setCouponValidation] = useState(null);
   const [checkoutForm, setCheckoutForm] = useState(() => getBlankCheckoutForm());
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -644,17 +651,17 @@ export default function RgvCheckout() {
     );
 
     if (urlCoupon) {
-      setCoupon(urlCoupon);
       setCouponInput(urlCoupon);
-      setCouponMessage("Coupon captured from your link. It will be passed to checkout.");
+      setCouponMessage("Coupon captured from your link. Apply it to validate with WooCommerce.");
+      setCouponStatus("idle");
       localStorage.setItem("rgv_checkout_coupon", urlCoupon);
     } else {
       const storedCoupon = normalizeCoupon(localStorage.getItem("rgv_checkout_coupon") || "");
 
       if (storedCoupon) {
-        setCoupon(storedCoupon);
         setCouponInput(storedCoupon);
-        setCouponMessage("Saved coupon will be passed to checkout.");
+        setCouponMessage("Saved coupon found. Apply it to validate with WooCommerce.");
+        setCouponStatus("idle");
       }
     }
   }, []);
@@ -670,19 +677,35 @@ export default function RgvCheckout() {
       )
     : calculateCartTotal(cartItems);
 
+  const couponDiscount =
+    couponStatus === "valid"
+      ? Math.min(
+          Math.max(cartTotal, 0),
+          toMoneyNumber(
+            couponValidation?.discount_total ?? couponValidation?.discountTotal,
+            0
+          )
+        )
+      : 0;
+
+  const couponHasFreeShipping =
+    couponStatus === "valid" && Boolean(couponValidation?.free_shipping);
+
+  const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
+
   const selectedPaymentMethod =
     PAYMENT_METHODS.find((method) => method.id === selectedPaymentMethodId) ||
     PAYMENT_METHODS[0];
 
   const isZelleSelected = selectedPaymentMethodId === "zelle";
   const hasItems = cartItems.length > 0;
-  const freeShippingUnlocked = cartTotal >= FREE_SHIPPING_MINIMUM;
+  const freeShippingUnlocked = cartTotal >= FREE_SHIPPING_MINIMUM || couponHasFreeShipping;
   const amountUntilFreeShipping = Math.max(FREE_SHIPPING_MINIMUM - cartTotal, 0);
   const shippingCost = isZelleSelected && !freeShippingUnlocked ? STANDARD_SHIPPING_COST : 0;
   const zelleDiscount = isZelleSelected
-    ? Number((Math.max(cartTotal, 0) * ZELLE_DISCOUNT_RATE).toFixed(2))
+    ? Number((Math.max(discountedCartTotal, 0) * ZELLE_DISCOUNT_RATE).toFixed(2))
     : 0;
-  const estimatedDue = Math.max(cartTotal - zelleDiscount + shippingCost, 0);
+  const estimatedDue = Math.max(discountedCartTotal - zelleDiscount + shippingCost, 0);
 
   const orderReference = buildPaymentReference(manualOrder || {});
   const zelleMemoCode = `RGV-${orderReference || manualOrder?.order_number || manualOrder?.number || manualOrder?.id || ""}`;
@@ -700,31 +723,85 @@ export default function RgvCheckout() {
 
   const progressWidth = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
 
-  const applyCoupon = () => {
-    const cleanCoupon = normalizeCoupon(couponInput);
+  const validateCouponWithWoo = async (cleanCoupon) => {
+    const checkoutItems = buildCheckoutItems(cartItems);
 
-    setCoupon(cleanCoupon);
-    setCouponInput(cleanCoupon);
-
-    if (typeof window !== "undefined") {
-      if (cleanCoupon) {
-        localStorage.setItem("rgv_checkout_coupon", cleanCoupon);
-      } else {
-        localStorage.removeItem("rgv_checkout_coupon");
-      }
+    if (!checkoutItems.length) {
+      throw new Error("No valid cart items were found for coupon validation.");
     }
 
-    setCouponMessage(
-      cleanCoupon
-        ? `${cleanCoupon} will be passed to checkout and applied if valid.`
-        : "Coupon removed."
-    );
+    const response = await fetch(getCouponValidateEndpoint(), {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        code: cleanCoupon,
+        coupon: cleanCoupon,
+        items: checkoutItems,
+        subtotal: cartTotal,
+        customer_email: checkoutForm.email,
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || data?.success === false || data?.valid === false) {
+      throw new Error(data?.message || "This coupon is not valid for your cart.");
+    }
+
+    return data;
+  };
+
+  const applyCoupon = async () => {
+    const cleanCoupon = normalizeCoupon(couponInput);
+
+    if (!cleanCoupon) {
+      removeCoupon();
+      return;
+    }
+
+    try {
+      setCouponLoading(true);
+      setCouponStatus("validating");
+      setCouponMessage("Checking coupon with WooCommerce...");
+      setError("");
+
+      const data = await validateCouponWithWoo(cleanCoupon);
+      const finalCode = normalizeCoupon(data?.code || cleanCoupon);
+
+      setCoupon(finalCode);
+      setCouponInput(finalCode);
+      setCouponValidation(data);
+      setCouponStatus("valid");
+      setCouponMessage(data?.message || `${finalCode} applied successfully.`);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("rgv_checkout_coupon", finalCode);
+      }
+    } catch (err) {
+      setCoupon("");
+      setCouponValidation(null);
+      setCouponStatus("invalid");
+      setCouponMessage(err?.message || "This coupon is not valid.");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("rgv_checkout_coupon");
+      }
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   const removeCoupon = () => {
     setCoupon("");
     setCouponInput("");
     setCouponMessage("Coupon removed.");
+    setCouponStatus("idle");
+    setCouponValidation(null);
+    setCouponLoading(false);
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("rgv_checkout_coupon");
@@ -792,6 +869,11 @@ export default function RgvCheckout() {
   const continueToCardCheckout = () => {
     if (!validateBaseCheckout()) return;
 
+    if (couponInput && couponInput !== coupon) {
+      setError("Apply or clear the coupon code before continuing.");
+      return;
+    }
+
     const checkoutUrl = buildWooCheckoutUrl({
       cartItems,
       coupon,
@@ -809,6 +891,11 @@ export default function RgvCheckout() {
 
   const createZelleOrder = async () => {
     if (!validateBaseCheckout()) return;
+
+    if (couponInput && couponInput !== coupon) {
+      setError("Apply or clear the coupon code before creating your Zelle order.");
+      return;
+    }
 
     const normalizedForm = validateZelleForm();
     if (!normalizedForm) return;
@@ -865,6 +952,12 @@ export default function RgvCheckout() {
           items: checkoutItems,
           couponCode: coupon,
           coupon: coupon,
+          couponDiscount,
+          coupon_discount: couponDiscount,
+          couponValidation,
+          coupon_validation: couponValidation,
+          discountedSubtotal: discountedCartTotal,
+          discounted_subtotal: discountedCartTotal,
           zelleDiscountRate: ZELLE_DISCOUNT_RATE,
           zelle_discount_rate: ZELLE_DISCOUNT_RATE,
           freeShippingMinimum: FREE_SHIPPING_MINIMUM,
@@ -1455,7 +1548,7 @@ export default function RgvCheckout() {
             <div className="rgvx-summary-head">
               <div>
                 <p>Step 1 · Review order</p>
-                <h2>{formatMoney(isZelleSelected ? estimatedDue : cartTotal)}</h2>
+                <h2>{formatMoney(isZelleSelected ? estimatedDue : discountedCartTotal)}</h2>
               </div>
               <PackageCheck size={18} />
             </div>
@@ -1506,6 +1599,13 @@ export default function RgvCheckout() {
                 <strong>{formatMoney(cartTotal)}</strong>
               </div>
 
+              {couponStatus === "valid" && couponDiscount > 0 && (
+                <div className="good">
+                  <span>Coupon {coupon}</span>
+                  <strong>-{formatMoney(couponDiscount)}</strong>
+                </div>
+              )}
+
               {isZelleSelected && (
                 <div className="good">
                   <span>Zelle discount</span>
@@ -1524,15 +1624,16 @@ export default function RgvCheckout() {
 
               <div className="total">
                 <span>{isZelleSelected ? "Due" : "Subtotal"}</span>
-                <strong>{formatMoney(isZelleSelected ? estimatedDue : cartTotal)}</strong>
+                <strong>{formatMoney(isZelleSelected ? estimatedDue : discountedCartTotal)}</strong>
               </div>
 
-              <div className="rgvx-mini-coupon">
+              <div className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
                 <div className="rgvx-mini-coupon-top">
                   <div className="rgvx-mini-coupon-label">
                     <Tag size={12} />
                     <span>Coupon</span>
-                    {coupon && <strong>{coupon}</strong>}
+                    {couponStatus === "valid" && coupon && <strong>{coupon}</strong>}
+                    {couponStatus === "valid" && <em>Validated</em>}
                   </div>
 
                   {coupon && (
@@ -1545,21 +1646,49 @@ export default function RgvCheckout() {
                 <div className="rgvx-mini-code-input">
                   <input
                     value={couponInput}
+                    disabled={couponLoading}
                     onChange={(event) => {
-                      setCouponInput(sanitizeCouponInput(event.target.value));
+                      const nextValue = sanitizeCouponInput(event.target.value);
+
+                      setCouponInput(nextValue);
                       setCouponMessage("");
+                      setError("");
+
+                      if (coupon && nextValue !== coupon) {
+                        setCoupon("");
+                        setCouponStatus("idle");
+                        setCouponValidation(null);
+
+                        if (typeof window !== "undefined") {
+                          localStorage.removeItem("rgv_checkout_coupon");
+                        }
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        if (!couponLoading) applyCoupon();
+                      }
                     }}
                     placeholder="Discount code"
                     inputMode="text"
                     autoCapitalize="characters"
                   />
 
-                  <button type="button" onClick={coupon ? removeCoupon : applyCoupon}>
-                    {coupon ? "Remove" : "Apply"}
+                  <button
+                    type="button"
+                    onClick={coupon ? removeCoupon : applyCoupon}
+                    disabled={couponLoading || !couponInput.trim()}
+                  >
+                    {couponLoading ? "Checking" : coupon ? "Remove" : "Apply"}
                   </button>
                 </div>
 
-                {couponMessage && <p>{couponMessage}</p>}
+                {couponMessage && (
+                  <p className={`rgvx-coupon-message ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
+                    {couponMessage}
+                  </p>
+                )}
               </div>
             </div>
           </aside>
@@ -1568,7 +1697,7 @@ export default function RgvCheckout() {
 
       <div className="rgvx-floating-total-bar" aria-live="polite">
         <span>{isZelleSelected ? "Due now" : "Subtotal"}</span>
-        <strong>{formatMoney(isZelleSelected ? estimatedDue : cartTotal)}</strong>
+        <strong>{formatMoney(isZelleSelected ? estimatedDue : discountedCartTotal)}</strong>
       </div>
 
       <style>{styles}</style>
@@ -2324,18 +2453,33 @@ const styles = `
 
   .rgvx-mini-coupon {
     display: grid;
-    gap: 9px;
-    margin-top: 2px;
+    width: 100%;
+    min-width: 0;
+    gap: 12px;
+    margin-top: 8px;
+    overflow: hidden;
     border: 1px solid rgba(220, 38, 38, 0.18);
     border-radius: 18px;
     background:
       radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.12), transparent 42%),
       rgba(255, 255, 255, 0.026);
-    padding: 11px;
+    padding: 12px;
+  }
+
+  .rgvx-mini-coupon.is-valid {
+    border-color: rgba(34, 197, 94, 0.28);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.10), transparent 42%),
+      rgba(255, 255, 255, 0.026);
+  }
+
+  .rgvx-mini-coupon.is-invalid {
+    border-color: rgba(248, 113, 113, 0.36);
   }
 
   .rgvx-mini-coupon-top {
     display: flex;
+    min-width: 0;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
@@ -2344,6 +2488,8 @@ const styles = `
   .rgvx-mini-coupon-label {
     display: flex;
     min-width: 0;
+    flex: 1;
+    flex-wrap: wrap;
     align-items: center;
     gap: 7px;
   }
@@ -2362,12 +2508,25 @@ const styles = `
   }
 
   .rgvx-mini-coupon-label strong {
+    max-width: 135px;
     overflow: hidden;
     color: rgb(254, 202, 202);
     font-size: 10px;
     font-weight: 1000;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .rgvx-mini-coupon-label em {
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.12);
+    padding: 4px 7px;
+    color: rgb(187, 247, 208);
+    font-size: 8px;
+    font-style: normal;
+    font-weight: 1000;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
   }
 
   .rgvx-coupon-clear {
@@ -2392,14 +2551,19 @@ const styles = `
 
   .rgvx-mini-code-input {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 82px;
-    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    align-items: center;
+    gap: 10px;
   }
 
   .rgvx-mini-code-input input {
-    min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
     border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 999px;
+    border-radius: 14px;
     background: rgba(0, 0, 0, 0.32);
     padding: 0 13px;
     color: #ffffff;
@@ -2419,35 +2583,61 @@ const styles = `
     background: rgba(0, 0, 0, 0.44);
   }
 
+  .rgvx-mini-code-input input:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+
   .rgvx-mini-code-input button {
     display: inline-flex;
-    min-height: 40px;
+    width: 96px;
+    min-width: 96px;
+    min-height: 44px;
     align-items: center;
     justify-content: center;
     border: 0;
-    border-radius: 999px;
+    border-radius: 14px;
     background: #dc2626;
-    padding: 0 13px;
+    padding: 0 12px;
     color: #ffffff;
     cursor: pointer;
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 1000;
-    letter-spacing: 0.10em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    transition: background 160ms ease, transform 160ms ease;
+    white-space: nowrap;
+    transition: background 160ms ease, transform 160ms ease, opacity 160ms ease;
   }
 
-  .rgvx-mini-code-input button:hover {
+  .rgvx-mini-code-input button:hover:not(:disabled) {
     background: #ef4444;
     transform: translateY(-1px);
   }
 
-  .rgvx-mini-coupon p {
+  .rgvx-mini-code-input button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+  }
+
+  .rgvx-coupon-message {
+    display: block;
+    width: 100%;
+    min-width: 0;
     margin: 0;
-    color: rgba(248, 113, 113, 0.78);
+    overflow-wrap: anywhere;
+    color: rgba(248, 113, 113, 0.82);
     font-size: 10px;
     font-weight: 800;
-    line-height: 1.35;
+    line-height: 1.4;
+  }
+
+  .rgvx-coupon-message.is-valid {
+    color: rgba(187, 247, 208, 0.90);
+  }
+
+  .rgvx-coupon-message.is-invalid {
+    color: rgba(254, 202, 202, 0.96);
   }
 
   .rgvx-totals {
@@ -4834,23 +5024,32 @@ const styles = `
     }
 
     .rgvx-mini-coupon {
-      gap: 11px !important;
+      gap: 12px !important;
       margin-top: 16px !important;
-      border: 0 !important;
-      border-radius: 0 !important;
-      background: transparent !important;
-      padding: 0 !important;
+      border: 1px solid rgba(220, 38, 38, 0.18) !important;
+      border-radius: 18px !important;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.10), transparent 42%),
+        rgba(255, 255, 255, 0.026) !important;
+      padding: 12px !important;
+    }
+
+    .rgvx-mini-coupon.is-valid {
+      border-color: rgba(34, 197, 94, 0.28) !important;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.10), transparent 42%),
+        rgba(255, 255, 255, 0.026) !important;
     }
 
     .rgvx-mini-code-input {
-      grid-template-columns: minmax(0, 1fr) 92px !important;
+      grid-template-columns: minmax(0, 1fr) 96px !important;
       gap: 10px !important;
     }
 
     .rgvx-mini-code-input input,
     .rgvx-mini-code-input button {
-      min-height: 46px !important;
-      border-radius: 16px !important;
+      min-height: 44px !important;
+      border-radius: 14px !important;
     }
 
     .rgvx-flow-section,
@@ -5185,4 +5384,16 @@ const styles = `
     }
   }
 
+
+
+  @media (max-width: 420px) {
+    .rgvx-mini-code-input {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-mini-code-input button {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+  }
 `;
