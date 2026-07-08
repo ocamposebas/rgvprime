@@ -31,9 +31,7 @@ const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
 
 const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
-const FREE_SHIPPING_MINIMUM = Number(
-  import.meta.env.PUBLIC_RGV_FREE_SHIPPING_MINIMUM || 150
-);
+const FREE_SHIPPING_MINIMUM = 150;
 
 const USPS_GROUND_SHIPPING_COST = Number(
   import.meta.env.PUBLIC_RGV_USPS_GROUND_SHIPPING || 6
@@ -597,11 +595,11 @@ function getCouponValidateEndpoint() {
 }
 
 function getCouponUiMessage(status, hasCoupon = false) {
-  if (status === "valid") return "Coupon applied successfully.";
-  if (status === "invalid") return "This code is invalid or unavailable.";
-  if (status === "removed") return "Coupon removed.";
-  if (status === "checking") return "Checking code...";
-  return hasCoupon ? "Coupon ready." : "";
+  if (status === "valid") return "Coupon applied.";
+  if (status === "invalid") return "Code unavailable.";
+  if (status === "removed") return "";
+  if (status === "checking") return "";
+  return hasCoupon ? "" : "";
 }
 
 function Field({ label, children, wide = false }) {
@@ -694,7 +692,7 @@ export default function RgvCheckout() {
 
     if (urlCoupon) {
       setCouponInput(urlCoupon);
-      setCouponMessage("Coupon found. Apply it to validate.");
+      setCouponMessage("");
       setCouponStatus("idle");
       localStorage.setItem("rgv_checkout_coupon", urlCoupon);
     } else {
@@ -702,7 +700,7 @@ export default function RgvCheckout() {
 
       if (storedCoupon) {
         setCouponInput(storedCoupon);
-        setCouponMessage("Saved coupon found. Apply it to validate.");
+        setCouponMessage("");
         setCouponStatus("idle");
       }
     }
@@ -845,7 +843,7 @@ export default function RgvCheckout() {
   const removeCoupon = () => {
     setCoupon("");
     setCouponInput("");
-    setCouponMessage(getCouponUiMessage("removed"));
+    setCouponMessage("");
     setCouponStatus("idle");
     setCouponValidation(null);
     setCouponLoading(false);
@@ -1538,24 +1536,59 @@ export default function RgvCheckout() {
                   </div>
                 </div>
 
-                <div className="rgvx-shipping-line">
-                  <Truck size={16} />
-                  <div>
-                    <strong>
-                      {freeShippingUnlocked
-                        ? "Free shipping unlocked"
-                        : selectedShippingMethod?.title || "USPS Ground"}
-                    </strong>
-                    <small>
-                      {freeShippingUnlocked
-                        ? `Orders over ${formatMoney(FREE_SHIPPING_MINIMUM)} qualify for free shipping.`
-                        : `${selectedShippingMethod?.label || "USPS shipping"} is ${formatMoney(selectedShippingBaseCost)}. Add ${formatMoney(amountUntilFreeShipping)} more to unlock free shipping.`}
-                    </small>
-                  </div>
-                  <em>{freeShippingUnlocked ? "FREE" : formatMoney(shippingCost)}</em>
-                </div>
               </div>
             )}
+
+            <div className="rgvx-form-section rgvx-shipping-section">
+              <div className="rgvx-block-title">
+                <Truck size={16} />
+                <div>
+                  <strong>Shipping method</strong>
+                  <small>
+                    Choose how you want your order shipped. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                  </small>
+                </div>
+              </div>
+
+              <div className="rgvx-shipping-options flow" aria-label="Shipping method">
+                <div className="rgvx-shipping-options-head">
+                  <span>Available options</span>
+                  <strong>{freeShippingUnlocked ? "Free unlocked" : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}</strong>
+                </div>
+
+                <div className="rgvx-shipping-option-list">
+                  {SHIPPING_METHODS.map((method) => {
+                    const active = method.id === selectedShippingMethodId;
+
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        className={`rgvx-shipping-option ${active ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedShippingMethodId(method.id);
+
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("rgv_checkout_shipping_method", method.id);
+                          }
+                        }}
+                      >
+                        <div>
+                          <strong>{method.title}</strong>
+                          <small>
+                            {freeShippingUnlocked
+                              ? `Regular ${formatMoney(method.price)} · free unlocked`
+                              : method.description}
+                          </small>
+                        </div>
+
+                        <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
             {error && <p className="rgvx-error">{error}</p>}
             {paymentNotice && !error && <p className="rgvx-success">{paymentNotice}</p>}
@@ -1653,73 +1686,34 @@ export default function RgvCheckout() {
               </div>
             </div>
 
-            <div className="rgvx-shipping-options" aria-label="Shipping method">
-              <div className="rgvx-shipping-options-head">
-                <span>Shipping</span>
-                <strong>{freeShippingUnlocked ? "Free unlocked" : "Select method"}</strong>
-              </div>
-
-              <div className="rgvx-shipping-option-list">
-                {SHIPPING_METHODS.map((method) => {
-                  const active = method.id === selectedShippingMethodId;
-
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      className={`rgvx-shipping-option ${active ? "active" : ""}`}
-                      onClick={() => {
-                        setSelectedShippingMethodId(method.id);
-
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("rgv_checkout_shipping_method", method.id);
-                        }
-                      }}
-                    >
-                      <div>
-                        <strong>{method.label}</strong>
-                        <small>
-                          {freeShippingUnlocked
-                            ? `Regular ${formatMoney(method.price)} · free unlocked`
-                            : method.description}
-                        </small>
-                      </div>
-
-                      <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <div className="rgvx-totals">
-              <div>
+              <div className="rgvx-total-row">
                 <span>Subtotal</span>
                 <strong>{formatMoney(cartTotal)}</strong>
               </div>
 
               {couponStatus === "valid" && couponDiscount > 0 && (
-                <div className="good">
+                <div className="rgvx-total-row good">
                   <span>Coupon {coupon}</span>
                   <strong>-{formatMoney(couponDiscount)}</strong>
                 </div>
               )}
 
               {isZelleSelected && (
-                <div className="good">
+                <div className="rgvx-total-row good">
                   <span>Zelle discount</span>
                   <strong>-{formatMoney(zelleDiscount)}</strong>
                 </div>
               )}
 
-              <div>
+              <div className="rgvx-total-row">
                 <span>{selectedShippingMethod?.label || "Shipping"}</span>
                 <strong className={freeShippingUnlocked ? "free" : ""}>
                   {freeShippingUnlocked ? "FREE" : formatMoney(shippingCost)}
                 </strong>
               </div>
 
-              <div className="total">
+              <div className="rgvx-total-row total">
                 <span>{isZelleSelected ? "Due" : "Estimated total"}</span>
                 <strong>{formatMoney(estimatedDue)}</strong>
               </div>
@@ -1731,12 +1725,10 @@ export default function RgvCheckout() {
                     <span>Coupon</span>
                   </div>
 
-                  {couponStatus === "valid" && (
-                    <div className="rgvx-mini-coupon-pill">Validated</div>
-                  )}
+                  {couponStatus === "valid" && <div className="rgvx-mini-coupon-pill">Applied</div>}
                 </div>
 
-                <div className="rgvx-mini-coupon-body">
+                <div className="rgvx-mini-coupon-controls">
                   <div className="rgvx-mini-coupon-code-wrap">
                     <input
                       value={couponInput}
@@ -1771,7 +1763,7 @@ export default function RgvCheckout() {
                           }
                         }
                       }}
-                      placeholder="Discount code"
+                      placeholder="Enter coupon code"
                       inputMode="text"
                       autoCapitalize="characters"
                       className="rgvx-mini-coupon-input"
@@ -1795,7 +1787,7 @@ export default function RgvCheckout() {
                     onClick={coupon ? removeCoupon : applyCoupon}
                     disabled={couponLoading || (!coupon && !couponInput.trim())}
                   >
-                    {couponLoading ? "Checking" : coupon ? "Remove" : "Apply"}
+                    {couponLoading ? "Checking..." : coupon ? "Remove coupon" : "Apply coupon"}
                   </button>
                 </div>
 
@@ -2505,7 +2497,7 @@ const styles = `
   }
 
   .rgvx-free-progress > div:first-child,
-  .rgvx-totals > div {
+  .rgvx-totals > .rgvx-total-row {
     display: flex;
     justify-content: space-between;
     gap: 14px;
@@ -2546,6 +2538,13 @@ const styles = `
     padding: 14px 0 16px;
   }
 
+  .rgvx-shipping-options.flow {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 16px;
+  }
+
   .rgvx-shipping-options-head {
     display: flex;
     align-items: center;
@@ -2567,19 +2566,21 @@ const styles = `
 
   .rgvx-shipping-option-list {
     display: grid;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .rgvx-shipping-option {
     display: flex;
     width: 100%;
+    min-height: 78px;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: 18px;
     background: rgba(255, 255, 255, 0.025);
-    padding: 11px 12px;
+    padding: 14px;
     color: #ffffff;
     cursor: pointer;
     text-align: left;
@@ -2595,6 +2596,7 @@ const styles = `
   .rgvx-shipping-option.active {
     border-color: rgba(248, 113, 113, 0.42);
     background: rgba(220, 38, 38, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.18);
   }
 
   .rgvx-shipping-option div {
@@ -2662,29 +2664,29 @@ const styles = `
     width: 100%;
     min-width: 0;
     gap: 12px;
-    margin-top: 8px;
-    border: 1px solid rgba(34, 197, 94, 0.24);
-    border-radius: 20px;
+    margin-top: 10px;
+    border: 1px solid rgba(34, 197, 94, 0.20);
+    border-radius: 22px;
     background:
-      radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.08), transparent 38%),
-      rgba(5, 10, 8, 0.92);
+      radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.07), transparent 42%),
+      linear-gradient(180deg, rgba(8, 12, 10, 0.96), rgba(5, 7, 6, 0.96));
     padding: 14px;
     overflow: hidden;
   }
 
   .rgvx-mini-coupon.is-valid {
-    border-color: rgba(34, 197, 94, 0.28);
+    border-color: rgba(34, 197, 94, 0.24);
   }
 
   .rgvx-mini-coupon.is-invalid {
-    border-color: rgba(248, 113, 113, 0.30);
+    border-color: rgba(248, 113, 113, 0.28);
     background:
-      radial-gradient(circle at 0% 0%, rgba(248, 113, 113, 0.08), transparent 38%),
-      rgba(10, 5, 5, 0.92);
+      radial-gradient(circle at 0% 0%, rgba(248, 113, 113, 0.06), transparent 42%),
+      linear-gradient(180deg, rgba(12, 8, 8, 0.96), rgba(7, 5, 5, 0.96));
   }
 
   .rgvx-mini-coupon.is-validating {
-    border-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .rgvx-mini-coupon-header {
@@ -2696,9 +2698,9 @@ const styles = `
 
   .rgvx-mini-coupon-title {
     display: inline-flex;
+    min-width: 0;
     align-items: center;
     gap: 8px;
-    min-width: 0;
   }
 
   .rgvx-mini-coupon-title svg {
@@ -2718,33 +2720,32 @@ const styles = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 28px;
-    padding: 0 12px;
+    min-height: 24px;
+    padding: 0 10px;
     border-radius: 999px;
     background: rgba(34, 197, 94, 0.14);
     color: rgb(187, 247, 208);
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 1000;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     white-space: nowrap;
   }
 
-  .rgvx-mini-coupon-body {
+  .rgvx-mini-coupon-controls {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 136px;
-    gap: 12px;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .rgvx-mini-coupon-code-wrap {
     display: flex;
     min-width: 0;
-    min-height: 54px;
+    min-height: 48px;
     align-items: center;
     gap: 10px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.03);
     padding: 0 12px;
   }
@@ -2756,14 +2757,16 @@ const styles = `
     outline: none;
     background: transparent;
     color: #ffffff;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 900;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
   .rgvx-mini-coupon-input::placeholder {
     color: rgba(255, 255, 255, 0.28);
     text-transform: none;
+    letter-spacing: 0;
   }
 
   .rgvx-mini-coupon-input:disabled {
@@ -2773,8 +2776,8 @@ const styles = `
 
   .rgvx-coupon-clear {
     display: inline-grid;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     flex: 0 0 auto;
     place-items: center;
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -2794,16 +2797,16 @@ const styles = `
   .rgvx-mini-coupon-action {
     display: inline-flex;
     width: 100%;
-    min-height: 54px;
+    min-height: 46px;
     align-items: center;
     justify-content: center;
     border: 0;
-    border-radius: 999px;
+    border-radius: 16px;
     background: #db3a2f;
-    padding: 0 18px;
+    padding: 0 14px;
     color: #ffffff;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 1000;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2824,10 +2827,10 @@ const styles = `
 
   .rgvx-coupon-message {
     margin: 0;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 12px;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 11px;
     font-weight: 800;
-    line-height: 1.4;
+    line-height: 1.35;
     overflow-wrap: anywhere;
   }
 
@@ -3263,7 +3266,7 @@ const styles = `
   @media (min-width: 981px) {
     .rgvx-clean-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
       gap: 34px;
       align-items: start;
     }
@@ -3278,10 +3281,8 @@ const styles = `
       align-self: start;
       z-index: 8;
       width: 100%;
-      max-height: calc(100dvh - 112px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
+      max-height: none;
+      overflow: visible;
       border: 1px solid rgba(255, 255, 255, 0.10);
       border-radius: 28px;
       background:
@@ -3298,7 +3299,7 @@ const styles = `
     }
 
     .rgvx-items-list {
-      max-height: min(270px, calc(100dvh - 520px));
+      max-height: 250px;
       min-height: 0;
       overflow-y: auto;
       scrollbar-width: none;
@@ -3309,17 +3310,13 @@ const styles = `
     }
 
     .rgvx-totals {
-      position: sticky;
-      bottom: 0;
-      z-index: 3;
-      margin: 0 -18px -18px;
+      position: static;
+      margin: 0;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 0 0 28px 28px;
-      background:
-        linear-gradient(to bottom, rgba(5, 5, 5, 0), rgba(5, 5, 5, 0.98) 18%),
-        rgba(5, 5, 5, 0.96);
-      padding: 16px 18px 18px;
-      backdrop-filter: blur(16px);
+      border-radius: 0;
+      background: transparent;
+      padding: 16px 0 0;
+      backdrop-filter: none;
     }
   }
 
@@ -5230,8 +5227,18 @@ const styles = `
       padding: 16px 0 !important;
     }
 
+    .rgvx-shipping-options.flow {
+      padding: 14px !important;
+      border-radius: 22px !important;
+    }
+
+    .rgvx-shipping-option-list {
+      grid-template-columns: 1fr !important;
+    }
+
     .rgvx-shipping-option {
       border-radius: 16px !important;
+      min-height: 74px !important;
       padding: 12px !important;
     }
 
@@ -5242,13 +5249,14 @@ const styles = `
       padding: 14px !important;
     }
 
-    .rgvx-mini-coupon-body {
+    .rgvx-mini-coupon-controls {
       grid-template-columns: 1fr !important;
+      gap: 10px !important;
     }
 
     .rgvx-mini-coupon-action,
     .rgvx-mini-coupon-code-wrap {
-      min-height: 50px !important;
+      min-height: 48px !important;
     }
 
     .rgvx-flow-section,
