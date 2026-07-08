@@ -1202,12 +1202,15 @@ export default function ProductCatalog() {
       try {
         setStatus("loading");
 
-        const response = await fetch("/api/products?limit=45", {
+        const cacheBuster = Date.now();
+        const response = await fetch(`/api/products?limit=45&refresh=1&_=${cacheBuster}`, {
           method: "GET",
           headers: {
             Accept: "application/json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
           },
-          cache: "force-cache",
+          cache: "no-store",
         });
 
         const data = await response.json();
