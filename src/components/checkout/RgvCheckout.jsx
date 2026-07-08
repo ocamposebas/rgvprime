@@ -1355,7 +1355,7 @@ export default function RgvCheckout() {
           <section className="rgvx-flow">
             <div className="rgvx-flow-section first">
               <div className="rgvx-section-heading">
-                <p>Step 2</p>
+                <p>Step 3</p>
                 <h2>Choose payment</h2>
                 <span>Choose Card for secure payment, or Zelle to create the order here first.</span>
               </div>
@@ -5603,4 +5603,52 @@ const styles = `
       min-width: 0 !important;
     }
   }
+  /* Mobile checkout order:
+     1. Order summary
+     2. Shipping
+     3. Payment
+     4. Age / policy confirmation
+     5. Continue button
+  */
+  @media (max-width: 980px) {
+    .rgvx-clean-layout {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-order-summary {
+      order: 1 !important;
+    }
+
+    .rgvx-flow {
+      order: 2 !important;
+      display: grid !important;
+    }
+
+    .rgvx-shipping-section {
+      order: 1 !important;
+    }
+
+    .rgvx-flow-section.first {
+      order: 2 !important;
+    }
+
+    .rgvx-zelle-area {
+      order: 3 !important;
+    }
+
+    .rgvx-error,
+    .rgvx-success {
+      order: 4 !important;
+    }
+
+    .rgvx-policy {
+      order: 5 !important;
+    }
+
+    .rgvx-final-button {
+      order: 6 !important;
+    }
+  }
+
 `;

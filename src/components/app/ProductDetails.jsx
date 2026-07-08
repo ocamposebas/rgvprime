@@ -406,6 +406,32 @@ function getSelectedVariation(product, selectedVariants) {
   return getLowestAvailableVariation(product);
 }
 
+function getVariationStockQuantity(variation) {
+  const rawQuantity = variation?.stock_quantity;
+
+  if (rawQuantity === null || rawQuantity === undefined || rawQuantity === "") {
+    return null;
+  }
+
+  const quantity = Number(rawQuantity);
+
+  return Number.isFinite(quantity) ? quantity : null;
+}
+
+function getVariationStockLabel(variation, isAvailable) {
+  if (!variation) return "Unavailable";
+
+  const quantity = getVariationStockQuantity(variation);
+
+  if (!isAvailable) return "Sold Out";
+
+  if (quantity !== null) {
+    return `Available · ${quantity}`;
+  }
+
+  return "Available";
+}
+
 function getVariantPricePreview(product, selectedVariants, attributeName, option) {
   const currency = product?.currency || product?.currency_code || "USD";
 
@@ -430,10 +456,13 @@ function getVariantPricePreview(product, selectedVariants, attributeName, option
     (variation?.stock_status === "instock" ||
       variation?.backorders_allowed === true);
 
+  const stockLabel = getVariationStockLabel(variation, isAvailable);
+
   return {
     variation,
     formattedPrice,
     isAvailable,
+    stockLabel,
     label: formattedPrice || "Unavailable",
   };
 }
@@ -1647,8 +1676,14 @@ export default function ProductDetails({ slug }) {
                                     {option}
                                   </span>
 
-                                  <span className="mt-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-white/28">
-                                    Variant Option
+                                  <span
+                                    className={`mt-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] ${
+                                      optionPrice.isAvailable
+                                        ? "text-emerald-300/60"
+                                        : "text-red-300/55"
+                                    }`}
+                                  >
+                                    {optionPrice.stockLabel}
                                   </span>
                                 </span>
 
@@ -1674,7 +1709,7 @@ export default function ProductDetails({ slug }) {
                                       }`}
                                     >
                                       {optionPrice.isAvailable
-                                        ? "Available"
+                                        ? "In stock"
                                         : "Not ready"}
                                     </span>
                                   </span>

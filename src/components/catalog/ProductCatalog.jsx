@@ -1070,7 +1070,7 @@ function ProductCard({ product, priority = false }) {
                     : "bg-red-600 text-white hover:bg-red-500"
                 }`}
               >
-                MG Options
+                Choose MG
                 <span
                   className={`transition duration-300 ${
                     optionsOpen ? "rotate-180" : ""
