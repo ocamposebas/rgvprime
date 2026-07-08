@@ -164,9 +164,9 @@ const US_STATES = [
 ];
 
 const POLICY_LINKS = {
-  terms: "/terms",
-  refund: "/refund-policy",
-  researchUse: "/research-use-disclaimer",
+  terms: "/polices",
+  refund: "/polices",
+  researchUse: "/polices",
 };
 
 function safeJsonParse(value, fallback = null) {
