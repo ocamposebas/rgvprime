@@ -4,47 +4,18 @@ const FALLBACK_IMAGE = "/logo.webp";
 const DEFAULT_CATALOG_LIMIT = 45;
 const MAX_CATALOG_LIMIT = 45;
 
-const CACHE_TTL = {
-  catalog: 1000 * 60 * 10,
-  detail: 1000 * 60 * 5,
-  stale: 1000 * 60 * 60,
-};
+const NO_CACHE_CONTROL = "no-store, no-cache, must-revalidate, max-age=0";
 
-const cacheStore =
-  globalThis.__RGV_PRODUCTS_API_CACHE__ ||
-  (globalThis.__RGV_PRODUCTS_API_CACHE__ = {
-    catalogs: new Map(),
-    details: new Map(),
-  });
-
-if (!cacheStore.catalogs) {
-  cacheStore.catalogs = new Map();
-}
-
-if (!cacheStore.details) {
-  cacheStore.details = new Map();
-}
-
-function jsonResponse(data, status = 200, cacheControl = "no-store") {
+function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": cacheControl,
+      "Cache-Control": NO_CACHE_CONTROL,
+      Pragma: "no-cache",
+      Expires: "0",
     },
   });
-}
-
-function getCatalogCacheControl() {
-  return "public, max-age=60, s-maxage=900, stale-while-revalidate=3600";
-}
-
-function getDetailCacheControl() {
-  return "public, max-age=30, s-maxage=300, stale-while-revalidate=900";
-}
-
-function getErrorCacheControl() {
-  return "no-store";
 }
 
 function sanitizeLimit(value) {
@@ -75,6 +46,7 @@ function normalizeBoolean(value) {
 
 function shouldBypassCache(value) {
   const cleanValue = String(value || "").toLowerCase().trim();
+
   return (
     cleanValue === "1" ||
     cleanValue === "true" ||
@@ -84,68 +56,35 @@ function shouldBypassCache(value) {
   );
 }
 
-function getCatalogCacheKey({ limit, featured }) {
-  return JSON.stringify({
-    type: "catalog",
-    limit,
-    featured,
-  });
+function getImageVersion(source) {
+  return (
+    source?.date_modified_gmt ||
+    source?.date_modified ||
+    source?.modified_gmt ||
+    source?.modified ||
+    source?.updated_at ||
+    Date.now()
+  );
 }
 
-function getDetailCacheKey(slug) {
-  return String(slug || "").trim().toLowerCase();
-}
+function withImageCacheBuster(src, version) {
+  if (!src) return FALLBACK_IMAGE;
 
-function getCachedCatalog(cacheKey, allowStale = false) {
-  const cached = cacheStore.catalogs.get(cacheKey);
+  const cleanVersion = String(version || Date.now()).trim();
 
-  if (!cached) return null;
-
-  const age = Date.now() - cached.time;
-  const maxAge = allowStale ? CACHE_TTL.stale : CACHE_TTL.catalog;
-
-  if (age < maxAge) {
-    return cached.data;
+  try {
+    const url = new URL(src);
+    url.searchParams.set("v", cleanVersion.replace(/[^a-zA-Z0-9._:-]/g, ""));
+    return url.toString();
+  } catch {
+    const separator = src.includes("?") ? "&" : "?";
+    return `${src}${separator}v=${encodeURIComponent(cleanVersion)}`;
   }
-
-  return null;
-}
-
-function setCachedCatalog(cacheKey, data) {
-  cacheStore.catalogs.set(cacheKey, {
-    time: Date.now(),
-    data,
-  });
-}
-
-function getCachedDetail(slug, allowStale = false) {
-  const cacheKey = getDetailCacheKey(slug);
-  const cached = cacheStore.details.get(cacheKey);
-
-  if (!cached) return null;
-
-  const age = Date.now() - cached.time;
-  const maxAge = allowStale ? CACHE_TTL.stale : CACHE_TTL.detail;
-
-  if (age < maxAge) {
-    return cached.data;
-  }
-
-  return null;
-}
-
-function setCachedDetail(slug, data) {
-  const cacheKey = getDetailCacheKey(slug);
-
-  cacheStore.details.set(cacheKey, {
-    time: Date.now(),
-    data,
-  });
 }
 
 function getWooImage(product) {
   if (product?.images && product.images.length > 0 && product.images[0]?.src) {
-    return product.images[0].src;
+    return withImageCacheBuster(product.images[0].src, getImageVersion(product));
   }
 
   return FALLBACK_IMAGE;
@@ -153,7 +92,7 @@ function getWooImage(product) {
 
 function getWooVariationImage(variation) {
   if (variation?.image?.src) {
-    return variation.image.src;
+    return withImageCacheBuster(variation.image.src, getImageVersion(variation));
   }
 
   return null;
@@ -179,6 +118,8 @@ function mapProductForCatalog(product) {
     sale_price: product.sale_price,
     price_html: product.price_html,
     short_description: product.short_description,
+    date_modified: product.date_modified,
+    date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
@@ -204,6 +145,8 @@ function mapProductForDetail(product) {
     price_html: product.price_html,
     description: product.description,
     short_description: product.short_description,
+    date_modified: product.date_modified,
+    date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
     images: Array.isArray(product.images) ? product.images : [],
     attributes: Array.isArray(product.attributes) ? product.attributes : [],
@@ -235,6 +178,8 @@ function mapVariationForDetail(variation) {
     sale_price: variation.sale_price,
     price_html: variation.price_html || "",
     description: variation.description,
+    date_modified: variation.date_modified,
+    date_modified_gmt: variation.date_modified_gmt,
     image: getWooVariationImage(variation),
     image_data: variation.image || null,
     attributes: Array.isArray(variation.attributes) ? variation.attributes : [],
@@ -257,6 +202,7 @@ function buildWooEndpoint({
   const endpoint = new URL(`${cleanUrl}/wp-json/wc/v3/products`);
 
   endpoint.searchParams.set("status", "publish");
+  endpoint.searchParams.set("_", String(Date.now()));
 
   if (slug) {
     endpoint.searchParams.set("slug", slug);
@@ -276,6 +222,8 @@ function buildWooEndpoint({
         "price_html",
         "description",
         "short_description",
+        "date_modified",
+        "date_modified_gmt",
         "images",
         "attributes",
         "variations",
@@ -314,6 +262,8 @@ function buildWooEndpoint({
       "sale_price",
       "price_html",
       "short_description",
+      "date_modified",
+      "date_modified_gmt",
       "images",
       "stock_status",
       "stock_quantity",
@@ -336,6 +286,7 @@ function buildWooVariationEndpoint({ productId, wcUrl }) {
   endpoint.searchParams.set("per_page", "100");
   endpoint.searchParams.set("orderby", "menu_order");
   endpoint.searchParams.set("order", "asc");
+  endpoint.searchParams.set("_", String(Date.now()));
 
   endpoint.searchParams.set(
     "_fields",
@@ -352,6 +303,8 @@ function buildWooVariationEndpoint({ productId, wcUrl }) {
       "sale_price",
       "price_html",
       "description",
+      "date_modified",
+      "date_modified_gmt",
       "image",
       "attributes",
       "stock_status",
@@ -381,6 +334,7 @@ function addCredentialsToUrl(url, consumerKey, consumerSecret) {
 
   endpoint.searchParams.set("consumer_key", consumerKey);
   endpoint.searchParams.set("consumer_secret", consumerSecret);
+  endpoint.searchParams.set("_", String(Date.now()));
 
   return endpoint.toString();
 }
@@ -390,9 +344,12 @@ async function fetchWooCommerce(endpoint, consumerKey, consumerSecret, signal) {
 
   const firstResponse = await fetch(endpoint.toString(), {
     method: "GET",
+    cache: "no-store",
     headers: {
       Accept: "application/json",
       Authorization: authorization,
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
     },
     signal,
   });
@@ -405,8 +362,11 @@ async function fetchWooCommerce(endpoint, consumerKey, consumerSecret, signal) {
     addCredentialsToUrl(endpoint.toString(), consumerKey, consumerSecret),
     {
       method: "GET",
+      cache: "no-store",
       headers: {
         Accept: "application/json",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
       },
       signal,
     }
@@ -543,51 +503,17 @@ export async function GET({ request }) {
   const slug = requestUrl.searchParams.get("slug");
   const limit = sanitizeLimit(requestUrl.searchParams.get("limit"));
   const featured = normalizeBoolean(requestUrl.searchParams.get("featured"));
-  const refresh = shouldBypassCache(requestUrl.searchParams.get("refresh"));
   const debug = shouldBypassCache(requestUrl.searchParams.get("debug"));
-
-  const isDetailRequest = Boolean(slug);
-  const catalogCacheKey = getCatalogCacheKey({ limit, featured });
-
-  if (!refresh) {
-    const freshCachedData = isDetailRequest
-      ? getCachedDetail(slug, false)
-      : getCachedCatalog(catalogCacheKey, false);
-
-    if (freshCachedData) {
-      return jsonResponse(
-        {
-          ...freshCachedData,
-          cache: "memory",
-        },
-        200,
-        isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-      );
-    }
-  }
+  const refresh =
+    shouldBypassCache(requestUrl.searchParams.get("refresh")) ||
+    shouldBypassCache(request.headers.get("cache-control")) ||
+    requestUrl.searchParams.has("_");
 
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
   const consumerKey = import.meta.env.WC_CONSUMER_KEY;
   const consumerSecret = import.meta.env.WC_CONSUMER_SECRET;
 
   if (!wcUrl || !consumerKey || !consumerSecret) {
-    if (!refresh) {
-      const staleCachedData = isDetailRequest
-        ? getCachedDetail(slug, true)
-        : getCachedCatalog(catalogCacheKey, true);
-
-      if (staleCachedData) {
-        return jsonResponse(
-          {
-            ...staleCachedData,
-            cache: "stale",
-          },
-          200,
-          isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-        );
-      }
-    }
-
     return jsonResponse(
       {
         success: false,
@@ -599,10 +525,11 @@ export async function GET({ request }) {
           WC_CONSUMER_SECRET: Boolean(consumerSecret),
         },
       },
-      500,
-      getErrorCacheControl()
+      500
     );
   }
+
+  const isDetailRequest = Boolean(slug);
 
   const endpoint = buildWooEndpoint({
     slug,
@@ -627,23 +554,6 @@ export async function GET({ request }) {
     if (!result.ok) {
       clearTimeout(timeout);
 
-      if (!refresh) {
-        const staleCachedData = isDetailRequest
-          ? getCachedDetail(slug, true)
-          : getCachedCatalog(catalogCacheKey, true);
-
-        if (staleCachedData) {
-          return jsonResponse(
-            {
-              ...staleCachedData,
-              cache: "stale",
-            },
-            200,
-            isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-          );
-        }
-      }
-
       return jsonResponse(
         {
           success: false,
@@ -652,8 +562,7 @@ export async function GET({ request }) {
           statusText: result.statusText,
           details: result.details,
         },
-        result.status,
-        getErrorCacheControl()
+        result.status
       );
     }
 
@@ -674,8 +583,7 @@ export async function GET({ request }) {
             products: [],
             cache: "miss",
           },
-          404,
-          "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+          404
         );
       }
 
@@ -701,6 +609,7 @@ export async function GET({ request }) {
         product,
         products: [product],
         cache: refresh ? "refresh" : "fresh",
+        updatedAt: new Date().toISOString(),
       };
 
       if (debug) {
@@ -720,54 +629,34 @@ export async function GET({ request }) {
             stock_status: variation.stock_status,
             purchasable: variation.purchasable,
             attributes: variation.attributes,
+            image: variation.image,
+            date_modified: variation.date_modified,
+            date_modified_gmt: variation.date_modified_gmt,
           })),
         };
       }
 
-      if (!refresh) {
-        setCachedDetail(slug, payload);
-      }
-
-      return jsonResponse(payload, 200, getDetailCacheControl());
+      return jsonResponse(payload, 200);
     }
 
     clearTimeout(timeout);
 
     const mappedProducts = products.map(mapProductForCatalog);
 
-    const payload = {
-      success: true,
-      count: mappedProducts.length,
-      products: mappedProducts,
-      cache: refresh ? "refresh" : "fresh",
-      limit,
-      featured,
-    };
-
-    if (!refresh) {
-      setCachedCatalog(catalogCacheKey, payload);
-    }
-
-    return jsonResponse(payload, 200, getCatalogCacheControl());
+    return jsonResponse(
+      {
+        success: true,
+        count: mappedProducts.length,
+        products: mappedProducts,
+        cache: refresh ? "refresh" : "fresh",
+        limit,
+        featured,
+        updatedAt: new Date().toISOString(),
+      },
+      200
+    );
   } catch (error) {
     clearTimeout(timeout);
-
-    if (!refresh) {
-      const staleCachedData = isDetailRequest
-        ? getCachedDetail(slug, true)
-        : getCachedCatalog(catalogCacheKey, true);
-
-      if (staleCachedData) {
-        return jsonResponse(
-          {
-            ...staleCachedData,
-            cache: "stale",
-          },
-          200,
-          isDetailRequest ? getDetailCacheControl() : getCatalogCacheControl()
-        );
-      }
-    }
 
     const isTimeout = error.name === "AbortError";
 
@@ -779,8 +668,7 @@ export async function GET({ request }) {
           : "Server could not reach WooCommerce.",
         error: error.message,
       },
-      500,
-      getErrorCacheControl()
+      500
     );
   }
 }
