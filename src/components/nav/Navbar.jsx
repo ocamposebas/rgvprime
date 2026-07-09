@@ -4,7 +4,7 @@ import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
 const announcementItems = [
-  "RGVPRIME Peps & Performance",
+  "Same day / Next day shipping",
   "Fast & Secure Shopping",
   "Research Use Only",
   "Quality-Focused Products",
