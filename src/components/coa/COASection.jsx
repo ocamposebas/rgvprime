@@ -28,6 +28,7 @@ const steps = [
   },
 ];
 
+const COAS_PER_PAGE = 8;
 const MAX_COMPOUND_OPTIONS = 120;
 
 function cn(...classes) {
@@ -72,6 +73,19 @@ function buildSearchText(file, companyName, aliases = [], historyText = "") {
     .map(normalize)
     .filter(Boolean)
     .join(" ");
+}
+
+function getVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 3) return [1, 2, 3, 4, totalPages];
+  if (currentPage >= totalPages - 2) {
+    return [1, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
 }
 
 function SearchIcon() {
@@ -164,6 +178,23 @@ function SelectIcon() {
   );
 }
 
+function PaginationArrow({ direction = "next" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn("h-4 w-4", direction === "previous" && "rotate-180")}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
 const StepCard = memo(function StepCard({ step }) {
   return (
     <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-4 text-center transition-colors hover:bg-white/[0.05] sm:p-5">
@@ -182,6 +213,92 @@ const StepCard = memo(function StepCard({ step }) {
   );
 });
 
+const Pagination = memo(function Pagination({
+  currentPage,
+  totalPages,
+  totalResults,
+  onPageChange,
+}) {
+  if (totalPages <= 1) return null;
+
+  const visiblePages = getVisiblePages(currentPage, totalPages);
+  const hasLeftGap = visiblePages[1] && visiblePages[1] > 2;
+  const hasRightGap =
+    visiblePages[visiblePages.length - 2] &&
+    visiblePages[visiblePages.length - 2] < totalPages - 1;
+
+  return (
+    <div className="mt-5 rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-3 shadow-[0_18px_55px_rgba(0,0,0,0.22)] sm:mt-6 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-300">
+            Page {currentPage} of {totalPages}
+          </p>
+
+          <p className="mt-1 text-xs font-semibold text-white/38">
+            Showing {COAS_PER_PAGE} per page · {totalResults} total results
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] px-3 text-white/60 transition hover:border-red-500/30 hover:text-white disabled:pointer-events-none disabled:opacity-35"
+            aria-label="Previous page"
+          >
+            <PaginationArrow direction="previous" />
+          </button>
+
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {visiblePages.map((page, index) => {
+              const previousPage = visiblePages[index - 1];
+              const shouldShowGap =
+                (page === totalPages && hasRightGap) || (page !== 1 && previousPage && page - previousPage > 1);
+
+              return (
+                <span key={page} className="flex items-center gap-1">
+                  {shouldShowGap && (
+                    <span className="px-1 text-[10px] font-black text-white/25">
+                      ...
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => onPageChange(page)}
+                    className={cn(
+                      "h-10 min-w-10 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.1em] transition",
+                      page === currentPage
+                        ? "bg-red-600 text-white shadow-[0_14px_35px_rgba(220,38,38,0.25)]"
+                        : "border border-white/10 bg-white/[0.035] text-white/50 hover:border-red-500/30 hover:text-white"
+                    )}
+                    aria-label={`Go to page ${page}`}
+                    aria-current={page === currentPage ? "page" : undefined}
+                  >
+                    {page}
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] px-3 text-white/60 transition hover:border-red-500/30 hover:text-white disabled:pointer-events-none disabled:opacity-35"
+            aria-label="Next page"
+          >
+            <PaginationArrow />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const COACard = memo(function COACard({
   file,
   isHistoryOpen,
@@ -190,7 +307,7 @@ const COACard = memo(function COACard({
   onToggleHistory,
 }) {
   return (
-    <div className="group min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.025] transition hover:border-red-500/35 hover:bg-white/[0.045] [contain-intrinsic-size:1px_150px] [content-visibility:auto]">
+    <div className="group min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.025] transition hover:border-red-500/35 hover:bg-white/[0.045]">
       <div className="grid min-w-0 gap-4 p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4">
         <div className="min-w-0">
           <div className="flex min-w-0 items-start gap-3">
@@ -266,7 +383,7 @@ const COACard = memo(function COACard({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{
-              duration: 0.24,
+              duration: 0.22,
               ease: [0.16, 1, 0.3, 1],
             }}
             className="overflow-hidden"
@@ -333,10 +450,12 @@ export default function COASection() {
   const [openHistory, setOpenHistory] = useState({});
   const [compoundOpen, setCompoundOpen] = useState(false);
   const [compoundSearch, setCompoundSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const deferredQuery = useDeferredValue(query);
   const deferredCompoundSearch = useDeferredValue(compoundSearch);
   const compoundRef = useRef(null);
+  const resultsTopRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -429,8 +548,28 @@ export default function COASection() {
     return allCoas.filter((file) => file.searchText.includes(search));
   }, [allCoas, deferredQuery]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredCoas.length / COAS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * COAS_PER_PAGE;
+  const pageEnd = pageStart + COAS_PER_PAGE;
+
+  const paginatedCoas = useMemo(() => {
+    return filteredCoas.slice(pageStart, pageEnd);
+  }, [filteredCoas, pageStart, pageEnd]);
+
   const resultLabel = filteredCoas.length === 1 ? "result" : "results";
   const showClear = query.trim().length > 0;
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setOpenHistory({});
+  }, [deferredQuery]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const updateUrlQuery = useCallback((value) => {
     if (typeof window === "undefined") return;
@@ -483,6 +622,23 @@ export default function COASection() {
     }));
   }, []);
 
+  const handlePageChange = useCallback(
+    (page) => {
+      const nextPage = Math.min(Math.max(page, 1), totalPages);
+
+      setCurrentPage(nextPage);
+      setOpenHistory({});
+
+      window.requestAnimationFrame(() => {
+        resultsTopRef.current?.scrollIntoView({
+          block: "start",
+          behavior: "smooth",
+        });
+      });
+    },
+    [totalPages]
+  );
+
   return (
     <section
       id="coa"
@@ -496,7 +652,7 @@ export default function COASection() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-[760px] text-center"
         >
           <div className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 sm:px-4 sm:py-2">
@@ -520,7 +676,7 @@ export default function COASection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             delay: 0.08,
-            duration: 0.55,
+            duration: 0.5,
             ease: [0.16, 1, 0.3, 1],
           }}
           className="mx-auto mt-7 w-full max-w-[760px] sm:mt-9"
@@ -580,7 +736,7 @@ export default function COASection() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.98 }}
                       transition={{
-                        duration: 0.16,
+                        duration: 0.14,
                         ease: [0.16, 1, 0.3, 1],
                       }}
                       className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#080808]/95 shadow-[0_24px_70px_rgba(0,0,0,0.65)] backdrop-blur-xl"
@@ -659,14 +815,15 @@ export default function COASection() {
         </motion.div>
 
         <motion.div
+          ref={resultsTopRef}
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.16,
-            duration: 0.55,
+            delay: 0.14,
+            duration: 0.5,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mx-auto mt-9 w-full max-w-[900px] sm:mt-12"
+          className="scroll-mt-24 mx-auto mt-9 w-full max-w-[900px] sm:mt-12"
         >
           <div className="mb-4 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <div className="min-w-0">
@@ -677,6 +834,13 @@ export default function COASection() {
               <h2 className="mt-2 break-words text-xl font-black tracking-[-0.04em] text-white sm:text-2xl">
                 {query ? `Results for "${query}"` : "All COAs"}
               </h2>
+
+              {filteredCoas.length > 0 && (
+                <p className="mt-1 text-xs font-semibold text-white/35">
+                  Showing {pageStart + 1}-{Math.min(pageEnd, filteredCoas.length)} of{" "}
+                  {filteredCoas.length}
+                </p>
+              )}
             </div>
 
             <span className="w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/50">
@@ -685,23 +849,32 @@ export default function COASection() {
           </div>
 
           {filteredCoas.length > 0 ? (
-            <div className="grid gap-3">
-              {filteredCoas.map((file) => {
-                const historyKey = file.key || getHistoryKey(file);
-                const fileHasHistory = hasHistory(file);
+            <>
+              <div className="grid gap-3">
+                {paginatedCoas.map((file) => {
+                  const historyKey = file.key || getHistoryKey(file);
+                  const fileHasHistory = hasHistory(file);
 
-                return (
-                  <COACard
-                    key={historyKey}
-                    file={file}
-                    historyKey={historyKey}
-                    fileHasHistory={fileHasHistory}
-                    isHistoryOpen={Boolean(openHistory[historyKey])}
-                    onToggleHistory={toggleHistory}
-                  />
-                );
-              })}
-            </div>
+                  return (
+                    <COACard
+                      key={historyKey}
+                      file={file}
+                      historyKey={historyKey}
+                      fileHasHistory={fileHasHistory}
+                      isHistoryOpen={Boolean(openHistory[historyKey])}
+                      onToggleHistory={toggleHistory}
+                    />
+                  );
+                })}
+              </div>
+
+              <Pagination
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                totalResults={filteredCoas.length}
+                onPageChange={handlePageChange}
+              />
+            </>
           ) : (
             <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-6 text-center sm:p-7">
               <h3 className="text-lg font-black text-white">No COAs found</h3>
@@ -718,8 +891,8 @@ export default function COASection() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.22,
-            duration: 0.55,
+            delay: 0.2,
+            duration: 0.5,
             ease: [0.16, 1, 0.3, 1],
           }}
           className="mx-auto mt-10 grid w-full max-w-[900px] gap-3 sm:mt-14 sm:grid-cols-3"
