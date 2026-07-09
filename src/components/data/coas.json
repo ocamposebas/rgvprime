@@ -190,14 +190,6 @@
           "history": []
         },
         {
-          "code": "RGVE2605290495",
-          "lot": "RGVE2605290495",
-          "product": "GHK 1g",
-          "sku": "GHK",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290495.pdf",
-          "history": []
-        },
-        {
           "code": "RGVE2606010518",
           "lot": "RGVE2606010518",
           "product": "5-Amino 1MQ 50mg",
@@ -303,10 +295,18 @@
         {
           "code": "RGVE2607030549",
           "lot": "Blue Cap",
-          "product": "GHK-Cu Raw 1g",
-          "sku": "GHK-Cu Raw",
+          "product": "Raw GHK 1g",
+          "sku": "Raw GHK",
           "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030549.pdf",
-          "history": []
+          "history": [
+            {
+              "code": "RGVE2605290495",
+              "lot": "RGVE2605290495",
+              "product": "GHK 1g",
+              "sku": "GHK",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290495.pdf"
+            }
+          ]
         }
       ]
     }

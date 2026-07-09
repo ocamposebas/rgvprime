@@ -322,7 +322,7 @@ const COACard = memo(function COACard({
                 </h3>
 
                 {fileHasHistory && (
-                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-200">
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-emerald-200">
                     History available
                   </span>
                 )}
@@ -356,7 +356,7 @@ const COACard = memo(function COACard({
             href={file.url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white no-underline transition hover:bg-red-500 active:scale-[0.98]"
+            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-black no-underline shadow-[0_16px_38px_rgba(16,185,129,0.22)] transition hover:bg-emerald-400 active:scale-[0.98]"
           >
             Open PDF
             <ArrowIcon />
@@ -367,7 +367,7 @@ const COACard = memo(function COACard({
               type="button"
               onClick={() => onToggleHistory(historyKey)}
               aria-expanded={isHistoryOpen}
-              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-red-500/35 hover:text-white active:scale-[0.98]"
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.07] px-5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200 transition hover:border-emerald-400/40 hover:bg-emerald-400/[0.12] hover:text-emerald-100 active:scale-[0.98]"
             >
               {isHistoryOpen ? "Hide history" : "View history"}
               <HistoryIcon open={isHistoryOpen} />
@@ -379,25 +379,26 @@ const COACard = memo(function COACard({
       <AnimatePresence initial={false}>
         {fileHasHistory && isHistoryOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0, y: -6 }}
+            animate={{ height: "auto", opacity: 1, y: 0 }}
+            exit={{ height: 0, opacity: 0, y: -6 }}
             transition={{
-              duration: 0.22,
-              ease: [0.16, 1, 0.3, 1],
+              height: { duration: 0.34, ease: [0.16, 1, 0.3, 1] },
+              opacity: { duration: 0.22, ease: "easeOut" },
+              y: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
             }}
-            className="overflow-hidden"
+            className="overflow-hidden will-change-[height,opacity,transform]"
           >
-            <div className="border-t border-white/10 bg-black/20 p-3.5 sm:p-4">
-              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+            <div className="mt-2 border-t border-emerald-400/10 bg-black/20 p-4 sm:p-5">
+              <p className="mb-4 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-200/70">
                 Previous Certificates
               </p>
 
-              <div className="grid gap-2">
+              <div className="grid gap-3">
                 {file.history.map((item) => (
                   <div
                     key={`${item.code}-${item.lot || item.url}`}
-                    className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                    className="grid gap-3.5 rounded-2xl border border-white/10 bg-white/[0.035] p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4"
                   >
                     <div className="min-w-0">
                       <h4 className="break-words text-sm font-black text-white/90">
@@ -429,7 +430,7 @@ const COACard = memo(function COACard({
                       href={item.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 text-[9px] font-black uppercase tracking-[0.13em] text-red-100 no-underline transition hover:border-red-500/35 hover:bg-red-500/15 hover:text-white active:scale-[0.98] sm:w-auto"
+                      className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 text-[9px] font-black uppercase tracking-[0.13em] text-emerald-100 no-underline transition hover:border-emerald-400/45 hover:bg-emerald-400/15 hover:text-white active:scale-[0.98] sm:w-auto"
                     >
                       Open old PDF
                       <ArrowIcon />

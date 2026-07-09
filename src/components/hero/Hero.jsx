@@ -143,6 +143,13 @@ export default function Hero() {
             >
               View COA
             </a>
+
+            <a
+              href="https://staging.rgvprimellc.com/track-order"
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-red-500/25 bg-red-500/10 px-7 text-[10px] font-black uppercase tracking-[0.18em] text-red-100 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-red-500/45 hover:bg-red-600 hover:text-white sm:px-8 sm:text-[11px]"
+            >
+              Track Order
+            </a>
           </motion.div>
 
           <motion.div
