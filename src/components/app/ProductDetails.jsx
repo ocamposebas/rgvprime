@@ -605,17 +605,265 @@ function renderProductPrice(product) {
   );
 }
 
-function findCOA(product) {
-  if (!product || !coaData?.companies?.[0]?.files) return null;
+const COA_STRENGTH_RE = /\b(\d+(?:\.\d+)?)\s*(mg|mcg|ml|g|iu)\b/i;
 
-  const files = coaData.companies[0].files;
-  const prodName = product.name ? product.name.toLowerCase() : "";
-  const prodSku = product.sku ? product.sku.toLowerCase() : "";
+const COA_ALIAS_GROUPS = {
+  retatrutide: [
+    "retatrutide",
+    "r3ta",
+    "reta",
+    "retratuide",
+    "retarutide",
+    "rgv-r3ta",
+  ],
+  tirzepatide: ["tirzepatide", "tirz", "rgv-tirz"],
+  ghkcu: ["ghk-cu", "ghk cu", "ghk copper", "rgv-ghk-cu"],
+  bpc157tb500: [
+    "bpc-157/tb-500",
+    "bpc-157 / tb-500",
+    "bpc/tb",
+    "bpc tb",
+    "rgv-bpc-tb",
+  ],
+  motsc: ["mots-c", "mots c", "rgv-mots-c"],
+  bacteriostaticwater: [
+    "bacteriostatic water",
+    "bac water",
+    "hospira bac",
+    "rgv-bac-water",
+  ],
+  cjc1295nodacipamorelin: [
+    "cjc-1295 no dac/ipamorelin",
+    "cjc-1295 no dac ipamorelin",
+    "cjc/ipa (no dac)",
+    "cjc ipa no dac",
+    "rgv-cjc-ipa-no-dac",
+  ],
+  igflr3: ["igf-lr3", "igf1-lr3", "igf-1 lr3", "rgv-igf1-lr3"],
+  amino1mq: ["5-amino 1mq", "5amino-1mq", "5 amino 1mq", "rgv-5amino-1mq"],
+  glutathioneinj: [
+    "glutathione inj",
+    "glutathione inj.",
+    "glutathione injection",
+    "glutathione 1200mg",
+    "koren-glut",
+  ],
+  rawghk: ["raw ghk", "ghk 1g", "rgv-raw-ghk"],
+  nadplus: ["nad+", "nad plus", "rgv-nad-plus"],
+  lipocb12: ["lipo-c/b12", "lipo c b12", "lipocb12", "rgv-lipo-c-b12"],
+};
 
-  return files.find((file) => {
-    const coaSku = file.sku ? file.sku.toLowerCase() : "";
-    return (prodSku && prodSku === coaSku) || prodName.includes(coaSku);
+function normalizeCOAText(value = "", { stripStrength = true } = {}) {
+  let text = String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/\+/g, " plus ");
+
+  if (stripStrength) {
+    text = text.replace(new RegExp(COA_STRENGTH_RE.source, "gi"), " ");
+  }
+
+  text = text
+    .replace(/research use only/g, " ")
+    .replace(/not for human or animal use/g, " ")
+    .replace(/rgvprimeresearchllc|rgvprimer|rgvprime|rgv/g, " ")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
+
+  return text;
+}
+
+const COA_ALIAS_TO_KEY = Object.entries(COA_ALIAS_GROUPS).reduce(
+  (map, [canonicalKey, aliases]) => {
+    aliases.forEach((alias) => {
+      const normalized = normalizeCOAText(alias);
+
+      if (normalized) {
+        map[normalized] = canonicalKey;
+      }
+    });
+
+    return map;
+  },
+  {}
+);
+
+function getCOAFields(value) {
+  if (!value) return [];
+
+  if (typeof value === "string" || typeof value === "number") {
+    return [String(value)];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => getCOAFields(item));
+  }
+
+  if (typeof value !== "object") return [];
+
+  const fields = [
+    value.name,
+    value.title,
+    value.slug,
+    value.sku,
+    value.parent_sku,
+    value.option,
+    value.value,
+    value.label,
+    value.product,
+    value.canonical_key,
+    value.lot,
+    value.code,
+  ];
+
+  if (Array.isArray(value.aliases)) fields.push(...value.aliases);
+
+  if (Array.isArray(value.attributes)) {
+    value.attributes.forEach((attribute) => {
+      fields.push(attribute?.name, attribute?.slug, attribute?.option, attribute?.value);
+    });
+  }
+
+  return fields.filter(Boolean).map(String);
+}
+
+function getCOAStrength(fields = []) {
+  const text = getCOAFields(fields).join(" ");
+  const match = text.match(COA_STRENGTH_RE);
+
+  if (!match) return "";
+
+  const amount = Number(match[1]);
+  const unit = String(match[2] || "").toLowerCase();
+
+  if (!Number.isFinite(amount)) return "";
+
+  const normalizedAmount = Number.isInteger(amount)
+    ? String(amount)
+    : String(amount).replace(/\.0+$/, "");
+
+  return `${normalizedAmount}${unit}`;
+}
+
+function getCOAKeys(fields = []) {
+  const normalizedValues = getCOAFields(fields)
+    .map((field) => normalizeCOAText(field))
+    .filter((field) => field && field.length >= 2);
+
+  const keys = new Set();
+
+  normalizedValues.forEach((field) => {
+    keys.add(field);
+
+    const directAlias = COA_ALIAS_TO_KEY[field];
+
+    if (directAlias) {
+      keys.add(directAlias);
+    }
+
+    Object.entries(COA_ALIAS_TO_KEY).forEach(([alias, canonicalKey]) => {
+      if (alias.length >= 4 && (field.includes(alias) || alias.includes(field))) {
+        keys.add(canonicalKey);
+      }
+    });
   });
+
+  return keys;
+}
+
+function flattenCOAFiles(data) {
+  const seen = new Set();
+
+  return (data?.companies ?? []).flatMap((company) => {
+    return (company?.files ?? []).flatMap((file) => {
+      const activeFile = {
+        ...file,
+        company: company.name,
+        companyAliases: company.aliases ?? [],
+        isHistory: false,
+      };
+
+      const historyFiles = Array.isArray(file?.history)
+        ? file.history.map((historyFile) => ({
+            ...historyFile,
+            company: company.name,
+            companyAliases: company.aliases ?? [],
+            parentProduct: file.product,
+            parentSku: file.sku,
+            isHistory: true,
+          }))
+        : [];
+
+      return [activeFile, ...historyFiles];
+    });
+  }).filter((file) => {
+    const uniqueKey = file?.url || file?.code || `${file?.product}-${file?.lot}`;
+
+    if (!uniqueKey || seen.has(uniqueKey)) return false;
+
+    seen.add(uniqueKey);
+    return true;
+  });
+}
+
+function valuesShareCOAKey(productKeys, coaKeys) {
+  for (const productKey of productKeys) {
+    if (coaKeys.has(productKey)) return true;
+  }
+
+  return false;
+}
+
+function findCOAFiles(product, selectedVariation = null, selectedVariants = {}) {
+  if (!product || !coaData?.companies) return [];
+
+  const variationFields = [
+    selectedVariation,
+    ...Object.values(selectedVariants || {}),
+  ];
+
+  const productKeys = getCOAKeys([product, ...variationFields]);
+
+  const selectedStrength =
+    getCOAStrength(variationFields) ||
+    (product?.type === "simple" ? getCOAStrength(product) : "");
+
+  return flattenCOAFiles(coaData)
+    .filter((coa) => {
+      const coaKeys = getCOAKeys([
+        coa.product,
+        coa.sku,
+        coa.parentProduct,
+        coa.parentSku,
+        coa.canonical_key,
+        ...(coa.aliases ?? []),
+      ]);
+
+      if (!valuesShareCOAKey(productKeys, coaKeys)) return false;
+
+      const coaStrength = getCOAStrength([coa.product, coa.lot, coa.sku]);
+
+      if (selectedStrength && coaStrength) {
+        return selectedStrength === coaStrength;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.isHistory !== b.isHistory) return a.isHistory ? 1 : -1;
+
+      const strengthA = parseFloat(getCOAStrength(a) || "0");
+      const strengthB = parseFloat(getCOAStrength(b) || "0");
+
+      if (strengthA !== strengthB) return strengthA - strengthB;
+
+      return String(a.product || "").localeCompare(String(b.product || ""), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
 }
 
 function isValidEmail(email) {
@@ -1224,7 +1472,10 @@ export default function ProductDetails({ slug }) {
   const canAddToCart =
     isInstock && (!hasVariants || !hasVariationData || Boolean(selectedVariation));
 
-  const coaFile = product ? findCOA(product) : null;
+  const coaFiles = product
+    ? findCOAFiles(product, selectedVariation, selectedVariants)
+    : [];
+  const coaFile = coaFiles[0] || null;
 
   const sku = displayProduct?.sku ? displayProduct.sku : "N/A";
   const productType = selectedVariation
