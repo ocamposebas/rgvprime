@@ -51,21 +51,6 @@
           "canonical_key": "lipocb12"
         },
         {
-          "code": "RGVE2604290144",
-          "lot": "RGVE2604290144",
-          "product": "Glutathione 1500mg",
-          "sku": "Glutathione",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290144.pdf",
-          "history": [],
-          "aliases": [
-            "Glutathione 1500mg",
-            "Glutathione",
-            "RGVE2604290144",
-            "RGV-GLUTATHIONE-1500MG"
-          ],
-          "canonical_key": "glutathione"
-        },
-        {
           "code": "RGVE2604290145",
           "lot": "RGVE2604290145",
           "product": "KPV 10mg",
@@ -341,24 +326,6 @@
             "RGV-TESAMORELIN-10MG"
           ],
           "canonical_key": "tesamorelin"
-        },
-        {
-          "code": "RGVE2605290493",
-          "lot": "RGVE2605290493",
-          "product": "GHK-Cu 100mg",
-          "sku": "GHK-Cu",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290493.pdf",
-          "history": [],
-          "aliases": [
-            "GHK-Cu 100mg",
-            "GHK-Cu",
-            "RGVE2605290493",
-            "GHK Cu 100mg",
-            "GHKCU 100mg",
-            "GHK-Cu - 100mg",
-            "RGV-GHK-CU 100mg"
-          ],
-          "canonical_key": "ghkcu"
         },
         {
           "code": "RGVE2605290494",
