@@ -7,6 +7,8 @@
         "RGVE",
         "RGV Prime",
         "RGVPrime",
+        "RGVPRIME",
+        "RGVPRIME LLC",
         "RGVPRIMER",
         "RGVPRIMER RESEARCH LLC"
       ],
@@ -84,28 +86,52 @@
           "history": []
         },
         {
-          "code": "RGVE2605080215",
-          "lot": "RGVE2605080215",
+          "code": "RGVE2607030546",
+          "lot": "RT30-2501-01",
           "product": "Retatrutide 30mg",
           "sku": "Retatrutide",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080215.pdf",
-          "history": []
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030546.pdf",
+          "history": [
+            {
+              "code": "RGVE2605080215",
+              "lot": "RGVE2605080215",
+              "product": "Retatrutide 30mg",
+              "sku": "Retatrutide",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080215.pdf"
+            }
+          ]
         },
         {
-          "code": "RGVE2605080216",
-          "lot": "RGVE2605080216",
+          "code": "RGVE2607030544",
+          "lot": "RT20-2501-01",
           "product": "Retatrutide 20mg",
           "sku": "Retatrutide",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080216.pdf",
-          "history": []
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030544.pdf",
+          "history": [
+            {
+              "code": "RGVE2605080216",
+              "lot": "RGVE2605080216",
+              "product": "Retatrutide 20mg",
+              "sku": "Retatrutide",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080216.pdf"
+            }
+          ]
         },
         {
-          "code": "RGVE2605290487",
-          "lot": "RGVE2605290487",
+          "code": "RGVE2607030538",
+          "lot": "MS40-2501-01",
           "product": "MOTS-C 40mg",
           "sku": "MOTS-C",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290487.pdf",
-          "history": []
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030538.pdf",
+          "history": [
+            {
+              "code": "RGVE2605290487",
+              "lot": "RGVE2605290487",
+              "product": "MOTS-C 40mg",
+              "sku": "MOTS-C",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290487.pdf"
+            }
+          ]
         },
         {
           "code": "RGVE2605290488",
@@ -132,12 +158,20 @@
           "history": []
         },
         {
-          "code": "RGVE2605290492",
-          "lot": "RGVE2605290492",
+          "code": "RGVE2607030536",
+          "lot": "TSM10-250101",
           "product": "Tesamorelin 10mg",
           "sku": "Tesamorelin",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290492.pdf",
-          "history": []
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030536.pdf",
+          "history": [
+            {
+              "code": "RGVE2605290492",
+              "lot": "RGVE2605290492",
+              "product": "Tesamorelin 10mg",
+              "sku": "Tesamorelin",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290492.pdf"
+            }
+          ]
         },
         {
           "code": "RGVE2605290493",
@@ -180,12 +214,19 @@
           ]
         },
         {
-          "code": "RGVE2606090467",
-          "lot": "RGVE2606090467",
+          "code": "RGVE2607030534",
+          "lot": "NJ500-2501-01",
           "product": "NAD+ 500mg",
           "sku": "NAD+",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090467.pdf",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030534.pdf",
           "history": [
+            {
+              "code": "RGVE2606090467",
+              "lot": "RGVE2606090467",
+              "product": "NAD+ 500mg",
+              "sku": "NAD+",
+              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090467.pdf"
+            },
             {
               "code": "RGVE2604060179",
               "lot": "NJ500-2501-01",
@@ -234,6 +275,38 @@
               "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060178.pdf"
             }
           ]
+        },
+        {
+          "code": "RGVE2607030540",
+          "lot": "XA10-2501-01",
+          "product": "Semax 10mg",
+          "sku": "Semax",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030540.pdf",
+          "history": []
+        },
+        {
+          "code": "RGVE2607030541",
+          "lot": "BC10-2501-01",
+          "product": "BPC-157 10mg",
+          "sku": "BPC-157",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030541.pdf",
+          "history": []
+        },
+        {
+          "code": "RGVE2607030542",
+          "lot": "RT10-2501-01",
+          "product": "Retatrutide 10mg",
+          "sku": "Retatrutide",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030542.pdf",
+          "history": []
+        },
+        {
+          "code": "RGVE2607030549",
+          "lot": "Blue Cap",
+          "product": "GHK-Cu Raw 1g",
+          "sku": "GHK-Cu Raw",
+          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030549.pdf",
+          "history": []
         }
       ]
     }
