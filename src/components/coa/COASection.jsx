@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { motion, AnimatePresence } from "motion/react";
 import coaData from "../data/coas.json";
 
@@ -20,20 +28,50 @@ const steps = [
   },
 ];
 
+const MAX_COMPOUND_OPTIONS = 120;
+
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
 function normalize(value) {
-  return String(value || "").toLowerCase().trim();
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function getHistoryKey(file) {
+  return `${file?.code || "coa"}-${file?.lot || file?.url || "history"}`;
 }
 
 function hasHistory(file) {
   return Array.isArray(file?.history) && file.history.length > 0;
 }
 
-function getHistoryKey(file) {
-  return `${file.code || "coa"}-${file.lot || file.url || "history"}`;
+function buildHistoryText(history = []) {
+  return history
+    .flatMap((item) => [item.code, item.lot, item.product, item.sku, item.url])
+    .map(normalize)
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildSearchText(file, companyName, aliases = [], historyText = "") {
+  return [
+    companyName,
+    ...aliases,
+    file.code,
+    file.lot,
+    file.product,
+    file.sku,
+    file.url,
+    historyText,
+  ]
+    .map(normalize)
+    .filter(Boolean)
+    .join(" ");
 }
 
 function SearchIcon() {
@@ -96,10 +134,7 @@ function HistoryIcon({ open = false }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={cn(
-        "h-4 w-4 transition-transform duration-300",
-        open && "rotate-180"
-      )}
+      className={cn("h-4 w-4 transition-transform duration-300", open && "rotate-180")}
       fill="none"
       stroke="currentColor"
       strokeWidth="2.3"
@@ -129,21 +164,187 @@ function SelectIcon() {
   );
 }
 
+const StepCard = memo(function StepCard({ step }) {
+  return (
+    <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-4 text-center transition-colors hover:bg-white/[0.05] sm:p-5">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">
+        {step.number}
+      </p>
+
+      <h3 className="mt-3 text-sm font-black uppercase tracking-[0.12em] text-white">
+        {step.title}
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-[220px] text-sm leading-6 text-white/45">
+        {step.text}
+      </p>
+    </div>
+  );
+});
+
+const COACard = memo(function COACard({
+  file,
+  isHistoryOpen,
+  fileHasHistory,
+  historyKey,
+  onToggleHistory,
+}) {
+  return (
+    <div className="group min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.025] transition hover:border-red-500/35 hover:bg-white/[0.045] [contain-intrinsic-size:1px_150px] [content-visibility:auto]">
+      <div className="grid min-w-0 gap-4 p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="mt-0.5 hidden h-10 w-10 shrink-0 place-items-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 sm:grid">
+              <FileIcon />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="break-words text-base font-black tracking-[-0.02em] text-white">
+                  {file.product || file.code}
+                </h3>
+
+                {fileHasHistory && (
+                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-200">
+                    History available
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
+                {file.lot && (
+                  <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                    Lot: {file.lot}
+                  </span>
+                )}
+
+                {file.code && (
+                  <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                    Code: {file.code}
+                  </span>
+                )}
+
+                {file.sku && (
+                  <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
+                    SKU: {file.sku}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:min-w-[160px]">
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white no-underline transition hover:bg-red-500 active:scale-[0.98]"
+          >
+            Open PDF
+            <ArrowIcon />
+          </a>
+
+          {fileHasHistory && (
+            <button
+              type="button"
+              onClick={() => onToggleHistory(historyKey)}
+              aria-expanded={isHistoryOpen}
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-red-500/35 hover:text-white active:scale-[0.98]"
+            >
+              {isHistoryOpen ? "Hide history" : "View history"}
+              <HistoryIcon open={isHistoryOpen} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {fileHasHistory && isHistoryOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              duration: 0.24,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/10 bg-black/20 p-3.5 sm:p-4">
+              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                Previous Certificates
+              </p>
+
+              <div className="grid gap-2">
+                {file.history.map((item) => (
+                  <div
+                    key={`${item.code}-${item.lot || item.url}`}
+                    className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  >
+                    <div className="min-w-0">
+                      <h4 className="break-words text-sm font-black text-white/90">
+                        {item.product || file.product || item.code}
+                      </h4>
+
+                      <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
+                        {item.lot && (
+                          <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                            Lot: {item.lot}
+                          </span>
+                        )}
+
+                        {item.code && (
+                          <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                            Code: {item.code}
+                          </span>
+                        )}
+
+                        {item.sku && (
+                          <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
+                            SKU: {item.sku}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 text-[9px] font-black uppercase tracking-[0.13em] text-red-100 no-underline transition hover:border-red-500/35 hover:bg-red-500/15 hover:text-white active:scale-[0.98] sm:w-auto"
+                    >
+                      Open old PDF
+                      <ArrowIcon />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
 export default function COASection() {
   const [query, setQuery] = useState("");
   const [openHistory, setOpenHistory] = useState({});
   const [compoundOpen, setCompoundOpen] = useState(false);
   const [compoundSearch, setCompoundSearch] = useState("");
 
+  const deferredQuery = useDeferredValue(query);
+  const deferredCompoundSearch = useDeferredValue(compoundSearch);
   const compoundRef = useRef(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
 
-    if (q) {
-      setQuery(q);
-    }
+    if (q) setQuery(q);
   }, []);
 
   useEffect(() => {
@@ -154,12 +355,10 @@ export default function COASection() {
     }
 
     function handleEscape(event) {
-      if (event.key === "Escape") {
-        setCompoundOpen(false);
-      }
+      if (event.key === "Escape") setCompoundOpen(false);
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, { passive: true });
     document.addEventListener("keydown", handleEscape);
 
     return () => {
@@ -169,73 +368,73 @@ export default function COASection() {
   }, []);
 
   const allCoas = useMemo(() => {
-    return coaData.companies.flatMap((company) =>
-      company.files.map((file) => ({
-        ...file,
-        history: Array.isArray(file.history) ? file.history : [],
-        company: company.name,
-        aliases: company.aliases || [],
-      }))
-    );
+    const companies = Array.isArray(coaData?.companies) ? coaData.companies : [];
+
+    return companies.flatMap((company) => {
+      const companyName = company?.name || "";
+      const aliases = Array.isArray(company?.aliases) ? company.aliases : [];
+      const files = Array.isArray(company?.files) ? company.files : [];
+
+      return files
+        .filter(Boolean)
+        .map((file) => {
+          const history = Array.isArray(file.history) ? file.history.filter(Boolean) : [];
+          const historyText = buildHistoryText(history);
+          const key = getHistoryKey(file);
+
+          return {
+            ...file,
+            key,
+            history,
+            company: companyName,
+            aliases,
+            searchText: buildSearchText(file, companyName, aliases, historyText),
+            historyCount: history.length,
+          };
+        });
+    });
   }, []);
 
   const compoundFilters = useMemo(() => {
     const products = allCoas.map((file) => file.product).filter(Boolean);
-    return [...new Set(products)].sort((a, b) => a.localeCompare(b));
+
+    return [...new Set(products)].sort((a, b) =>
+      a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    );
   }, [allCoas]);
 
   const selectedCompound = useMemo(() => {
-    return (
-      compoundFilters.find(
-        (compound) => normalize(compound) === normalize(query)
-      ) || ""
-    );
+    const cleanQuery = normalize(query);
+
+    return compoundFilters.find((compound) => normalize(compound) === cleanQuery) || "";
   }, [compoundFilters, query]);
 
   const visibleCompoundFilters = useMemo(() => {
-    const search = normalize(compoundSearch);
+    const search = normalize(deferredCompoundSearch);
+    const filtered = search
+      ? compoundFilters.filter((compound) => normalize(compound).includes(search))
+      : compoundFilters;
 
-    if (!search) return compoundFilters;
-
-    return compoundFilters.filter((compound) =>
-      normalize(compound).includes(search)
-    );
-  }, [compoundFilters, compoundSearch]);
+    return filtered.slice(0, MAX_COMPOUND_OPTIONS);
+  }, [compoundFilters, deferredCompoundSearch]);
 
   const filteredCoas = useMemo(() => {
-    const search = normalize(query);
+    const search = normalize(deferredQuery);
 
     if (!search) return allCoas;
 
-    return allCoas.filter((file) => {
-      const historyText = (file.history || [])
-        .flatMap((item) => [
-          item.code,
-          item.lot,
-          item.product,
-          item.sku,
-          item.url,
-        ])
-        .map(normalize)
-        .join(" ");
+    return allCoas.filter((file) => file.searchText.includes(search));
+  }, [allCoas, deferredQuery]);
 
-      const searchableText = [
-        file.company,
-        ...(file.aliases || []),
-        file.code,
-        file.lot,
-        file.product,
-        file.sku,
-        historyText,
-      ]
-        .map(normalize)
-        .join(" ");
+  const resultLabel = filteredCoas.length === 1 ? "result" : "results";
+  const showClear = query.trim().length > 0;
 
-      return searchableText.includes(search);
-    });
-  }, [allCoas, query]);
+  const updateUrlQuery = useCallback((value) => {
+    if (typeof window === "undefined") return;
 
-  function updateUrlQuery(value) {
     const params = new URLSearchParams(window.location.search);
     const cleanValue = value.trim();
 
@@ -250,35 +449,39 @@ export default function COASection() {
       : window.location.pathname;
 
     window.history.replaceState({}, "", nextUrl);
-  }
+  }, []);
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    updateUrlQuery(query);
-  }
+  const handleSubmit = useCallback(
+    (event) => {
+      event.preventDefault();
+      updateUrlQuery(query);
+    },
+    [query, updateUrlQuery]
+  );
 
-  function handleCompoundSelect(value) {
-    setQuery(value);
-    updateUrlQuery(value);
-    setCompoundOpen(false);
-    setCompoundSearch("");
-  }
+  const handleCompoundSelect = useCallback(
+    (value) => {
+      setQuery(value);
+      updateUrlQuery(value);
+      setCompoundOpen(false);
+      setCompoundSearch("");
+    },
+    [updateUrlQuery]
+  );
 
-  function clearSearch() {
+  const clearSearch = useCallback(() => {
     setQuery("");
     updateUrlQuery("");
     setCompoundSearch("");
     setCompoundOpen(false);
-  }
+  }, [updateUrlQuery]);
 
-  function toggleHistory(file) {
-    const key = getHistoryKey(file);
-
+  const toggleHistory = useCallback((historyKey) => {
     setOpenHistory((current) => ({
       ...current,
-      [key]: !current[key],
+      [historyKey]: !current[historyKey],
     }));
-  }
+  }, []);
 
   return (
     <section
@@ -293,7 +496,7 @@ export default function COASection() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-[760px] text-center"
         >
           <div className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 sm:px-4 sm:py-2">
@@ -308,8 +511,7 @@ export default function COASection() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-[560px] text-sm leading-6 text-white/55 sm:mt-5 sm:text-base sm:leading-7">
-            Find available Certificates of Analysis by product name, SKU, or lot
-            number.
+            Find available Certificates of Analysis by product name, SKU, or lot number.
           </p>
         </motion.div>
 
@@ -317,8 +519,8 @@ export default function COASection() {
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.1,
-            duration: 0.7,
+            delay: 0.08,
+            duration: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
           className="mx-auto mt-7 w-full max-w-[760px] sm:mt-9"
@@ -378,7 +580,7 @@ export default function COASection() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.98 }}
                       transition={{
-                        duration: 0.18,
+                        duration: 0.16,
                         ease: [0.16, 1, 0.3, 1],
                       }}
                       className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#080808]/95 shadow-[0_24px_70px_rgba(0,0,0,0.65)] backdrop-blur-xl"
@@ -387,9 +589,7 @@ export default function COASection() {
                         <input
                           type="text"
                           value={compoundSearch}
-                          onChange={(event) =>
-                            setCompoundSearch(event.target.value)
-                          }
+                          onChange={(event) => setCompoundSearch(event.target.value)}
                           placeholder="Search compound..."
                           className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.035] px-3 text-xs font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-red-500/35"
                         />
@@ -412,16 +612,13 @@ export default function COASection() {
                         {visibleCompoundFilters.length > 0 ? (
                           visibleCompoundFilters.map((compound) => {
                             const isActive =
-                              normalize(selectedCompound) ===
-                              normalize(compound);
+                              normalize(selectedCompound) === normalize(compound);
 
                             return (
                               <button
                                 key={compound}
                                 type="button"
-                                onClick={() =>
-                                  handleCompoundSelect(compound)
-                                }
+                                onClick={() => handleCompoundSelect(compound)}
                                 className={cn(
                                   "mt-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-[0.12em] transition",
                                   isActive
@@ -429,9 +626,7 @@ export default function COASection() {
                                     : "text-white/55 hover:bg-white/[0.055] hover:text-white"
                                 )}
                               >
-                                <span className="min-w-0 truncate">
-                                  {compound}
-                                </span>
+                                <span className="min-w-0 truncate">{compound}</span>
 
                                 {isActive && (
                                   <span className="ml-3 h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
@@ -450,7 +645,7 @@ export default function COASection() {
                 </AnimatePresence>
               </div>
 
-              {query && (
+              {showClear && (
                 <button
                   type="button"
                   onClick={clearSearch}
@@ -467,8 +662,8 @@ export default function COASection() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.22,
-            duration: 0.7,
+            delay: 0.16,
+            duration: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
           className="mx-auto mt-9 w-full max-w-[900px] sm:mt-12"
@@ -485,157 +680,25 @@ export default function COASection() {
             </div>
 
             <span className="w-fit rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/50">
-              {filteredCoas.length} result
-              {filteredCoas.length === 1 ? "" : "s"}
+              {filteredCoas.length} {resultLabel}
             </span>
           </div>
 
           {filteredCoas.length > 0 ? (
             <div className="grid gap-3">
               {filteredCoas.map((file) => {
-                const historyKey = getHistoryKey(file);
-                const isHistoryOpen = Boolean(openHistory[historyKey]);
+                const historyKey = file.key || getHistoryKey(file);
                 const fileHasHistory = hasHistory(file);
 
                 return (
-                  <div
+                  <COACard
                     key={historyKey}
-                    className="group min-w-0 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.025] transition hover:border-red-500/35 hover:bg-white/[0.045]"
-                  >
-                    <div className="grid min-w-0 gap-4 p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4">
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="mt-0.5 hidden h-10 w-10 shrink-0 place-items-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 sm:grid">
-                            <FileIcon />
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="break-words text-base font-black tracking-[-0.02em] text-white">
-                                {file.product || file.code}
-                              </h3>
-
-                              {fileHasHistory && (
-                                <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-200">
-                                  History available
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                              {file.lot && (
-                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                                  Lot: {file.lot}
-                                </span>
-                              )}
-
-                              {file.code && (
-                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                                  Code: {file.code}
-                                </span>
-                              )}
-
-                              {file.sku && (
-                                <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45 sm:px-3 sm:text-[10px]">
-                                  SKU: {file.sku}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-2 sm:min-w-[160px]">
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white no-underline transition hover:bg-red-500 active:scale-[0.98]"
-                        >
-                          Open PDF
-                          <ArrowIcon />
-                        </a>
-
-                        {fileHasHistory && (
-                          <button
-                            type="button"
-                            onClick={() => toggleHistory(file)}
-                            aria-expanded={isHistoryOpen}
-                            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-red-500/35 hover:text-white active:scale-[0.98]"
-                          >
-                            {isHistoryOpen ? "Hide history" : "View history"}
-                            <HistoryIcon open={isHistoryOpen} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {fileHasHistory && isHistoryOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{
-                            duration: 0.28,
-                            ease: [0.16, 1, 0.3, 1],
-                          }}
-                          className="overflow-hidden"
-                        >
-                          <div className="border-t border-white/10 bg-black/20 p-3.5 sm:p-4">
-                            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
-                              Previous Certificates
-                            </p>
-
-                            <div className="grid gap-2">
-                              {file.history.map((item) => (
-                                <div
-                                  key={`${item.code}-${item.lot || item.url}`}
-                                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                                >
-                                  <div className="min-w-0">
-                                    <h4 className="break-words text-sm font-black text-white/90">
-                                      {item.product || file.product || item.code}
-                                    </h4>
-
-                                    <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                                      {item.lot && (
-                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
-                                          Lot: {item.lot}
-                                        </span>
-                                      )}
-
-                                      {item.code && (
-                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
-                                          Code: {item.code}
-                                        </span>
-                                      )}
-
-                                      {item.sku && (
-                                        <span className="max-w-full truncate rounded-full bg-white/[0.05] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/40">
-                                          SKU: {item.sku}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 text-[9px] font-black uppercase tracking-[0.13em] text-red-100 no-underline transition hover:border-red-500/35 hover:bg-red-500/15 hover:text-white active:scale-[0.98] sm:w-auto"
-                                  >
-                                    Open old PDF
-                                    <ArrowIcon />
-                                  </a>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                    file={file}
+                    historyKey={historyKey}
+                    fileHasHistory={fileHasHistory}
+                    isHistoryOpen={Boolean(openHistory[historyKey])}
+                    onToggleHistory={toggleHistory}
+                  />
                 );
               })}
             </div>
@@ -644,8 +707,8 @@ export default function COASection() {
               <h3 className="text-lg font-black text-white">No COAs found</h3>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/45">
-                Try searching by the exact product name, SKU, or lot number
-                printed on the vial or packaging.
+                Try searching by the exact product name, SKU, or lot number printed on the
+                vial or packaging.
               </p>
             </div>
           )}
@@ -655,29 +718,14 @@ export default function COASection() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.28,
-            duration: 0.7,
+            delay: 0.22,
+            duration: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
           className="mx-auto mt-10 grid w-full max-w-[900px] gap-3 sm:mt-14 sm:grid-cols-3"
         >
           {steps.map((step) => (
-            <div
-              key={step.number}
-              className="rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-4 text-center transition-colors hover:bg-white/[0.05] sm:p-5"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">
-                {step.number}
-              </p>
-
-              <h3 className="mt-3 text-sm font-black uppercase tracking-[0.12em] text-white">
-                {step.title}
-              </h3>
-
-              <p className="mx-auto mt-2 max-w-[220px] text-sm leading-6 text-white/45">
-                {step.text}
-              </p>
-            </div>
+            <StepCard key={step.number} step={step} />
           ))}
         </motion.div>
       </div>
