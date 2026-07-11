@@ -3,6 +3,7 @@ import "../styles/global.css";
 
 import Agegate from "../components/agegate/AgeGate";
 import GlobalPreloader from "../components/preloader/GlobalPreloader.astro";
+import LaunchOfferPopup from "../components/offers/LaunchOfferPopup";
 
 interface Props {
   title?: string;
@@ -127,8 +128,15 @@ const webpageSchema = {
     {
       noindex ? (
         <>
-          <meta name="robots" content="noindex, nofollow, noarchive" />
-          <meta name="googlebot" content="noindex, nofollow, noarchive" />
+          <meta
+            name="robots"
+            content="noindex, nofollow, noarchive"
+          />
+
+          <meta
+            name="googlebot"
+            content="noindex, nofollow, noarchive"
+          />
         </>
       ) : (
         <>
@@ -136,6 +144,7 @@ const webpageSchema = {
             name="robots"
             content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
           />
+
           <meta
             name="googlebot"
             content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
@@ -144,7 +153,6 @@ const webpageSchema = {
       )
     }
 
-    <!-- Favicon principal usando el logo WebP -->
     <link
       rel="icon"
       type="image/webp"
@@ -158,7 +166,6 @@ const webpageSchema = {
       href="/logo.webp"
     />
 
-    <!-- Apple recomienda PNG para la pantalla de inicio -->
     <link
       rel="apple-touch-icon"
       href="/apple-touch-icon.png"
@@ -168,7 +175,6 @@ const webpageSchema = {
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content={siteName} />
@@ -180,14 +186,12 @@ const webpageSchema = {
     <meta property="og:image:type" content={ogImageType} />
     <meta property="og:image:alt" content={imageAlt} />
 
-    <!-- X / Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="twitter:image:alt" content={imageAlt} />
 
-    <!-- Precarga del logo utilizado por el preloader -->
     <link
       rel="preload"
       as="image"
@@ -219,6 +223,9 @@ const webpageSchema = {
 
     <div class="site-shell">
       <Agegate client:load />
+
+      <LaunchOfferPopup client:load />
+
       <slot />
     </div>
   </body>
