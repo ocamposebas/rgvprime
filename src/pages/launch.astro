@@ -2,18 +2,11 @@
 export const prerender = false;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { getLaunchDate } from "../lib/launch-config";
 
-// July 11, 2026 at 2:00 PM in Austin, Texas (CDT / UTC-05:00).
-const launchDate =
-  import.meta.env.PUBLIC_LAUNCH_DATE?.trim() ||
-  "2026-07-11T14:00:00-05:00";
+const launchDate = getLaunchDate();
+const serverNow = Date.now();
 
-const launchTimestamp = new Date(launchDate).getTime();
-
-// Anyone opening /launch after the scheduled time is sent to the live store.
-if (Number.isFinite(launchTimestamp) && Date.now() >= launchTimestamp) {
-  return Astro.redirect("/", 302);
-}
 ---
 
 <BaseLayout
@@ -229,6 +222,7 @@ if (Number.isFinite(launchTimestamp) && Date.now() >= launchTimestamp) {
       <div
         id="launch-countdown-root"
         data-launch-date={launchDate}
+        data-server-time={serverNow}
         class="relative z-10 mx-auto w-full max-w-[1180px] text-center"
       >
         <h1
@@ -779,37 +773,75 @@ if (Number.isFinite(launchTimestamp) && Date.now() >= launchTimestamp) {
       if (!root) return;
 
       const targetTime = new Date(root.dataset.launchDate || "").getTime();
+      const renderedServerTime = Number(root.dataset.serverTime || Date.now());
+      const serverOffset = renderedServerTime - Date.now();
+
       const daysEl = document.getElementById("days");
       const hoursEl = document.getElementById("hours");
       const minutesEl = document.getElementById("minutes");
       const secondsEl = document.getElementById("seconds");
+      const titleEl = document.getElementById("launch-title");
 
       if (!Number.isFinite(targetTime)) return;
 
       let intervalId = null;
-      let storeIsOpening = false;
+      let checkingServer = false;
+      const redirectKey = "rgvprime-launch-redirected";
 
-      function openStore() {
-        if (storeIsOpening) return;
-        storeIsOpening = true;
+      function getServerAdjustedNow() {
+        return Date.now() + serverOffset;
+      }
+
+      async function waitForServerToOpen() {
+        if (checkingServer) return;
+        checkingServer = true;
 
         if (intervalId !== null) {
           window.clearInterval(intervalId);
+          intervalId = null;
         }
 
-        // Reload the public homepage. The server middleware will now allow the store.
-        window.location.replace("/");
+        if (titleEl) {
+          titleEl.textContent = "Opening the RGVPRIME store...";
+        }
+
+        try {
+          const response = await fetch(`/api/launch-status?t=${Date.now()}`, {
+            method: "GET",
+            cache: "no-store",
+            credentials: "same-origin",
+            headers: {
+              Accept: "application/json"
+            }
+          });
+
+          const data = await response.json().catch(() => null);
+
+          if (response.ok && data?.open === true) {
+            if (window.sessionStorage.getItem(redirectKey) !== "1") {
+              window.sessionStorage.setItem(redirectKey, "1");
+              window.location.replace(`/?launch-open=${Date.now()}`);
+            }
+            return;
+          }
+        } catch (error) {
+          console.error("Could not verify launch status:", error);
+        }
+
+        checkingServer = false;
+        window.setTimeout(waitForServerToOpen, 1000);
       }
 
       function updateCountdown() {
-        const difference = targetTime - Date.now();
+        const difference = targetTime - getServerAdjustedNow();
 
         if (difference <= 0) {
           if (daysEl) daysEl.textContent = "00";
           if (hoursEl) hoursEl.textContent = "00";
           if (minutesEl) minutesEl.textContent = "00";
           if (secondsEl) secondsEl.textContent = "00";
-          openStore();
+
+          waitForServerToOpen();
           return;
         }
 
