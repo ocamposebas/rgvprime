@@ -1,0 +1,1023 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+// July 11, 2026 at 2:00 PM in Austin, Texas (CDT / UTC-05:00).
+const launchDate =
+  import.meta.env.PUBLIC_LAUNCH_DATE?.trim() ||
+  "2026-07-11T14:00:00-05:00";
+
+const launchTimestamp = new Date(launchDate).getTime();
+
+// Anyone opening /launch after the scheduled time is sent to the live store.
+if (Number.isFinite(launchTimestamp) && Date.now() >= launchTimestamp) {
+  return Astro.redirect("/", 302);
+}
+---
+
+<BaseLayout
+  title="RGVPRIME LLC"
+  description="RGVPRIME LLC is preparing a premium research-use-only storefront with verified documentation, curated product access, secure checkout, and priority launch updates."
+>
+  <style is:global>
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      max-width: 100%;
+      margin: 0;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      background: #070101;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      touch-action: pan-y;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    img,
+    svg,
+    video,
+    canvas {
+      max-width: 100%;
+    }
+
+    button,
+    input {
+      font: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .launch-page {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      min-height: 100svh;
+      isolation: isolate;
+      overflow-x: hidden;
+      background: #020202;
+    }
+
+    .launch-page::before {
+      content: "";
+      pointer-events: none;
+      position: fixed;
+      inset: -25vh -25vw;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(127, 29, 29, 0.24), transparent 34%),
+        radial-gradient(circle at 100% 34%, rgba(220, 38, 38, 0.08), transparent 34%),
+        linear-gradient(180deg, #070101 0%, #020202 46%, #080101 100%);
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+    }
+
+    .launch-page > section {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      background-color: transparent;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+    }
+
+    #launch-countdown-root,
+    #notify-modal-panel,
+    #subscribe,
+    #notify-form,
+    header nav {
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+    }
+
+    #notify-modal {
+      overscroll-behavior: contain;
+      touch-action: none;
+    }
+
+    @supports (overflow: clip) {
+      html,
+      body,
+      .launch-page,
+      .launch-page > section {
+        overflow-x: clip;
+      }
+    }
+
+    @media (max-width: 767px) {
+      html,
+      body {
+        overscroll-behavior: none;
+        background: #070101;
+      }
+
+      .launch-page {
+        background: transparent;
+      }
+
+      .launch-page::before {
+        inset: -18vh -18vw;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(127, 29, 29, 0.28), transparent 36%),
+          radial-gradient(circle at 95% 28%, rgba(220, 38, 38, 0.10), transparent 34%),
+          radial-gradient(circle at 8% 78%, rgba(127, 29, 29, 0.18), transparent 32%),
+          linear-gradient(180deg, #080101 0%, #020202 45%, #090101 100%);
+      }
+
+      .launch-page > section {
+        contain: none;
+        content-visibility: visible;
+      }
+
+      .launch-page [class*="blur-["] {
+        filter: blur(62px) !important;
+        opacity: 0.82;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+      }
+
+      .launch-page [class*="backdrop-blur-2xl"] {
+        -webkit-backdrop-filter: blur(10px) saturate(1.12) !important;
+        backdrop-filter: blur(10px) saturate(1.12) !important;
+      }
+
+      .launch-page [class*="shadow-["] {
+        box-shadow: 0 18px 52px rgba(0, 0, 0, 0.38) !important;
+      }
+
+      #notify-modal-backdrop {
+        -webkit-backdrop-filter: blur(10px) !important;
+        backdrop-filter: blur(10px) !important;
+      }
+
+      input,
+      button {
+        min-height: 44px;
+      }
+
+      .launch-page > section:not(:first-of-type) {
+        text-align: center;
+      }
+
+      .launch-page > section:not(:first-of-type) h2,
+      .launch-page > section:not(:first-of-type) p {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .launch-page > section:not(:first-of-type) [class*="inline-flex"] {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  </style>
+  <main class="launch-page relative min-h-[100svh] overflow-hidden bg-[#020202] text-white">
+    <section
+      class="relative min-h-[100svh] overflow-hidden px-4 pb-14 pt-[138px] sm:px-6 sm:pt-[154px] lg:px-8 lg:pt-[172px]"
+    >
+      <div class="pointer-events-none absolute inset-0">
+        <div
+          class="absolute left-1/2 top-[-42%] h-[920px] w-[920px] -translate-x-1/2 rounded-full bg-red-950/45 blur-[180px]"
+        ></div>
+
+        <div
+          class="absolute right-[-18%] top-[18%] h-[680px] w-[680px] rounded-full bg-red-600/12 blur-[170px]"
+        ></div>
+
+        <div
+          class="absolute left-[-20%] bottom-[-28%] h-[680px] w-[680px] rounded-full bg-white/[0.025] blur-[175px]"
+        ></div>
+
+        <div
+          class="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.075),transparent_33%),linear-gradient(115deg,rgba(255,255,255,0.035),transparent_34%,rgba(127,29,29,0.075)_72%,rgba(220,38,38,0.055))]"
+        ></div>
+
+        <div
+          class="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(rgba(255,255,255,.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.55)_1px,transparent_1px)] [background-size:72px_72px]"
+        ></div>
+      </div>
+
+      <header class="absolute left-0 top-0 z-30 w-full px-4 pt-4 sm:px-6 lg:px-8">
+        <nav
+          class="mx-auto flex h-[78px] max-w-[1180px] items-center justify-between rounded-full border border-white/[0.09] bg-black/42 px-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:h-[84px] sm:px-5"
+        >
+          <a href="/" class="flex items-center text-white no-underline">
+            <img
+              src="/logo.webp"
+              alt="RGVPRIME"
+              class="h-14 w-auto object-contain sm:h-16 lg:h-[52px]"
+            />
+          </a>
+
+          <button
+            id="open-notify-modal"
+            data-open-notify-modal
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_16px_40px_rgba(220,38,38,0.25)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300/40"
+          >
+            Notify Me
+          </button>
+        </nav>
+      </header>
+
+      <div
+        id="launch-countdown-root"
+        data-launch-date={launchDate}
+        class="relative z-10 mx-auto w-full max-w-[1180px] text-center"
+      >
+        <h1
+          id="launch-title"
+          class="mx-auto max-w-[880px] text-[2.45rem] font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-5xl md:text-[3.65rem] lg:text-[4.15rem] xl:text-[4.55rem]"
+        >
+          <span class="block">The next evolution of</span>
+          <span class="block">RGVPRIME is almost here.</span>
+        </h1>
+
+        <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/52 sm:text-[15px]">
+          A refined platform for verified documentation, curated product discovery,
+          secure card checkout, and a smoother ordering experience.
+        </p>
+
+        <div
+          class="mx-auto mt-8 grid w-full max-w-[980px] grid-cols-4 gap-1.5 sm:mt-10 sm:gap-4"
+        >
+          <div class="relative overflow-hidden rounded-[1rem] border border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.022))] px-1.5 py-3 text-center shadow-[0_18px_54px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[1.7rem] sm:px-5 sm:py-6">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-300/65 to-transparent"></div>
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.13),transparent_58%)]"></div>
+            <p id="days" class="relative text-[clamp(1.75rem,8vw,7.9rem)] font-black leading-none tracking-[-0.07em] text-white tabular-nums sm:tracking-[-0.09em]">
+              00
+            </p>
+            <p class="relative mt-2 text-[7px] font-black uppercase tracking-[0.12em] text-white/34 sm:mt-3 sm:text-[10px] sm:tracking-[0.24em]">
+              Days
+            </p>
+          </div>
+
+          <div class="relative overflow-hidden rounded-[1rem] border border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.022))] px-1.5 py-3 text-center shadow-[0_18px_54px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[1.7rem] sm:px-5 sm:py-6">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-300/65 to-transparent"></div>
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.13),transparent_58%)]"></div>
+            <p id="hours" class="relative text-[clamp(1.75rem,8vw,7.9rem)] font-black leading-none tracking-[-0.07em] text-white tabular-nums sm:tracking-[-0.09em]">
+              00
+            </p>
+            <p class="relative mt-2 text-[7px] font-black uppercase tracking-[0.12em] text-white/34 sm:mt-3 sm:text-[10px] sm:tracking-[0.24em]">
+              Hours
+            </p>
+          </div>
+
+          <div class="relative overflow-hidden rounded-[1rem] border border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.022))] px-1.5 py-3 text-center shadow-[0_18px_54px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[1.7rem] sm:px-5 sm:py-6">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-300/65 to-transparent"></div>
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.13),transparent_58%)]"></div>
+            <p id="minutes" class="relative text-[clamp(1.75rem,8vw,7.9rem)] font-black leading-none tracking-[-0.07em] text-white tabular-nums sm:tracking-[-0.09em]">
+              00
+            </p>
+            <p class="relative mt-2 text-[7px] font-black uppercase tracking-[0.12em] text-white/34 sm:mt-3 sm:text-[10px] sm:tracking-[0.24em]">
+              Minutes
+            </p>
+          </div>
+
+          <div class="relative overflow-hidden rounded-[1rem] border border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.075),rgba(255,255,255,0.022))] px-1.5 py-3 text-center shadow-[0_18px_54px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[1.7rem] sm:px-5 sm:py-6">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-300/65 to-transparent"></div>
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.13),transparent_58%)]"></div>
+            <p id="seconds" class="relative text-[clamp(1.75rem,8vw,7.9rem)] font-black leading-none tracking-[-0.07em] text-white tabular-nums sm:tracking-[-0.09em]">
+              00
+            </p>
+            <p class="relative mt-2 text-[7px] font-black uppercase tracking-[0.12em] text-white/34 sm:mt-3 sm:text-[10px] sm:tracking-[0.24em]">
+              Seconds
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="mx-auto mt-5 max-w-[980px] overflow-hidden rounded-[1.55rem] border border-white/[0.075] bg-black/24 shadow-[0_22px_70px_rgba(0,0,0,0.32)] backdrop-blur-2xl"
+        >
+          <div
+            class="pointer-events-none h-px w-full bg-gradient-to-r from-transparent via-red-200/55 to-transparent"
+          ></div>
+
+          <div class="grid divide-y divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <div class="group relative flex gap-3 p-4 text-left transition hover:bg-red-500/[0.035] sm:p-5">
+              <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-300/15 bg-red-500/10 text-red-200 shadow-[0_0_28px_rgba(220,38,38,0.12)] transition group-hover:border-red-200/30 group-hover:bg-red-500/15">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M7 3h7l3 3v15H7V3Z" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M14 3v4h4" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M9.5 12h5M9.5 15h5M9.5 18h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+              </div>
+
+              <div class="relative">
+                <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                  Verified Documentation
+                </p>
+                <p class="mt-1.5 text-[11px] leading-5 text-white/42">
+                  Organized certificate access built for clarity and confidence.
+                </p>
+              </div>
+            </div>
+
+            <div class="group relative flex gap-3 p-4 text-left transition hover:bg-red-500/[0.035] sm:p-5">
+              <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-300/15 bg-red-500/10 text-red-200 shadow-[0_0_28px_rgba(220,38,38,0.12)] transition group-hover:border-red-200/30 group-hover:bg-red-500/15">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7.5h16M6.5 4h11L20 7.5 12 20 4 7.5 6.5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <path d="M9 7.5 12 20l3-12.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                </svg>
+              </div>
+
+              <div class="relative">
+                <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                  Selective Catalog
+                </p>
+                <p class="mt-1.5 text-[11px] leading-5 text-white/42">
+                  A refined product environment designed for easier discovery.
+                </p>
+              </div>
+            </div>
+
+            <div class="group relative flex gap-3 p-4 text-left transition hover:bg-red-500/[0.035] sm:p-5">
+              <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-300/15 bg-red-500/10 text-red-200 shadow-[0_0_28px_rgba(220,38,38,0.12)] transition group-hover:border-red-200/30 group-hover:bg-red-500/15">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3.5" y="6" width="17" height="12" rx="2.5" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M3.5 10h17M7 14.5h3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+              </div>
+
+              <div class="relative">
+                <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                  Secure Card Checkout
+                </p>
+                <p class="mt-1.5 text-[11px] leading-5 text-white/42">
+                  A smoother payment experience prepared for public access.
+                </p>
+              </div>
+            </div>
+
+            <div class="group relative flex gap-3 p-4 text-left transition hover:bg-red-500/[0.035] sm:p-5">
+              <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-300/15 bg-red-500/10 text-red-200 shadow-[0_0_28px_rgba(220,38,38,0.12)] transition group-hover:border-red-200/30 group-hover:bg-red-500/15">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3.5 13.7 9l5.8 1.7-5.8 1.7L12 18l-1.7-5.6-5.8-1.7L10.3 9 12 3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <path d="M18 16.5 18.7 19l2.3.7-2.3.7L18 23l-.7-2.6-2.3-.7 2.3-.7.7-2.5Z" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" />
+                </svg>
+              </div>
+
+              <div class="relative">
+                <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                  Client Updates
+                </p>
+                <p class="mt-1.5 text-[11px] leading-5 text-white/42">
+                  Priority communication for launch news and platform upgrades.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form
+          id="subscribe"
+          class="mx-auto mt-8 w-full max-w-[820px] overflow-hidden rounded-[1.65rem] border border-white/[0.075] bg-black/32 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-4"
+        >
+          <div class="grid gap-3 lg:grid-cols-[1fr_1.25fr_155px]">
+            <input
+              id="name"
+              type="text"
+              placeholder="Your name"
+              autocomplete="name"
+              class="h-[54px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-red-300/45 focus:bg-black/55"
+            />
+
+            <input
+              id="email"
+              type="email"
+              placeholder="Email address"
+              autocomplete="email"
+              class="h-[54px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-red-300/45 focus:bg-black/55"
+              required
+            />
+
+            <button
+              id="submit-button"
+              type="submit"
+              class="h-[54px] rounded-2xl bg-red-600 px-5 text-xs font-black uppercase tracking-[0.14em] text-white shadow-[0_18px_45px_rgba(220,38,38,0.3)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Notify Me
+            </button>
+          </div>
+
+          <label class="mt-3 flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3 text-left text-[11px] leading-5 text-white/38">
+            <input
+              id="consent"
+              type="checkbox"
+              checked
+              class="mt-1 accent-red-600"
+            />
+
+            <span>
+              I agree to receive launch notifications and understand I can
+              unsubscribe at any time.
+            </span>
+          </label>
+
+          <div
+            id="form-message"
+            class="mt-4 hidden rounded-2xl border p-4 text-sm font-bold leading-6"
+          ></div>
+        </form>
+
+        <p class="mx-auto mt-7 max-w-2xl text-center text-[11px] leading-6 text-white/28">
+          This page is currently in preview mode. Public access is not active yet.
+        </p>
+      </div>
+    </section>
+
+    <section class="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <div class="pointer-events-none absolute inset-0">
+        <div class="absolute left-1/2 top-0 h-px w-[min(1180px,90vw)] -translate-x-1/2 bg-gradient-to-r from-transparent via-red-200/45 to-transparent"></div>
+        <div class="absolute right-[-18%] top-[8%] h-[620px] w-[620px] rounded-full bg-red-700/12 blur-[160px]"></div>
+        <div class="absolute left-[-18%] bottom-[-20%] h-[540px] w-[540px] rounded-full bg-red-950/22 blur-[150px]"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(127,29,29,0.075)_48%,transparent)]"></div>
+      </div>
+
+      <div class="relative z-10 mx-auto max-w-[1180px]">
+        <div class="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-red-200/12 bg-red-500/[0.075] px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-100 backdrop-blur-2xl">
+              <span class="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.9)]"></span>
+              Product Preview
+            </div>
+
+            <h2 class="mt-6 max-w-2xl text-[2.05rem] font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-[2.75rem] lg:text-[3.25rem]">
+              More products. Better packs. Bigger launch deals.
+            </h2>
+
+            <p class="mt-5 max-w-xl text-sm leading-7 text-white/50 sm:text-[15px]">
+              RGVPRIME is preparing a cleaner catalog experience with individual products,
+              10-pack options, launch promotions, and priority updates for early access.
+            </p>
+
+            <button
+              data-open-notify-modal
+              type="button"
+              class="mt-8 inline-flex h-[52px] items-center justify-center rounded-full bg-red-600 px-7 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_55px_rgba(220,38,38,0.32)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300/40"
+            >
+              Get Priority Access
+            </button>
+          </div>
+
+          <div class="relative overflow-hidden rounded-[2rem] border border-white/[0.09] bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.025)_50%,rgba(127,29,29,0.16))] p-5 shadow-[0_34px_100px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-6">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-200/70 to-transparent"></div>
+            <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-red-600/16 blur-[90px]"></div>
+
+            <div class="relative grid gap-3">
+              <div class="flex items-center justify-between gap-5 rounded-[1.35rem] border border-white/[0.07] bg-black/24 p-4">
+                <div>
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                    Individual Products
+                  </p>
+                  <p class="mt-1.5 text-[12px] leading-5 text-white/42">
+                    A sharper catalog for easier discovery.
+                  </p>
+                </div>
+
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-100">
+                  <svg class="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                    <path d="M4.5 8.5 12 13l7.5-4.5M12 13v7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-5 rounded-[1.35rem] border border-red-200/12 bg-red-500/[0.055] p-4 shadow-[0_0_45px_rgba(220,38,38,0.12)]">
+                <div>
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                    10-Pack Options
+                  </p>
+                  <p class="mt-1.5 text-[12px] leading-5 text-white/46">
+                    Bundle formats made for larger orders.
+                  </p>
+                </div>
+
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-sm font-black text-white shadow-[0_16px_38px_rgba(220,38,38,0.28)]">
+                  10x
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-5 rounded-[1.35rem] border border-white/[0.07] bg-black/24 p-4">
+                <div>
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                    Launch Promotions
+                  </p>
+                  <p class="mt-1.5 text-[12px] leading-5 text-white/42">
+                    Limited deals, early drops, and priority announcements.
+                  </p>
+                </div>
+
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-100">
+                  <svg class="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4.5 12.5 11.5 5.5h7v7l-7 7-7-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                    <path d="M15.5 8.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="relative isolate overflow-hidden px-4 pb-28 pt-10 sm:px-6 sm:pb-32 sm:pt-14 lg:px-8">
+      <div class="pointer-events-none absolute inset-0">
+        <div class="absolute left-1/2 top-0 h-px w-[min(1180px,90vw)] -translate-x-1/2 bg-gradient-to-r from-transparent via-red-200/45 to-transparent"></div>
+        <div class="absolute left-1/2 top-[46%] h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-700/13 blur-[190px]"></div>
+        <div class="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-red-950/18 to-transparent"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,255,255,0.052),transparent_34%)]"></div>
+      </div>
+
+      <div class="relative z-10 mx-auto max-w-[1180px]">
+        <div class="relative min-h-[560px]">
+          <div class="pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 select-none text-[22vw] font-black leading-none tracking-[-0.14em] text-white/[0.026] sm:text-[16vw] lg:text-[11rem]">
+            PRIME
+          </div>
+
+          <div class="grid min-h-[440px] gap-10 border-b border-white/[0.075] py-12 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-red-100/80">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.9)]"></span>
+                Final Call
+              </div>
+
+              <h2 class="mt-6 max-w-3xl text-[2.4rem] font-black leading-[0.92] tracking-[-0.065em] text-white sm:text-[3.3rem] lg:text-[4.25rem]">
+                The next drop starts before the doors open.
+              </h2>
+            </div>
+
+            <div class="lg:pl-10">
+              <p class="max-w-md text-sm leading-7 text-white/50 sm:text-[15px]">
+                Join the priority list for early updates on product access,
+                10-pack availability, launch promotions, documentation, and the
+                official opening of RGVPRIME.
+              </p>
+
+              <button
+                data-open-notify-modal
+                type="button"
+                class="mt-8 inline-flex h-[54px] w-full items-center justify-center rounded-full bg-red-600 px-8 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_22px_60px_rgba(220,38,38,0.35)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300/40 sm:w-auto"
+              >
+                Join Priority List
+              </button>
+
+              <p class="mt-5 max-w-sm text-[11px] leading-6 text-white/30">
+                Priority members receive official updates before public access goes live.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid gap-5 border-b border-white/[0.075] py-7 sm:grid-cols-4">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                Products
+              </p>
+              <p class="mt-2 text-[11px] leading-5 text-white/34">
+                New catalog access.
+              </p>
+            </div>
+
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                Packs
+              </p>
+              <p class="mt-2 text-[11px] leading-5 text-white/34">
+                10-pack options.
+              </p>
+            </div>
+
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                Promos
+              </p>
+              <p class="mt-2 text-[11px] leading-5 text-white/34">
+                Launch-only windows.
+              </p>
+            </div>
+
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">
+                Updates
+              </p>
+              <p class="mt-2 text-[11px] leading-5 text-white/34">
+                Priority alerts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <div
+      id="notify-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center px-4 py-6"
+      aria-hidden="true"
+    >
+      <button
+        id="notify-modal-backdrop"
+        type="button"
+        class="absolute inset-0 bg-black/78 backdrop-blur-xl"
+        aria-label="Close modal"
+      ></button>
+
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          class="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-700/20 blur-[150px]"
+        ></div>
+        <div
+          class="absolute right-[10%] top-[18%] h-[260px] w-[260px] rounded-full bg-white/[0.035] blur-[95px]"
+        ></div>
+      </div>
+
+      <div
+        id="notify-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notify-modal-title"
+        class="relative w-full max-w-[560px] overflow-hidden rounded-[2rem] border border-white/[0.1] bg-[#080505]/95 shadow-[0_40px_130px_rgba(0,0,0,0.72)] backdrop-blur-2xl"
+      >
+        <div
+          class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-200/75 to-transparent"
+        ></div>
+
+        <div
+          class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-red-600/16 blur-[80px]"
+        ></div>
+
+        <div class="relative p-5 sm:p-7">
+          <div class="flex items-start justify-between gap-5">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.22em] text-red-200/80">
+                Priority Access
+              </p>
+
+              <h2
+                id="notify-modal-title"
+                class="mt-3 max-w-md text-3xl font-black leading-[0.95] tracking-[-0.06em] text-white sm:text-4xl"
+              >
+                Receive the official RGVPRIME launch notice first.
+              </h2>
+
+              <p class="mt-4 max-w-md text-sm leading-6 text-white/48">
+                Join the priority list for updates on documentation access,
+                product availability, checkout improvements, and the public
+                opening.
+              </p>
+            </div>
+
+            <button
+              id="close-notify-modal"
+              type="button"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.04] text-white/60 transition hover:border-red-200/25 hover:bg-red-500/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-300/30"
+              aria-label="Close modal"
+            >
+              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            class="mt-6 grid gap-3 rounded-[1.35rem] border border-white/[0.07] bg-white/[0.025] p-3 sm:grid-cols-3"
+          >
+            <div class="rounded-2xl bg-black/20 p-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                Launch
+              </p>
+              <p class="mt-1 text-[11px] leading-5 text-white/38">
+                Public access alerts.
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-black/20 p-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                Catalog
+              </p>
+              <p class="mt-1 text-[11px] leading-5 text-white/38">
+                Product availability.
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-black/20 p-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
+                Checkout
+              </p>
+              <p class="mt-1 text-[11px] leading-5 text-white/38">
+                Payment updates.
+              </p>
+            </div>
+          </div>
+
+          <form id="notify-form" class="mt-6">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <input
+                id="modal-name"
+                type="text"
+                placeholder="Your name"
+                autocomplete="name"
+                class="h-[54px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-red-300/45 focus:bg-black/55"
+              />
+
+              <input
+                id="modal-email"
+                type="email"
+                placeholder="Email address"
+                autocomplete="email"
+                class="h-[54px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-bold text-white outline-none transition placeholder:text-white/25 focus:border-red-300/45 focus:bg-black/55"
+                required
+              />
+            </div>
+
+            <label class="mt-3 flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3 text-left text-[11px] leading-5 text-white/40">
+              <input
+                id="modal-consent"
+                type="checkbox"
+                checked
+                class="mt-1 accent-red-600"
+              />
+
+              <span>
+                I agree to receive launch notifications and understand I can
+                unsubscribe at any time.
+              </span>
+            </label>
+
+            <button
+              id="modal-submit-button"
+              type="submit"
+              class="mt-4 h-[56px] w-full rounded-2xl bg-red-600 px-5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_55px_rgba(220,38,38,0.32)] transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Notify Me
+            </button>
+
+            <div
+              id="modal-form-message"
+              class="mt-4 hidden rounded-2xl border p-4 text-sm font-bold leading-6"
+            ></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    const SUBSCRIBE_ENDPOINT = "/api/launch-subscribe";
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function startCountdown() {
+      const root = document.getElementById("launch-countdown-root");
+      if (!root) return;
+
+      const targetTime = new Date(root.dataset.launchDate || "").getTime();
+      const daysEl = document.getElementById("days");
+      const hoursEl = document.getElementById("hours");
+      const minutesEl = document.getElementById("minutes");
+      const secondsEl = document.getElementById("seconds");
+
+      if (!Number.isFinite(targetTime)) return;
+
+      let intervalId = null;
+      let storeIsOpening = false;
+
+      function openStore() {
+        if (storeIsOpening) return;
+        storeIsOpening = true;
+
+        if (intervalId !== null) {
+          window.clearInterval(intervalId);
+        }
+
+        // Reload the public homepage. The server middleware will now allow the store.
+        window.location.replace("/");
+      }
+
+      function updateCountdown() {
+        const difference = targetTime - Date.now();
+
+        if (difference <= 0) {
+          if (daysEl) daysEl.textContent = "00";
+          if (hoursEl) hoursEl.textContent = "00";
+          if (minutesEl) minutesEl.textContent = "00";
+          if (secondsEl) secondsEl.textContent = "00";
+          openStore();
+          return;
+        }
+
+        const days = Math.floor(difference / 86400000);
+        const hours = Math.floor((difference / 3600000) % 24);
+        const minutes = Math.floor((difference / 60000) % 60);
+        const seconds = Math.floor((difference / 1000) % 60);
+
+        if (daysEl) daysEl.textContent = pad(days);
+        if (hoursEl) hoursEl.textContent = pad(hours);
+        if (minutesEl) minutesEl.textContent = pad(minutes);
+        if (secondsEl) secondsEl.textContent = pad(seconds);
+      }
+
+      updateCountdown();
+      intervalId = window.setInterval(updateCountdown, 1000);
+    }
+
+    function setFormMessage(messageEl, type, text) {
+      if (!messageEl) return;
+
+      messageEl.className = "mt-4 rounded-2xl border p-4 text-sm font-bold leading-6";
+
+      if (type === "success") {
+        messageEl.classList.add("border-red-300/20", "bg-red-500/[0.08]", "text-red-50");
+      } else {
+        messageEl.classList.add("border-red-400/25", "bg-red-500/10", "text-red-100");
+      }
+
+      messageEl.textContent = text;
+    }
+
+    function toggleButton(button, isLoading) {
+      if (!button) return;
+
+      button.disabled = isLoading;
+      button.textContent = isLoading ? "Saving..." : "Notify Me";
+    }
+
+    async function submitSubscription({ name, email, consent, source }) {
+      if (!email || !email.includes("@")) {
+        throw new Error("Please enter a valid email address.");
+      }
+
+      if (!consent) {
+        throw new Error("Please confirm you want to receive launch notifications.");
+      }
+
+      const response = await fetch(SUBSCRIBE_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          interest: "Launch notifications",
+          source
+        })
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Could not subscribe right now.");
+      }
+
+      return data;
+    }
+
+    function initSubscriptionForm(config) {
+      const form = document.getElementById(config.formId);
+      if (!form) return;
+
+      const nameInput = document.getElementById(config.nameId);
+      const emailInput = document.getElementById(config.emailId);
+      const consentInput = document.getElementById(config.consentId);
+      const button = document.getElementById(config.buttonId);
+      const message = document.getElementById(config.messageId);
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const name = nameInput ? nameInput.value.trim() : "";
+        const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+        const consent = consentInput ? consentInput.checked : false;
+
+        try {
+          toggleButton(button, true);
+
+          const data = await submitSubscription({
+            name,
+            email,
+            consent,
+            source: config.source
+          });
+
+          if (nameInput) nameInput.value = "";
+          if (emailInput) emailInput.value = "";
+
+          setFormMessage(
+            message,
+            "success",
+            data.message || "You’re on the launch list. We’ll send you priority notifications."
+          );
+        } catch (error) {
+          setFormMessage(
+            message,
+            "error",
+            error instanceof Error ? error.message : "Something went wrong. Please try again."
+          );
+        } finally {
+          toggleButton(button, false);
+        }
+      });
+    }
+
+    function startNotifyModal() {
+      const modal = document.getElementById("notify-modal");
+      const openButtons = document.querySelectorAll("[data-open-notify-modal]");
+      const closeButton = document.getElementById("close-notify-modal");
+      const backdrop = document.getElementById("notify-modal-backdrop");
+      const emailInput = document.getElementById("modal-email");
+
+      if (!modal || !openButtons.length) return;
+
+      let lockedScrollY = 0;
+
+      function lockPageScroll() {
+        lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${lockedScrollY}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
+      }
+
+      function unlockPageScroll() {
+        document.documentElement.style.overflow = "";
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.left = "";
+        document.body.style.right = "";
+        document.body.style.width = "";
+        window.scrollTo(0, lockedScrollY);
+      }
+
+      function openModal() {
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        modal.setAttribute("aria-hidden", "false");
+        lockPageScroll();
+
+        window.setTimeout(function () {
+          if (emailInput) emailInput.focus();
+        }, 80);
+      }
+
+      function closeModal() {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        modal.setAttribute("aria-hidden", "true");
+        unlockPageScroll();
+      }
+
+      openButtons.forEach(function (button) {
+        button.addEventListener("click", openModal);
+      });
+
+      if (closeButton) {
+        closeButton.addEventListener("click", closeModal);
+      }
+
+      if (backdrop) {
+        backdrop.addEventListener("click", closeModal);
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !modal.classList.contains("hidden")) {
+          closeModal();
+        }
+      });
+    }
+
+    startCountdown();
+    startNotifyModal();
+
+    initSubscriptionForm({
+      formId: "notify-form",
+      nameId: "modal-name",
+      emailId: "modal-email",
+      consentId: "modal-consent",
+      buttonId: "modal-submit-button",
+      messageId: "modal-form-message",
+      source: "launch-modal"
+    });
+
+    initSubscriptionForm({
+      formId: "subscribe",
+      nameId: "name",
+      emailId: "email",
+      consentId: "consent",
+      buttonId: "submit-button",
+      messageId: "form-message",
+      source: "launch-form"
+    });
+  </script>
+</BaseLayout>
