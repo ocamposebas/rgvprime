@@ -2,6 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
+const WP_URL = String(
+  import.meta.env.PUBLIC_WP_SITE_URL ||
+    import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
+    "https://wp.rgvprimellc.com"
+).replace(/\/$/, "");
+
+const ZELLE_RECEIPT_STATUS_ENDPOINT = `${WP_URL}/wp-json/rgv/v1/payment-proof-status`;
+const ZELLE_RECEIPT_UPLOAD_ENDPOINT = `${WP_URL}/wp-json/rgv/v1/payment-proof`;
+const MAX_ZELLE_RECEIPT_SIZE = 10 * 1024 * 1024;
+const ACCEPTED_ZELLE_RECEIPT_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/pdf",
+];
+
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -31,6 +47,143 @@ function statusLabel(status = "") {
   };
 
   return labels[status] || status || "Unknown";
+}
+
+function getOrderId(order = {}) {
+  const id = Number(order.order_id || order.id || 0);
+  return Number.isFinite(id) && id > 0 ? id : 0;
+}
+
+function getOrderKey(order = {}) {
+  return String(order.order_key || order.orderKey || "").trim();
+}
+
+function getOrderPaymentMethod(order = {}) {
+  return String(
+    order.payment_method ||
+      order.paymentMethod ||
+      order.payment_method_title ||
+      order.paymentMethodTitle ||
+      order.payment_details?.title ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function getInitialZelleReceiptState(order = {}) {
+  const paymentMethod = getOrderPaymentMethod(order);
+  const receipt = order.zelle_receipt || order.receipt || {};
+  const receiptStatus = String(
+    order.receipt_status ||
+      order.zelle_receipt_status ||
+      receipt.status ||
+      "not_uploaded"
+  ).trim();
+  const receiptUrl = String(
+    order.receipt_url || order.zelle_receipt_url || receipt.url || ""
+  ).trim();
+  const receiptUploaded = Boolean(
+    order.receipt_uploaded === true ||
+      order.zelle_receipt_uploaded === true ||
+      receipt.uploaded === true ||
+      receiptUrl ||
+      ["pending_review", "approved"].includes(receiptStatus)
+  );
+  const isZelle = paymentMethod.includes("zelle") || Boolean(order.payment_reference);
+
+  return {
+    checked: isZelle,
+    is_zelle: isZelle,
+    receipt_uploaded: receiptUploaded,
+    receipt_status: receiptStatus || "not_uploaded",
+    receipt_url: receiptUrl,
+    receipt_uploaded_at:
+      order.receipt_uploaded_at || order.zelle_receipt_uploaded_at || receipt.uploaded_at || "",
+    payment_reference:
+      order.payment_reference || order.zelle_payment_reference || receipt.payment_reference || "",
+    total: order.total || 0,
+  };
+}
+
+function isAcceptedReceiptFile(file) {
+  if (!file) return false;
+  if (ACCEPTED_ZELLE_RECEIPT_TYPES.includes(file.type)) return true;
+
+  return /\.(jpe?g|png|webp|pdf)$/i.test(file.name || "");
+}
+
+function getReceiptStorageKey(orderId) {
+  return orderId ? `rgv-zelle-receipt-${orderId}` : "";
+}
+
+function readStoredReceiptState(orderId) {
+  if (typeof window === "undefined" || !orderId) return null;
+
+  try {
+    const raw = window.localStorage.getItem(getReceiptStorageKey(orderId));
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    if (!parsed || parsed.receipt_uploaded !== true) return null;
+
+    return {
+      checked: true,
+      is_zelle: true,
+      receipt_uploaded: true,
+      receipt_status: parsed.receipt_status || "pending_review",
+      receipt_url: parsed.receipt_url || "",
+      receipt_uploaded_at: parsed.receipt_uploaded_at || "",
+      payment_reference: parsed.payment_reference || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function storeReceiptState(orderId, state = {}) {
+  if (
+    typeof window === "undefined" ||
+    !orderId ||
+    state.receipt_uploaded !== true
+  ) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      getReceiptStorageKey(orderId),
+      JSON.stringify({
+        receipt_uploaded: true,
+        receipt_status: state.receipt_status || "pending_review",
+        receipt_url: state.receipt_url || "",
+        receipt_uploaded_at: state.receipt_uploaded_at || new Date().toISOString(),
+        payment_reference: state.payment_reference || "",
+      })
+    );
+  } catch {}
+}
+
+function mergeReceiptState(baseState = {}, nextState = {}) {
+  const merged = {
+    ...baseState,
+    ...nextState,
+  };
+
+  if (baseState.receipt_uploaded && !nextState.receipt_uploaded) {
+    return {
+      ...merged,
+      receipt_uploaded: true,
+      receipt_status:
+        baseState.receipt_status === "approved"
+          ? "approved"
+          : baseState.receipt_status || "pending_review",
+      receipt_url: baseState.receipt_url || merged.receipt_url || "",
+      receipt_uploaded_at:
+        baseState.receipt_uploaded_at || merged.receipt_uploaded_at || "",
+    };
+  }
+
+  return merged;
 }
 
 function initialsFromUser(user) {
@@ -182,6 +335,28 @@ function Icon({ name, className = "h-5 w-5" }) {
       <>
         <rect width="18" height="11" x="3" y="11" rx="2" />
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </>
+    ),
+    upload: (
+      <>
+        <path d="M12 16V4" />
+        <path d="m7 9 5-5 5 5" />
+        <path d="M5 20h14" />
+      </>
+    ),
+    alert: (
+      <>
+        <path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </>
+    ),
+    file: (
+      <>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 2v6h6" />
+        <path d="M8 13h8" />
+        <path d="M8 17h5" />
       </>
     ),
     logout: (
@@ -1038,14 +1213,346 @@ function InlineTrackingDetails({ order, loading, error }) {
   );
 }
 
+function ZelleReceiptPanel({
+  order,
+  customerEmail = "",
+  onReceiptStateChange,
+}) {
+  const orderId = getOrderId(order);
+  const orderKey = getOrderKey(order);
+  const initialState = useMemo(() => getInitialZelleReceiptState(order), [order]);
+  const [receiptState, setReceiptState] = useState(() =>
+    mergeReceiptState(initialState, readStoredReceiptState(orderId) || {})
+  );
+  const [checking, setChecking] = useState(Boolean(orderId && customerEmail));
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setReceiptState((current) =>
+      mergeReceiptState(
+        mergeReceiptState(initialState, readStoredReceiptState(orderId) || {}),
+        current
+      )
+    );
+  }, [initialState, orderId]);
+
+  useEffect(() => {
+    onReceiptStateChange?.(receiptState);
+  }, [onReceiptStateChange, receiptState]);
+
+  useEffect(() => {
+    if (!orderId || !customerEmail) {
+      setChecking(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadReceiptStatus() {
+      setChecking(true);
+
+      try {
+        const response = await fetch(
+          `${ZELLE_RECEIPT_STATUS_ENDPOINT}?t=${Date.now()}`,
+          {
+          method: "POST",
+          credentials: "omit",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            order_id: orderId,
+            order_key: orderKey,
+            customer_email: customerEmail,
+          }),
+          signal: controller.signal,
+          }
+        );
+
+        const text = await response.text();
+        let data = {};
+
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          throw new Error("The payment receipt service returned an invalid response.");
+        }
+
+        const payload = data?.data && typeof data.data === "object" ? data.data : data;
+
+        if (!response.ok || payload.success === false) {
+          throw new Error(
+            payload.message || "Receipt status is temporarily unavailable."
+          );
+        }
+
+        setReceiptState((current) => {
+          const nextState = mergeReceiptState(current, {
+            ...initialState,
+            ...payload,
+            checked: true,
+          });
+
+          storeReceiptState(orderId, nextState);
+          return nextState;
+        });
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          if (initialState.is_zelle) {
+            setError(
+              requestError instanceof TypeError
+                ? "We could not connect to the payment receipt service. Please refresh the page and try again."
+                : requestError.message || "Receipt status is temporarily unavailable."
+            );
+          }
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setChecking(false);
+        }
+      }
+    }
+
+    loadReceiptStatus();
+
+    return () => controller.abort();
+  }, [customerEmail, initialState, orderId, orderKey]);
+
+  function handleFileChange(event) {
+    const selectedFile = event.target.files?.[0] || null;
+    setMessage("");
+    setError("");
+
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    if (!isAcceptedReceiptFile(selectedFile)) {
+      event.target.value = "";
+      setFile(null);
+      setError("Please choose a JPG, PNG, WEBP, or PDF file.");
+      return;
+    }
+
+    if (selectedFile.size > MAX_ZELLE_RECEIPT_SIZE) {
+      event.target.value = "";
+      setFile(null);
+      setError("The payment receipt must be smaller than 10MB.");
+      return;
+    }
+
+    setFile(selectedFile);
+  }
+
+  async function uploadReceipt() {
+    if (!file || !orderId || !customerEmail || uploading) return;
+
+    setUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("order_id", String(orderId));
+      formData.append("order_key", orderKey);
+      formData.append("customer_email", customerEmail);
+      formData.append("payment_method", "zelle");
+      formData.append("receipt", file);
+
+      const response = await fetch(
+        `${ZELLE_RECEIPT_UPLOAD_ENDPOINT}?t=${Date.now()}`,
+        {
+          method: "POST",
+          credentials: "omit",
+          cache: "no-store",
+          body: formData,
+        }
+      );
+
+      const text = await response.text();
+      let data = {};
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error("The receipt upload service returned an invalid response.");
+      }
+
+      const payload = data?.data && typeof data.data === "object" ? data.data : data;
+
+      if (!response.ok || payload.success === false) {
+        throw new Error(
+          payload.message || "Unable to upload your payment receipt."
+        );
+      }
+
+      setReceiptState((current) => {
+        const nextState = {
+          ...current,
+          checked: true,
+          is_zelle: true,
+          receipt_uploaded: true,
+          receipt_status: payload.receipt_status || "pending_review",
+          receipt_url: payload.receipt_url || current.receipt_url || "",
+          receipt_uploaded_at:
+            payload.receipt_uploaded_at || new Date().toISOString(),
+        };
+
+        storeReceiptState(orderId, nextState);
+        return nextState;
+      });
+      setFile(null);
+      setMessage(
+        "Receipt uploaded successfully. Our team will review your Zelle payment before processing the order."
+      );
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof TypeError
+          ? "We could not connect to the payment receipt service. Please try again in a moment."
+          : uploadError.message || "Unable to upload your payment receipt."
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (checking && !receiptState.is_zelle) {
+    return null;
+  }
+
+  if (!receiptState.is_zelle) {
+    return null;
+  }
+
+  const receiptApproved =
+    receiptState.receipt_status === "approved" ||
+    ["processing", "completed"].includes(String(order.status || ""));
+  const receiptUploaded = Boolean(receiptState.receipt_uploaded) || receiptApproved;
+
+  if (receiptUploaded) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 rounded-[1.25rem] border border-red-400/20 bg-red-500/[0.045] p-3 sm:p-4">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-300/20 bg-red-500/10 text-red-100">
+          <Icon name="alert" className="h-4.5 w-4.5" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-200">
+              Action required
+            </p>
+
+            <span className="rounded-full border border-red-300/20 bg-red-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-red-100">
+              Receipt missing
+            </span>
+          </div>
+
+          <h3 className="mt-1 text-[15px] font-black tracking-[-0.025em] text-white sm:text-base">
+            Upload your Zelle receipt
+          </h3>
+
+          <p className="mt-1 max-w-xl text-xs leading-5 text-white/44">
+            Your order is saved. Add your bank confirmation so we can verify the payment and continue processing it.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-[1rem] border border-white/10 bg-black/25 p-2.5">
+        <label className="group flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[0.85rem] border border-dashed border-white/14 bg-white/[0.025] px-3 py-2.5 transition hover:border-red-300/30 hover:bg-red-500/[0.04]">
+          <input
+            type="file"
+            className="sr-only"
+            accept="image/png,image/jpeg,image/webp,application/pdf"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/48 transition group-hover:border-red-300/20 group-hover:bg-red-500/10 group-hover:text-red-100">
+            <Icon name={file ? "file" : "upload"} className="h-4 w-4" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-black text-white sm:text-sm">
+              {file ? file.name : "Select payment receipt"}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold leading-4 text-white/32 sm:text-xs">
+              {file
+                ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload`
+                : "JPG, PNG, WEBP or PDF · Max 10MB"}
+            </p>
+          </div>
+
+          <span className="hidden shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-white/48 sm:inline-flex">
+            Browse
+          </span>
+        </label>
+
+        <button
+          type="button"
+          onClick={uploadReceipt}
+          disabled={!file || uploading}
+          className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-[0.85rem] bg-red-600 px-4 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-[0_14px_34px_rgba(220,38,38,0.2)] transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/25 disabled:shadow-none"
+        >
+          <Icon name="upload" className="h-4 w-4" />
+          {uploading ? "Uploading..." : "Upload receipt"}
+        </button>
+      </div>
+
+      {receiptState.payment_reference && (
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2.5">
+          <span className="text-[10px] font-bold text-white/32">Zelle memo</span>
+          <strong className="break-all text-[10px] font-black tracking-[0.1em] text-white/62 sm:text-xs">
+            {receiptState.payment_reference}
+          </strong>
+        </div>
+      )}
+
+      {checking && (
+        <p className="mt-2.5 text-[10px] font-bold text-white/30">
+          Checking receipt status...
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-2.5 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-xs font-bold leading-5 text-red-100">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+
+}
+
 function OrderCard({ order, customerEmail = "" }) {
   const [trackingOpen, setTrackingOpen] = useState(false);
   const [trackingOrder, setTrackingOrder] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState("");
+  const orderId = getOrderId(order);
+  const [zelleReceiptState, setZelleReceiptState] = useState(() =>
+    mergeReceiptState(
+      getInitialZelleReceiptState(order),
+      readStoredReceiptState(orderId) || {}
+    )
+  );
 
   const displayedOrder = trackingOrder || order;
   const tracking = getOrderTracking(displayedOrder);
+  const receiptApproved =
+    zelleReceiptState.receipt_status === "approved" ||
+    ["processing", "completed"].includes(String(displayedOrder.status || ""));
+  const receiptUploaded =
+    Boolean(zelleReceiptState.receipt_uploaded) || receiptApproved;
 
   async function handleTrackOrder() {
     if (trackingOpen) {
@@ -1114,7 +1621,21 @@ function OrderCard({ order, customerEmail = "" }) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {zelleReceiptState.is_zelle && receiptUploaded && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.13em]",
+                receiptApproved
+                  ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
+                  : "border-amber-200/20 bg-amber-200/10 text-amber-100"
+              )}
+            >
+              <Icon name="check" className="h-3.5 w-3.5" />
+              {receiptApproved ? "Payment verified" : "Receipt uploaded"}
+            </span>
+          )}
+
           <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100">
             {statusLabel(order.status)}
           </span>
@@ -1142,6 +1663,12 @@ function OrderCard({ order, customerEmail = "" }) {
           ))}
         </div>
       )}
+
+      <ZelleReceiptPanel
+        order={displayedOrder}
+        customerEmail={customerEmail}
+        onReceiptStateChange={setZelleReceiptState}
+      />
 
       <TrackingPreview order={displayedOrder} />
 
