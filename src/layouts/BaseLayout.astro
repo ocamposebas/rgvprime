@@ -8,90 +8,191 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  imageAlt?: string;
   noindex?: boolean;
   canonical?: string;
 }
 
-const siteName = "RGVPRIME RESEARCH LLC";
-const brandName = "RGVPRIME RESEARCH LLC";
+const siteName = "RGVPRIME LLC";
+const brandName = "RGVPRIME LLC";
 const siteUrl = "https://rgvprimellc.com";
 
 const {
-  title = "RGVPRIME RESEARCH LLC | Research Products",
-  description = "RGVPRIME RESEARCH LLC provides research-use products through a clean, secure, and modern customer experience.",
-  image = "/og-image.jpg",
+  title = "RGVPRIME LLC | Laboratory Research Products",
+  description = "RGVPRIME LLC provides high-quality laboratory research products, transparent COA access, secure ordering and reliable service. Products are intended strictly for research use.",
+  image = "/logo.webp",
+  imageAlt = "RGVPRIME LLC laboratory research products",
   noindex = false,
   canonical,
 } = Astro.props;
 
 const currentPath = Astro.url.pathname;
-const canonicalUrl = canonical || new URL(currentPath, siteUrl).toString();
-const ogImageUrl = new URL(image, siteUrl).toString();
 
-const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+const canonicalUrl = canonical
+  ? new URL(canonical, siteUrl).toString()
+  : new URL(currentPath, siteUrl).toString();
+
+const ogImageUrl = new URL(image, siteUrl).toString();
+const logoUrl = new URL("/logo.webp", siteUrl).toString();
+
+const fullTitle = title.includes(siteName)
+  ? title
+  : `${title} | ${siteName}`;
+
+const imageExtension = image.split(".").pop()?.toLowerCase();
+
+const ogImageType =
+  imageExtension === "png"
+    ? "image/png"
+    : imageExtension === "webp"
+      ? "image/webp"
+      : "image/jpeg";
 
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": `${siteUrl}/#organization`,
   name: brandName,
+  legalName: brandName,
   url: siteUrl,
-  logo: new URL("/logo.webp", siteUrl).toString(),
-  sameAs: [],
+  logo: {
+    "@type": "ImageObject",
+    "@id": `${siteUrl}/#logo`,
+    url: logoUrl,
+    contentUrl: logoUrl,
+    caption: brandName,
+  },
+  image: ogImageUrl,
 };
 
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
+  "@id": `${siteUrl}/#website`,
   name: brandName,
+  alternateName: "RGVPRIME",
   url: siteUrl,
+  inLanguage: "en-US",
+  publisher: {
+    "@id": `${siteUrl}/#organization`,
+  },
+};
+
+const webpageSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${canonicalUrl}#webpage`,
+  url: canonicalUrl,
+  name: fullTitle,
+  description,
+  inLanguage: "en-US",
+  isPartOf: {
+    "@id": `${siteUrl}/#website`,
+  },
+  about: {
+    "@id": `${siteUrl}/#organization`,
+  },
+  primaryImageOfPage: {
+    "@type": "ImageObject",
+    url: ogImageUrl,
+  },
 };
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
     <meta name="generator" content={Astro.generator} />
+    <meta name="application-name" content={brandName} />
+    <meta name="apple-mobile-web-app-title" content="RGVPRIME" />
+    <meta name="author" content={brandName} />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
 
     <link rel="canonical" href={canonicalUrl} />
 
+    <link rel="alternate" hreflang="en-US" href={canonicalUrl} />
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+
     {
       noindex ? (
-        <meta name="robots" content="noindex, nofollow" />
+        <>
+          <meta name="robots" content="noindex, nofollow, noarchive" />
+          <meta name="googlebot" content="noindex, nofollow, noarchive" />
+        </>
       ) : (
-        <meta name="robots" content="index, follow" />
+        <>
+          <meta
+            name="robots"
+            content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+          />
+          <meta
+            name="googlebot"
+            content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+          />
+        </>
       )
     }
 
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Favicon principal usando el logo WebP -->
+    <link
+      rel="icon"
+      type="image/webp"
+      href="/logo.webp"
+      sizes="any"
+    />
+
+    <link
+      rel="shortcut icon"
+      type="image/webp"
+      href="/logo.webp"
+    />
+
+    <!-- Apple recomienda PNG para la pantalla de inicio -->
+    <link
+      rel="apple-touch-icon"
+      href="/apple-touch-icon.png"
+      sizes="180x180"
+    />
 
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
 
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:secure_url" content={ogImageUrl} />
+    <meta property="og:image:type" content={ogImageType} />
+    <meta property="og:image:alt" content={imageAlt} />
 
+    <!-- X / Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
 
+    <!-- Precarga del logo utilizado por el preloader -->
     <link
       rel="preload"
       as="image"
-      href="/logo-small.webp"
-      imagesrcset="/logo-small.webp 336w, /logo-small@2x.webp 672w"
-      imagesizes="336px"
+      type="image/webp"
+      href="/logo.webp"
       fetchpriority="high"
     />
 
@@ -104,6 +205,13 @@ const websiteSchema = {
       type="application/ld+json"
       set:html={JSON.stringify(websiteSchema)}
     />
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(webpageSchema)}
+    />
+
+    <slot name="head" />
   </head>
 
   <body>
