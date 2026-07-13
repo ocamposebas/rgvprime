@@ -33,34 +33,13 @@ const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
 const FREE_SHIPPING_MINIMUM = 150;
 
-const USPS_GROUND_SHIPPING_COST = Number(
-  import.meta.env.PUBLIC_RGV_USPS_GROUND_SHIPPING || 6
-);
-
-const USPS_PRIORITY_SHIPPING_COST = Number(
-  import.meta.env.PUBLIC_RGV_USPS_PRIORITY_SHIPPING || 12
-);
-
-const SHIPPING_METHODS = [
-  {
-    id: "usps_ground",
-    title: "USPS Ground",
-    label: "Ground USPS",
-    description: "Reliable ground delivery.",
-    price: USPS_GROUND_SHIPPING_COST,
-  },
-  {
-    id: "usps_priority",
-    title: "USPS Priority",
-    label: "Priority USPS",
-    description: "Faster priority delivery.",
-    price: USPS_PRIORITY_SHIPPING_COST,
-  },
-];
-
-const ZELLE_DISCOUNT_RATE = Number(
-  import.meta.env.PUBLIC_RGV_ZELLE_DISCOUNT_RATE || 0.05
-);
+const SHIPPING_METHOD = {
+  id: "usps_priority",
+  title: "USPS Priority",
+  label: "Priority USPS",
+  description: "Priority delivery with tracking.",
+  price: 12,
+};
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 
@@ -103,8 +82,8 @@ const PAYMENT_METHODS = [
     eyebrow: "Manual route",
     title: "Zelle",
     description:
-      "Create your order here, save 5%, and upload your receipt. Processing may take up to 24 hours.",
-    badge: "5% OFF",
+      "Create your order here and upload your receipt. Processing may take up to 24 hours.",
+    badge: "Manual",
     icon: Building2,
   },
 ];
@@ -506,6 +485,49 @@ function getBlankCheckoutForm() {
   };
 }
 
+function getInitialCheckoutForm() {
+  const blankForm = getBlankCheckoutForm();
+  if (typeof window === "undefined") return blankForm;
+
+  const savedEmail = normalizeEmail(
+    localStorage.getItem("rgv_checkout_email") ||
+      localStorage.getItem("phaseone_checkout_email") ||
+      localStorage.getItem("customer_email") ||
+      ""
+  );
+
+  const savedShipping = safeJsonParse(
+    localStorage.getItem("rgv_checkout_shipping") ||
+      localStorage.getItem("phaseone_checkout_shipping"),
+    null
+  );
+
+  if (savedShipping && typeof savedShipping === "object") {
+    return {
+      ...blankForm,
+      ...savedShipping,
+      email: normalizeEmail(savedShipping.email || savedEmail),
+    };
+  }
+
+  return savedEmail ? { ...blankForm, email: savedEmail } : blankForm;
+}
+
+function getInitialCouponCode() {
+  if (typeof window === "undefined") return "";
+
+  const url = new URL(window.location.href);
+
+  return normalizeCoupon(
+    url.searchParams.get("coupon") ||
+      url.searchParams.get("coupon_code") ||
+      url.searchParams.get("discount_code") ||
+      url.searchParams.get("ref") ||
+      localStorage.getItem("rgv_checkout_coupon") ||
+      ""
+  );
+}
+
 function normalizeCheckoutFormForOrder(form = {}) {
   return {
     first_name: String(form.firstName || "").trim(),
@@ -575,7 +597,7 @@ function buildWooCheckoutUrl({ cartItems, coupon, shippingMethod }) {
 
   if (shippingMethod?.id) {
     url.searchParams.set("rgv_shipping_method", shippingMethod.id);
-    url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Ground");
+    url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Priority");
     url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
   }
 
@@ -613,16 +635,15 @@ function Field({ label, children, wide = false }) {
 
 export default function RgvCheckout() {
   const cart = useCart?.();
-  const [localCartItems, setLocalCartItems] = useState([]);
+  const [localCartItems] = useState(() => readStoredCartItems());
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card");
-  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState("usps_ground");
-  const [couponInput, setCouponInput] = useState("");
+  const [couponInput, setCouponInput] = useState(() => getInitialCouponCode());
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
   const [couponStatus, setCouponStatus] = useState("idle");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponValidation, setCouponValidation] = useState(null);
-  const [checkoutForm, setCheckoutForm] = useState(() => getBlankCheckoutForm());
+  const [checkoutForm, setCheckoutForm] = useState(() => getInitialCheckoutForm());
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -631,6 +652,7 @@ export default function RgvCheckout() {
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
   const [receiptMessage, setReceiptMessage] = useState("");
+  const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
 
   const providerCartItems = useMemo(() => {
@@ -649,73 +671,38 @@ export default function RgvCheckout() {
 
     clearForeignCartCache();
 
-    const savedCart = readStoredCartItems();
-    setLocalCartItems(savedCart);
-
-    const savedShippingMethodId = localStorage.getItem("rgv_checkout_shipping_method") || "";
-
-    if (SHIPPING_METHODS.some((method) => method.id === savedShippingMethodId)) {
-      setSelectedShippingMethodId(savedShippingMethodId);
-    }
-
-    const savedEmail = normalizeEmail(
-      localStorage.getItem("rgv_checkout_email") ||
-        localStorage.getItem("phaseone_checkout_email") ||
-        localStorage.getItem("customer_email") ||
-        ""
-    );
-
-    const savedShipping = safeJsonParse(
-      localStorage.getItem("rgv_checkout_shipping") ||
-        localStorage.getItem("phaseone_checkout_shipping"),
-      null
-    );
-
-    if (savedShipping && typeof savedShipping === "object") {
-      setCheckoutForm((current) => ({
-        ...current,
-        ...savedShipping,
-        email: normalizeEmail(savedShipping.email || savedEmail || current.email),
-      }));
-    } else if (savedEmail) {
-      setCheckoutForm((current) => ({ ...current, email: savedEmail }));
-    }
-
-    const url = new URL(window.location.href);
-    const urlCoupon = normalizeCoupon(
-      url.searchParams.get("coupon") ||
-        url.searchParams.get("coupon_code") ||
-        url.searchParams.get("discount_code") ||
-        url.searchParams.get("ref") ||
-        ""
-    );
-
-    if (urlCoupon) {
-      setCouponInput(urlCoupon);
-      setCouponMessage("");
-      setCouponStatus("idle");
-      localStorage.setItem("rgv_checkout_coupon", urlCoupon);
-    } else {
-      const storedCoupon = normalizeCoupon(localStorage.getItem("rgv_checkout_coupon") || "");
-
-      if (storedCoupon) {
-        setCouponInput(storedCoupon);
-        setCouponMessage("");
-        setCouponStatus("idle");
-      }
+    if (couponInput) {
+      localStorage.setItem("rgv_checkout_coupon", couponInput);
     }
   }, []);
 
   const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
 
-  const cartTotal = hasProviderCartItems
-    ? Number(
-        cart?.cartTotal ??
-          cart?.subtotal ??
-          cart?.paidSubtotal ??
-          calculateCartTotal(cartItems)
-      )
-    : calculateCartTotal(cartItems);
+  const cartTotal = useMemo(
+    () =>
+      hasProviderCartItems
+        ? Number(
+            cart?.cartTotal ??
+              cart?.subtotal ??
+              cart?.paidSubtotal ??
+              calculateCartTotal(cartItems)
+          )
+        : calculateCartTotal(cartItems),
+    [cart?.cartTotal, cart?.paidSubtotal, cart?.subtotal, cartItems, hasProviderCartItems]
+  );
+
+  const summaryItems = useMemo(
+    () =>
+      cartItems.map((item, index) => ({
+        key: item.cartKey || item.cart_key || `${getOfficialProductId(item)}-${index}`,
+        image: getItemImage(item),
+        lineTotal: getCartItemLineTotal(item),
+        name: getItemName(item),
+        options: getItemOptions(item),
+        quantity: getCartItemQuantity(item),
+      })),
+    [cartItems]
+  );
 
   const couponDiscount =
     couponStatus === "valid"
@@ -733,13 +720,7 @@ export default function RgvCheckout() {
 
   const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
 
-  const selectedPaymentMethod =
-    PAYMENT_METHODS.find((method) => method.id === selectedPaymentMethodId) ||
-    PAYMENT_METHODS[0];
-
-  const selectedShippingMethod =
-    SHIPPING_METHODS.find((method) => method.id === selectedShippingMethodId) ||
-    SHIPPING_METHODS[0];
+  const selectedShippingMethod = SHIPPING_METHOD;
 
   const isZelleSelected = selectedPaymentMethodId === "zelle";
   const hasItems = cartItems.length > 0;
@@ -747,10 +728,7 @@ export default function RgvCheckout() {
   const amountUntilFreeShipping = Math.max(FREE_SHIPPING_MINIMUM - cartTotal, 0);
   const selectedShippingBaseCost = toMoneyNumber(selectedShippingMethod?.price, 0);
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
-  const zelleDiscount = isZelleSelected
-    ? Number((Math.max(discountedCartTotal, 0) * ZELLE_DISCOUNT_RATE).toFixed(2))
-    : 0;
-  const estimatedDue = Math.max(discountedCartTotal - zelleDiscount + shippingCost, 0);
+  const estimatedDue = Math.max(discountedCartTotal + shippingCost, 0);
 
   const orderReference = buildPaymentReference(manualOrder || {});
   const zelleMemoCode = `RGV-${orderReference || manualOrder?.order_number || manualOrder?.number || manualOrder?.id || ""}`;
@@ -1012,8 +990,8 @@ export default function RgvCheckout() {
           shipping_cost: shippingCost,
           shippingBaseCost: selectedShippingBaseCost,
           shipping_base_cost: selectedShippingBaseCost,
-          zelleDiscountRate: ZELLE_DISCOUNT_RATE,
-          zelle_discount_rate: ZELLE_DISCOUNT_RATE,
+          zelleDiscountRate: 0,
+          zelle_discount_rate: 0,
           freeShippingMinimum: FREE_SHIPPING_MINIMUM,
           free_shipping_minimum: FREE_SHIPPING_MINIMUM,
           standardShippingCost: selectedShippingBaseCost,
@@ -1119,7 +1097,12 @@ export default function RgvCheckout() {
         throw new Error(data?.message || data?.error || "Unable to upload receipt.");
       }
 
-      setReceiptMessage("Receipt uploaded successfully. Your Zelle order is pending verification and can take up to 24 hours to process.");
+      setReceiptFile(null);
+      setReceiptSubmitted(true);
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err) {
       setReceiptMessage(err?.message || "Unable to upload receipt. Please try again.");
     } finally {
@@ -1141,6 +1124,61 @@ export default function RgvCheckout() {
   );
 
   if (!hasItems) return <EmptyState />;
+
+  if (receiptSubmitted && manualOrder && isZelleSelected) {
+    const orderNumber = manualOrder.order_number || manualOrder.number || manualOrder.id;
+
+    return (
+      <main className="rgvx-page rgvx-thanks-page">
+        <div className="rgvx-background-wash" />
+
+        <section className="rgvx-shell rgvx-thanks-shell">
+          <div className="rgvx-topbar">
+            <a href="/shop" className="rgvx-ghost-link">
+              <ArrowLeft size={14} /> Back to shop
+            </a>
+
+            <div className="rgvx-lock-pill rgvx-confirmed-pill">
+              <BadgeCheck size={13} /> Receipt received
+            </div>
+          </div>
+
+          <section className="rgvx-receipt-thanks-card" aria-live="polite">
+            <div className="rgvx-receipt-thanks-icon">
+              <BadgeCheck size={36} />
+            </div>
+
+            <p>ORDER #{orderNumber}</p>
+            <h1>Thank you for your purchase</h1>
+            <span>
+              We have received your payment receipt. Your purchase will be confirmed
+              within 24 hours, and you will receive a confirmation email.
+            </span>
+
+            <div className="rgvx-receipt-thanks-details">
+              <div>
+                <Mail size={17} />
+                <span>Confirmation email</span>
+                <strong>{manualEmail || manualBilling.email}</strong>
+              </div>
+
+              <div>
+                <ShieldCheck size={17} />
+                <span>Current status</span>
+                <strong>Pending verification</strong>
+              </div>
+            </div>
+
+            <a href="/shop" className="rgvx-receipt-thanks-button">
+              Continue shopping <ChevronRight size={18} />
+            </a>
+          </section>
+        </section>
+
+        <style>{styles}</style>
+      </main>
+    );
+  }
 
   if (manualOrder && isZelleSelected) {
     const orderNumber = manualOrder.order_number || manualOrder.number || manualOrder.id;
@@ -1398,7 +1436,7 @@ export default function RgvCheckout() {
                 <div className="rgvx-zelle-banner">
                   <Building2 size={18} />
                   <div>
-                    <strong>Zelle selected · 5% discount</strong>
+                    <strong>Zelle selected</strong>
                     <span>
                       Enter contact and delivery details. After receipt upload, Zelle orders can take up to 24 hours to process.
                     </span>
@@ -1545,47 +1583,30 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose how you want your order shipped. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    USPS Priority is the available shipping method. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
                   </small>
                 </div>
               </div>
 
               <div className="rgvx-shipping-options flow" aria-label="Shipping method">
                 <div className="rgvx-shipping-options-head">
-                  <span>Available options</span>
+                  <span>Available method</span>
                   <strong>{freeShippingUnlocked ? "Free unlocked" : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}</strong>
                 </div>
 
                 <div className="rgvx-shipping-option-list">
-                  {SHIPPING_METHODS.map((method) => {
-                    const active = method.id === selectedShippingMethodId;
+                  <div className="rgvx-shipping-option active rgvx-shipping-option-static">
+                    <div>
+                      <strong>{SHIPPING_METHOD.title}</strong>
+                      <small>
+                        {freeShippingUnlocked
+                          ? `Regular ${formatMoney(SHIPPING_METHOD.price)} · free unlocked`
+                          : SHIPPING_METHOD.description}
+                      </small>
+                    </div>
 
-                    return (
-                      <button
-                        key={method.id}
-                        type="button"
-                        className={`rgvx-shipping-option ${active ? "active" : ""}`}
-                        onClick={() => {
-                          setSelectedShippingMethodId(method.id);
-
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem("rgv_checkout_shipping_method", method.id);
-                          }
-                        }}
-                      >
-                        <div>
-                          <strong>{method.title}</strong>
-                          <small>
-                            {freeShippingUnlocked
-                              ? `Regular ${formatMoney(method.price)} · free unlocked`
-                              : method.description}
-                          </small>
-                        </div>
-
-                        <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
-                      </button>
-                    );
-                  })}
+                    <em>{freeShippingUnlocked ? "FREE" : formatMoney(SHIPPING_METHOD.price)}</em>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1647,31 +1668,31 @@ export default function RgvCheckout() {
             </div>
 
             <div className="rgvx-items-list">
-              {cartItems.map((item, index) => {
-                const image = getItemImage(item);
-                const options = getItemOptions(item);
-                const quantity = getCartItemQuantity(item);
-                const lineTotal = getCartItemLineTotal(item);
-
-                return (
+              {summaryItems.map((item) => (
                   <div
-                    key={item.cartKey || item.cart_key || `${getOfficialProductId(item)}-${index}`}
+                    key={item.key}
                     className="rgvx-summary-item"
                   >
                     <div className="rgvx-item-image">
-                      <img src={image} alt={getItemName(item)} />
-                      <span>{quantity}</span>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        loading="lazy"
+                        decoding="async"
+                        width="58"
+                        height="58"
+                      />
+                      <span>{item.quantity}</span>
                     </div>
 
                     <div>
-                      <strong>{getItemName(item)}</strong>
-                      {options && <small>{options}</small>}
+                      <strong>{item.name}</strong>
+                      {item.options && <small>{item.options}</small>}
                     </div>
 
-                    <em>{formatMoney(lineTotal)}</em>
+                    <em>{formatMoney(item.lineTotal)}</em>
                   </div>
-                );
-              })}
+                ))}
             </div>
 
             <div className="rgvx-free-progress">
@@ -1696,13 +1717,6 @@ export default function RgvCheckout() {
                 <div className="rgvx-total-row good">
                   <span>Coupon {coupon}</span>
                   <strong>-{formatMoney(couponDiscount)}</strong>
-                </div>
-              )}
-
-              {isZelleSelected && (
-                <div className="rgvx-total-row good">
-                  <span>Zelle discount</span>
-                  <strong>-{formatMoney(zelleDiscount)}</strong>
                 </div>
               )}
 
@@ -1851,6 +1865,149 @@ const styles = `
 
   .rgvx-thanks-shell {
     width: min(1040px, 100%);
+  }
+
+  .rgvx-confirmed-pill {
+    border-color: rgba(34, 197, 94, 0.32);
+    background: rgba(34, 197, 94, 0.08);
+    color: #bbf7d0;
+  }
+
+  .rgvx-receipt-thanks-card {
+    width: min(760px, 100%);
+    margin: clamp(32px, 7vh, 84px) auto 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.16), transparent 42%),
+      rgba(7, 7, 7, 0.92);
+    padding: clamp(34px, 6vw, 68px);
+    text-align: center;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(18px);
+  }
+
+  .rgvx-receipt-thanks-icon {
+    display: grid;
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 24px;
+    place-items: center;
+    border: 1px solid rgba(34, 197, 94, 0.38);
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    box-shadow: 0 0 42px rgba(34, 197, 94, 0.14);
+  }
+
+  .rgvx-receipt-thanks-card > p {
+    margin: 0;
+    color: rgba(248, 113, 113, 0.92);
+    font-size: 10px;
+    font-weight: 1000;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-receipt-thanks-card > h1 {
+    margin: 10px 0 14px;
+    color: #ffffff;
+    font-size: clamp(34px, 6vw, 58px);
+    font-weight: 1000;
+    letter-spacing: -0.06em;
+    line-height: 0.98;
+  }
+
+  .rgvx-receipt-thanks-card > span {
+    display: block;
+    max-width: 600px;
+    margin: 0 auto;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: clamp(14px, 2vw, 17px);
+    font-weight: 650;
+    line-height: 1.7;
+  }
+
+  .rgvx-receipt-thanks-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 32px 0;
+    text-align: left;
+  }
+
+  .rgvx-receipt-thanks-details > div {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 4px 10px;
+    align-items: center;
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 18px;
+  }
+
+  .rgvx-receipt-thanks-details svg {
+    grid-row: 1 / 3;
+    color: #f87171;
+  }
+
+  .rgvx-receipt-thanks-details span {
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-receipt-thanks-details strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .rgvx-receipt-thanks-button {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    padding: 0 24px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    box-shadow: 0 14px 34px rgba(220, 38, 38, 0.22);
+    transition: transform 160ms ease, filter 160ms ease;
+  }
+
+  .rgvx-receipt-thanks-button:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-receipt-thanks-card {
+      margin-top: 18px;
+      border-radius: 22px;
+      padding: 32px 20px;
+    }
+
+    .rgvx-receipt-thanks-details {
+      grid-template-columns: 1fr;
+      margin: 26px 0;
+    }
+
+    .rgvx-receipt-thanks-button {
+      width: 100%;
+    }
   }
 
   .rgvx-topbar {
@@ -2566,7 +2723,7 @@ const styles = `
 
   .rgvx-shipping-option-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
@@ -2630,6 +2787,14 @@ const styles = `
 
   .rgvx-shipping-option.active em {
     color: rgb(254, 202, 202);
+  }
+
+  .rgvx-shipping-option-static {
+    cursor: default;
+  }
+
+  .rgvx-shipping-option-static:hover {
+    transform: none;
   }
 
   .rgvx-totals {
@@ -2864,126 +3029,6 @@ const styles = `
     display: none;
   }
 
-  .rgvx-thanks-heading {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-
-  .rgvx-status-dot {
-    display: grid;
-    width: 56px;
-    height: 56px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 1px solid rgba(34, 197, 94, 0.24);
-    border-radius: 20px;
-    background: rgba(34, 197, 94, 0.10);
-    color: rgb(187, 247, 208);
-  }
-
-  .rgvx-thanks-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 28px;
-    align-items: start;
-  }
-
-  .rgvx-payment-sheet,
-  .rgvx-receipt-panel,
-  .rgvx-delivery-summary {
-    border-top: 1px solid rgba(255, 255, 255, 0.10);
-    padding-top: 22px;
-  }
-
-  .rgvx-payment-total strong {
-    display: block;
-    margin-top: 6px;
-    color: #ffffff;
-    font-size: clamp(42px, 6vw, 72px);
-    font-weight: 1000;
-    letter-spacing: -0.08em;
-    line-height: 0.9;
-  }
-
-  .rgvx-payment-total small,
-  .rgvx-memo-box small {
-    display: block;
-    margin-top: 8px;
-    color: rgba(255, 255, 255, 0.48);
-    font-size: 12px;
-    font-weight: 750;
-  }
-
-  .rgvx-memo-box {
-    margin-top: 26px;
-    border: 1px solid rgba(248, 113, 113, 0.25);
-    border-radius: 24px;
-    background: rgba(220, 38, 38, 0.08);
-    padding: 18px;
-  }
-
-  .rgvx-memo-box strong {
-    display: block;
-    margin-top: 6px;
-    color: #ffffff;
-    font-size: 34px;
-    font-weight: 1000;
-    letter-spacing: 0.02em;
-  }
-
-  .rgvx-payment-lines {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 18px;
-  }
-
-  .rgvx-payment-lines div {
-    border-left: 1px solid rgba(255, 255, 255, 0.10);
-    padding-left: 14px;
-  }
-
-  .rgvx-payment-lines strong {
-    display: block;
-    margin-top: 5px;
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 950;
-    overflow-wrap: anywhere;
-  }
-
-  .rgvx-warning-strip {
-    display: flex;
-    gap: 11px;
-    margin-top: 22px;
-    border-radius: 18px;
-    background: rgba(220, 38, 38, 0.10);
-    padding: 14px;
-    color: rgb(254, 202, 202);
-    font-size: 12px;
-    font-weight: 800;
-    line-height: 1.55;
-  }
-
-  .rgvx-warning-strip svg {
-    flex: 0 0 auto;
-    margin-top: 2px;
-  }
-
-  .rgvx-warning-strip p {
-    margin: 0;
-  }
-
-  .rgvx-receipt-panel .rgvx-section-heading {
-    margin-bottom: 14px;
-  }
-
-  .rgvx-receipt-panel .rgvx-section-heading h2 {
-    font-size: 26px;
-  }
-
   .rgvx-upload-zone {
     display: grid;
     place-items: center;
@@ -3022,44 +3067,6 @@ const styles = `
   .rgvx-upload-button {
     width: 100%;
     margin-top: 12px;
-  }
-
-  .rgvx-delivery-summary {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-    gap: 20px;
-    margin-top: 30px;
-  }
-
-  .rgvx-delivery-summary > div {
-    display: grid;
-    gap: 5px;
-    align-content: start;
-  }
-
-  .rgvx-delivery-summary svg {
-    color: rgb(248, 113, 113);
-  }
-
-  .rgvx-delivery-summary span {
-    margin-top: 5px;
-    color: rgba(248, 113, 113, 0.88);
-    font-size: 9px;
-    font-weight: 1000;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .rgvx-delivery-summary strong {
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 950;
-  }
-
-  .rgvx-delivery-summary small {
-    color: rgba(255, 255, 255, 0.48);
-    font-size: 12px;
-    font-weight: 750;
   }
 
   .rgvx-empty-page {
@@ -3548,686 +3555,6 @@ const styles = `
 
     .rgvx-floating-total-bar strong {
       font-size: 20px;
-    }
-  }
-
-
-  /* =========================================================
-     CLEAN ZELLE THANK-YOU / PAYMENT INSTRUCTIONS
-  ========================================================= */
-
-  .rgvx-zelle-thanks-clean {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 30px;
-    background:
-      radial-gradient(circle at 10% 0%, rgba(220, 38, 38, 0.14), transparent 38%),
-      rgba(7, 7, 7, 0.82);
-    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(18px);
-    padding: 28px;
-  }
-
-  .rgvx-zelle-thanks-head {
-    display: grid;
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-    padding-bottom: 22px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .rgvx-zelle-thanks-icon {
-    display: grid;
-    width: 58px;
-    height: 58px;
-    place-items: center;
-    border: 1px solid rgba(34, 197, 94, 0.26);
-    border-radius: 22px;
-    background: rgba(34, 197, 94, 0.10);
-    color: rgb(187, 247, 208);
-  }
-
-  .rgvx-zelle-thanks-copy p,
-  .rgvx-zelle-amount-box span,
-  .rgvx-zelle-summary-card > p,
-  .rgvx-zelle-footer-strip span {
-    margin: 0;
-    color: rgba(248, 113, 113, 0.92);
-    font-size: 10px;
-    font-weight: 1000;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .rgvx-zelle-thanks-copy h1 {
-    margin: 5px 0 0;
-    color: #ffffff;
-    font-size: clamp(34px, 4.3vw, 54px);
-    font-weight: 1000;
-    letter-spacing: -0.065em;
-    line-height: 0.95;
-  }
-
-  .rgvx-zelle-thanks-copy span {
-    display: block;
-    max-width: 760px;
-    margin-top: 12px;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 13px;
-    font-weight: 750;
-    line-height: 1.7;
-  }
-
-  .rgvx-zelle-thanks-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) 360px;
-    gap: 22px;
-    align-items: start;
-    margin-top: 24px;
-  }
-
-  .rgvx-zelle-main,
-  .rgvx-zelle-summary-card,
-  .rgvx-zelle-upload-card {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.025);
-  }
-
-  .rgvx-zelle-main {
-    padding: 22px;
-  }
-
-  .rgvx-zelle-side {
-    display: grid;
-    gap: 16px;
-    align-self: start;
-  }
-
-  .rgvx-zelle-summary-card,
-  .rgvx-zelle-upload-card {
-    padding: 20px;
-  }
-
-  .rgvx-zelle-amount-box {
-    margin-bottom: 20px;
-    border: 1px solid rgba(220, 38, 38, 0.20);
-    border-radius: 22px;
-    background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(255, 255, 255, 0.02));
-    padding: 18px 20px;
-  }
-
-  .rgvx-zelle-amount-box strong {
-    display: block;
-    margin-top: 6px;
-    color: #ffffff;
-    font-size: clamp(34px, 5vw, 46px);
-    font-weight: 1000;
-    letter-spacing: -0.06em;
-    line-height: 0.92;
-  }
-
-  .rgvx-zelle-amount-box small {
-    display: block;
-    margin-top: 8px;
-    color: rgba(255, 255, 255, 0.52);
-    font-size: 12px;
-    font-weight: 750;
-  }
-
-  .rgvx-zelle-steps {
-    display: grid;
-    gap: 14px;
-  }
-
-  .rgvx-zelle-step {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 14px;
-    align-items: start;
-    border: 1px solid rgba(255, 255, 255, 0.065);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.018);
-    padding: 16px;
-  }
-
-  .rgvx-zelle-step.memo-step {
-    border-color: rgba(220, 38, 38, 0.25);
-    background: rgba(220, 38, 38, 0.06);
-  }
-
-  .step-number {
-    display: grid;
-    width: 42px;
-    height: 42px;
-    place-items: center;
-    border: 1px solid rgba(220, 38, 38, 0.24);
-    border-radius: 15px;
-    background: rgba(220, 38, 38, 0.14);
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 1000;
-  }
-
-  .rgvx-zelle-step strong {
-    display: block;
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 950;
-    letter-spacing: -0.025em;
-  }
-
-  .rgvx-zelle-step p {
-    margin: 7px 0 0;
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.62;
-  }
-
-  .rgvx-zelle-step p b {
-    color: rgba(255, 255, 255, 0.88);
-  }
-
-  .rgvx-zelle-memo-code {
-    display: inline-flex;
-    max-width: 100%;
-    margin: 10px 0;
-    border: 1px solid rgba(248, 113, 113, 0.32);
-    border-radius: 16px;
-    background: rgba(220, 38, 38, 0.14);
-    padding: 11px 15px;
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 1000;
-    letter-spacing: 0.05em;
-    overflow-wrap: anywhere;
-  }
-
-  .rgvx-zelle-warning-box {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    margin-top: 18px;
-    border: 1px solid rgba(220, 38, 38, 0.20);
-    border-radius: 18px;
-    background: rgba(220, 38, 38, 0.08);
-    padding: 15px 16px;
-    color: rgb(254, 202, 202);
-  }
-
-  .rgvx-zelle-warning-box svg {
-    flex: 0 0 auto;
-    margin-top: 2px;
-  }
-
-  .rgvx-zelle-warning-box p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 13px;
-    font-weight: 750;
-    line-height: 1.6;
-  }
-
-  .summary-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    padding: 12px 0;
-  }
-
-  .summary-line:first-of-type {
-    border-top: 0;
-    padding-top: 14px;
-  }
-
-  .summary-line:last-child {
-    padding-bottom: 0;
-  }
-
-  .summary-line span {
-    color: rgba(255, 255, 255, 0.52);
-    font-size: 12px;
-    font-weight: 850;
-  }
-
-  .summary-line strong {
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 950;
-    text-align: right;
-    overflow-wrap: anywhere;
-  }
-
-  .rgvx-zelle-upload-card .rgvx-section-heading h2 {
-    font-size: 25px;
-  }
-
-  .rgvx-zelle-footer-strip {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    gap: 16px;
-    margin-top: 22px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 20px;
-  }
-
-  .rgvx-zelle-footer-strip > div {
-    display: grid;
-    gap: 5px;
-    align-content: start;
-  }
-
-  .rgvx-zelle-footer-strip svg {
-    color: rgb(248, 113, 113);
-  }
-
-  .rgvx-zelle-footer-strip strong {
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 950;
-  }
-
-  .rgvx-zelle-footer-strip small {
-    color: rgba(255, 255, 255, 0.52);
-    font-size: 12px;
-    font-weight: 750;
-    line-height: 1.5;
-  }
-
-  @media (max-width: 980px) {
-    .rgvx-zelle-thanks-layout,
-    .rgvx-zelle-footer-strip {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .rgvx-zelle-thanks-clean {
-      border-radius: 24px;
-      padding: 18px;
-    }
-
-    .rgvx-zelle-thanks-head {
-      grid-template-columns: 46px minmax(0, 1fr);
-      gap: 14px;
-    }
-
-    .rgvx-zelle-thanks-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 17px;
-    }
-
-    .rgvx-zelle-thanks-copy h1 {
-      font-size: clamp(31px, 10vw, 40px);
-    }
-
-    .rgvx-zelle-main,
-    .rgvx-zelle-summary-card,
-    .rgvx-zelle-upload-card {
-      border-radius: 21px;
-    }
-
-    .rgvx-zelle-main,
-    .rgvx-zelle-summary-card,
-    .rgvx-zelle-upload-card {
-      padding: 16px;
-    }
-
-    .rgvx-zelle-step {
-      grid-template-columns: 36px minmax(0, 1fr);
-      gap: 12px;
-      padding: 14px;
-    }
-
-    .step-number {
-      width: 36px;
-      height: 36px;
-      border-radius: 13px;
-      font-size: 14px;
-    }
-
-    .rgvx-zelle-memo-code {
-      width: 100%;
-      justify-content: center;
-      text-align: center;
-    }
-  }
-
-
-  .rgvx-zelle-one-card {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 30px;
-    background:
-      radial-gradient(circle at 10% 0%, rgba(220, 38, 38, 0.16), transparent 34%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
-      rgba(7, 7, 7, 0.88);
-    box-shadow: 0 32px 100px rgba(0, 0, 0, 0.36);
-    backdrop-filter: blur(18px);
-    padding: 30px;
-  }
-
-  .rgvx-zelle-one-head {
-    display: grid;
-    grid-template-columns: 58px minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: start;
-  }
-
-  .rgvx-zelle-one-icon {
-    display: grid;
-    width: 58px;
-    height: 58px;
-    place-items: center;
-    border: 1px solid rgba(74, 222, 128, 0.22);
-    border-radius: 20px;
-    background: rgba(74, 222, 128, 0.08);
-    color: rgba(220, 252, 231, 0.9);
-  }
-
-  .rgvx-zelle-one-title p,
-  .rgvx-zelle-one-info span,
-  .rgvx-zelle-upload-copy p,
-  .rgvx-zelle-one-footer span,
-  .rgvx-zelle-one-total span {
-    margin: 0;
-    color: rgba(248, 113, 113, 0.92);
-    font-size: 10px;
-    font-weight: 1000;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .rgvx-zelle-one-title h1 {
-    margin: 4px 0 0;
-    color: #ffffff;
-    font-size: clamp(40px, 5vw, 72px);
-    font-weight: 1000;
-    letter-spacing: -0.07em;
-    line-height: 0.92;
-  }
-
-  .rgvx-zelle-one-title > span {
-    display: block;
-    max-width: 760px;
-    margin-top: 12px;
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 14px;
-    font-weight: 750;
-    line-height: 1.7;
-  }
-
-  .rgvx-zelle-one-total {
-    min-width: 180px;
-    text-align: right;
-  }
-
-  .rgvx-zelle-one-total strong {
-    display: block;
-    margin-top: 6px;
-    color: #ffffff;
-    font-size: clamp(34px, 4vw, 52px);
-    font-weight: 1000;
-    letter-spacing: -0.06em;
-  }
-
-  .rgvx-zelle-one-info {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
-    margin-top: 26px;
-    padding: 20px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .rgvx-zelle-one-info div {
-    min-width: 0;
-  }
-
-  .rgvx-zelle-one-info strong {
-    display: block;
-    margin-top: 8px;
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 950;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-
-  .rgvx-zelle-one-info small {
-    display: block;
-    margin-top: 6px;
-    color: rgba(255, 255, 255, 0.52);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.5;
-  }
-
-  .rgvx-zelle-one-memo {
-    display: inline-flex !important;
-    width: fit-content;
-    border: 1px solid rgba(220, 38, 38, 0.24);
-    border-radius: 14px;
-    background: rgba(220, 38, 38, 0.12);
-    padding: 9px 12px;
-    letter-spacing: 0.04em;
-  }
-
-  .rgvx-zelle-one-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 26px;
-    align-items: start;
-    margin-top: 24px;
-  }
-
-  .rgvx-zelle-one-steps {
-    display: grid;
-    gap: 16px;
-  }
-
-  .rgvx-zelle-one-step {
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 14px;
-    align-items: start;
-  }
-
-  .rgvx-zelle-one-step b {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border: 1px solid rgba(220, 38, 38, 0.22);
-    border-radius: 12px;
-    background: rgba(220, 38, 38, 0.1);
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 1000;
-  }
-
-  .rgvx-zelle-one-step.important b {
-    background: rgba(220, 38, 38, 0.2);
-  }
-
-  .rgvx-zelle-one-step strong {
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 950;
-  }
-
-  .rgvx-zelle-one-step p {
-    margin: 6px 0 0;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.65;
-  }
-
-  .rgvx-zelle-one-upload {
-    display: grid;
-    gap: 14px;
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    padding-left: 26px;
-  }
-
-  .rgvx-zelle-upload-copy h2 {
-    margin: 7px 0 0;
-    color: #ffffff;
-    font-size: 24px;
-    font-weight: 1000;
-    letter-spacing: -0.04em;
-  }
-
-  .rgvx-zelle-upload-copy span {
-    display: block;
-    margin-top: 7px;
-    color: rgba(255, 255, 255, 0.54);
-    font-size: 12px;
-    font-weight: 750;
-    line-height: 1.5;
-  }
-
-  .compact-upload-zone {
-    min-height: 132px;
-  }
-
-  .rgvx-zelle-one-warning {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-top: 24px;
-    padding: 15px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(254, 202, 202, 0.9);
-  }
-
-  .rgvx-zelle-one-warning p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 13px;
-    font-weight: 750;
-    line-height: 1.65;
-  }
-
-  .rgvx-zelle-one-footer {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
-    margin-top: 22px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .rgvx-zelle-one-footer div {
-    display: grid;
-    min-width: 0;
-    gap: 6px;
-  }
-
-  .rgvx-zelle-one-footer svg {
-    margin-bottom: 3px;
-    color: rgba(248, 113, 113, 0.9);
-  }
-
-  .rgvx-zelle-one-footer strong {
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 950;
-    overflow-wrap: anywhere;
-  }
-
-  .rgvx-zelle-one-footer small {
-    color: rgba(255, 255, 255, 0.54);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.5;
-  }
-
-  @media (max-width: 980px) {
-    .rgvx-zelle-one-head {
-      grid-template-columns: 52px minmax(0, 1fr);
-    }
-
-    .rgvx-zelle-one-total {
-      grid-column: 1 / -1;
-      min-width: 0;
-      text-align: left;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .rgvx-zelle-one-info {
-      grid-template-columns: 1fr;
-    }
-
-    .rgvx-zelle-one-body {
-      grid-template-columns: 1fr;
-    }
-
-    .rgvx-zelle-one-upload {
-      border-left: 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-left: 0;
-      padding-top: 22px;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .rgvx-zelle-one-card {
-      padding: 18px;
-      border-radius: 24px;
-    }
-
-    .rgvx-zelle-one-head {
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-
-    .rgvx-zelle-one-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 18px;
-    }
-
-    .rgvx-zelle-one-title h1 {
-      font-size: 38px;
-    }
-
-    .rgvx-zelle-one-title > span {
-      font-size: 13px;
-    }
-
-    .rgvx-zelle-one-info {
-      margin-top: 20px;
-      gap: 14px;
-      padding: 16px 0;
-    }
-
-    .rgvx-zelle-one-body {
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    .rgvx-zelle-one-step {
-      grid-template-columns: 30px minmax(0, 1fr);
-      gap: 12px;
-    }
-
-    .rgvx-zelle-one-step b {
-      width: 30px;
-      height: 30px;
-      border-radius: 10px;
-    }
-
-    .rgvx-zelle-one-footer {
-      grid-template-columns: 1fr;
     }
   }
 
