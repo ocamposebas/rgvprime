@@ -33,13 +33,22 @@ const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
 const FREE_SHIPPING_MINIMUM = 150;
 
-const SHIPPING_METHOD = {
-  id: "usps_priority",
-  title: "USPS Priority",
-  label: "Priority USPS",
-  description: "Priority delivery with tracking.",
-  price: 12,
-};
+const SHIPPING_METHODS = [
+  {
+    id: "usps_ground_advantage",
+    title: "USPS Ground Advantage",
+    label: "USPS Ground Advantage",
+    description: "Affordable ground delivery with USPS tracking.",
+    price: 8,
+  },
+  {
+    id: "usps_priority",
+    title: "USPS Priority",
+    label: "USPS Priority",
+    description: "Priority delivery with tracking.",
+    price: 12,
+  },
+];
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 
@@ -637,6 +646,9 @@ export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card");
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
+    SHIPPING_METHODS[0].id
+  );
   const [couponInput, setCouponInput] = useState(() => getInitialCouponCode());
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
@@ -720,7 +732,9 @@ export default function RgvCheckout() {
 
   const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
 
-  const selectedShippingMethod = SHIPPING_METHOD;
+  const selectedShippingMethod =
+    SHIPPING_METHODS.find((method) => method.id === selectedShippingMethodId) ||
+    SHIPPING_METHODS[0];
 
   const isZelleSelected = selectedPaymentMethodId === "zelle";
   const hasItems = cartItems.length > 0;
@@ -1583,30 +1597,50 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    USPS Priority is the available shipping method. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    Choose USPS Ground Advantage or USPS Priority. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
                   </small>
                 </div>
               </div>
 
-              <div className="rgvx-shipping-options flow" aria-label="Shipping method">
+              <div
+                className="rgvx-shipping-options flow"
+                role="radiogroup"
+                aria-label="Shipping method"
+              >
                 <div className="rgvx-shipping-options-head">
-                  <span>Available method</span>
+                  <span>Available methods</span>
                   <strong>{freeShippingUnlocked ? "Free unlocked" : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}</strong>
                 </div>
 
                 <div className="rgvx-shipping-option-list">
-                  <div className="rgvx-shipping-option active rgvx-shipping-option-static">
-                    <div>
-                      <strong>{SHIPPING_METHOD.title}</strong>
-                      <small>
-                        {freeShippingUnlocked
-                          ? `Regular ${formatMoney(SHIPPING_METHOD.price)} · free unlocked`
-                          : SHIPPING_METHOD.description}
-                      </small>
-                    </div>
+                  {SHIPPING_METHODS.map((method) => {
+                    const active = selectedShippingMethodId === method.id;
 
-                    <em>{freeShippingUnlocked ? "FREE" : formatMoney(SHIPPING_METHOD.price)}</em>
-                  </div>
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`rgvx-shipping-option ${active ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedShippingMethodId(method.id);
+                          setError("");
+                        }}
+                      >
+                        <div>
+                          <strong>{method.title}</strong>
+                          <small>
+                            {freeShippingUnlocked
+                              ? `Regular ${formatMoney(method.price)} Â· free unlocked`
+                              : method.description}
+                          </small>
+                        </div>
+
+                        <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1661,7 +1695,7 @@ export default function RgvCheckout() {
           <aside className="rgvx-order-summary">
             <div className="rgvx-summary-head">
               <div>
-                <p>Step 1 · Review order</p>
+                <p>Step 1 Â· Review order</p>
                 <h2>{formatMoney(estimatedDue)}</h2>
               </div>
               <PackageCheck size={18} />
@@ -2728,6 +2762,7 @@ const styles = `
   }
 
   .rgvx-shipping-option {
+    appearance: none;
     display: flex;
     width: 100%;
     min-height: 78px;
@@ -2740,6 +2775,7 @@ const styles = `
     padding: 14px;
     color: #ffffff;
     cursor: pointer;
+    font: inherit;
     text-align: left;
     transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
   }
@@ -2787,14 +2823,6 @@ const styles = `
 
   .rgvx-shipping-option.active em {
     color: rgb(254, 202, 202);
-  }
-
-  .rgvx-shipping-option-static {
-    cursor: default;
-  }
-
-  .rgvx-shipping-option-static:hover {
-    transform: none;
   }
 
   .rgvx-totals {
