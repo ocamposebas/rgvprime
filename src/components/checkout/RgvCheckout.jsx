@@ -36,16 +36,16 @@ const FREE_SHIPPING_MINIMUM = 150;
 const SHIPPING_METHODS = [
   {
     id: "usps_ground_advantage",
-    title: "USPS Ground Advantage",
-    label: "USPS Ground Advantage",
-    description: "Affordable ground delivery with USPS tracking.",
+    title: "USPS Ground",
+    label: "USPS Ground",
+    description: "3 to 7 Business Days",
     price: 8,
   },
   {
     id: "usps_priority",
     title: "USPS Priority",
     label: "USPS Priority",
-    description: "Priority delivery with tracking.",
+    description: "3 to 5 Business Days",
     price: 12,
   },
 ];
@@ -1597,7 +1597,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground Advantage or USPS Priority. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    Choose USPS Ground or USPS Priority. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
                   </small>
                 </div>
               </div>
@@ -1630,11 +1630,12 @@ export default function RgvCheckout() {
                       >
                         <div>
                           <strong>{method.title}</strong>
-                          <small>
-                            {freeShippingUnlocked
-                              ? `Regular ${formatMoney(method.price)} Â· free unlocked`
-                              : method.description}
-                          </small>
+                          <small>{method.description}</small>
+                          {freeShippingUnlocked && (
+                            <small className="rgvx-shipping-free-note">
+                              Regular {formatMoney(method.price)} · free unlocked
+                            </small>
+                          )}
                         </div>
 
                         <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
@@ -2810,6 +2811,10 @@ const styles = `
     font-size: 10px;
     font-weight: 750;
     line-height: 1.35;
+  }
+
+  .rgvx-shipping-option small.rgvx-shipping-free-note {
+    color: rgba(74, 222, 128, 0.78);
   }
 
   .rgvx-shipping-option em {
