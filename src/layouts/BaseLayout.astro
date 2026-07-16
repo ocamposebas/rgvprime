@@ -35,6 +35,9 @@ const canonicalUrl = canonical
 
 const ogImageUrl = new URL(image, siteUrl).toString();
 const logoUrl = new URL("/logo.webp", siteUrl).toString();
+const omnisendBrandId = String(
+  import.meta.env.PUBLIC_OMNISEND_BRAND_ID || "",
+).trim();
 
 const fullTitle = title.includes(siteName)
   ? title
@@ -228,5 +231,25 @@ const webpageSchema = {
 
       <slot />
     </div>
+
+    {
+      omnisendBrandId && (
+        <script is:inline define:vars={{ omnisendBrandId }}>
+          window.__RGV_OMNISEND_ENABLED__ = true;
+          window.omnisend = window.omnisend || [];
+          window.omnisend.push(["brandID", omnisendBrandId]);
+          window.omnisend.push(["track", "$pageViewed"]);
+
+          !(function () {
+            var script = document.createElement("script");
+            script.type = "text/javascript";
+            script.async = true;
+            script.src = "https://omnisnippet1.com/inshop/launcher-v2.js";
+            var firstScript = document.getElementsByTagName("script")[0];
+            firstScript.parentNode.insertBefore(script, firstScript);
+          })();
+        </script>
+      )
+    }
   </body>
 </html>

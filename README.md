@@ -1,5 +1,20 @@
 # Astro Starter Kit: Basics
 
+## Omnisend dynamic abandoned cart
+
+Set `PUBLIC_OMNISEND_BRAND_ID` in the deployment environment. The storefront then
+sends the official `added product to cart` and `started checkout` events with:
+
+- all current cart products in `properties.lineItems` for Omnisend's native
+  Abandoned Products block;
+- enriched product data in `properties.rgvLineItems`, including the variant,
+  research summary, product URL, and matching COA/documentation URL;
+- a cross-device recovery URL in `properties.abandonedCheckoutURL`.
+
+The Omnisend workflow must use the **Added product to cart** trigger. In the email
+builder, use one **Abandoned Products** item for the standard layout, or a Dynamic
+Content layout with `Raw -> Rgv Line Items` for separate product and COA buttons.
+
 ```sh
 npm create astro@latest -- --template basics
 ```

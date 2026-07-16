@@ -1524,6 +1524,10 @@ export default function ProductDetails({ slug }) {
       cartKey: selectedVariation
         ? `${product.id}:${selectedVariation.id}`
         : String(product.id),
+      short_description: product.short_description || "",
+      description: product.description || "",
+      coa_url: coaFile?.url || "",
+      coa_code: coaFile?.code || "",
     };
 
     addItem(itemToAdd, quantity);

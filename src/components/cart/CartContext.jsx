@@ -3,8 +3,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import {
+  getRememberedOmnisendEmail,
+  identifyOmnisendContact,
+  readCartRecoveryFromUrl,
+  resetOmnisendCartSession,
+  trackOmnisendCart,
+} from "../../lib/omnisendCart";
+import { getMeOnce } from "../../lib/accountSession";
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 
@@ -120,6 +129,15 @@ function normalizeProduct(product, quantity = 1) {
       product.variation ||
       product.variation_attributes ||
       {},
+    short_description:
+      product.short_description ||
+      product.shortDescription ||
+      product.product?.short_description ||
+      "",
+    description: product.description || product.product?.description || "",
+    categories: Array.isArray(product.categories) ? product.categories : [],
+    coa_url: product.coa_url || product.coaURL || product.documentation_url || "",
+    coa_code: product.coa_code || product.coaCode || "",
     variation:
       product.variation ||
       product.variation_attributes ||
@@ -156,23 +174,23 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const pendingOmnisendItem = useRef(null);
 
   useEffect(() => {
     try {
       cleanOldCartStorage();
 
+      const recoveredCart = readCartRecoveryFromUrl();
       const savedCart = window.localStorage.getItem(CART_STORAGE_KEY);
+      const parsedSavedCart = savedCart ? JSON.parse(savedCart) : [];
+      const parsed = recoveredCart.length ? recoveredCart : parsedSavedCart;
 
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
+      if (Array.isArray(parsed)) {
+        const normalizedItems = parsed
+          .map((item) => normalizeProduct(item, Number(item.quantity || 1)))
+          .filter((item) => item.product_id > 0 && item.quantity > 0);
 
-        if (Array.isArray(parsed)) {
-          const normalizedItems = parsed
-            .map((item) => normalizeProduct(item, Number(item.quantity || 1)))
-            .filter((item) => item.product_id > 0 && item.quantity > 0);
-
-          setItems(normalizedItems);
-        }
+        setItems(normalizedItems);
       }
     } catch (error) {
       console.error("Cart storage error:", error);
@@ -191,6 +209,30 @@ export function CartProvider({ children }) {
     } catch (error) {
       console.error("Cart save error:", error);
     }
+  }, [items, hasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated || !items.length || !pendingOmnisendItem.current) return;
+
+    const addedItem = pendingOmnisendItem.current;
+    pendingOmnisendItem.current = null;
+
+    async function sendCartEvent() {
+      let email = getRememberedOmnisendEmail();
+
+      if (!email) {
+        const account = await getMeOnce();
+        email = account?.data?.user?.email || "";
+      }
+
+      if (email) {
+        await identifyOmnisendContact({ email });
+      }
+
+      trackOmnisendCart(items, addedItem, { email });
+    }
+
+    void sendCartEvent();
   }, [items, hasHydrated]);
 
   function openCart() {
@@ -217,6 +259,8 @@ export function CartProvider({ children }) {
       openCart();
       return;
     }
+
+    pendingOmnisendItem.current = newItem;
 
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === newItem.id);
@@ -292,6 +336,7 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setItems([]);
+    resetOmnisendCartSession();
 
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(CART_STORAGE_KEY);

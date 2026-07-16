@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -16,6 +16,12 @@ import {
   X,
 } from "lucide-react";
 import { useCart } from "../cart/CartContext";
+import {
+  getOmnisendCartFingerprint,
+  identifyOmnisendContact,
+  trackOmnisendCart,
+  trackOmnisendStartedCheckout,
+} from "../../lib/omnisendCart";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -666,6 +672,7 @@ export default function RgvCheckout() {
   const [receiptMessage, setReceiptMessage] = useState("");
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
+  const omnisendFingerprintRef = useRef("");
 
   const providerCartItems = useMemo(() => {
     const sources = [cart?.cartItems, cart?.items];
@@ -689,6 +696,23 @@ export default function RgvCheckout() {
   }, []);
 
   const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
+
+  useEffect(() => {
+    const email = normalizeEmail(checkoutForm.email);
+
+    if (!isValidEmail(email) || !cartItems.length) return undefined;
+
+    const fingerprint = getOmnisendCartFingerprint(cartItems, email);
+    if (fingerprint === omnisendFingerprintRef.current) return undefined;
+
+    const timeoutId = window.setTimeout(async () => {
+      await identifyOmnisendContact({ email, phone: checkoutForm.phone });
+      trackOmnisendCart(cartItems, cartItems.at(-1), { email });
+      omnisendFingerprintRef.current = fingerprint;
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cartItems, checkoutForm.email, checkoutForm.phone]);
 
   const cartTotal = useMemo(
     () =>
@@ -924,6 +948,9 @@ export default function RgvCheckout() {
 
     setLoading(true);
     setPaymentNotice("Opening secure card checkout...");
+    trackOmnisendStartedCheckout(cartItems, {
+      email: normalizeEmail(checkoutForm.email),
+    });
     window.location.href = checkoutUrl;
   };
 
@@ -1043,6 +1070,10 @@ export default function RgvCheckout() {
         customer: order.customer || finalCustomer,
         items: order.items || checkoutItems,
       };
+
+      trackOmnisendStartedCheckout(cartItems, {
+        email: finalBilling.email,
+      });
 
       setManualOrder(nextOrder);
       setPaymentNotice(
