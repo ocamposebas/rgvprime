@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 32548)
-Total output lines: 5045
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -1878,7 +1875,455 @@ export default function RgvCheckout() {
                   <p className={`rgvx-coupon-message ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
                     {couponMessage}
                   </p>
- …2548 tokens truncated…ay: grid;
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <div className="rgvx-floating-total-bar" aria-live="polite">
+        <span>{isZelleSelected ? "Due now" : "Estimated total"}</span>
+        <strong>{formatMoney(estimatedDue)}</strong>
+      </div>
+
+      <style>{styles}</style>
+    </main>
+  );
+}
+
+const styles = `
+  * {
+    box-sizing: border-box;
+  }
+
+  .rgvx-page {
+    position: relative;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: visible;
+    background:
+      radial-gradient(circle at 8% -10%, rgba(220, 38, 38, 0.20), transparent 34%),
+      radial-gradient(circle at 100% 10%, rgba(127, 29, 29, 0.22), transparent 30%),
+      linear-gradient(135deg, #020202 0%, #070202 48%, #030303 100%);
+    color: #ffffff;
+    padding: clamp(145px, 12vh, 185px) 16px 72px;
+  }
+
+  .rgvx-background-wash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(circle at center, black, transparent 78%);
+  }
+
+  .rgvx-shell {
+    position: relative;
+    z-index: 1;
+    width: min(1160px, 100%);
+    margin: 0 auto;
+  }
+
+  .rgvx-thanks-shell {
+    width: min(1040px, 100%);
+  }
+
+  .rgvx-confirmed-pill {
+    border-color: rgba(34, 197, 94, 0.32);
+    background: rgba(34, 197, 94, 0.08);
+    color: #bbf7d0;
+  }
+
+  .rgvx-receipt-thanks-card {
+    width: min(760px, 100%);
+    margin: clamp(32px, 7vh, 84px) auto 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.16), transparent 42%),
+      rgba(7, 7, 7, 0.92);
+    padding: clamp(34px, 6vw, 68px);
+    text-align: center;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(18px);
+  }
+
+  .rgvx-receipt-thanks-icon {
+    display: grid;
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 24px;
+    place-items: center;
+    border: 1px solid rgba(34, 197, 94, 0.38);
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    box-shadow: 0 0 42px rgba(34, 197, 94, 0.14);
+  }
+
+  .rgvx-receipt-thanks-card > p {
+    margin: 0;
+    color: rgba(248, 113, 113, 0.92);
+    font-size: 10px;
+    font-weight: 1000;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-receipt-thanks-card > h1 {
+    margin: 10px 0 14px;
+    color: #ffffff;
+    font-size: clamp(34px, 6vw, 58px);
+    font-weight: 1000;
+    letter-spacing: -0.06em;
+    line-height: 0.98;
+  }
+
+  .rgvx-receipt-thanks-card > span {
+    display: block;
+    max-width: 600px;
+    margin: 0 auto;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: clamp(14px, 2vw, 17px);
+    font-weight: 650;
+    line-height: 1.7;
+  }
+
+  .rgvx-receipt-thanks-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 32px 0;
+    text-align: left;
+  }
+
+  .rgvx-receipt-thanks-details > div {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 4px 10px;
+    align-items: center;
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 18px;
+  }
+
+  .rgvx-receipt-thanks-details svg {
+    grid-row: 1 / 3;
+    color: #f87171;
+  }
+
+  .rgvx-receipt-thanks-details span {
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-receipt-thanks-details strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .rgvx-receipt-thanks-button {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    padding: 0 24px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    box-shadow: 0 14px 34px rgba(220, 38, 38, 0.22);
+    transition: transform 160ms ease, filter 160ms ease;
+  }
+
+  .rgvx-receipt-thanks-button:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-receipt-thanks-card {
+      margin-top: 18px;
+      border-radius: 22px;
+      padding: 32px 20px;
+    }
+
+    .rgvx-receipt-thanks-details {
+      grid-template-columns: 1fr;
+      margin: 26px 0;
+    }
+
+    .rgvx-receipt-thanks-button {
+      width: 100%;
+    }
+  }
+
+  .rgvx-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 38px;
+  }
+
+  .rgvx-ghost-link,
+  .rgvx-lock-pill {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.32);
+    padding: 0 15px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+    text-transform: uppercase;
+    backdrop-filter: blur(14px);
+  }
+
+  .rgvx-ghost-link:hover {
+    border-color: rgba(239, 68, 68, 0.48);
+    color: #ffffff;
+  }
+
+  .rgvx-clean-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .rgvx-clean-header p,
+  .rgvx-section-heading p,
+  .rgvx-summary-head p,
+  .rgvx-thanks-heading p,
+  .rgvx-payment-total span,
+  .rgvx-memo-box span,
+  .rgvx-payment-lines span {
+    margin: 0;
+    color: rgba(248, 113, 113, 0.92);
+    font-size: 9px;
+    font-weight: 1000;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-clean-header h1 {
+    margin: 5px 0 0;
+    color: #ffffff;
+    font-size: clamp(38px, 5vw, 58px);
+    font-weight: 1000;
+    letter-spacing: -0.07em;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .rgvx-clean-header > div > span {
+    display: block;
+    max-width: 620px;
+    margin-top: 9px;
+    color: rgba(255, 255, 255, 0.50);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .rgvx-header-note {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    border-radius: 999px;
+    background: rgba(220, 38, 38, 0.08);
+    padding: 0 16px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .rgvx-clean-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 34px;
+    align-items: start;
+  }
+
+  .rgvx-flow {
+    min-width: 0;
+  }
+
+  .rgvx-flow-section,
+  .rgvx-zelle-area,
+  .rgvx-policy {
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    padding-top: 22px;
+    margin-top: 22px;
+  }
+
+  .rgvx-flow-section.first {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .rgvx-section-heading {
+    margin-bottom: 16px;
+  }
+
+  .rgvx-section-heading h2,
+  .rgvx-thanks-heading h1 {
+    margin: 4px 0 0;
+    color: #ffffff;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 1000;
+    letter-spacing: -0.055em;
+    line-height: 1;
+  }
+
+  .rgvx-section-heading span,
+  .rgvx-block-title small,
+  .rgvx-zelle-banner span,
+  .rgvx-thanks-heading span,
+  .rgvx-receipt-panel .rgvx-section-heading span {
+    display: block;
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.47);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+
+  .rgvx-payment-switch {
+    display: grid;
+    gap: 10px;
+  }
+
+  .rgvx-payment-option {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 13px;
+    align-items: center;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.035);
+    padding: 13px;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+  }
+
+  .rgvx-payment-option:hover,
+  .rgvx-payment-option.active {
+    border-color: rgba(248, 113, 113, 0.55);
+    background: rgba(220, 38, 38, 0.10);
+    transform: translateY(-1px);
+  }
+
+  .rgvx-payment-option > svg {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(220, 38, 38, 0.22);
+    border-radius: 16px;
+    padding: 10px;
+    color: rgb(248, 113, 113);
+    background: rgba(220, 38, 38, 0.08);
+  }
+
+  .rgvx-payment-option strong {
+    display: block;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 950;
+    letter-spacing: -0.035em;
+  }
+
+  .rgvx-payment-option small {
+    display: block;
+    margin-top: 3px;
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.45;
+  }
+
+  .rgvx-payment-option em {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 1000;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-payment-option.active em {
+    border-color: rgba(248, 113, 113, 0.35);
+    background: rgba(220, 38, 38, 0.14);
+    color: #ffffff;
+  }
+
+  .rgvx-coupon-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+  }
+
+  .rgvx-coupon-row > div:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 10px;
+    font-weight: 1000;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-coupon-row > p {
+    grid-column: 2;
+    margin: -4px 0 0;
+    color: rgba(248, 113, 113, 0.78);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .rgvx-code-input {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 9px;
   }
