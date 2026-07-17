@@ -232,16 +232,28 @@ function normalizeTracking(result = {}) {
         "eta",
         "estimated_delivery",
         "estimatedDelivery",
+        "estimated_delivery_date",
+        "expected_delivery",
+        "expected_delivery_date",
+        "expectedDeliveryDate",
         "delivery_date",
       ]),
       result?.estimated_delivery,
+      result?.estimatedDelivery,
+      result?.expected_delivery_date,
       metaValue(metaData, [
         "estimated_delivery",
         "_estimated_delivery",
+        "expected_delivery_date",
         "delivery_date",
       ]),
     ),
   ).trim();
+
+  const live = Boolean(
+    sourceValue(sources, ["live", "is_live", "live_tracking"]) ||
+      result?.live_tracking,
+  );
 
   const suppliedUrl = String(
     firstValue(
@@ -267,6 +279,7 @@ function normalizeTracking(result = {}) {
     carrier,
     status,
     eta,
+    live,
     url: suppliedUrl || carrierTrackingUrl(carrier, number),
   };
 }
@@ -656,9 +669,17 @@ function TrackingResult({ result }) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
-            Estimated Delivery
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+              Estimated Delivery
+            </p>
+
+            {tracking.live && tracking.eta && (
+              <span className="rounded-full border border-red-400/20 bg-red-500/[0.08] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-red-100/80">
+                Live USPS
+              </span>
+            )}
+          </div>
 
           <p className="mt-2 text-sm font-bold leading-6 text-white/72">
             {tracking.eta || "Pending"}

@@ -9,6 +9,18 @@ const TRACKING_ITEM_META_KEYS = [
   "ast_tracking_items",
 ];
 
+const USPS_OAUTH_URL = "https://apis.usps.com/oauth2/v3/token";
+const USPS_TRACKING_URL = "https://apis.usps.com/tracking/v3r2/tracking";
+const USPS_REQUEST_TIMEOUT_MS = 9000;
+const USPS_TRACKING_CACHE_MS = 2 * 60 * 1000;
+
+let uspsTokenCache = {
+  accessToken: "",
+  expiresAt: 0,
+};
+
+const uspsTrackingCache = new Map();
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -52,6 +64,81 @@ function apiBaseUrl() {
 
 function basicAuthorization(key, secret) {
   return `Basic ${Buffer.from(`${key}:${secret}`, "utf8").toString("base64")}`;
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = 9000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function uspsCredentials() {
+  return {
+    clientId: envValue("USPS_CLIENT_ID", "USPS_CONSUMER_KEY"),
+    clientSecret: envValue("USPS_CLIENT_SECRET", "USPS_CONSUMER_SECRET"),
+  };
+}
+
+async function uspsAccessToken() {
+  const { clientId, clientSecret } = uspsCredentials();
+
+  if (!clientId || !clientSecret) return "";
+
+  if (
+    uspsTokenCache.accessToken &&
+    uspsTokenCache.expiresAt > Date.now() + 60_000
+  ) {
+    return uspsTokenCache.accessToken;
+  }
+
+  const response = await fetchWithTimeout(
+    envValue("USPS_OAUTH_URL") || USPS_OAUTH_URL,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    },
+    USPS_REQUEST_TIMEOUT_MS,
+  );
+
+  const text = await response.text();
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error("USPS_AUTH_INVALID_RESPONSE");
+  }
+
+  if (!response.ok || !data?.access_token) {
+    const error = new Error("USPS_AUTH_FAILED");
+    error.status = response.status;
+    throw error;
+  }
+
+  const expiresIn = Math.max(120, Number(data.expires_in) || 300);
+
+  uspsTokenCache = {
+    accessToken: String(data.access_token),
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+
+  return uspsTokenCache.accessToken;
 }
 
 async function wooRequest(path) {
@@ -283,9 +370,239 @@ function shipmentStatusLabel(value, hasTracking) {
   if (normalized === "0")
     return hasTracking ? "Tracking assigned" : "Preparing";
 
-  return normalized
-    .replace(/[_-]+/g, " ")
+  const readable = normalized.replace(/[_-]+/g, " ");
+  const cased = /[a-z]/.test(readable) ? readable : readable.toLowerCase();
+
+  return cased
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function cleanTrackingNumber(value) {
+  return String(value || "")
+    .replace(/[^a-z0-9]/gi, "")
+    .toUpperCase();
+}
+
+function isUspsTracking(carrier, number) {
+  const provider = String(carrier || "").toLowerCase();
+
+  return (
+    provider.includes("usps") ||
+    provider.includes("postal service") ||
+    inferCarrier(number) === "USPS"
+  );
+}
+
+function formatUspsDate(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+
+  if (!match) return raw;
+
+  const date = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  );
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function formatUspsTime(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const match = raw.match(
+    /(?:T|\s)?(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(AM|PM)?/i,
+  );
+
+  if (!match) return raw;
+
+  let hour = Number(match[1]);
+  const minute = match[2];
+  const suppliedPeriod = String(match[3] || "").toUpperCase();
+
+  if (suppliedPeriod === "PM" && hour < 12) hour += 12;
+  if (suppliedPeriod === "AM" && hour === 12) hour = 0;
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+
+  return `${displayHour}:${minute} ${period}`;
+}
+
+function uspsEtaFromDetail(detail) {
+  const expectation = detail?.deliveryDateExpectation || {};
+  const expectedDate =
+    expectation.expectedDeliveryDate ||
+    detail?.expectedDeliveryDate ||
+    detail?.expectedDeliveryTimeStamp ||
+    expectation.predictedDeliveryDate ||
+    detail?.predictedDeliveryDate ||
+    detail?.predictedDeliveryTimeStamp ||
+    expectation.guaranteedDeliveryDate ||
+    detail?.guaranteedDeliveryDate ||
+    detail?.guaranteedDeliveryTimeStamp ||
+    "";
+
+  if (!expectedDate) return "";
+
+  const deliveryTime =
+    expectation.predictedDeliveryWindowEndTime ||
+    detail?.predictedDeliveryWindowEndTime ||
+    detail?.expectedDeliveryTime ||
+    expectation.endOfDay ||
+    detail?.endOfDay ||
+    detail?.expectedDeliveryTimeStamp ||
+    "";
+
+  const date = formatUspsDate(expectedDate);
+  const time = formatUspsTime(deliveryTime);
+
+  return time ? `${date} · by ${time}` : date;
+}
+
+function uspsDetailFromResponse(data, number) {
+  const sources = [];
+  collectObjects(sources, data);
+  const wanted = cleanTrackingNumber(number);
+
+  return (
+    sources.find(
+      (source) =>
+        cleanTrackingNumber(
+          source?.trackingNumber || source?.tracking_number,
+        ) === wanted,
+    ) ||
+    sources.find(
+      (source) =>
+        source?.status ||
+        source?.statusCategory ||
+        source?.deliveryDateExpectation ||
+        source?.expectedDeliveryDate,
+    ) ||
+    null
+  );
+}
+
+function uspsStatusFromDetail(detail) {
+  const latestEvent = Array.isArray(detail?.trackingEvents)
+    ? detail.trackingEvents[0]
+    : null;
+
+  return shipmentStatusLabel(
+    detail?.status ||
+      detail?.statusCategory ||
+      latestEvent?.eventType ||
+      "",
+    true,
+  );
+}
+
+function pruneUspsTrackingCache() {
+  if (uspsTrackingCache.size <= 200) return;
+
+  for (const [key, entry] of uspsTrackingCache) {
+    if (entry.expiresAt <= Date.now() || uspsTrackingCache.size > 180) {
+      uspsTrackingCache.delete(key);
+    }
+  }
+}
+
+async function fetchUspsTracking(number, retryOnUnauthorized = true) {
+  const cleanNumber = cleanTrackingNumber(number);
+  if (cleanNumber.length < 4 || cleanNumber.length > 34) return null;
+
+  const cached = uspsTrackingCache.get(cleanNumber);
+  if (cached?.expiresAt > Date.now()) return cached.value;
+
+  const token = await uspsAccessToken();
+  if (!token) return null;
+
+  const response = await fetchWithTimeout(
+    envValue("USPS_TRACKING_URL") || USPS_TRACKING_URL,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([{ trackingNumber: cleanNumber }]),
+    },
+    USPS_REQUEST_TIMEOUT_MS,
+  );
+
+  if (response.status === 401 && retryOnUnauthorized) {
+    uspsTokenCache = { accessToken: "", expiresAt: 0 };
+    return fetchUspsTracking(cleanNumber, false);
+  }
+
+  const text = await response.text();
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error("USPS_TRACKING_INVALID_RESPONSE");
+  }
+
+  if (response.status === 404) return null;
+
+  if (!response.ok && response.status !== 207) {
+    const error = new Error("USPS_TRACKING_REQUEST_FAILED");
+    error.status = response.status;
+    throw error;
+  }
+
+  const detail = uspsDetailFromResponse(data, cleanNumber);
+  if (!detail) return null;
+
+  const latestEvent = Array.isArray(detail.trackingEvents)
+    ? detail.trackingEvents[0]
+    : null;
+  const value = {
+    status: uspsStatusFromDetail(detail),
+    eta: uspsEtaFromDetail(detail),
+    updatedAt:
+      latestEvent?.eventTimestamp || latestEvent?.GMTTimestamp || "",
+  };
+
+  uspsTrackingCache.set(cleanNumber, {
+    value,
+    expiresAt: Date.now() + USPS_TRACKING_CACHE_MS,
+  });
+  pruneUspsTrackingCache();
+
+  return value;
+}
+
+async function enrichWithUsps(tracking) {
+  if (!tracking?.number || !isUspsTracking(tracking.carrier, tracking.number)) {
+    return tracking;
+  }
+
+  const live = await fetchUspsTracking(tracking.number);
+
+  if (!live) {
+    return {
+      ...tracking,
+      carrier: tracking.carrier || "USPS",
+    };
+  }
+
+  return {
+    ...tracking,
+    carrier: "USPS",
+    status: live.status || tracking.status,
+    eta: live.eta || tracking.eta,
+    estimated_delivery: live.eta || tracking.eta,
+    live: true,
+    updated_at: live.updatedAt,
+  };
 }
 
 function extractTracking(order, notes) {
@@ -487,7 +804,14 @@ export async function POST({ request }) {
       notes = [];
     }
 
-    const tracking = extractTracking(order, notes);
+    let tracking = extractTracking(order, notes);
+
+    try {
+      tracking = await enrichWithUsps(tracking);
+    } catch (error) {
+      // USPS should enhance tracking, never make order lookup unavailable.
+      console.warn("USPS live tracking unavailable:", error?.message || error);
+    }
 
     return json({
       success: true,
