@@ -1,195 +1,216 @@
-import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  FileCheck2,
+  FlaskConical,
+  LockKeyhole,
+  PackageSearch,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 
-const trustBadges = ["Research Use Only", "Verified Quality", "Secure Checkout"];
+const trustBadges = [
+  { label: "Research Use Only", icon: FlaskConical },
+  { label: "Verified Quality", icon: BadgeCheck },
+  { label: "Secure Checkout", icon: ShieldCheck },
+];
 
-const stats = [
+const mobileBenefits = [
   {
-    value: "99%+",
-    label: "Purity Standards",
+    title: "Verified",
+    description: "Quality documentation",
+    icon: FileCheck2,
   },
   {
-    value: "RUO",
-    label: "Research Use Only",
+    title: "Secure",
+    description: "Protected checkout",
+    icon: LockKeyhole,
   },
   {
-    value: "COA",
-    label: "Quality Documentation",
+    title: "Fast",
+    description: "Same or next day",
+    icon: Truck,
   },
 ];
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
+const stats = [
+  { value: "99%+", label: "Purity Standards" },
+  { value: "RUO", label: "Research Use Only" },
+  { value: "COA", label: "Quality Documentation" },
+];
 
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
+const easing = [0.16, 1, 0.3, 1];
 
-    const update = () => {
-      setIsDesktop(media.matches);
-    };
-
-    update();
-
-    if (media.addEventListener) {
-      media.addEventListener("change", update);
-    } else {
-      media.addListener(update);
-    }
-
-    return () => {
-      if (media.removeEventListener) {
-        media.removeEventListener("change", update);
-      } else {
-        media.removeListener(update);
-      }
-    };
-  }, []);
-
-  return isDesktop;
+function reveal(reduceMotion, delay = 0, distance = 16) {
+  return {
+    initial: reduceMotion
+      ? false
+      : { opacity: 0, y: distance, filter: "blur(8px)" },
+    animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+    transition: { delay, duration: 0.72, ease: easing },
+  };
 }
 
 export default function Hero() {
-  const isDesktop = useIsDesktop();
+  const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative min-h-[100svh] overflow-hidden bg-[#030303] text-white">
-      {/* BACKGROUND */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(220,38,38,0.22),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(127,29,29,0.16),transparent_30%),linear-gradient(180deg,#030303_0%,#080808_48%,#020202_100%)]" />
+    <section className="relative isolate min-h-[100svh] overflow-hidden bg-[#020202] text-white">
+      {/* Layered background */}
+      <div className="pointer-events-none absolute inset-0 -z-30 bg-[radial-gradient(circle_at_50%_20%,rgba(220,38,38,0.18),transparent_32%),radial-gradient(circle_at_8%_55%,rgba(127,29,29,0.12),transparent_32%),radial-gradient(circle_at_95%_70%,rgba(220,38,38,0.08),transparent_28%),linear-gradient(180deg,#020202_0%,#080303_48%,#020202_100%)]" />
 
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.026)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.026)_1px,transparent_1px)] bg-[size:48px_48px] opacity-20 [mask-image:radial-gradient(circle_at_center,black,transparent_76%)] sm:bg-[size:64px_64px]" />
+      <div className="pointer-events-none absolute inset-0 -z-20 bg-[linear-gradient(rgba(255,255,255,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:38px_38px] opacity-30 [mask-image:radial-gradient(circle_at_50%_38%,black,transparent_76%)] sm:bg-[size:56px_56px]" />
 
-      <div className="absolute left-1/2 top-[45%] h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-700/10 blur-[95px] sm:h-[520px] sm:w-[520px] sm:blur-[120px]" />
+      <div className="pointer-events-none absolute left-1/2 top-[40%] -z-20 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/[0.10] blur-[85px] sm:top-[41%] sm:h-[500px] sm:w-[500px] sm:blur-[120px] md:top-[50%] lg:top-[51%] lg:h-[650px] lg:w-[650px]" />
 
-      <div className="absolute left-1/2 top-[61%] h-px w-[82vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-red-600/35 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-[58%] -z-20 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent md:top-[68%] lg:top-[69%]" />
 
-      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black via-black/75 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-20 h-[38%] bg-gradient-to-t from-black via-black/75 to-transparent" />
 
-      {isDesktop && (
-        <motion.img
-          src="/logo.webp"
-          alt="RGV Prime background logo"
-          className="pointer-events-none absolute left-1/2 top-[45%] z-0 w-[460px] max-w-[55vw] -translate-x-1/2 -translate-y-1/2 grayscale lg:w-[580px] xl:w-[680px]"
-          style={{ opacity: 0.018 }}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 0.018, scale: 1 }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        />
-      )}
+      <motion.img
+        src="/logo.webp"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-[35%] -z-10 w-[340px] max-w-[88vw] -translate-x-1/2 -translate-y-1/2 grayscale md:top-[51%] md:w-[560px] md:max-w-[58vw] xl:w-[680px]"
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 0.025, scale: 1 }}
+        transition={{ duration: 1.1, ease: easing }}
+      />
 
-      {/* CONTENT */}
-      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1440px] items-center justify-center px-4 pb-10 pt-[160px] text-center sm:px-6 sm:pb-16 sm:pt-[140px] md:px-10 lg:pb-20">
-        <div className="mx-auto w-full max-w-6xl">
-          {/* EYEBROW */}
-          <motion.div
-            initial={{ opacity: 0, y: 14, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mb-4 flex w-fit max-w-full items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-2 backdrop-blur sm:mb-6 sm:gap-3 sm:px-4"
+      {/* Main content */}
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1440px] items-center justify-center px-4 pb-7 pt-[158px] sm:px-6 sm:pb-10 sm:pt-[166px] md:px-10 md:pb-20 md:pt-[150px]">
+        <div className="mx-auto w-full max-w-[1120px] translate-y-3 text-center sm:translate-y-4 md:translate-y-[48px] lg:translate-y-[54px] xl:translate-y-[60px]">
+          <motion.h1
+            {...reveal(reduceMotion, 0.07, 20)}
+            className="mx-auto max-w-[980px] font-black uppercase leading-[0.88] tracking-[-0.062em] text-white [font-family:Inter,ui-sans-serif,system-ui,sans-serif]"
           >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.9)]" />
+            <span className="block whitespace-nowrap text-[clamp(2.05rem,9.8vw,3.15rem)] md:text-[clamp(3.3rem,5.2vw,5.2rem)]">
+              RGVPRIME LLC
+            </span>
+            <span className="mt-1.5 block whitespace-nowrap bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-[clamp(1.45rem,7.3vw,2.7rem)] text-transparent md:mt-2 md:text-[clamp(2.9rem,4.7vw,4.65rem)]">
+              Research Peptides
+            </span>
+          </motion.h1>
 
-            <p className="max-w-[82vw] truncate text-[8px] font-black uppercase leading-5 tracking-[0.18em] text-red-300 sm:text-[10px] sm:tracking-[0.28em] md:text-[11px]">
-              RGVPRIME Performance Research
+          <motion.div
+            {...reveal(reduceMotion, 0.16, 15)}
+            className="mx-auto mt-6 max-w-[720px] md:mt-8"
+          >
+            <p className="text-[13px] font-medium leading-[1.65] text-white/62 sm:text-[14px] md:hidden">
+              Research-use-only peptides with verified quality documentation,
+              secure checkout, and a professional ordering experience.
+            </p>
+
+            <p className="hidden text-[15px] font-medium leading-7 text-white/60 md:block md:text-base">
+              Research-use-only peptides presented through a clean, secure,
+              and professional shopping experience. Products are intended
+              strictly for in-vitro laboratory research and are not for human
+              or animal use.
             </p>
           </motion.div>
 
-          {/* TITLE */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{
-              delay: 0.08,
-              duration: 0.8,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="mx-auto max-w-4xl text-[2rem] font-black uppercase leading-[0.95] tracking-[-0.045em] text-white sm:text-[3rem] md:text-[3.65rem] lg:text-[4.25rem] [font-family:Inter,ui-sans-serif,system-ui,sans-serif]"
-          >
-            RGVPRIME LLC
-            <br />
-            <span className="text-white/74">Research Peptides</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18, duration: 0.7 }}
-            className="mx-auto mt-5 max-w-[700px] text-[13px] leading-6 text-white/58 sm:mt-7 sm:text-[15px] sm:leading-7 md:text-base"
-          >
-            Premium research-use-only peptides presented through a clean,
-            secure, and professional shopping experience. Products are intended
-            strictly for in-vitro laboratory research and are not for human or
-            animal use.
-          </motion.p>
-
+          {/* CTAs: full-width primary + two compact secondary actions on mobile */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.28, duration: 0.7 }}
-            className="mx-auto mt-7 grid max-w-[390px] grid-cols-1 gap-3 sm:mt-9 sm:flex sm:max-w-none sm:items-center sm:justify-center"
+            {...reveal(reduceMotion, 0.25, 14)}
+            className="mx-auto mt-7 grid w-full max-w-[440px] grid-cols-2 gap-2.5 sm:mt-9 sm:gap-3 md:flex md:max-w-none md:items-center md:justify-center"
           >
             <a
               href="/shop"
-              className="group inline-flex min-h-12 items-center justify-center rounded-full bg-red-600 px-7 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-[0_22px_55px_rgba(220,38,38,0.28)] transition duration-300 hover:-translate-y-1 hover:bg-red-500 sm:px-8 sm:text-[11px]"
+              className="group relative col-span-2 inline-flex min-h-[58px] items-center justify-center overflow-hidden rounded-[20px] border border-red-400/25 bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-6 text-[10px] font-black uppercase tracking-[0.19em] text-white shadow-[0_22px_58px_rgba(220,38,38,0.28)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:min-h-[60px] md:col-auto md:min-h-12 md:rounded-full md:px-8 md:text-[11px]"
             >
+              <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
+              <ShoppingBag className="mr-2.5 h-[18px] w-[18px]" strokeWidth={1.8} />
               Shop Catalog
-              <span className="ml-2 transition duration-300 group-hover:translate-x-1">
-                →
-              </span>
+              <ArrowRight className="ml-2.5 h-[17px] w-[17px] transition duration-300 group-hover:translate-x-1" />
             </a>
 
             <a
               href="/coa"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] px-7 text-[10px] font-black uppercase tracking-[0.18em] text-white/82 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/10 hover:text-white sm:px-8 sm:text-[11px]"
+              className="inline-flex min-h-[54px] items-center justify-center rounded-[18px] border border-white/13 bg-white/[0.045] px-3 text-[9px] font-black uppercase tracking-[0.13em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:text-[10px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
+              <FileCheck2 className="mr-2 h-[17px] w-[17px] text-red-400" strokeWidth={1.8} />
               View COA
             </a>
 
             <a
-              href="https://staging.rgvprimellc.com/track-order"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-red-500/25 bg-red-500/10 px-7 text-[10px] font-black uppercase tracking-[0.18em] text-red-100 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-red-500/45 hover:bg-red-600 hover:text-white sm:px-8 sm:text-[11px]"
+              href="/track-order"
+              className="inline-flex min-h-[54px] items-center justify-center rounded-[18px] border border-white/13 bg-white/[0.045] px-3 text-[9px] font-black uppercase tracking-[0.13em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:text-[10px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
+              <PackageSearch className="mr-2 h-[17px] w-[17px] text-red-400" strokeWidth={1.8} />
               Track Order
             </a>
           </motion.div>
 
+          {/* Mobile benefit cards */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38, duration: 0.7 }}
-            className="mx-auto mt-7 flex max-w-[640px] flex-wrap items-center justify-center gap-2 sm:mt-9 sm:gap-3"
+            {...reveal(reduceMotion, 0.34, 14)}
+            className="mx-auto mt-7 grid w-full max-w-[440px] grid-cols-3 gap-2.5 md:hidden"
           >
-            {trustBadges.map((badge) => (
+            {mobileBenefits.map(({ title, description, icon: Icon }) => (
               <div
-                key={badge}
-                className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-2 text-[8px] font-bold uppercase tracking-[0.11em] text-white/72 backdrop-blur sm:px-4 sm:text-[10px]"
+                key={title}
+                className="group relative flex min-h-[116px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[20px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] px-2.5 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl"
               >
-                <span className="mr-1 text-red-400">✓</span>
-                {badge}
+                <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-red-400/50 to-transparent" />
+                <div className="grid h-9 w-9 place-items-center rounded-xl border border-red-500/20 bg-red-500/[0.09] text-red-400 shadow-[0_10px_28px_rgba(127,29,29,0.18)]">
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+                </div>
+
+                <p className="mt-3 truncate text-[9px] font-black uppercase tracking-[0.11em] text-white">
+                  {title}
+                </p>
+
+                <p className="mt-1 line-clamp-2 text-[8.5px] font-semibold leading-[1.35] text-white/43">
+                  {description}
+                </p>
               </div>
             ))}
           </motion.div>
 
+          {/* Trust pills */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.48, duration: 0.7 }}
-            className="mx-auto mt-7 grid max-w-[800px] grid-cols-1 gap-2 sm:mt-9 sm:grid-cols-3 sm:gap-3"
+            {...reveal(reduceMotion, 0.42, 12)}
+            className="mx-auto mt-6 flex max-w-[580px] flex-wrap items-center justify-center gap-2 sm:mt-8 sm:gap-3"
+          >
+            {trustBadges.map(({ label, icon: Icon }) => (
+              <div
+                key={label}
+                className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-black/35 px-3 text-[7.5px] font-black uppercase tracking-[0.105em] text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl sm:px-4 sm:text-[9px] sm:tracking-[0.14em]"
+              >
+                <Icon className="mr-1.5 h-3.5 w-3.5 text-red-500" strokeWidth={2.2} />
+                {label}
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Desktop-only research stats */}
+          <motion.div
+            {...reveal(reduceMotion, 0.48, 14)}
+            className="mx-auto mt-10 hidden max-w-[800px] grid-cols-3 gap-3 md:grid"
           >
             {stats.map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 backdrop-blur-md transition duration-300 hover:border-red-500/30 hover:bg-red-500/[0.055] sm:px-5 sm:py-4"
+                className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4 backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/[0.055]"
               >
-                <p className="text-xl font-black tracking-[-0.05em] text-white sm:text-2xl">
+                <p className="text-2xl font-black tracking-[-0.05em] text-white">
                   {item.value}
                 </p>
-
-                <p className="mt-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/45 sm:text-[9px] sm:tracking-[0.18em]">
+                <p className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
                   {item.label}
                 </p>
               </div>
             ))}
           </motion.div>
+
+          <motion.p
+            {...reveal(reduceMotion, 0.5, 8)}
+            className="mx-auto mt-5 max-w-[390px] text-[8px] font-bold uppercase leading-4 tracking-[0.12em] text-white/27 md:hidden"
+          >
+            For in-vitro laboratory research only · Not for human or animal use
+          </motion.p>
         </div>
       </div>
     </section>
