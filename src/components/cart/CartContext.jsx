@@ -8,16 +8,17 @@ import {
   useState,
 } from "react";
 import {
+  getOmnisendCartFingerprint,
   getRememberedOmnisendEmail,
   identifyOmnisendContact,
   readCartRecoveryFromUrl,
   resetOmnisendCartSession,
   trackOmnisendCart,
+  trackOmnisendStartedCheckout,
 } from "../../lib/omnisendCart";
 import { getMeOnce } from "../../lib/accountSession";
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
-const CART_ID_STORAGE_KEY = "rgv-prime-cart-id-v1";
 const OMNISEND_CHECKOUT_SIGNATURE_KEY =
   "rgv-prime-omnisend-checkout-signature-v1";
 
@@ -44,8 +45,8 @@ const fallbackCart = {
   removeItem: () => {},
   updateQuantity: () => {},
   clearCart: () => {},
-  identifyContact: () => false,
-  trackStartedCheckout: () => false,
+  identifyContact: () => Promise.resolve(false),
+  trackStartedCheckout: () => Promise.resolve(false),
 };
 
 const CartContext = createContext(fallbackCart);
@@ -53,10 +54,6 @@ const CartContext = createContext(fallbackCart);
 function toNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
-}
-
-function roundMoney(value) {
-  return Number(toNumber(value).toFixed(2));
 }
 
 function normalizeEmail(value = "") {
@@ -67,13 +64,6 @@ function normalizeEmail(value = "") {
 
 function isValidEmail(value = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
-}
-
-function stripHtml(value = "") {
-  return String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function getProductImage(product = {}) {
@@ -127,6 +117,13 @@ function normalizeProduct(product, quantity = 1) {
   const price = toNumber(
     product.price || product.sale_price || product.regular_price || 0,
   );
+  const shortDescription =
+    product.short_description ||
+    product.shortDescription ||
+    product.product?.short_description ||
+    "";
+  const description =
+    product.description || product.product?.description || shortDescription;
 
   return {
     id: String(cartId),
@@ -137,9 +134,6 @@ function normalizeProduct(product, quantity = 1) {
     variationId,
     name,
     title: name,
-    description: stripHtml(
-      product.short_description || product.description || "",
-    ),
     slug: product.slug || "",
     type: product.type || "simple",
     price,
@@ -164,14 +158,11 @@ function normalizeProduct(product, quantity = 1) {
       product.variation ||
       product.variation_attributes ||
       {},
-    short_description:
-      product.short_description ||
-      product.shortDescription ||
-      product.product?.short_description ||
-      "",
-    description: product.description || product.product?.description || "",
+    short_description: shortDescription,
+    description,
     categories: Array.isArray(product.categories) ? product.categories : [],
-    coa_url: product.coa_url || product.coaURL || product.documentation_url || "",
+    coa_url:
+      product.coa_url || product.coaURL || product.documentation_url || "",
     coa_code: product.coa_code || product.coaCode || "",
     variation:
       product.variation ||
@@ -205,191 +196,10 @@ function cleanOldCartStorage() {
   });
 }
 
-function createUuid() {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    return crypto.randomUUID();
-  }
-
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
-    const random = Math.floor(Math.random() * 16);
-    const value = char === "x" ? random : (random & 0x3) | 0x8;
-    return value.toString(16);
-  });
-}
-
-function getOrCreateCartId() {
-  if (typeof window === "undefined") return createUuid();
-
-  try {
-    const currentId = window.localStorage.getItem(CART_ID_STORAGE_KEY);
-
-    if (currentId) return currentId;
-
-    const nextId = createUuid();
-    window.localStorage.setItem(CART_ID_STORAGE_KEY, nextId);
-    return nextId;
-  } catch (error) {
-    console.error("Cart ID storage error:", error);
-    return createUuid();
-  }
-}
-
-function toAbsoluteUrl(value, fallbackPath = "/shop") {
-  if (typeof window === "undefined") {
-    return `https://rgvprimellc.com${fallbackPath}`;
-  }
-
-  try {
-    return new URL(value || fallbackPath, window.location.origin).toString();
-  } catch {
-    return new URL(fallbackPath, window.location.origin).toString();
-  }
-}
-
-function getCheckoutUrl() {
-  return toAbsoluteUrl("/checkout", "/checkout");
-}
-
-function buildOmnisendLineItem(item = {}) {
-  const price = roundMoney(item.price);
-  const regularPrice = roundMoney(item.regular_price);
-  const productId = String(item.product_id || item.productId || item.id || "");
-  const variationId = String(item.variation_id || item.variationId || "");
-  const imageUrl = toAbsoluteUrl(item.image_url || item.image, "/logo.webp");
-
-  const lineItem = {
-    productID: productId,
-    productTitle: String(item.name || item.title || "Product"),
-    productDescription: stripHtml(item.description || ""),
-    productImageURL: imageUrl,
-    productPrice: price,
-    productQuantity: Math.max(1, Number(item.quantity || 1)),
-    productURL: toAbsoluteUrl(
-      item.permalink || `/product/${item.slug || ""}`,
-      "/shop",
-    ),
-  };
-
-  if (item.sku) {
-    lineItem.productSKU = String(item.sku);
-  }
-
-  if (variationId && variationId !== "0") {
-    lineItem.productVariantID = variationId;
-    lineItem.productVariantImageURL = imageUrl;
-  }
-
-  if (regularPrice > price && price >= 0) {
-    lineItem.productStrikeThroughPrice = regularPrice;
-    lineItem.productDiscount = roundMoney(regularPrice - price);
-  }
-
-  return lineItem;
-}
-
-function getCartValue(items = []) {
-  return roundMoney(
-    items.reduce((total, item) => {
-      return (
-        total + toNumber(item.price) * Math.max(1, Number(item.quantity || 1))
-      );
-    }, 0),
-  );
-}
-
-function getOmnisendClient() {
-  if (typeof window === "undefined") return null;
-
-  window.omnisend = window.omnisend || [];
-  return window.omnisend;
-}
-
-function identifyOmnisendContact(email) {
-  const cleanEmail = normalizeEmail(email);
-
-  if (!isValidEmail(cleanEmail)) return false;
-
-  const omnisend = getOmnisendClient();
-
-  if (!omnisend) return false;
-
-  if (typeof omnisend.identifyContact === "function") {
-    try {
-      omnisend.identifyContact({ email: cleanEmail });
-    } catch (error) {
-      console.error("Omnisend contact identification error:", error);
-    }
-  }
-
-  return true;
-}
-
-function trackOmnisendCartEvent({
-  eventName,
-  items,
-  addedItem = null,
-  email = "",
-}) {
-  if (!Array.isArray(items) || items.length === 0) return false;
-
-  const omnisend = getOmnisendClient();
-
-  if (!omnisend || typeof omnisend.push !== "function") return false;
-
-  const lineItems = items.map(buildOmnisendLineItem);
-  const cleanEmail = normalizeEmail(email);
-  const event = {
-    origin: "api",
-    eventID: createUuid(),
-    eventVersion: "",
-    eventTime: new Date().toISOString(),
-    properties: {
-      abandonedCheckoutURL: getCheckoutUrl(),
-      cartID: getOrCreateCartId(),
-      currency: "USD",
-      lineItems,
-      value: getCartValue(items),
-    },
-  };
-
-  if (addedItem) {
-    event.properties.addedItem = buildOmnisendLineItem(addedItem);
-  }
-
-  if (isValidEmail(cleanEmail)) {
-    event.contact = { email: cleanEmail };
-  }
-
-  try {
-    omnisend.push(["track", eventName, event]);
-    return true;
-  } catch (error) {
-    console.error(`Omnisend ${eventName} tracking error:`, error);
+function isCheckoutPage() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
     return false;
   }
-}
-
-function getCheckoutSignature(email, items = []) {
-  const cartFingerprint = items
-    .map((item) =>
-      [
-        item.product_id || item.productId || item.id,
-        item.variation_id || item.variationId || 0,
-        Number(item.quantity || 1),
-        roundMoney(item.price),
-      ].join(":"),
-    )
-    .sort()
-    .join("|");
-
-  return `${normalizeEmail(email)}::${cartFingerprint}`;
-}
-
-function isCheckoutPage() {
-  if (typeof window === "undefined") return false;
 
   return (
     /(^|\/)checkout(\/|$)/i.test(window.location.pathname) ||
@@ -401,16 +211,16 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
-  const pendingOmnisendItem = useRef(null);
 
   const itemsRef = useRef([]);
-  const pendingAddedItemIdRef = useRef("");
+  const pendingOmnisendItemRef = useRef(null);
   const identifiedEmailRef = useRef("");
   const lastCheckoutSignatureRef = useRef("");
 
   useEffect(() => {
     try {
       cleanOldCartStorage();
+      identifiedEmailRef.current = getRememberedOmnisendEmail();
 
       const recoveredCart = readCartRecoveryFromUrl();
       const savedCart = window.localStorage.getItem(CART_STORAGE_KEY);
@@ -447,41 +257,16 @@ export function CartProvider({ children }) {
     }
   }, [items, hasHydrated]);
 
-<<<<<<< HEAD
-  useEffect(() => {
-    if (!hasHydrated || !items.length || !pendingOmnisendItem.current) return;
-
-    const addedItem = pendingOmnisendItem.current;
-    pendingOmnisendItem.current = null;
-
-    async function sendCartEvent() {
-      let email = getRememberedOmnisendEmail();
-
-      if (!email) {
-        const account = await getMeOnce();
-        email = account?.data?.user?.email || "";
-      }
-
-      if (email) {
-        await identifyOmnisendContact({ email });
-      }
-
-      trackOmnisendCart(items, addedItem, { email });
-    }
-
-    void sendCartEvent();
-  }, [items, hasHydrated]);
-=======
-  const identifyContact = useCallback((email) => {
+  const identifyContact = useCallback(async (email) => {
     const cleanEmail = normalizeEmail(email);
 
     if (!isValidEmail(cleanEmail)) return false;
 
     identifiedEmailRef.current = cleanEmail;
-    return identifyOmnisendContact(cleanEmail);
+    return identifyOmnisendContact({ email: cleanEmail });
   }, []);
 
-  const trackStartedCheckout = useCallback((email, currentItems) => {
+  const trackStartedCheckout = useCallback(async (email, currentItems) => {
     const cleanEmail = normalizeEmail(email);
     const checkoutItems = Array.isArray(currentItems)
       ? currentItems
@@ -489,10 +274,9 @@ export function CartProvider({ children }) {
 
     if (!isValidEmail(cleanEmail) || checkoutItems.length === 0) return false;
 
-    identifyOmnisendContact(cleanEmail);
     identifiedEmailRef.current = cleanEmail;
 
-    const signature = getCheckoutSignature(cleanEmail, checkoutItems);
+    const signature = getOmnisendCartFingerprint(checkoutItems, cleanEmail);
     let storedSignature = "";
 
     try {
@@ -509,22 +293,19 @@ export function CartProvider({ children }) {
       return true;
     }
 
-    // Replay the complete cart now that the visitor is identified. This keeps
-    // the existing "Added product to cart" automation working for visitors
-    // who were anonymous when they originally added the item.
-    const cartTracked = trackOmnisendCartEvent({
-      eventName: "added product to cart",
-      items: checkoutItems,
-      addedItem: checkoutItems[checkoutItems.length - 1] || null,
+    await identifyOmnisendContact({ email: cleanEmail });
+
+    // Send both native events after identification. The first keeps the
+    // existing Abandoned Cart workflow active, and the second supports the
+    // dedicated Abandoned Checkout workflow.
+    const cartTracked = trackOmnisendCart(
+      checkoutItems,
+      checkoutItems.at(-1) || null,
+      { email: cleanEmail },
+    );
+    const checkoutTracked = trackOmnisendStartedCheckout(checkoutItems, {
       email: cleanEmail,
     });
-
-    const checkoutTracked = trackOmnisendCartEvent({
-      eventName: "started checkout",
-      items: checkoutItems,
-      email: cleanEmail,
-    });
-
     const tracked = cartTracked || checkoutTracked;
 
     if (tracked) {
@@ -536,7 +317,7 @@ export function CartProvider({ children }) {
           signature,
         );
       } catch {
-        // Session storage is optional; the in-memory signature still prevents duplicates.
+        // The in-memory signature still prevents duplicates if storage is blocked.
       }
     }
 
@@ -544,26 +325,35 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!hasHydrated || !pendingAddedItemIdRef.current) return;
-
-    const addedItemId = pendingAddedItemIdRef.current;
-    pendingAddedItemIdRef.current = "";
-
-    const addedItem = items.find((item) => item.id === addedItemId);
-
-    if (!addedItem) return;
-
-    trackOmnisendCartEvent({
-      eventName: "added product to cart",
-      items,
-      addedItem,
-      email: identifiedEmailRef.current,
-    });
-
-    if (identifiedEmailRef.current && isCheckoutPage()) {
-      trackStartedCheckout(identifiedEmailRef.current, items);
+    if (!hasHydrated || !items.length || !pendingOmnisendItemRef.current) {
+      return;
     }
-  }, [hasHydrated, items, trackStartedCheckout]);
+
+    const addedItem = pendingOmnisendItemRef.current;
+    pendingOmnisendItemRef.current = null;
+
+    async function sendCartEvent() {
+      let email = identifiedEmailRef.current || getRememberedOmnisendEmail();
+
+      if (!email) {
+        try {
+          const account = await getMeOnce();
+          email = normalizeEmail(account?.data?.user?.email || "");
+        } catch (error) {
+          console.warn("Unable to identify account for cart tracking:", error);
+        }
+      }
+
+      if (isValidEmail(email)) {
+        identifiedEmailRef.current = email;
+        await identifyOmnisendContact({ email });
+      }
+
+      trackOmnisendCart(items, addedItem, { email });
+    }
+
+    void sendCartEvent();
+  }, [items, hasHydrated]);
 
   useEffect(() => {
     if (!hasHydrated || typeof document === "undefined") return undefined;
@@ -585,7 +375,7 @@ export function CartProvider({ children }) {
 
       if (!isEmailField || !isValidEmail(target.value)) return;
 
-      trackStartedCheckout(target.value, itemsRef.current);
+      void trackStartedCheckout(target.value, itemsRef.current);
     };
 
     const scheduleEmailCapture = (event) => {
@@ -615,7 +405,6 @@ export function CartProvider({ children }) {
       document.removeEventListener("focusout", scheduleEmailCapture, true);
     };
   }, [hasHydrated, trackStartedCheckout]);
->>>>>>> 7d7ffe2 (test tagadatnkse)
 
   function openCart() {
     setIsCartOpen(true);
@@ -626,7 +415,7 @@ export function CartProvider({ children }) {
   }
 
   function toggleCart() {
-    setIsCartOpen((prev) => !prev);
+    setIsCartOpen((previous) => !previous);
   }
 
   function addItem(product, quantity = 1) {
@@ -642,11 +431,7 @@ export function CartProvider({ children }) {
       return;
     }
 
-<<<<<<< HEAD
-    pendingOmnisendItem.current = newItem;
-=======
-    pendingAddedItemIdRef.current = newItem.id;
->>>>>>> 7d7ffe2 (test tagadatnkse)
+    pendingOmnisendItemRef.current = newItem;
 
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === newItem.id);
@@ -722,17 +507,20 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setItems([]);
-<<<<<<< HEAD
-    resetOmnisendCartSession();
-=======
+    pendingOmnisendItemRef.current = null;
     identifiedEmailRef.current = "";
     lastCheckoutSignatureRef.current = "";
->>>>>>> 7d7ffe2 (test tagadatnkse)
+    resetOmnisendCartSession();
 
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(CART_STORAGE_KEY);
-      window.localStorage.removeItem(CART_ID_STORAGE_KEY);
-      window.sessionStorage.removeItem(OMNISEND_CHECKOUT_SIGNATURE_KEY);
+
+      try {
+        window.sessionStorage.removeItem(OMNISEND_CHECKOUT_SIGNATURE_KEY);
+      } catch {
+        // Nothing else is required when session storage is unavailable.
+      }
+
       cleanOldCartStorage();
     }
   }
