@@ -10,7 +10,8 @@ const TRACKING_ITEM_META_KEYS = [
 ];
 
 const USPS_OAUTH_URL = "https://apis.usps.com/oauth2/v3/token";
-const USPS_TRACKING_URL = "https://apis.usps.com/tracking/v3r2/tracking";
+const USPS_TRACKING_V3_URL = "https://apis.usps.com/tracking/v3/tracking";
+const USPS_TRACKING_V3R2_URL = "https://apis.usps.com/tracking/v3r2/tracking";
 const USPS_REQUEST_TIMEOUT_MS = 9000;
 const USPS_TRACKING_CACHE_MS = 2 * 60 * 1000;
 
@@ -90,7 +91,9 @@ function uspsCredentials() {
 async function uspsAccessToken() {
   const { clientId, clientSecret } = uspsCredentials();
 
-  if (!clientId || !clientSecret) return "";
+  if (!clientId || !clientSecret) {
+    throw new Error("USPS_CONFIGURATION_MISSING");
+  }
 
   if (
     uspsTokenCache.accessToken &&
@@ -512,6 +515,66 @@ function pruneUspsTrackingCache() {
   }
 }
 
+async function readUspsJson(response) {
+  const text = await response.text();
+
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error("USPS_TRACKING_INVALID_RESPONSE");
+  }
+}
+
+async function requestUspsV3(number, token) {
+  const baseUrl = (
+    envValue("USPS_TRACKING_V3_URL") || USPS_TRACKING_V3_URL
+  ).replace(/\/+$/, "");
+  const url = new URL(`${baseUrl}/${encodeURIComponent(number)}`);
+  url.searchParams.set("expand", "DETAIL");
+
+  return fetchWithTimeout(
+    url.toString(),
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    USPS_REQUEST_TIMEOUT_MS,
+  );
+}
+
+async function requestUspsV3r2(number, token) {
+  return fetchWithTimeout(
+    envValue("USPS_TRACKING_V3R2_URL", "USPS_TRACKING_URL") ||
+      USPS_TRACKING_V3R2_URL,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([{ trackingNumber: number }]),
+    },
+    USPS_REQUEST_TIMEOUT_MS,
+  );
+}
+
+function uspsValueFromDetail(detail) {
+  const latestEvent = Array.isArray(detail?.trackingEvents)
+    ? detail.trackingEvents[0]
+    : null;
+
+  return {
+    status: uspsStatusFromDetail(detail),
+    eta: uspsEtaFromDetail(detail),
+    updatedAt:
+      latestEvent?.eventTimestamp || latestEvent?.GMTTimestamp || "",
+  };
+}
+
 async function fetchUspsTracking(number, retryOnUnauthorized = true) {
   const cleanNumber = cleanTrackingNumber(number);
   if (cleanNumber.length < 4 || cleanNumber.length > 34) return null;
@@ -520,56 +583,63 @@ async function fetchUspsTracking(number, retryOnUnauthorized = true) {
   if (cached?.expiresAt > Date.now()) return cached.value;
 
   const token = await uspsAccessToken();
-  if (!token) return null;
 
-  const response = await fetchWithTimeout(
-    envValue("USPS_TRACKING_URL") || USPS_TRACKING_URL,
-    {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([{ trackingNumber: cleanNumber }]),
-    },
-    USPS_REQUEST_TIMEOUT_MS,
-  );
+  const requests = [requestUspsV3, requestUspsV3r2];
+  let value = null;
+  let lastError = null;
 
-  if (response.status === 401 && retryOnUnauthorized) {
-    uspsTokenCache = { accessToken: "", expiresAt: 0 };
-    return fetchUspsTracking(cleanNumber, false);
+  for (const makeRequest of requests) {
+    let response;
+
+    try {
+      response = await makeRequest(cleanNumber, token);
+    } catch (error) {
+      lastError = error;
+      continue;
+    }
+
+    if (response.status === 401 && retryOnUnauthorized) {
+      uspsTokenCache = { accessToken: "", expiresAt: 0 };
+      return fetchUspsTracking(cleanNumber, false);
+    }
+
+    if (response.status === 404) continue;
+
+    if (!response.ok && response.status !== 207) {
+      lastError = new Error(
+        `USPS_TRACKING_REQUEST_FAILED_${response.status}`,
+      );
+      continue;
+    }
+
+    let data;
+
+    try {
+      data = await readUspsJson(response);
+    } catch (error) {
+      lastError = error;
+      continue;
+    }
+
+    const detail = uspsDetailFromResponse(data, cleanNumber);
+    if (!detail) continue;
+
+    const current = uspsValueFromDetail(detail);
+    value = {
+      status: current.status || value?.status || "",
+      eta: current.eta || value?.eta || "",
+      updatedAt: current.updatedAt || value?.updatedAt || "",
+    };
+
+    // Tracking v3 is the closest match to USPS.com. Only use v3r2 when
+    // the first response did not contain an expected-delivery value.
+    if (value.eta) break;
   }
 
-  const text = await response.text();
-  let data = null;
-
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    throw new Error("USPS_TRACKING_INVALID_RESPONSE");
+  if (!value) {
+    if (lastError) throw lastError;
+    return null;
   }
-
-  if (response.status === 404) return null;
-
-  if (!response.ok && response.status !== 207) {
-    const error = new Error("USPS_TRACKING_REQUEST_FAILED");
-    error.status = response.status;
-    throw error;
-  }
-
-  const detail = uspsDetailFromResponse(data, cleanNumber);
-  if (!detail) return null;
-
-  const latestEvent = Array.isArray(detail.trackingEvents)
-    ? detail.trackingEvents[0]
-    : null;
-  const value = {
-    status: uspsStatusFromDetail(detail),
-    eta: uspsEtaFromDetail(detail),
-    updatedAt:
-      latestEvent?.eventTimestamp || latestEvent?.GMTTimestamp || "",
-  };
 
   uspsTrackingCache.set(cleanNumber, {
     value,
@@ -811,6 +881,11 @@ export async function POST({ request }) {
     } catch (error) {
       // USPS should enhance tracking, never make order lookup unavailable.
       console.warn("USPS live tracking unavailable:", error?.message || error);
+      tracking = {
+        ...tracking,
+        live: false,
+        live_error: String(error?.message || "USPS_LIVE_TRACKING_UNAVAILABLE"),
+      };
     }
 
     return json({
