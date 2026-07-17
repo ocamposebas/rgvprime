@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+  import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -714,18 +714,36 @@ export default function RgvCheckout() {
     return () => window.clearTimeout(timeoutId);
   }, [cartItems, checkoutForm.email, checkoutForm.phone]);
 
-  const cartTotal = useMemo(
-    () =>
-      hasProviderCartItems
-        ? Number(
-            cart?.cartTotal ??
-              cart?.subtotal ??
-              cart?.paidSubtotal ??
-              calculateCartTotal(cartItems)
-          )
-        : calculateCartTotal(cartItems),
-    [cart?.cartTotal, cart?.paidSubtotal, cart?.subtotal, cartItems, hasProviderCartItems]
+  const calculatedItemsSubtotal = useMemo(
+    () => Number(calculateCartTotal(cartItems).toFixed(2)),
+    [cartItems]
   );
+
+  // This is the merchandise subtotal before applying the checkout coupon.
+  // Do not use cart.cartTotal because some providers expose the discounted
+  // or grand total there, which can incorrectly remove free shipping.
+  const cartTotal = useMemo(() => {
+    const explicitSubtotalBeforeDiscount = toMoneyNumber(
+      cart?.subtotalBeforeDiscount ??
+        cart?.subtotal_before_discount ??
+        cart?.subtotal,
+      NaN
+    );
+
+    if (
+      Number.isFinite(explicitSubtotalBeforeDiscount) &&
+      explicitSubtotalBeforeDiscount > 0
+    ) {
+      return Number(explicitSubtotalBeforeDiscount.toFixed(2));
+    }
+
+    return calculatedItemsSubtotal;
+  }, [
+    cart?.subtotal,
+    cart?.subtotalBeforeDiscount,
+    cart?.subtotal_before_discount,
+    calculatedItemsSubtotal,
+  ]);
 
   const summaryItems = useMemo(
     () =>
@@ -762,7 +780,10 @@ export default function RgvCheckout() {
 
   const isZelleSelected = selectedPaymentMethodId === "zelle";
   const hasItems = cartItems.length > 0;
-  const freeShippingUnlocked = cartTotal >= FREE_SHIPPING_MINIMUM || couponHasFreeShipping;
+  const freeShippingQualifiedBySubtotal =
+    Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
+  const freeShippingUnlocked =
+    freeShippingQualifiedBySubtotal || couponHasFreeShipping;
   const amountUntilFreeShipping = Math.max(FREE_SHIPPING_MINIMUM - cartTotal, 0);
   const selectedShippingBaseCost = toMoneyNumber(selectedShippingMethod?.price, 0);
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
@@ -948,9 +969,6 @@ export default function RgvCheckout() {
 
     setLoading(true);
     setPaymentNotice("Opening secure card checkout...");
-    trackOmnisendStartedCheckout(cartItems, {
-      email: normalizeEmail(checkoutForm.email),
-    });
     window.location.href = checkoutUrl;
   };
 
@@ -999,6 +1017,10 @@ export default function RgvCheckout() {
         localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
       }
 
+      // Keep a free-shipping value explicit for PHP. The string "0.00"
+      // prevents endpoints using empty() from treating a valid zero as missing.
+      const shippingCostForApi = Number(shippingCost).toFixed(2);
+
       const response = await fetch(getManualOrderEndpoint(), {
         method: "POST",
         credentials: "include",
@@ -1021,16 +1043,29 @@ export default function RgvCheckout() {
           coupon_discount: couponDiscount,
           couponValidation,
           coupon_validation: couponValidation,
+          subtotal: cartTotal,
+          cartSubtotal: cartTotal,
+          cart_subtotal: cartTotal,
+          subtotalBeforeCoupon: cartTotal,
+          subtotal_before_coupon: cartTotal,
+          subtotalBeforeDiscount: cartTotal,
+          subtotal_before_discount: cartTotal,
           discountedSubtotal: discountedCartTotal,
           discounted_subtotal: discountedCartTotal,
           shippingMethod: selectedShippingMethod?.id,
           shipping_method: selectedShippingMethod?.id,
           shippingMethodTitle: selectedShippingMethod?.title,
           shipping_method_title: selectedShippingMethod?.title,
-          shippingCost,
-          shipping_cost: shippingCost,
+          shippingCost: shippingCostForApi,
+          shipping_cost: shippingCostForApi,
           shippingBaseCost: selectedShippingBaseCost,
           shipping_base_cost: selectedShippingBaseCost,
+          freeShippingUnlocked,
+          free_shipping_unlocked: freeShippingUnlocked,
+          freeShippingQualifiedBySubtotal,
+          free_shipping_qualified_by_subtotal: freeShippingQualifiedBySubtotal,
+          freeShippingEvaluationBasis: "subtotal_before_coupon",
+          free_shipping_evaluation_basis: "subtotal_before_coupon",
           zelleDiscountRate: 0,
           zelle_discount_rate: 0,
           freeShippingMinimum: FREE_SHIPPING_MINIMUM,
@@ -1070,10 +1105,6 @@ export default function RgvCheckout() {
         customer: order.customer || finalCustomer,
         items: order.items || checkoutItems,
       };
-
-      trackOmnisendStartedCheckout(cartItems, {
-        email: finalBilling.email,
-      });
 
       setManualOrder(nextOrder);
       setPaymentNotice(
@@ -1727,7 +1758,7 @@ export default function RgvCheckout() {
           <aside className="rgvx-order-summary">
             <div className="rgvx-summary-head">
               <div>
-                <p>Step 1 Â· Review order</p>
+                <p>Step 1 · Review order</p>
                 <h2>{formatMoney(estimatedDue)}</h2>
               </div>
               <PackageCheck size={18} />
