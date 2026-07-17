@@ -18,6 +18,12 @@ const siteName = "RGVPRIME LLC";
 const brandName = "RGVPRIME LLC";
 const siteUrl = "https://rgvprimellc.com";
 
+// Configure this public variable in Coolify/Vercel and rebuild the site.
+// It is the public Omnisend Brand ID, never a private API key.
+const omnisendBrandId = String(
+  import.meta.env.PUBLIC_OMNISEND_BRAND_ID || "",
+).trim();
+
 const {
   title = "RGVPRIME LLC | Laboratory Research Products",
   description = "RGVPRIME LLC provides high-quality laboratory research products, transparent COA access, secure ordering and reliable service. Products are intended strictly for research use.",
@@ -39,9 +45,7 @@ const omnisendBrandId = String(
   import.meta.env.PUBLIC_OMNISEND_BRAND_ID || "",
 ).trim();
 
-const fullTitle = title.includes(siteName)
-  ? title
-  : `${title} | ${siteName}`;
+const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
 
 const imageExtension = image.split(".").pop()?.toLowerCase();
 
@@ -131,15 +135,9 @@ const webpageSchema = {
     {
       noindex ? (
         <>
-          <meta
-            name="robots"
-            content="noindex, nofollow, noarchive"
-          />
+          <meta name="robots" content="noindex, nofollow, noarchive" />
 
-          <meta
-            name="googlebot"
-            content="noindex, nofollow, noarchive"
-          />
+          <meta name="googlebot" content="noindex, nofollow, noarchive" />
         </>
       ) : (
         <>
@@ -156,24 +154,11 @@ const webpageSchema = {
       )
     }
 
-    <link
-      rel="icon"
-      type="image/webp"
-      href="/logo.webp"
-      sizes="any"
-    />
+    <link rel="icon" type="image/webp" href="/logo.webp" sizes="any" />
 
-    <link
-      rel="shortcut icon"
-      type="image/webp"
-      href="/logo.webp"
-    />
+    <link rel="shortcut icon" type="image/webp" href="/logo.webp" />
 
-    <link
-      rel="apple-touch-icon"
-      href="/apple-touch-icon.png"
-      sizes="180x180"
-    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
@@ -217,6 +202,27 @@ const webpageSchema = {
       type="application/ld+json"
       set:html={JSON.stringify(webpageSchema)}
     />
+
+    <script is:inline define:vars={{ omnisendBrandId }}>
+      if (omnisendBrandId) {
+        window.omnisend = window.omnisend || [];
+        window.omnisend.push(["brandID", omnisendBrandId]);
+        window.omnisend.push(["track", "$pageViewed"]);
+
+        if (
+          !document.querySelector(
+            'script[src="https://omnisnippet1.com/inshop/launcher-v2.js"]',
+          )
+        ) {
+          var omnisendScript = document.createElement("script");
+          omnisendScript.type = "text/javascript";
+          omnisendScript.async = true;
+          omnisendScript.src = "https://omnisnippet1.com/inshop/launcher-v2.js";
+          omnisendScript.setAttribute("data-rgv-omnisend", "true");
+          document.head.appendChild(omnisendScript);
+        }
+      }
+    </script>
 
     <slot name="head" />
   </head>
