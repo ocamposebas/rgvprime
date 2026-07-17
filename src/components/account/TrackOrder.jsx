@@ -30,6 +30,247 @@ function statusLabel(status = "") {
   return labels[status] || status || "Unknown";
 }
 
+function firstValue(...values) {
+  for (const value of values) {
+    if (value === 0) return value;
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function stripHtml(value = "") {
+  return String(value)
+    .replace(/<br\s*\/?\s*>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function metaValue(metaData, keys) {
+  if (!Array.isArray(metaData)) return "";
+
+  const wanted = new Set(keys.map((key) => String(key).toLowerCase()));
+  const match = [...metaData]
+    .reverse()
+    .find((item) => wanted.has(String(item?.key || "").toLowerCase()));
+
+  return match?.value ?? "";
+}
+
+function addObjectSources(target, value) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => addObjectSources(target, item));
+    return;
+  }
+
+  if (value && typeof value === "object") target.push(value);
+}
+
+function sourceValue(sources, keys) {
+  for (const source of sources) {
+    for (const key of keys) {
+      const value = source?.[key];
+      if (value === 0) return value;
+      if (
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== ""
+      ) {
+        return value;
+      }
+    }
+  }
+
+  return "";
+}
+
+function trackingFromNote(noteValue) {
+  const raw = typeof noteValue === "object" ? noteValue?.note : noteValue;
+  const plain = stripHtml(raw);
+  if (!plain) return {};
+
+  const numberMatch = plain.match(
+    /tracking(?:\s+(?:number|no\.?))?\s*[:#-]?\s*([A-Z0-9]{8,40})/i,
+  );
+  const carrierMatch = plain.match(
+    /shipped\s+via\s+([a-z0-9 .&-]+?)(?=\s+with\s+tracking|\s+tracking|[,.]|$)/i,
+  );
+  const hrefMatch = String(raw || "").match(/href=["']([^"']+)["']/i);
+  const urlMatch = plain.match(/https?:\/\/[^\s<]+/i);
+
+  return {
+    number: numberMatch?.[1] || "",
+    carrier: carrierMatch?.[1]?.trim() || "",
+    url: hrefMatch?.[1] || urlMatch?.[0] || "",
+  };
+}
+
+function carrierTrackingUrl(carrier, number) {
+  if (!number) return "";
+
+  const name = String(carrier || "").toLowerCase();
+  const encoded = encodeURIComponent(String(number).trim());
+
+  if (name.includes("usps") || name.includes("postal service")) {
+    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encoded}`;
+  }
+  if (name.includes("ups") && !name.includes("usps")) {
+    return `https://www.ups.com/track?loc=en_US&tracknum=${encoded}`;
+  }
+  if (name.includes("fedex")) {
+    return `https://www.fedex.com/fedextrack/?trknbr=${encoded}`;
+  }
+  if (name.includes("dhl")) {
+    return `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${encoded}`;
+  }
+
+  return "";
+}
+
+function normalizeTracking(result = {}) {
+  const metaData = result?.meta_data || result?.metaData || [];
+  const sources = [];
+
+  [
+    result?.tracking,
+    result?.shipment_tracking,
+    result?.shipmentTracking,
+    result?.tracking_items,
+    result?.trackingItems,
+    result?.shipments,
+    metaValue(metaData, [
+      "_wc_shipment_tracking_items",
+      "wc_shipment_tracking_items",
+      "_ast_tracking_items",
+      "ast_tracking_items",
+    ]),
+  ].forEach((value) => addObjectSources(sources, value));
+
+  const notes = [
+    ...(Array.isArray(result?.notes) ? result.notes : []),
+    result?.latest_note,
+    result?.customer_note,
+  ].filter(Boolean);
+  const noteTracking =
+    notes
+      .map(trackingFromNote)
+      .find((item) => item.number || item.url || item.carrier) || {};
+
+  const number = String(
+    firstValue(
+      sourceValue(sources, [
+        "number",
+        "tracking_number",
+        "trackingNumber",
+        "tracking_no",
+        "tracking_id",
+      ]),
+      result?.tracking_number,
+      result?.trackingNumber,
+      metaValue(metaData, [
+        "tracking_number",
+        "_tracking_number",
+        "_shipment_tracking_number",
+        "_wc_shipment_tracking_number",
+        "_aftership_tracking_number",
+      ]),
+      noteTracking.number,
+    ),
+  ).trim();
+
+  const carrier = String(
+    firstValue(
+      sourceValue(sources, [
+        "carrier",
+        "provider",
+        "tracking_provider",
+        "trackingProvider",
+        "custom_tracking_provider",
+        "shipping_provider",
+      ]),
+      result?.carrier,
+      result?.shipping_provider,
+      metaValue(metaData, [
+        "tracking_provider",
+        "_tracking_provider",
+        "_shipment_tracking_provider",
+        "_wc_shipment_tracking_provider",
+      ]),
+      noteTracking.carrier,
+    ),
+  ).trim();
+
+  const status = String(
+    firstValue(
+      sourceValue(sources, [
+        "shipment_status",
+        "tracking_status",
+        "status_description",
+        "latest_status",
+        "status",
+      ]),
+      result?.shipment_status,
+      result?.tracking_status,
+      metaValue(metaData, [
+        "shipment_status",
+        "_shipment_status",
+        "tracking_status",
+        "_tracking_status",
+      ]),
+      number ? "Shipped" : "",
+    ),
+  ).trim();
+
+  const eta = String(
+    firstValue(
+      sourceValue(sources, [
+        "eta",
+        "estimated_delivery",
+        "estimatedDelivery",
+        "delivery_date",
+      ]),
+      result?.estimated_delivery,
+      metaValue(metaData, [
+        "estimated_delivery",
+        "_estimated_delivery",
+        "delivery_date",
+      ]),
+    ),
+  ).trim();
+
+  const suppliedUrl = String(
+    firstValue(
+      sourceValue(sources, [
+        "url",
+        "tracking_url",
+        "trackingUrl",
+        "tracking_link",
+        "custom_tracking_link",
+      ]),
+      result?.tracking_url,
+      metaValue(metaData, [
+        "tracking_url",
+        "_tracking_url",
+        "custom_tracking_link",
+      ]),
+      noteTracking.url,
+    ),
+  ).trim();
+
+  return {
+    number,
+    carrier,
+    status,
+    eta,
+    url: suppliedUrl || carrierTrackingUrl(carrier, number),
+  };
+}
+
 function Icon({ name, className = "h-5 w-5" }) {
   const icons = {
     search: (
@@ -101,7 +342,9 @@ function Icon({ name, className = "h-5 w-5" }) {
 
 function getTrackingSteps(status = "", tracking = {}) {
   const hasTracking = Boolean(tracking?.number || tracking?.url);
-  const completed = status === "completed";
+  const shipmentStatus = String(tracking?.status || "").toLowerCase();
+  const delivered = /delivered|delivery complete/.test(shipmentStatus);
+  const outForDelivery = /out for delivery/.test(shipmentStatus);
   const stopped = ["cancelled", "refunded", "failed"].includes(status);
 
   if (stopped) {
@@ -109,7 +352,7 @@ function getTrackingSteps(status = "", tracking = {}) {
       { label: "Received", state: "done" },
       { label: "Stopped", state: "current" },
       { label: "Shipment", state: "idle" },
-      { label: "Completed", state: "idle" },
+      { label: "Delivered", state: "idle" },
     ];
   }
 
@@ -117,22 +360,18 @@ function getTrackingSteps(status = "", tracking = {}) {
     { label: "Received", state: "done" },
     {
       label: "Preparing",
-      state: ["processing", "on-hold", "completed"].includes(status)
-        ? "done"
-        : "current",
-    },
-    {
-      label: "Tracking",
       state:
-        hasTracking || completed
+        hasTracking || ["processing", "on-hold", "completed"].includes(status)
           ? "done"
-          : ["processing", "on-hold"].includes(status)
-            ? "current"
-            : "idle",
+          : "current",
     },
     {
-      label: "Completed",
-      state: completed ? "done" : "idle",
+      label: "Shipped",
+      state: hasTracking ? "done" : "idle",
+    },
+    {
+      label: "Delivered",
+      state: delivered ? "done" : outForDelivery ? "current" : "idle",
     },
   ];
 }
@@ -199,7 +438,7 @@ function StatusPill({ status }) {
 function ProgressRail({ status, tracking }) {
   const steps = useMemo(
     () => getTrackingSteps(status, tracking),
-    [status, tracking]
+    [status, tracking],
   );
 
   const activeIndex = steps.reduce((lastActive, step, index) => {
@@ -236,7 +475,7 @@ function ProgressRail({ status, tracking }) {
                     step.state === "current" &&
                       "border-red-200/50 bg-red-500/[0.10] text-red-100",
                     step.state === "idle" &&
-                      "border-white/[0.10] bg-white/[0.025] text-white/22"
+                      "border-white/[0.10] bg-white/[0.025] text-white/22",
                   )}
                 >
                   {step.state === "done" ? (
@@ -249,7 +488,7 @@ function ProgressRail({ status, tracking }) {
                 <p
                   className={cn(
                     "mt-3 text-[10px] font-black uppercase tracking-[0.13em]",
-                    active ? "text-white/72" : "text-white/24"
+                    active ? "text-white/72" : "text-white/24",
                   )}
                 >
                   {step.label}
@@ -303,7 +542,7 @@ function EmptyTracking() {
             <div className="absolute left-0 right-0 top-4 h-px bg-white/[0.08]" />
 
             <div className="relative grid grid-cols-4 gap-3">
-              {["Received", "Preparing", "Tracking", "Completed"].map(
+              {["Received", "Preparing", "Shipped", "Delivered"].map(
                 (label, index) => (
                   <div key={label}>
                     <div
@@ -311,7 +550,7 @@ function EmptyTracking() {
                         "grid h-8 w-8 place-items-center rounded-full border text-[10px] font-black",
                         index === 0
                           ? "border-red-300/40 bg-red-500/[0.08] text-red-100"
-                          : "border-white/[0.10] bg-white/[0.02] text-white/22"
+                          : "border-white/[0.10] bg-white/[0.02] text-white/22",
                       )}
                     >
                       {index + 1}
@@ -320,13 +559,13 @@ function EmptyTracking() {
                     <p
                       className={cn(
                         "mt-3 text-[10px] font-black uppercase tracking-[0.13em]",
-                        index === 0 ? "text-white/58" : "text-white/24"
+                        index === 0 ? "text-white/58" : "text-white/24",
                       )}
                     >
                       {label}
                     </p>
                   </div>
-                )
+                ),
               )}
             </div>
           </div>
@@ -337,7 +576,7 @@ function EmptyTracking() {
 }
 
 function TrackingResult({ result }) {
-  const tracking = result?.tracking || {};
+  const tracking = useMemo(() => normalizeTracking(result), [result]);
 
   return (
     <motion.div
@@ -374,7 +613,7 @@ function TrackingResult({ result }) {
 
       <ProgressRail status={result.status} tracking={tracking} />
 
-      <div className="mt-10 grid gap-6 border-t border-white/[0.07] pt-6 sm:grid-cols-3">
+      <div className="mt-10 grid gap-6 border-t border-white/[0.07] pt-6 sm:grid-cols-2 xl:grid-cols-4">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
             Carrier
@@ -390,8 +629,29 @@ function TrackingResult({ result }) {
             Tracking Number
           </p>
 
-          <p className="mt-2 break-words text-sm font-bold leading-6 text-white/72">
-            {tracking.number || "Tracking not assigned yet"}
+          {tracking.number && tracking.url ? (
+            <a
+              href={tracking.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 block break-words text-sm font-bold leading-6 text-red-100 underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
+            >
+              {tracking.number}
+            </a>
+          ) : (
+            <p className="mt-2 break-words text-sm font-bold leading-6 text-white/72">
+              {tracking.number || "Tracking not assigned yet"}
+            </p>
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+            Shipment Status
+          </p>
+
+          <p className="mt-2 text-sm font-bold leading-6 text-white/72">
+            {tracking.status || "Pending"}
           </p>
         </div>
 
@@ -414,7 +674,7 @@ function TrackingResult({ result }) {
             rel="noreferrer"
             className="group inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition hover:bg-red-600 hover:text-white"
           >
-            Open carrier page
+            Track on carrier website
             <Icon
               name="arrow"
               className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -422,13 +682,16 @@ function TrackingResult({ result }) {
           </a>
         ) : (
           <p className="text-xs font-bold leading-6 text-white/32">
-            Carrier tracking will appear once the shipment is assigned.
+            {tracking.number
+              ? "The carrier page will be available once its tracking link is recognized."
+              : "Carrier tracking will appear once the shipment is assigned."}
           </p>
         )}
 
         {result.items?.length > 0 && (
           <span className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
-            {result.items.length} item{result.items.length === 1 ? "" : "s"} in order
+            {result.items.length} item{result.items.length === 1 ? "" : "s"} in
+            order
           </span>
         )}
       </div>
@@ -502,13 +765,21 @@ export default function TrackOrder() {
         throw new Error("The tracking service returned an invalid response.");
       }
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || data.success === false) {
         throw new Error(
-          data.message || "We could not find an order with those details."
+          data.message || "We could not find an order with those details.",
         );
       }
 
-      setResult(data.order);
+      const order = data.order || data.data?.order || data.data;
+
+      if (!order || (!order.id && !order.number)) {
+        throw new Error(
+          "The tracking service returned incomplete order details.",
+        );
+      }
+
+      setResult(order);
     } catch (err) {
       setError(err.message || "Unable to track this order right now.");
     } finally {
@@ -557,7 +828,11 @@ export default function TrackOrder() {
 
               <motion.div
                 animate={{ y: [-5, 5, -5] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
                 className="absolute left-1/2 top-1/2 grid h-24 w-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[1.7rem] border border-red-300/16 bg-red-500/[0.055] text-red-100 shadow-[0_22px_70px_rgba(220,38,38,0.16)] backdrop-blur-xl"
               >
                 <Icon name="truck" className="h-9 w-9" />
@@ -646,8 +921,8 @@ export default function TrackOrder() {
                 </div>
 
                 <p className="text-xs font-bold leading-6 text-white/34">
-                  For privacy, details only appear when the billing email matches
-                  the confirmation number.
+                  For privacy, details only appear when the billing email
+                  matches the confirmation number.
                 </p>
               </div>
             </aside>
@@ -666,4 +941,4 @@ export default function TrackOrder() {
       </div>
     </main>
   );
-} 
+}

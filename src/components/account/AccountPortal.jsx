@@ -988,10 +988,19 @@ function getOrderTracking(order = {}) {
     tracking.tracking_url ||
     "";
 
+  const status =
+    order.shipment_status ||
+    order.tracking_status ||
+    tracking.status ||
+    tracking.shipment_status ||
+    tracking.tracking_status ||
+    "";
+
   return {
     number: String(number || "").trim(),
     carrier: String(carrier || "").trim(),
     url: String(url || "").trim(),
+    status: String(status || "").trim(),
     eta: order.estimated_delivery || order.eta || tracking.eta || "",
   };
 }
@@ -999,8 +1008,10 @@ function getOrderTracking(order = {}) {
 function getInlineTrackingSteps(order = {}) {
   const tracking = getOrderTracking(order);
   const status = order?.status || "";
+  const shipmentStatus = tracking.status.toLowerCase();
   const hasTracking = Boolean(tracking.number || tracking.url);
-  const completed = status === "completed";
+  const delivered = /delivered|delivery complete/.test(shipmentStatus);
+  const outForDelivery = /out for delivery/.test(shipmentStatus);
   const stopped = ["cancelled", "refunded", "failed"].includes(status);
 
   if (stopped) {
@@ -1008,7 +1019,7 @@ function getInlineTrackingSteps(order = {}) {
       ["Order placed", "done"],
       ["Order stopped", "current"],
       ["Shipment", "idle"],
-      ["Completed", "idle"],
+      ["Delivered", "idle"],
     ];
   }
 
@@ -1016,19 +1027,12 @@ function getInlineTrackingSteps(order = {}) {
     ["Order placed", "done"],
     [
       "Preparing",
-      ["processing", "on-hold", "completed"].includes(status)
+      hasTracking || ["processing", "on-hold", "completed"].includes(status)
         ? "done"
         : "current",
     ],
-    [
-      "Tracking",
-      hasTracking || completed
-        ? "done"
-        : ["processing", "on-hold"].includes(status)
-          ? "current"
-          : "idle",
-    ],
-    ["Completed", completed ? "done" : "idle"],
+    ["Shipped", hasTracking ? "done" : "idle"],
+    ["Delivered", delivered ? "done" : outForDelivery ? "current" : "idle"],
   ];
 }
 
@@ -1050,6 +1054,12 @@ function TrackingPreview({ order }) {
               ? `${tracking.carrier || "Carrier pending"} · ${tracking.number}`
               : tracking.carrier || "Carrier pending"}
           </p>
+
+          {tracking.status && (
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.13em] text-red-200/70">
+              {tracking.status}
+            </p>
+          )}
         </div>
 
         {tracking.eta && (
@@ -1118,8 +1128,28 @@ function InlineTrackingDetails({ order, loading, error }) {
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
                 Tracking number
               </p>
-              <p className="mt-1 break-all text-sm font-bold text-white/72">
-                {tracking.number || "Tracking not assigned yet"}
+              {tracking.number && tracking.url ? (
+                <a
+                  href={tracking.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 block break-all text-sm font-bold text-red-100 underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
+                >
+                  {tracking.number}
+                </a>
+              ) : (
+                <p className="mt-1 break-all text-sm font-bold text-white/72">
+                  {tracking.number || "Tracking not assigned yet"}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+                Shipment status
+              </p>
+              <p className="mt-1 text-sm font-bold text-white/72">
+                {tracking.status || (tracking.number ? "Shipped" : "Pending")}
               </p>
             </div>
 
