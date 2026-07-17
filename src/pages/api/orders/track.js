@@ -114,6 +114,7 @@ async function uspsAccessToken() {
         grant_type: "client_credentials",
         client_id: clientId,
         client_secret: clientSecret,
+        scope: "tracking",
       }),
     },
     USPS_REQUEST_TIMEOUT_MS,
@@ -606,8 +607,29 @@ async function fetchUspsTracking(number, retryOnUnauthorized = true) {
     if (response.status === 404) continue;
 
     if (!response.ok && response.status !== 207) {
+      let errorData = null;
+
+      try {
+        errorData = await readUspsJson(response);
+      } catch {
+        errorData = null;
+      }
+
+      const apiCode = String(
+        errorData?.error?.code ||
+          errorData?.error ||
+          errorData?.code ||
+          "",
+      )
+        .replace(/[^a-z0-9_-]/gi, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_|_$/g, "")
+        .slice(0, 80);
+
       lastError = new Error(
-        `USPS_TRACKING_REQUEST_FAILED_${response.status}`,
+        `USPS_TRACKING_REQUEST_FAILED_${response.status}${
+          apiCode ? `_${apiCode}` : ""
+        }`,
       );
       continue;
     }
