@@ -73,7 +73,7 @@ export default function Hero() {
         src="/logo.webp"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[35%] -z-10 w-[340px] max-w-[88vw] -translate-x-1/2 -translate-y-1/2 grayscale md:top-[51%] md:w-[560px] md:max-w-[58vw] xl:w-[680px]"
+        className="pointer-events-none absolute left-1/2 top-[51%] -z-10 hidden w-[560px] max-w-[58vw] -translate-x-1/2 -translate-y-1/2 grayscale md:block xl:w-[680px]"
         initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
         animate={{ opacity: 0.025, scale: 1 }}
         transition={{ duration: 1.1, ease: easing }}
@@ -114,31 +114,31 @@ export default function Hero() {
           {/* CTAs: full-width primary + two compact secondary actions on mobile */}
           <motion.div
             {...reveal(reduceMotion, 0.25, 14)}
-            className="mx-auto mt-7 grid w-full max-w-[440px] grid-cols-2 gap-2.5 sm:mt-9 sm:gap-3 md:flex md:max-w-none md:items-center md:justify-center"
+            className="mx-auto mt-6 grid w-full max-w-[410px] grid-cols-2 gap-2 sm:mt-8 sm:gap-2.5 md:mt-9 md:flex md:max-w-none md:items-center md:justify-center md:gap-3"
           >
             <a
               href="/shop"
-              className="group relative col-span-2 inline-flex min-h-[58px] items-center justify-center overflow-hidden rounded-[20px] border border-red-400/25 bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-6 text-[10px] font-black uppercase tracking-[0.19em] text-white shadow-[0_22px_58px_rgba(220,38,38,0.28)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:min-h-[60px] md:col-auto md:min-h-12 md:rounded-full md:px-8 md:text-[11px]"
+              className="group relative col-span-2 inline-flex min-h-[52px] items-center justify-center overflow-hidden rounded-[18px] border border-red-400/25 bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-5 text-[9px] font-black uppercase tracking-[0.17em] text-white shadow-[0_18px_44px_rgba(220,38,38,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:min-h-[54px] sm:text-[9.5px] md:col-auto md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.19em]"
             >
               <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-              <ShoppingBag className="mr-2.5 h-[18px] w-[18px]" strokeWidth={1.8} />
+              <ShoppingBag className="mr-2 h-4 w-4 md:mr-2.5 md:h-[18px] md:w-[18px]" strokeWidth={1.8} />
               Shop Catalog
-              <ArrowRight className="ml-2.5 h-[17px] w-[17px] transition duration-300 group-hover:translate-x-1" />
+              <ArrowRight className="ml-2 h-4 w-4 transition duration-300 group-hover:translate-x-1 md:ml-2.5 md:h-[17px] md:w-[17px]" />
             </a>
 
             <a
               href="/coa"
-              className="inline-flex min-h-[54px] items-center justify-center rounded-[18px] border border-white/13 bg-white/[0.045] px-3 text-[9px] font-black uppercase tracking-[0.13em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:text-[10px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
-              <FileCheck2 className="mr-2 h-[17px] w-[17px] text-red-400" strokeWidth={1.8} />
+              <FileCheck2 className="mr-1.5 h-[15px] w-[15px] text-red-400 md:mr-2 md:h-[17px] md:w-[17px]" strokeWidth={1.8} />
               View COA
             </a>
 
             <a
               href="/track-order"
-              className="inline-flex min-h-[54px] items-center justify-center rounded-[18px] border border-white/13 bg-white/[0.045] px-3 text-[9px] font-black uppercase tracking-[0.13em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:text-[10px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
-              <PackageSearch className="mr-2 h-[17px] w-[17px] text-red-400" strokeWidth={1.8} />
+              <PackageSearch className="mr-1.5 h-[15px] w-[15px] text-red-400 md:mr-2 md:h-[17px] md:w-[17px]" strokeWidth={1.8} />
               Track Order
             </a>
           </motion.div>
