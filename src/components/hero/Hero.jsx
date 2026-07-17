@@ -69,16 +69,6 @@ export default function Hero() {
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-20 h-[38%] bg-gradient-to-t from-black via-black/75 to-transparent" />
 
-      <motion.img
-        src="/logo.webp"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[51%] -z-10 hidden w-[560px] max-w-[58vw] -translate-x-1/2 -translate-y-1/2 grayscale md:block xl:w-[680px]"
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
-        animate={{ opacity: 0.025, scale: 1 }}
-        transition={{ duration: 1.1, ease: easing }}
-      />
-
       {/* Main content */}
       <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1440px] items-center justify-center px-4 pb-7 pt-[158px] sm:px-6 sm:pb-10 sm:pt-[166px] md:px-10 md:pb-20 md:pt-[150px]">
         <div className="mx-auto w-full max-w-[1120px] translate-y-3 text-center sm:translate-y-4 md:translate-y-[48px] lg:translate-y-[54px] xl:translate-y-[60px]">
