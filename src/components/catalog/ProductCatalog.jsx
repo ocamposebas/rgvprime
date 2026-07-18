@@ -1130,7 +1130,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
   return (
     <nav
-      className="mt-10 flex flex-col items-center justify-center gap-4 sm:mt-12"
+      className="mb-6 flex flex-col items-center justify-center gap-4 sm:mb-8"
       aria-label="Product pagination"
     >
       <div className="flex w-full items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-2 sm:w-auto sm:justify-center">
@@ -1425,6 +1425,12 @@ export default function ProductCatalog() {
 
         {status === "success" && filteredProducts.length > 0 && (
           <>
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
                 Page{" "}
@@ -1451,12 +1457,6 @@ export default function ProductCatalog() {
                 />
               ))}
             </div>
-
-            <Pagination
-              currentPage={safeCurrentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
           </>
         )}
 
