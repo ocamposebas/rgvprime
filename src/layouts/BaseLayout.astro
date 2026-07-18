@@ -3,7 +3,6 @@ import "../styles/global.css";
 
 import Agegate from "../components/agegate/AgeGate";
 import GlobalPreloader from "../components/preloader/GlobalPreloader.astro";
-import LaunchOfferPopup from "../components/offers/LaunchOfferPopup";
 
 interface Props {
   title?: string;
@@ -232,7 +231,6 @@ const webpageSchema = {
     <div class="site-shell">
       <Agegate client:load />
 
-      <LaunchOfferPopup client:load />
 
       <slot />
     </div>
