@@ -1130,15 +1130,15 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
   return (
     <nav
-      className="mb-6 flex flex-col items-center justify-center gap-4 sm:mb-8"
+      className="w-full sm:w-auto"
       aria-label="Product pagination"
     >
-      <div className="flex w-full items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-2 sm:w-auto sm:justify-center">
+      <div className="flex w-full items-center justify-between gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 sm:w-auto sm:justify-center">
         <button
           type="button"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="inline-flex h-11 min-w-[86px] items-center justify-center rounded-2xl border border-white/10 bg-black/35 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+          className="inline-flex h-9 min-w-[68px] items-center justify-center rounded-xl border border-white/10 bg-black/35 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
         >
           Prev
         </button>
@@ -1148,7 +1148,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
             item === "..." ? (
               <span
                 key={`dots-${index}`}
-                className="grid h-11 w-10 place-items-center text-xs font-black text-white/30"
+                className="grid h-9 w-7 place-items-center text-xs font-black text-white/30"
               >
                 ...
               </span>
@@ -1157,7 +1157,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
                 key={item}
                 type="button"
                 onClick={() => onPageChange(item)}
-                className={`grid h-11 w-11 place-items-center rounded-2xl text-xs font-black transition ${
+                className={`grid h-9 w-9 place-items-center rounded-xl text-[11px] font-black transition ${
                   currentPage === item
                     ? "bg-red-600 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)]"
                     : "border border-white/10 bg-white/[0.035] text-white/50 hover:border-red-500/40 hover:text-white"
@@ -1169,7 +1169,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
           )}
         </div>
 
-        <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-white/55 sm:hidden">
+        <div className="flex h-9 items-center gap-1 rounded-xl border border-white/10 bg-black/30 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/55 sm:hidden">
           {currentPage} / {totalPages}
         </div>
 
@@ -1177,7 +1177,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
           type="button"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="inline-flex h-11 min-w-[86px] items-center justify-center rounded-2xl border border-white/10 bg-black/35 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+          className="inline-flex h-9 min-w-[68px] items-center justify-center rounded-xl border border-white/10 bg-black/35 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
         >
           Next
         </button>
@@ -1352,7 +1352,7 @@ export default function ProductCatalog() {
 
         <div
           ref={catalogTopRef}
-          className="mb-8 rounded-3xl border border-white/10 bg-white/[0.03] p-3 sm:p-4"
+          className="mb-4 rounded-3xl border border-white/10 bg-white/[0.03] p-3 sm:p-4"
         >
           <div className="grid gap-3 lg:grid-cols-[320px_1fr_190px] lg:items-center">
             <label className="relative block">
@@ -1425,27 +1425,29 @@ export default function ProductCatalog() {
 
         {status === "success" && filteredProducts.length > 0 && (
           <>
-            <Pagination
-              currentPage={safeCurrentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center justify-between gap-4 px-1 sm:justify-start">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                  Page{" "}
+                  <span className="text-white/70">
+                    {safeCurrentPage}
+                  </span>{" "}
+                  of{" "}
+                  <span className="text-white/70">
+                    {totalPages}
+                  </span>
+                </p>
 
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
-                Page{" "}
-                <span className="text-white/70">
-                  {safeCurrentPage}
-                </span>{" "}
-                of{" "}
-                <span className="text-white/70">
-                  {totalPages}
-                </span>
-              </p>
+                <p className="text-[10px] font-semibold text-white/35">
+                  {PRODUCTS_PER_PAGE} products per page
+                </p>
+              </div>
 
-              <p className="text-[10px] font-semibold text-white/35">
-                {PRODUCTS_PER_PAGE} products per page
-              </p>
+              <Pagination
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
