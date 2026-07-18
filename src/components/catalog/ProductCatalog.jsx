@@ -1193,7 +1193,7 @@ export default function ProductCatalog() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage]  = useState(1);
 
   useEffect(() => {
     let active = true;
