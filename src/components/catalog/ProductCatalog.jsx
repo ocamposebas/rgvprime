@@ -1459,6 +1459,14 @@ export default function ProductCatalog() {
                 />
               ))}
             </div>
+
+            <div className="mt-5 flex w-full justify-center sm:justify-end">
+              <Pagination
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
           </>
         )}
 
