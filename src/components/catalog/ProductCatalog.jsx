@@ -133,7 +133,7 @@ function getProductOrderText(product) {
       ...(product?.categories || []).map((item) => item?.slug),
     ]
       .filter(Boolean)
-      .join(" ")
+      .join(" "),
   );
 }
 
@@ -172,8 +172,8 @@ function getCustomProductRank(product) {
 
   const index = customProductOrder.findIndex((item) =>
     getProductOrderAliases(item).some((term) =>
-      matchesOrderTerm(text, compactText, term)
-    )
+      matchesOrderTerm(text, compactText, term),
+    ),
   );
 
   return index === -1 ? customProductOrder.length : index;
@@ -195,7 +195,7 @@ function getProductSearchText(product) {
       normalizeSearchAliasText(aliasText),
     ]
       .filter(Boolean)
-      .join(" ")
+      .join(" "),
   );
 }
 
@@ -259,7 +259,7 @@ function getDescription(product) {
 
 function getMainCategory(product) {
   const category = product.categories?.find(
-    (item) => item.slug && item.slug !== "uncategorized"
+    (item) => item.slug && item.slug !== "uncategorized",
   );
 
   return category?.name || "Research Product";
@@ -326,7 +326,6 @@ function getStockBadge(product) {
   };
 }
 
-
 function cleanVariationText(value = "") {
   return String(value || "")
     .replace(/[-_]+/g, " ")
@@ -354,7 +353,7 @@ function getVariationKey(variation, index = 0) {
       variation?.variation_id ||
       variation?.sku ||
       variation?.slug ||
-      `variation-${index}`
+      `variation-${index}`,
   );
 }
 
@@ -400,7 +399,7 @@ function getProductVariations(product) {
   if (!Array.isArray(rawVariations)) return [];
 
   return rawVariations.filter(
-    (variation) => variation && typeof variation === "object"
+    (variation) => variation && typeof variation === "object",
   );
 }
 
@@ -428,7 +427,7 @@ function getVariationLabel(product, variation, index = 0) {
   ];
 
   const mgLabel = possibleLabels.find((value) =>
-    /\b\d+(?:\.\d+)?\s*(mg|mcg|g|iu)\b/i.test(String(value || ""))
+    /\b\d+(?:\.\d+)?\s*(mg|mcg|g|iu)\b/i.test(String(value || "")),
   );
 
   if (mgLabel) return cleanVariationText(mgLabel);
@@ -436,10 +435,35 @@ function getVariationLabel(product, variation, index = 0) {
   if (options.length) return options.join(" / ");
 
   const cleanedName = cleanVariationText(
-    String(variation?.name || "").replace(product?.name || "", "")
+    String(variation?.name || "").replace(product?.name || "", ""),
   );
 
   return cleanedName || `Option ${index + 1}`;
+}
+
+function getVariationDisplayParts(label = "") {
+  const cleanedLabel = cleanVariationText(label).replace(/\s*,\s*/g, ", ");
+  const strengthMatch = cleanedLabel.match(
+    /\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu|ml)\b/i,
+  );
+
+  if (!strengthMatch) {
+    return {
+      strength: cleanedLabel || "Option",
+      presentation: "",
+    };
+  }
+
+  const strength = strengthMatch[0].replace(/\s+/g, "").toUpperCase();
+  const presentation = cleanedLabel
+    .replace(strengthMatch[0], "")
+    .replace(/^[\s,|/·:;\-–—]+|[\s,|/·:;\-–—]+$/g, "")
+    .trim();
+
+  return {
+    strength,
+    presentation,
+  };
 }
 
 function getVariationPrice(variation, product) {
@@ -680,15 +704,14 @@ function ProductCard({ product, priority = false }) {
   const { addItem } = useCart();
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [variationStatus, setVariationStatus] = useState(() =>
-    getProductVariations(product).length ? "success" : "idle"
+    getProductVariations(product).length ? "success" : "idle",
   );
   const [variations, setVariations] = useState(() =>
-    getProductVariations(product)
+    getProductVariations(product),
   );
   const [selectedVariationKey, setSelectedVariationKey] = useState(() => {
-    const firstVariation = getProductVariations(product).find(
-      isVariationAvailable
-    );
+    const firstVariation =
+      getProductVariations(product).find(isVariationAvailable);
     return firstVariation ? getVariationKey(firstVariation, 0) : "";
   });
 
@@ -709,7 +732,7 @@ function ProductCard({ product, priority = false }) {
     return (
       variations.find(
         (variation, index) =>
-          getVariationKey(variation, index) === selectedVariationKey
+          getVariationKey(variation, index) === selectedVariationKey,
       ) ||
       variations.find(isVariationAvailable) ||
       variations[0]
@@ -718,12 +741,15 @@ function ProductCard({ product, priority = false }) {
 
   useEffect(() => {
     const productVariations = getProductVariations(product);
-    const firstAvailableVariation = productVariations.find(isVariationAvailable);
+    const firstAvailableVariation =
+      productVariations.find(isVariationAvailable);
 
     setVariations(productVariations);
     setVariationStatus(productVariations.length ? "success" : "idle");
     setSelectedVariationKey(
-      firstAvailableVariation ? getVariationKey(firstAvailableVariation, 0) : ""
+      firstAvailableVariation
+        ? getVariationKey(firstAvailableVariation, 0)
+        : "",
     );
     setOptionsOpen(false);
   }, [product]);
@@ -778,7 +804,7 @@ function ProductCard({ product, priority = false }) {
         `/api/products?slug=${encodeURIComponent(product.slug)}&refresh=1`,
         {
           cache: "no-store",
-        }
+        },
       );
 
       const data = await response.json();
@@ -796,7 +822,7 @@ function ProductCard({ product, priority = false }) {
           ? getVariationKey(firstAvailableVariation, 0)
           : nextVariations[0]
             ? getVariationKey(nextVariations[0], 0)
-            : ""
+            : "",
       );
       setVariationStatus(nextVariations.length ? "success" : "empty");
     } catch (error) {
@@ -827,7 +853,9 @@ function ProductCard({ product, priority = false }) {
       getImageUrl(selectedVariation.images?.[0]) ||
       image;
     const variationId =
-      selectedVariation.id || selectedVariation.variation_id || selectedVariationKey;
+      selectedVariation.id ||
+      selectedVariation.variation_id ||
+      selectedVariationKey;
 
     addItem(
       {
@@ -851,7 +879,7 @@ function ProductCard({ product, priority = false }) {
         attributes: selectedVariation.attributes || [],
         selected_option: label,
       },
-      1
+      1,
     );
 
     setOptionsOpen(false);
@@ -949,8 +977,9 @@ function ProductCard({ product, priority = false }) {
               {variations.map((variation, index) => {
                 const variationKey = getVariationKey(variation, index);
                 const label = getVariationLabel(product, variation, index);
+                const displayParts = getVariationDisplayParts(label);
                 const optionPrice = formatPrice(
-                  getVariationPrice(variation, product)
+                  getVariationPrice(variation, product),
                 );
                 const available = isVariationAvailable(variation);
                 const active = variationKey === selectedVariationKey;
@@ -961,25 +990,36 @@ function ProductCard({ product, priority = false }) {
                     type="button"
                     disabled={!available}
                     onClick={() => setSelectedVariationKey(variationKey)}
-                    className={`min-h-[54px] rounded-xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                    className={`min-h-[82px] rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
                         ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
                         : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
                     }`}
                   >
-                    <span className="flex items-start justify-between gap-3">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[12px] font-black uppercase leading-none tracking-[-0.02em]">
-                          {label}
+                    <span className="block min-w-0">
+                      <span className="flex items-start justify-between gap-2">
+                        <span className="shrink-0 text-[13px] font-black uppercase leading-none tracking-[-0.02em]">
+                          {displayParts.strength}
                         </span>
 
-                        <span className="mt-1.5 block truncate text-[9px] font-bold uppercase tracking-[0.1em] opacity-65">
-                          {getVariationStockLabel(variation)}
+                        <span className="shrink-0 text-right text-[13px] font-black leading-none text-white">
+                          {optionPrice || "View"}
                         </span>
                       </span>
 
-                      <span className="shrink-0 text-right text-[12px] font-black text-white">
-                        {optionPrice || "View"}
+                      {displayParts.presentation && (
+                        <span className="mt-2 block text-[9px] font-black uppercase leading-[1.25] tracking-[0.08em] text-white/80">
+                          {displayParts.presentation}
+                        </span>
+                      )}
+
+                      <span className="mt-2 flex items-center gap-1.5 text-[8px] font-bold uppercase leading-none tracking-[0.12em] opacity-65">
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            available ? "bg-white" : "bg-red-300"
+                          }`}
+                        />
+                        {getVariationStockLabel(variation)}
                       </span>
                     </span>
                   </button>
@@ -1049,8 +1089,8 @@ function ProductCard({ product, priority = false }) {
             </p>
           </div>
 
-          <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
-            <div>
+          <div className="mt-3 grid gap-2.5 border-t border-white/10 pt-3 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
+            <div className="min-w-0">
               <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
                 Price
               </p>
@@ -1064,15 +1104,16 @@ function ProductCard({ product, priority = false }) {
               <button
                 type="button"
                 onClick={handleToggleOptions}
-                className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
+                aria-expanded={optionsOpen}
+                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[9px] font-black uppercase tracking-[0.055em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
                   optionsOpen
                     ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
                     : "bg-red-600 text-white hover:bg-red-500"
                 }`}
               >
-                Choose MG
+                <span className="whitespace-nowrap">Choose MG</span>
                 <span
-                  className={`transition duration-300 ${
+                  className={`shrink-0 transition duration-300 ${
                     optionsOpen ? "rotate-180" : ""
                   }`}
                 >
@@ -1129,10 +1170,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   const items = getPaginationItems(currentPage, totalPages);
 
   return (
-    <nav
-      className="w-full sm:w-auto"
-      aria-label="Product pagination"
-    >
+    <nav className="w-full sm:w-auto" aria-label="Product pagination">
       <div className="flex w-full items-center justify-between gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 sm:w-auto sm:justify-center">
         <button
           type="button"
@@ -1165,7 +1203,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
               >
                 {item}
               </button>
-            )
+            ),
           )}
         </div>
 
@@ -1193,7 +1231,7 @@ export default function ProductCatalog() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
-  const [currentPage, setCurrentPage]  = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let active = true;
@@ -1203,15 +1241,18 @@ export default function ProductCatalog() {
         setStatus("loading");
 
         const cacheBuster = Date.now();
-        const response = await fetch(`/api/products?limit=45&refresh=1&_=${cacheBuster}`, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
+        const response = await fetch(
+          `/api/products?limit=45&refresh=1&_=${cacheBuster}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+            cache: "no-store",
           },
-          cache: "no-store",
-        });
+        );
 
         const data = await response.json();
 
@@ -1285,7 +1326,10 @@ export default function ProductCatalog() {
     });
   }, [products, searchTerm, activeFilter, sortBy]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE),
+  );
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * PRODUCTS_PER_PAGE;
   const endIndex = startIndex + PRODUCTS_PER_PAGE;
@@ -1428,14 +1472,8 @@ export default function ProductCatalog() {
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center justify-between gap-4 px-1 sm:justify-start">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
-                  Page{" "}
-                  <span className="text-white/70">
-                    {safeCurrentPage}
-                  </span>{" "}
-                  of{" "}
-                  <span className="text-white/70">
-                    {totalPages}
-                  </span>
+                  Page <span className="text-white/70">{safeCurrentPage}</span>{" "}
+                  of <span className="text-white/70">{totalPages}</span>
                 </p>
 
                 <p className="text-[10px] font-semibold text-white/35">
