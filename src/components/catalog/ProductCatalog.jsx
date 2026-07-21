@@ -476,6 +476,41 @@ function getVariationPrice(variation, product) {
   );
 }
 
+function getVariationGroupingText(product, variation, index = 0) {
+  return normalizeOrderText(
+    [
+      getVariationLabel(product, variation, index),
+      variation?.name,
+      variation?.label,
+      variation?.option,
+      variation?.title,
+      variation?.slug,
+      variation?.sku,
+      ...getAttributeOptions(variation?.attributes),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
+function isKitVariation(product, variation, index = 0) {
+  const text = getVariationGroupingText(product, variation, index);
+
+  if (/\b(?:kit|kits|bundle|box)\b/.test(text)) return true;
+
+  const quantityPatterns = [
+    /\b(\d+)\s*(?:vial|vials|pack|packs|count|ct)\b/,
+    /\b(?:vial|vials|pack|packs)\s*(?:x|of)?\s*(\d+)\b/,
+    /\b(\d+)\s*x\s*\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu|ml)\b/,
+    /\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu|ml)\s*x\s*(\d+)\b/,
+  ];
+
+  return quantityPatterns.some((pattern) => {
+    const match = text.match(pattern);
+    return match ? Number(match[1]) > 1 : false;
+  });
+}
+
 function getVariationStockLabel(variation) {
   const quantity =
     variation?.stock_quantity !== null &&
@@ -970,61 +1005,109 @@ function ProductCard({ product, priority = false }) {
             <div
               className={
                 isMobile
-                  ? "grid max-h-[42vh] gap-2 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  : "grid grid-cols-2 gap-2"
+                  ? "max-h-[48vh] space-y-4 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  : "space-y-4"
               }
             >
-              {variations.map((variation, index) => {
-                const variationKey = getVariationKey(variation, index);
-                const label = getVariationLabel(product, variation, index);
-                const displayParts = getVariationDisplayParts(label);
-                const optionPrice = formatPrice(
-                  getVariationPrice(variation, product),
-                );
-                const available = isVariationAvailable(variation);
-                const active = variationKey === selectedVariationKey;
-
-                return (
-                  <button
-                    key={variationKey}
-                    type="button"
-                    disabled={!available}
-                    onClick={() => setSelectedVariationKey(variationKey)}
-                    className={`min-h-[82px] rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      active
-                        ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
-                        : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
-                    }`}
-                  >
-                    <span className="block min-w-0">
-                      <span className="flex items-start justify-between gap-2">
-                        <span className="shrink-0 text-[13px] font-black uppercase leading-none tracking-[-0.02em]">
-                          {displayParts.strength}
-                        </span>
-
-                        <span className="shrink-0 text-right text-[13px] font-black leading-none text-white">
-                          {optionPrice || "View"}
-                        </span>
+              {[
+                {
+                  key: "single-vials",
+                  title: "Single Vials",
+                  items: variations
+                    .map((variation, index) => ({ variation, index }))
+                    .filter(
+                      ({ variation, index }) =>
+                        !isKitVariation(product, variation, index),
+                    ),
+                },
+                {
+                  key: "kits",
+                  title: "Kits",
+                  items: variations
+                    .map((variation, index) => ({ variation, index }))
+                    .filter(({ variation, index }) =>
+                      isKitVariation(product, variation, index),
+                    ),
+                },
+              ]
+                .filter((group) => group.items.length > 0)
+                .map((group) => (
+                  <section key={group.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <p className="shrink-0 text-[9px] font-black uppercase tracking-[0.16em] text-white/70">
+                        {group.title}
+                      </p>
+                      <span className="h-px flex-1 bg-white/10" />
+                      <span className="text-[8px] font-bold text-white/30">
+                        {group.items.length}
                       </span>
+                    </div>
 
-                      {displayParts.presentation && (
-                        <span className="mt-2 block text-[9px] font-black uppercase leading-[1.25] tracking-[0.08em] text-white/80">
-                          {displayParts.presentation}
-                        </span>
-                      )}
+                    <div
+                      className={
+                        isMobile ? "grid gap-2" : "grid grid-cols-2 gap-2"
+                      }
+                    >
+                      {group.items.map(({ variation, index }) => {
+                        const variationKey = getVariationKey(variation, index);
+                        const label = getVariationLabel(
+                          product,
+                          variation,
+                          index,
+                        );
+                        const displayParts = getVariationDisplayParts(label);
+                        const optionPrice = formatPrice(
+                          getVariationPrice(variation, product),
+                        );
+                        const available = isVariationAvailable(variation);
+                        const active = variationKey === selectedVariationKey;
 
-                      <span className="mt-2 flex items-center gap-1.5 text-[8px] font-bold uppercase leading-none tracking-[0.12em] opacity-65">
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            available ? "bg-white" : "bg-red-300"
-                          }`}
-                        />
-                        {getVariationStockLabel(variation)}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+                        return (
+                          <button
+                            key={variationKey}
+                            type="button"
+                            disabled={!available}
+                            onClick={() => setSelectedVariationKey(variationKey)}
+                            className={`min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                              active
+                                ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
+                                : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
+                            }`}
+                          >
+                            <span className="block min-w-0 max-w-full">
+                              <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                                <span className="min-w-0 break-words text-[13px] font-black uppercase leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]">
+                                  {displayParts.strength}
+                                </span>
+
+                                <span className="max-w-[72px] shrink-0 break-words text-right text-[12px] font-black leading-[1.05] text-white [overflow-wrap:anywhere]">
+                                  {optionPrice || "View"}
+                                </span>
+                              </span>
+
+                              {displayParts.presentation && (
+                                <span className="mt-2 block max-w-full break-words text-[9px] font-black uppercase leading-[1.35] tracking-[0.06em] text-white/80 [overflow-wrap:anywhere]">
+                                  {displayParts.presentation}
+                                </span>
+                              )}
+
+                              <span className="mt-2 flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
+                                <span
+                                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                    available ? "bg-white" : "bg-red-300"
+                                  }`}
+                                />
+                                <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                                  {getVariationStockLabel(variation)}
+                                </span>
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
             </div>
 
             <button
