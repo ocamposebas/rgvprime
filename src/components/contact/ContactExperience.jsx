@@ -5,7 +5,7 @@ import CartDrawer from "../cart/CartDrawer";
 import Navbar from "../nav/Navbar";
 import SiteFooter from "../footer/SiteFooter";
 
-const supportEmail = "support@rgvprimellc.com";
+const supportEmail = "sales@rgvprimellc.com";
 
 const contactOptions = [
   {
