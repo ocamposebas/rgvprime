@@ -1,0 +1,1334 @@
+<div
+  id="rgv-welcome-popup"
+  class="rgv-welcome-popup"
+  aria-hidden="true"
+  hidden
+  data-endpoint="/api/omnisend-welcome"
+>
+  <button
+    class="rgv-welcome-popup__backdrop"
+    type="button"
+    aria-label="Close welcome offer"
+    data-welcome-close
+  ></button>
+
+  <section
+    class="rgv-welcome-popup__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rgv-welcome-title"
+    aria-describedby="rgv-welcome-description"
+  >
+    <div class="rgv-welcome-popup__glow"></div>
+
+    <button
+      class="rgv-welcome-popup__close"
+      type="button"
+      aria-label="Close welcome offer"
+      data-welcome-close
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+
+    <div class="rgv-welcome-popup__visual">
+      <div class="rgv-welcome-popup__visual-grid"></div>
+      <div class="rgv-welcome-popup__visual-light"></div>
+
+      <div class="rgv-welcome-popup__brand">
+        <img
+          src="/logo.webp"
+          alt="RGVPRIME"
+          width="220"
+          height="72"
+          loading="eager"
+        />
+      </div>
+
+      <div class="rgv-welcome-popup__offer">
+        <span class="rgv-welcome-popup__eyebrow">
+          Private welcome offer
+        </span>
+
+        <div class="rgv-welcome-popup__discount">
+          <strong>10</strong>
+
+          <div>
+            <span>%</span>
+            <span>OFF</span>
+          </div>
+        </div>
+
+        <p>YOUR FIRST ORDER</p>
+      </div>
+
+      <div class="rgv-welcome-popup__visual-footer">
+        <span></span>
+        <p>Member access activated by email</p>
+      </div>
+    </div>
+
+    <div class="rgv-welcome-popup__content">
+      <div class="rgv-welcome-popup__form-state" data-welcome-form-state>
+        <span class="rgv-welcome-popup__content-label">
+          RGVPRIME MEMBER ACCESS
+        </span>
+
+        <h2 id="rgv-welcome-title">
+          Unlock your private welcome offer.
+        </h2>
+
+        <p id="rgv-welcome-description">
+          Join the RGVPRIME list and receive your exclusive 10% welcome
+          offer directly in your inbox.
+        </p>
+
+        <div class="rgv-welcome-popup__benefits">
+          <div>
+            <span>01</span>
+            <p>10% welcome offer</p>
+          </div>
+
+          <div>
+            <span>02</span>
+            <p>Priority product updates</p>
+          </div>
+
+          <div>
+            <span>03</span>
+            <p>Private launch access</p>
+          </div>
+        </div>
+
+        <form id="rgv-welcome-form" novalidate>
+          <div class="rgv-welcome-popup__fields">
+            <label>
+              <span>First name</span>
+
+              <input
+                id="rgv-welcome-name"
+                name="firstName"
+                type="text"
+                maxlength="80"
+                autocomplete="given-name"
+                placeholder="Your name"
+              />
+            </label>
+
+            <label>
+              <span>Email address</span>
+
+              <input
+                id="rgv-welcome-email"
+                name="email"
+                type="email"
+                maxlength="254"
+                autocomplete="email"
+                inputmode="email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="rgv-welcome-popup__honeypot" aria-hidden="true">
+            <label>
+              Company
+              <input
+                name="company"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </label>
+          </div>
+
+          <label class="rgv-welcome-popup__consent">
+            <input
+              id="rgv-welcome-consent"
+              name="consent"
+              type="checkbox"
+              checked
+              required
+            />
+
+            <span>
+              I agree to receive marketing emails and understand that I can
+              unsubscribe at any time.
+            </span>
+          </label>
+
+          <button
+            id="rgv-welcome-submit"
+            class="rgv-welcome-popup__submit"
+            type="submit"
+          >
+            <span data-submit-label>Send my 10% offer</span>
+
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6"></path>
+            </svg>
+          </button>
+
+          <div
+            id="rgv-welcome-error"
+            class="rgv-welcome-popup__message"
+            role="alert"
+            hidden
+          ></div>
+
+          <button
+            class="rgv-welcome-popup__decline"
+            type="button"
+            data-welcome-close
+          >
+            No thanks, continue without the offer
+          </button>
+        </form>
+
+        <p class="rgv-welcome-popup__fine-print">
+          Your offer will be delivered by email. Restrictions may apply.
+        </p>
+      </div>
+
+      <div
+        class="rgv-welcome-popup__success"
+        data-welcome-success
+        aria-live="polite"
+        hidden
+      >
+        <div class="rgv-welcome-popup__success-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m5 12 4 4L19 6"></path>
+          </svg>
+        </div>
+
+        <span>ACCESS CONFIRMED</span>
+
+        <h2>Welcome to RGVPRIME.</h2>
+
+        <p>
+          Your 10% welcome offer is being sent to your inbox. Check your
+          promotions or spam folder if you do not see it shortly.
+        </p>
+
+        <button
+          class="rgv-welcome-popup__success-button"
+          type="button"
+          data-welcome-finish
+        >
+          Continue exploring
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+  .rgv-welcome-popup,
+  .rgv-welcome-popup *,
+  .rgv-welcome-popup *::before,
+  .rgv-welcome-popup *::after {
+    box-sizing: border-box;
+  }
+
+  .rgv-welcome-popup[hidden] {
+    display: none !important;
+  }
+
+  .rgv-welcome-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: grid;
+    place-items: center;
+    padding: clamp(14px, 3vw, 38px);
+    font-family: inherit;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 260ms ease,
+      visibility 260ms ease;
+  }
+
+  .rgv-welcome-popup.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .rgv-welcome-popup__backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background:
+      radial-gradient(
+        circle at 50% 35%,
+        rgba(127, 29, 29, 0.22),
+        transparent 42%
+      ),
+      rgba(0, 0, 0, 0.86);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    cursor: default;
+  }
+
+  .rgv-welcome-popup__panel {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(320px, 0.92fr) minmax(400px, 1.08fr);
+    width: min(100%, 980px);
+    min-height: 610px;
+    max-height: min(760px, calc(100svh - 34px));
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 32px;
+    background: #070505;
+    box-shadow:
+      0 60px 180px rgba(0, 0, 0, 0.9),
+      0 0 0 1px rgba(220, 38, 38, 0.04),
+      0 0 120px rgba(185, 28, 28, 0.13);
+    transform: translateY(24px) scale(0.975);
+    opacity: 0;
+    transition:
+      transform 400ms cubic-bezier(0.2, 0.85, 0.2, 1),
+      opacity 300ms ease;
+  }
+
+  .rgv-welcome-popup.is-open .rgv-welcome-popup__panel {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  .rgv-welcome-popup__panel::before {
+    content: "";
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      125deg,
+      rgba(255, 255, 255, 0.26),
+      rgba(255, 255, 255, 0.02) 30%,
+      rgba(220, 38, 38, 0.25) 72%,
+      rgba(255, 255, 255, 0.05)
+    );
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+  }
+
+  .rgv-welcome-popup__glow {
+    position: absolute;
+    z-index: 0;
+    top: -220px;
+    right: -190px;
+    width: 460px;
+    height: 460px;
+    border-radius: 50%;
+    background: rgba(220, 38, 38, 0.17);
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  .rgv-welcome-popup__close {
+    position: absolute;
+    z-index: 20;
+    top: 18px;
+    right: 18px;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.38);
+    color: rgba(255, 255, 255, 0.66);
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    transition:
+      color 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      transform 180ms ease;
+  }
+
+  .rgv-welcome-popup__close:hover {
+    color: #fff;
+    border-color: rgba(248, 113, 113, 0.35);
+    background: rgba(220, 38, 38, 0.16);
+    transform: rotate(4deg);
+  }
+
+  .rgv-welcome-popup__close svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.8;
+  }
+
+  .rgv-welcome-popup__visual {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 610px;
+    overflow: hidden;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 32px;
+    color: #fff;
+    background:
+      radial-gradient(
+        circle at 28% 42%,
+        rgba(220, 38, 38, 0.22),
+        transparent 38%
+      ),
+      linear-gradient(145deg, #130505 0%, #070303 48%, #020202 100%);
+  }
+
+  .rgv-welcome-popup__visual::after {
+    content: "";
+    position: absolute;
+    right: -90px;
+    bottom: -120px;
+    width: 330px;
+    height: 330px;
+    border: 64px solid rgba(220, 38, 38, 0.055);
+    border-radius: 50%;
+  }
+
+  .rgv-welcome-popup__visual-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+    background-size: 52px 52px;
+    mask-image: linear-gradient(to bottom, #000, transparent 90%);
+  }
+
+  .rgv-welcome-popup__visual-light {
+    position: absolute;
+    top: -110px;
+    left: 50%;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.18);
+    filter: blur(100px);
+    transform: translateX(-50%);
+  }
+
+  .rgv-welcome-popup__brand,
+  .rgv-welcome-popup__offer,
+  .rgv-welcome-popup__visual-footer {
+    position: relative;
+    z-index: 2;
+  }
+
+  .rgv-welcome-popup__brand img {
+    display: block;
+    width: 165px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .rgv-welcome-popup__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 26px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(254, 202, 202, 0.75);
+  }
+
+  .rgv-welcome-popup__eyebrow::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  }
+
+  .rgv-welcome-popup__discount {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rgv-welcome-popup__discount strong {
+    font-size: clamp(112px, 12vw, 164px);
+    font-weight: 950;
+    line-height: 0.7;
+    letter-spacing: -0.105em;
+    color: #fff;
+    text-shadow: 0 20px 70px rgba(220, 38, 38, 0.22);
+  }
+
+  .rgv-welcome-popup__discount div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transform: translateY(4px);
+  }
+
+  .rgv-welcome-popup__discount div span:first-child {
+    font-size: 44px;
+    font-weight: 900;
+    line-height: 0.8;
+    color: #ef4444;
+  }
+
+  .rgv-welcome-popup__discount div span:last-child {
+    font-size: 22px;
+    font-weight: 950;
+    line-height: 1;
+    letter-spacing: 0.04em;
+  }
+
+  .rgv-welcome-popup__offer > p {
+    margin: 24px 0 0;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.54);
+  }
+
+  .rgv-welcome-popup__visual-footer {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  .rgv-welcome-popup__visual-footer span {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.95);
+  }
+
+  .rgv-welcome-popup__visual-footer p {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.36);
+  }
+
+  .rgv-welcome-popup__content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    overflow-y: auto;
+    align-items: center;
+    padding: clamp(38px, 5vw, 62px);
+    color: #fff;
+    background:
+      radial-gradient(
+        circle at 100% 0%,
+        rgba(220, 38, 38, 0.09),
+        transparent 36%
+      ),
+      #080707;
+  }
+
+  .rgv-welcome-popup__form-state,
+  .rgv-welcome-popup__success {
+    width: 100%;
+  }
+
+  .rgv-welcome-popup__content-label,
+  .rgv-welcome-popup__success > span {
+    display: block;
+    margin-bottom: 18px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    color: #fca5a5;
+  }
+
+  .rgv-welcome-popup__content h2,
+  .rgv-welcome-popup__success h2 {
+    margin: 0;
+    max-width: 430px;
+    font-size: clamp(34px, 4.5vw, 52px);
+    font-weight: 950;
+    line-height: 0.94;
+    letter-spacing: -0.055em;
+  }
+
+  .rgv-welcome-popup__content
+    > .rgv-welcome-popup__form-state
+    > p {
+    margin: 20px 0 0;
+    max-width: 480px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.48);
+  }
+
+  .rgv-welcome-popup__benefits {
+    display: grid;
+    gap: 6px;
+    margin: 25px 0;
+  }
+
+  .rgv-welcome-popup__benefits div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .rgv-welcome-popup__benefits span {
+    font-size: 9px;
+    font-weight: 900;
+    color: rgba(248, 113, 113, 0.7);
+  }
+
+  .rgv-welcome-popup__benefits p {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.66);
+  }
+
+  .rgv-welcome-popup__fields {
+    display: grid;
+    gap: 11px;
+  }
+
+  .rgv-welcome-popup__fields label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .rgv-welcome-popup__fields input {
+    width: 100%;
+    height: 56px;
+    padding: 0 18px;
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 15px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.035);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    transition:
+      border-color 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .rgv-welcome-popup__fields input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  .rgv-welcome-popup__fields input:focus {
+    border-color: rgba(248, 113, 113, 0.5);
+    background: rgba(0, 0, 0, 0.36);
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
+  }
+
+  .rgv-welcome-popup__honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .rgv-welcome-popup__consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    color: rgba(255, 255, 255, 0.38);
+    cursor: pointer;
+  }
+
+  .rgv-welcome-popup__consent input {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    margin-top: 2px;
+    accent-color: #dc2626;
+  }
+
+  .rgv-welcome-popup__consent span {
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .rgv-welcome-popup__submit,
+  .rgv-welcome-popup__success-button {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 18px;
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: #fff;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 18px 45px rgba(220, 38, 38, 0.25),
+      inset 0 1px rgba(255, 255, 255, 0.24);
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      filter 180ms ease;
+  }
+
+  .rgv-welcome-popup__submit:hover,
+  .rgv-welcome-popup__success-button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.07);
+    box-shadow:
+      0 24px 55px rgba(220, 38, 38, 0.34),
+      inset 0 1px rgba(255, 255, 255, 0.28);
+  }
+
+  .rgv-welcome-popup__submit:disabled {
+    cursor: wait;
+    transform: none;
+    opacity: 0.65;
+  }
+
+  .rgv-welcome-popup__submit svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .rgv-welcome-popup__message {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(248, 113, 113, 0.22);
+    border-radius: 13px;
+    background: rgba(220, 38, 38, 0.09);
+    color: #fecaca;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.5;
+  }
+
+  .rgv-welcome-popup__decline {
+    display: block;
+    margin: 15px auto 0;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.28);
+    font: inherit;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 180ms ease;
+  }
+
+  .rgv-welcome-popup__decline:hover {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .rgv-welcome-popup__fine-print {
+    margin: 17px 0 0 !important;
+    font-size: 9px !important;
+    line-height: 1.5 !important;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.22) !important;
+  }
+
+  .rgv-welcome-popup__success {
+    text-align: center;
+  }
+
+  .rgv-welcome-popup__success-icon {
+    display: grid;
+    width: 72px;
+    height: 72px;
+    place-items: center;
+    margin: 0 auto 25px;
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    border-radius: 50%;
+    background: rgba(220, 38, 38, 0.12);
+    color: #fca5a5;
+    box-shadow: 0 0 45px rgba(220, 38, 38, 0.15);
+  }
+
+  .rgv-welcome-popup__success-icon svg {
+    width: 31px;
+    height: 31px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .rgv-welcome-popup__success > span {
+    margin-bottom: 15px;
+  }
+
+  .rgv-welcome-popup__success h2 {
+    margin-inline: auto;
+  }
+
+  .rgv-welcome-popup__success p {
+    max-width: 430px;
+    margin: 22px auto 0;
+    font-size: 14px;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.48);
+  }
+
+  .rgv-welcome-popup__success-button {
+    max-width: 310px;
+    margin: 28px auto 0;
+  }
+
+  @media (max-width: 800px) {
+    .rgv-welcome-popup {
+      align-items: end;
+      padding: 10px;
+    }
+
+    .rgv-welcome-popup__panel {
+      grid-template-columns: 1fr;
+      width: 100%;
+      min-height: 0;
+      max-height: calc(100svh - 20px);
+      border-radius: 26px;
+    }
+
+    .rgv-welcome-popup__visual {
+      min-height: 190px;
+      padding: 23px;
+    }
+
+    .rgv-welcome-popup__brand img {
+      width: 130px;
+    }
+
+    .rgv-welcome-popup__eyebrow {
+      margin-bottom: 13px;
+    }
+
+    .rgv-welcome-popup__discount strong {
+      font-size: 84px;
+    }
+
+    .rgv-welcome-popup__discount div span:first-child {
+      font-size: 30px;
+    }
+
+    .rgv-welcome-popup__discount div span:last-child {
+      font-size: 17px;
+    }
+
+    .rgv-welcome-popup__offer > p {
+      margin-top: 15px;
+      font-size: 10px;
+    }
+
+    .rgv-welcome-popup__visual-footer {
+      display: none;
+    }
+
+    .rgv-welcome-popup__content {
+      display: block;
+      padding: 28px 22px 24px;
+    }
+
+    .rgv-welcome-popup__content h2,
+    .rgv-welcome-popup__success h2 {
+      max-width: 310px;
+      font-size: 35px;
+    }
+
+    .rgv-welcome-popup__benefits {
+      display: none;
+    }
+
+    .rgv-welcome-popup__fields {
+      margin-top: 22px;
+    }
+
+    .rgv-welcome-popup__close {
+      top: 15px;
+      right: 15px;
+      width: 38px;
+      height: 38px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .rgv-welcome-popup__visual {
+      min-height: 170px;
+    }
+
+    .rgv-welcome-popup__content {
+      padding: 24px 18px 20px;
+    }
+
+    .rgv-welcome-popup__content
+      > .rgv-welcome-popup__form-state
+      > p {
+      margin-top: 14px;
+      line-height: 1.55;
+    }
+
+    .rgv-welcome-popup__fields input {
+      height: 52px;
+    }
+
+    .rgv-welcome-popup__submit {
+      min-height: 54px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rgv-welcome-popup,
+    .rgv-welcome-popup__panel,
+    .rgv-welcome-popup__close,
+    .rgv-welcome-popup__submit,
+    .rgv-welcome-popup__success-button {
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const popup = document.getElementById("rgv-welcome-popup");
+
+    if (!popup || popup.dataset.initialized === "true") return;
+
+    popup.dataset.initialized = "true";
+
+    const panel = popup.querySelector(".rgv-welcome-popup__panel");
+    const form = document.getElementById("rgv-welcome-form");
+    const formState = popup.querySelector("[data-welcome-form-state]");
+    const successState = popup.querySelector("[data-welcome-success]");
+    const emailInput = document.getElementById("rgv-welcome-email");
+    const nameInput = document.getElementById("rgv-welcome-name");
+    const consentInput = document.getElementById("rgv-welcome-consent");
+    const submitButton = document.getElementById("rgv-welcome-submit");
+    const submitLabel = popup.querySelector("[data-submit-label]");
+    const errorElement = document.getElementById("rgv-welcome-error");
+    const closeButtons = popup.querySelectorAll("[data-welcome-close]");
+    const finishButton = popup.querySelector("[data-welcome-finish]");
+
+    const DISMISSED_KEY = "rgv_welcome_popup_dismissed_until_v1";
+    const SUBSCRIBED_KEY = "rgv_welcome_popup_subscribed_until_v1";
+    const DISMISS_DURATION = 7 * 24 * 60 * 60 * 1000;
+    const SUBSCRIBED_DURATION = 365 * 24 * 60 * 60 * 1000;
+
+    let isOpen = false;
+    let isSubmitting = false;
+    let lastFocusedElement = null;
+    let previousOverflow = "";
+    let openTimer = null;
+
+    function getStoredTime(key) {
+      try {
+        return Number(window.localStorage.getItem(key) || 0);
+      } catch {
+        return 0;
+      }
+    }
+
+    function setStoredTime(key, value) {
+      try {
+        window.localStorage.setItem(key, String(value));
+      } catch {
+        // Storage may be unavailable in privacy mode.
+      }
+    }
+
+    function isSuppressed() {
+      const now = Date.now();
+
+      return (
+        getStoredTime(DISMISSED_KEY) > now ||
+        getStoredTime(SUBSCRIBED_KEY) > now
+      );
+    }
+
+    function isExcludedPage() {
+      return /^\/(checkout|cart|account|admin|api)(\/|$)/i.test(
+        window.location.pathname,
+      );
+    }
+
+    function anotherDialogIsOpen() {
+      const dialogs = document.querySelectorAll(
+        '[role="dialog"][aria-modal="true"]',
+      );
+
+      return Array.from(dialogs).some(function (dialog) {
+        if (dialog === panel || popup.contains(dialog)) return false;
+
+        const styles = window.getComputedStyle(dialog);
+
+        return (
+          styles.display !== "none" &&
+          styles.visibility !== "hidden" &&
+          dialog.getBoundingClientRect().width > 0
+        );
+      });
+    }
+
+    function showError(message) {
+      if (!errorElement) return;
+
+      errorElement.textContent = message;
+      errorElement.hidden = false;
+    }
+
+    function clearError() {
+      if (!errorElement) return;
+
+      errorElement.textContent = "";
+      errorElement.hidden = true;
+    }
+
+    function getFocusableElements() {
+      return Array.from(
+        popup.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter(function (element) {
+        return !element.closest("[hidden]");
+      });
+    }
+
+    function openPopup(options) {
+      const settings = options || {};
+      const force = settings.force === true;
+
+      if (
+        isOpen ||
+        isSubmitting ||
+        isExcludedPage() ||
+        (!force && isSuppressed())
+      ) {
+        return;
+      }
+
+      if (!force && anotherDialogIsOpen()) {
+        window.setTimeout(function () {
+          openPopup(settings);
+        }, 1800);
+
+        return;
+      }
+
+      lastFocusedElement = document.activeElement;
+      previousOverflow = document.documentElement.style.overflow;
+
+      popup.hidden = false;
+      popup.setAttribute("aria-hidden", "false");
+      document.documentElement.style.overflow = "hidden";
+
+      window.requestAnimationFrame(function () {
+        popup.classList.add("is-open");
+      });
+
+      isOpen = true;
+
+      window.setTimeout(function () {
+        if (emailInput) emailInput.focus();
+      }, 360);
+    }
+
+    function closePopup(options) {
+      const settings = options || {};
+      const rememberDismissal = settings.rememberDismissal !== false;
+
+      if (!isOpen || isSubmitting) return;
+
+      if (rememberDismissal) {
+        setStoredTime(DISMISSED_KEY, Date.now() + DISMISS_DURATION);
+      }
+
+      popup.classList.remove("is-open");
+      popup.setAttribute("aria-hidden", "true");
+      document.documentElement.style.overflow = previousOverflow;
+
+      isOpen = false;
+
+      window.setTimeout(function () {
+        popup.hidden = true;
+      }, 280);
+
+      if (
+        lastFocusedElement &&
+        typeof lastFocusedElement.focus === "function"
+      ) {
+        lastFocusedElement.focus();
+      }
+    }
+
+    function setSubmitting(loading) {
+      isSubmitting = loading;
+
+      if (!submitButton || !submitLabel) return;
+
+      submitButton.disabled = loading;
+      submitLabel.textContent = loading
+        ? "Activating access..."
+        : "Send my 10% offer";
+    }
+
+    function showSuccess() {
+      if (formState) formState.hidden = true;
+      if (successState) successState.hidden = false;
+
+      setStoredTime(
+        SUBSCRIBED_KEY,
+        Date.now() + SUBSCRIBED_DURATION,
+      );
+
+      setStoredTime(DISMISSED_KEY, 0);
+
+      if (finishButton) {
+        window.setTimeout(function () {
+          finishButton.focus();
+        }, 100);
+      }
+    }
+
+    function scheduleAutomaticPopup() {
+      if (isSuppressed() || isExcludedPage()) return;
+
+      let activated = false;
+
+      const activate = function () {
+        if (activated) return;
+
+        activated = true;
+
+        window.removeEventListener("pointerdown", activate);
+        window.removeEventListener("keydown", activate);
+        window.removeEventListener("scroll", activate);
+
+        openTimer = window.setTimeout(function () {
+          openPopup();
+        }, 4500);
+      };
+
+      window.addEventListener("pointerdown", activate, {
+        once: true,
+        passive: true,
+      });
+
+      window.addEventListener("keydown", activate, {
+        once: true,
+      });
+
+      window.addEventListener("scroll", activate, {
+        once: true,
+        passive: true,
+      });
+
+      window.setTimeout(activate, 12000);
+
+      document.addEventListener("mouseout", function (event) {
+        if (
+          event.clientY <= 0 &&
+          !event.relatedTarget &&
+          !isOpen &&
+          !isSuppressed()
+        ) {
+          if (openTimer) window.clearTimeout(openTimer);
+
+          openPopup();
+        }
+      });
+    }
+
+    closeButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        closePopup({ rememberDismissal: true });
+      });
+    });
+
+    if (finishButton) {
+      finishButton.addEventListener("click", function () {
+        closePopup({ rememberDismissal: false });
+      });
+    }
+
+    popup.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closePopup({ rememberDismissal: true });
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements();
+
+      if (!focusableElements.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement =
+        focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === lastElement
+      ) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    });
+
+    if (form) {
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (isSubmitting) return;
+
+        clearError();
+
+        const email = emailInput
+          ? emailInput.value.trim().toLowerCase()
+          : "";
+
+        const firstName = nameInput ? nameInput.value.trim() : "";
+        const consent = consentInput ? consentInput.checked : false;
+        const companyInput = form.querySelector('[name="company"]');
+        const company = companyInput
+          ? companyInput.value.trim()
+          : "";
+
+        if (!email || !email.includes("@")) {
+          showError("Please enter a valid email address.");
+
+          if (emailInput) emailInput.focus();
+
+          return;
+        }
+
+        if (!consent) {
+          showError(
+            "Please confirm that you agree to receive the welcome email.",
+          );
+
+          if (consentInput) consentInput.focus();
+
+          return;
+        }
+
+        try {
+          setSubmitting(true);
+
+          const response = await fetch(
+            popup.dataset.endpoint || "/api/omnisend-welcome",
+            {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                firstName,
+                email,
+                consent,
+                company,
+                source: "welcome-popup-10",
+                pagePath:
+                  window.location.pathname +
+                  window.location.search,
+              }),
+            },
+          );
+
+          const data = await response.json().catch(function () {
+            return null;
+          });
+
+          if (!response.ok || !data || data.success !== true) {
+            throw new Error(
+              data && data.message
+                ? data.message
+                : "We could not activate your offer. Please try again.",
+            );
+          }
+
+          showSuccess();
+        } catch (error) {
+          showError(
+            error instanceof Error
+              ? error.message
+              : "Something went wrong. Please try again.",
+          );
+        } finally {
+          setSubmitting(false);
+        }
+      });
+    }
+
+    window.openRGVWelcomePopup = function () {
+      openPopup({ force: true });
+    };
+
+    window.addEventListener("rgv:open-welcome-popup", function () {
+      openPopup({ force: true });
+    });
+
+    if (document.readyState === "loading") {
+      document.addEventListener(
+        "DOMContentLoaded",
+        scheduleAutomaticPopup,
+        { once: true },
+      );
+    } else {
+      scheduleAutomaticPopup();
+    }
+  })();
+</script>
