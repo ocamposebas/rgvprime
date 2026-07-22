@@ -25,6 +25,10 @@ const rateStore =
 
 globalRateStore.__rgvWelcomeRateStore = rateStore;
 
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
 function json(
   body: Record<string, unknown>,
   status = 200,
@@ -39,7 +43,10 @@ function json(
   });
 }
 
-function cleanText(value: unknown, maxLength: number): string {
+function cleanText(
+  value: unknown,
+  maxLength: number,
+): string {
   return String(value ?? "")
     .replace(/\s+/g, " ")
     .trim()
@@ -55,7 +62,9 @@ function isValidEmail(email: string): boolean {
 }
 
 function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
+  const forwardedFor = request.headers.get(
+    "x-forwarded-for",
+  );
 
   return (
     request.headers.get("cf-connecting-ip") ||
@@ -65,21 +74,36 @@ function getClientIp(request: Request): string {
   );
 }
 
-function rateLimitExceeded(identifier: string): boolean {
+function rateLimitExceeded(
+  identifier: string,
+): boolean {
   const now = Date.now();
   const cutoff = now - RATE_LIMIT_WINDOW;
 
   const previousRequests = (
     rateStore.get(identifier) || []
-  ).filter((timestamp) => timestamp > cutoff);
+  ).filter(
+    (timestamp) => timestamp > cutoff,
+  );
 
-  if (previousRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
-    rateStore.set(identifier, previousRequests);
+  if (
+    previousRequests.length >=
+    RATE_LIMIT_MAX_REQUESTS
+  ) {
+    rateStore.set(
+      identifier,
+      previousRequests,
+    );
+
     return true;
   }
 
   previousRequests.push(now);
-  rateStore.set(identifier, previousRequests);
+
+  rateStore.set(
+    identifier,
+    previousRequests,
+  );
 
   return false;
 }
@@ -88,9 +112,15 @@ function extractErrorMessage(
   payload: unknown,
   fallback: string,
 ): string {
-  if (!payload || typeof payload !== "object") return fallback;
+  if (
+    !payload ||
+    typeof payload !== "object"
+  ) {
+    return fallback;
+  }
 
-  const object = payload as Record<string, unknown>;
+  const object =
+    payload as Record<string, unknown>;
 
   const candidate =
     object.detail ||
@@ -103,10 +133,18 @@ function extractErrorMessage(
     : fallback;
 }
 
-function extractContactId(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "";
+function extractContactId(
+  payload: unknown,
+): string {
+  if (
+    !payload ||
+    typeof payload !== "object"
+  ) {
+    return "";
+  }
 
-  const object = payload as Record<string, any>;
+  const object =
+    payload as Record<string, any>;
 
   return String(
     object.id ||
@@ -118,10 +156,14 @@ function extractContactId(payload: unknown): string {
   ).trim();
 }
 
-async function parseResponse(response: Response): Promise<any> {
+async function parseResponse(
+  response: Response,
+): Promise<any> {
   const text = await response.text();
 
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
 
   try {
     return JSON.parse(text);
@@ -130,38 +172,122 @@ async function parseResponse(response: Response): Promise<any> {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Origin validation                                                          */
+/* -------------------------------------------------------------------------- */
+
+function isAllowedOrigin(
+  request: Request,
+): boolean {
+  const origin =
+    request.headers.get("origin");
+
+  /*
+   * Some same-origin requests may not include
+   * an Origin header. We allow those.
+   */
+  if (!origin) {
+    return true;
+  }
+
+  try {
+    const originUrl = new URL(origin);
+
+    const configuredOrigins =
+      String(
+        import.meta.env.ALLOWED_ORIGINS || "",
+      )
+        .split(",")
+        .map((value) =>
+          value.trim().replace(/\/$/, ""),
+        )
+        .filter(Boolean);
+
+    const allowedOrigins =
+      configuredOrigins.length > 0
+        ? configuredOrigins
+        : [
+            "https://rgvprimellc.com",
+            "https://www.rgvprimellc.com",
+          ];
+
+    const normalizedOrigin =
+      originUrl.origin.replace(/\/$/, "");
+
+    const isAllowed =
+      allowedOrigins.includes(
+        normalizedOrigin,
+      );
+
+    if (!isAllowed) {
+      console.warn(
+        "Rejected request origin:",
+        origin,
+      );
+    }
+
+    return isAllowed;
+  } catch {
+    return false;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Omnisend API                                                               */
+/* -------------------------------------------------------------------------- */
+
 async function omnisendRequest(
   apiKey: string,
   path: string,
   init: RequestInit,
 ): Promise<Response> {
-  return fetch(`${OMNISEND_API_URL}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Omnisend-API-Key ${apiKey}`,
-      "Omnisend-Version": OMNISEND_API_VERSION,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
+  return fetch(
+    `${OMNISEND_API_URL}${path}`,
+    {
+      ...init,
+      headers: {
+        Authorization:
+          `Omnisend-API-Key ${apiKey}`,
+
+        "Omnisend-Version":
+          OMNISEND_API_VERSION,
+
+        Accept: "application/json",
+
+        "Content-Type":
+          "application/json",
+
+        ...(init.headers || {}),
+      },
     },
-  });
+  );
 }
 
 async function findContactIdByEmail(
   apiKey: string,
   email: string,
 ): Promise<string> {
-  const response = await omnisendRequest(
-    apiKey,
-    `/api/contacts?email=${encodeURIComponent(email)}&limit=1`,
-    {
-      method: "GET",
-    },
-  );
+  const response =
+    await omnisendRequest(
+      apiKey,
+      `/api/contacts?email=${encodeURIComponent(
+        email,
+      )}&limit=1`,
+      {
+        method: "GET",
+      },
+    );
 
-  const payload = await parseResponse(response);
+  const payload =
+    await parseResponse(response);
 
   if (!response.ok) {
+    console.error(
+      "Omnisend contact lookup error:",
+      response.status,
+      payload,
+    );
+
     return "";
   }
 
@@ -171,20 +297,34 @@ async function findContactIdByEmail(
     payload?.items ||
     [];
 
-  if (!Array.isArray(contacts) || contacts.length === 0) {
+  if (
+    !Array.isArray(contacts) ||
+    contacts.length === 0
+  ) {
     return "";
   }
 
-  return extractContactId(contacts[0]);
+  return extractContactId(
+    contacts[0],
+  );
 }
 
-export const POST: APIRoute = async ({ request, url }) => {
+/* -------------------------------------------------------------------------- */
+/* POST                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export const POST: APIRoute = async ({
+  request,
+}) => {
   const apiKey = String(
-    import.meta.env.OMNISEND_API_KEY || "",
+    import.meta.env.OMNISEND_API_KEY ||
+      "",
   ).trim();
 
   if (!apiKey) {
-    console.error("OMNISEND_API_KEY is not configured.");
+    console.error(
+      "OMNISEND_API_KEY is not configured.",
+    );
 
     return json(
       {
@@ -196,48 +336,60 @@ export const POST: APIRoute = async ({ request, url }) => {
     );
   }
 
-  const origin = request.headers.get("origin");
+  /* ------------------------------------------------------------------------ */
+  /* Origin protection                                                        */
+  /* ------------------------------------------------------------------------ */
 
-  if (origin) {
-    try {
-      const originUrl = new URL(origin);
-
-      if (originUrl.host !== url.host) {
-        return json(
-          {
-            success: false,
-            message: "Request origin was rejected.",
-          },
-          403,
-        );
-      }
-    } catch {
-      return json(
-        {
-          success: false,
-          message: "Invalid request origin.",
-        },
-        403,
-      );
-    }
-  }
-
-  const contentType = request.headers.get("content-type") || "";
-
-  if (!contentType.includes("application/json")) {
+  if (!isAllowedOrigin(request)) {
     return json(
       {
         success: false,
-        message: "Invalid request format.",
+        message:
+          "Request origin was rejected.",
+      },
+      403,
+    );
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Content type                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  const contentType =
+    request.headers.get(
+      "content-type",
+    ) || "";
+
+  if (
+    !contentType.includes(
+      "application/json",
+    )
+  ) {
+    return json(
+      {
+        success: false,
+        message:
+          "Invalid request format.",
       },
       415,
     );
   }
 
-  const clientIp = getClientIp(request);
-  const rateIdentifier = clientIp || "unknown-client";
+  /* ------------------------------------------------------------------------ */
+  /* Rate limiting                                                            */
+  /* ------------------------------------------------------------------------ */
 
-  if (rateLimitExceeded(rateIdentifier)) {
+  const clientIp =
+    getClientIp(request);
+
+  const rateIdentifier =
+    clientIp || "unknown-client";
+
+  if (
+    rateLimitExceeded(
+      rateIdentifier,
+    )
+  ) {
     return json(
       {
         success: false,
@@ -248,32 +400,67 @@ export const POST: APIRoute = async ({ request, url }) => {
     );
   }
 
-  let body: Record<string, unknown>;
+  /* ------------------------------------------------------------------------ */
+  /* Parse body                                                               */
+  /* ------------------------------------------------------------------------ */
+
+  let body: Record<
+    string,
+    unknown
+  >;
 
   try {
-    body = await request.json();
+    body =
+      await request.json();
   } catch {
     return json(
       {
         success: false,
-        message: "Invalid form information.",
+        message:
+          "Invalid form information.",
       },
       400,
     );
   }
 
-  const firstName = cleanText(body.firstName, 80);
-  const email = normalizeEmail(body.email);
-  const consent = body.consent === true;
-  const company = cleanText(body.company, 100);
-  const source = cleanText(
-    body.source || "welcome-popup-10",
-    100,
-  );
+  const firstName =
+    cleanText(
+      body.firstName,
+      80,
+    );
 
-  const pagePath = cleanText(body.pagePath || "/", 500);
+  const email =
+    normalizeEmail(
+      body.email,
+    );
 
-  // Honeypot field. Real visitors never fill this out.
+  const consent =
+    body.consent === true;
+
+  const company =
+    cleanText(
+      body.company,
+      100,
+    );
+
+  const source =
+    cleanText(
+      body.source ||
+        "welcome-popup-10",
+      100,
+    );
+
+  const pagePath =
+    cleanText(
+      body.pagePath ||
+        "/",
+      500,
+    );
+
+  /* ------------------------------------------------------------------------ */
+  /* Honeypot                                                                 */
+  /* ------------------------------------------------------------------------ */
+
   if (company) {
     return json({
       success: true,
@@ -282,11 +469,18 @@ export const POST: APIRoute = async ({ request, url }) => {
     });
   }
 
-  if (!isValidEmail(email)) {
+  /* ------------------------------------------------------------------------ */
+  /* Validation                                                               */
+  /* ------------------------------------------------------------------------ */
+
+  if (
+    !isValidEmail(email)
+  ) {
     return json(
       {
         success: false,
-        message: "Please enter a valid email address.",
+        message:
+          "Please enter a valid email address.",
       },
       400,
     );
@@ -303,73 +497,115 @@ export const POST: APIRoute = async ({ request, url }) => {
     );
   }
 
-  const now = new Date().toISOString();
-  const userAgent = cleanText(
-    request.headers.get("user-agent"),
-    500,
-  );
+  /* ------------------------------------------------------------------------ */
+  /* Consent metadata                                                         */
+  /* ------------------------------------------------------------------------ */
 
-  const consentInformation: Record<string, string> = {
-    source: "RGVPRIME website welcome popup",
+  const now =
+    new Date().toISOString();
+
+  const userAgent =
+    cleanText(
+      request.headers.get(
+        "user-agent",
+      ),
+      500,
+    );
+
+  const consentInformation: Record<
+    string,
+    string
+  > = {
+    source:
+      "RGVPRIME website welcome popup",
+
     createdAt: now,
   };
 
   if (clientIp) {
-    consentInformation.ip = clientIp;
+    consentInformation.ip =
+      clientIp;
   }
 
   if (userAgent) {
-    consentInformation.userAgent = userAgent;
+    consentInformation.userAgent =
+      userAgent;
   }
 
+  /* ------------------------------------------------------------------------ */
+  /* Contact payload                                                          */
+  /* ------------------------------------------------------------------------ */
+
   const contactPayload = {
-    ...(firstName ? { firstName } : {}),
+    ...(firstName
+      ? {
+          firstName,
+        }
+      : {}),
+
     identifiers: [
       {
         type: "email",
+
         id: email,
+
         channels: {
           email: {
             status: "subscribed",
+
             statusChangedAt: now,
           },
         },
-        consent: consentInformation,
 
-        /*
-         * We trigger the dedicated 10% email through segment entry.
-         * This prevents a second generic welcome email from being sent.
-         */
-        sendWelcomeMessage: false,
+        consent:
+          consentInformation,
+
+        sendWelcomeMessage:
+          false,
       },
     ],
+
     customProperties: {
-      welcome_offer: "10_percent",
-      welcome_popup_source: source,
-      welcome_popup_page: pagePath,
-      welcome_popup_subscribed_at: now,
+      welcome_offer:
+        "10_percent",
+
+      welcome_popup_source:
+        source,
+
+      welcome_popup_page:
+        pagePath,
+
+      welcome_popup_subscribed_at:
+        now,
     },
   };
 
   try {
-    /*
-     * Do not include tags in this request.
-     *
-     * In the current API, including tags while updating an existing
-     * contact may replace their complete tag collection.
-     */
-    const contactResponse = await omnisendRequest(
-      apiKey,
-      "/api/contacts",
-      {
-        method: "POST",
-        body: JSON.stringify(contactPayload),
-      },
-    );
+    /* ---------------------------------------------------------------------- */
+    /* Create/update contact                                                  */
+    /* ---------------------------------------------------------------------- */
 
-    const contactData = await parseResponse(contactResponse);
+    const contactResponse =
+      await omnisendRequest(
+        apiKey,
+        "/api/contacts",
+        {
+          method: "POST",
 
-    if (!contactResponse.ok) {
+          body: JSON.stringify(
+            contactPayload,
+          ),
+        },
+      );
+
+    const contactData =
+      await parseResponse(
+        contactResponse,
+      );
+
+    if (
+      !contactResponse.ok
+    ) {
       console.error(
         "Omnisend contact error:",
         contactResponse.status,
@@ -379,17 +615,32 @@ export const POST: APIRoute = async ({ request, url }) => {
       return json(
         {
           success: false,
+
           message:
-            "We could not activate your offer. Please try again.",
+            extractErrorMessage(
+              contactData,
+              "We could not activate your offer. Please try again.",
+            ),
         },
         502,
       );
     }
 
-    let contactId = extractContactId(contactData);
+    /* ---------------------------------------------------------------------- */
+    /* Get contact ID                                                         */
+    /* ---------------------------------------------------------------------- */
+
+    let contactId =
+      extractContactId(
+        contactData,
+      );
 
     if (!contactId) {
-      contactId = await findContactIdByEmail(apiKey, email);
+      contactId =
+        await findContactIdByEmail(
+          apiKey,
+          email,
+        );
     }
 
     if (!contactId) {
@@ -400,6 +651,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       return json(
         {
           success: false,
+
           message:
             "Your contact was saved, but the welcome offer could not be activated.",
         },
@@ -407,24 +659,36 @@ export const POST: APIRoute = async ({ request, url }) => {
       );
     }
 
-    /*
-     * Append the popup tags without removing any existing tags.
-     */
-    const tagResponse = await omnisendRequest(
-      apiKey,
-      "/api/contacts/tags",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          contactIDs: [contactId],
-          tags: CONTACT_TAGS,
-        }),
-      },
-    );
+    /* ---------------------------------------------------------------------- */
+    /* Apply tags                                                             */
+    /* ---------------------------------------------------------------------- */
 
-    const tagData = await parseResponse(tagResponse);
+    const tagResponse =
+      await omnisendRequest(
+        apiKey,
+        "/api/contacts/tags",
+        {
+          method: "POST",
 
-    if (!tagResponse.ok) {
+          body: JSON.stringify({
+            contactIDs: [
+              contactId,
+            ],
+
+            tags:
+              CONTACT_TAGS,
+          }),
+        },
+      );
+
+    const tagData =
+      await parseResponse(
+        tagResponse,
+      );
+
+    if (
+      !tagResponse.ok
+    ) {
       console.error(
         "Omnisend tag error:",
         tagResponse.status,
@@ -434,24 +698,37 @@ export const POST: APIRoute = async ({ request, url }) => {
       return json(
         {
           success: false,
+
           message:
-            "Your email was saved, but the offer could not be activated. Please try again.",
+            extractErrorMessage(
+              tagData,
+              "Your email was saved, but the offer could not be activated. Please try again.",
+            ),
         },
         502,
       );
     }
 
+    /* ---------------------------------------------------------------------- */
+    /* Success                                                                */
+    /* ---------------------------------------------------------------------- */
+
     return json({
       success: true,
+
       message:
         "Your 10% welcome offer is on its way.",
     });
   } catch (error) {
-    console.error("Omnisend welcome popup error:", error);
+    console.error(
+      "Omnisend welcome popup error:",
+      error,
+    );
 
     return json(
       {
         success: false,
+
         message:
           "The welcome offer is temporarily unavailable. Please try again.",
       },
