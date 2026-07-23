@@ -15,7 +15,8 @@ const navLinks = [
   { label: "Shop", href: "/shop" },
   { label: "COA", href: "/coa" },
   { label: "Track Order", href: "/track-order" },
-  { label: "Faq", href: "/faq"} 
+  { label: "FAQ", href: "/faq" },
+  { label: "Support", href: "#support" },
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";
@@ -1127,6 +1128,26 @@ export default function Navbar({ transparent = false }) {
     }
   }
 
+  function handleNavClick(event, link) {
+    setMenuOpen(false);
+    setAccountMenuOpen(false);
+
+    if (!link.href.startsWith("#")) return;
+
+    const target = document.querySelector(link.href);
+
+    if (!target) return;
+
+    event.preventDefault();
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    window.history.replaceState(null, "", link.href);
+  }
+
   function openSearchModal() {
     setMenuOpen(false);
     setAccountMenuOpen(false);
@@ -1290,7 +1311,8 @@ export default function Navbar({ transparent = false }) {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/10 hover:text-white lg:text-sm"
+                  onClick={(event) => handleNavClick(event, link)}
+                  className="rounded-full px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]"
                 >
                   {link.label}
                 </a>
@@ -1365,7 +1387,7 @@ export default function Navbar({ transparent = false }) {
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={(event) => handleNavClick(event, link)}
                   className="rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/75 transition hover:bg-red-600 hover:text-white"
                 >
                   {link.label}
