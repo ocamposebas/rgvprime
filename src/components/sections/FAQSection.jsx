@@ -35,7 +35,7 @@ const faqs = [
     tag: "Research Use",
     question: "Are the products for research use only?",
     answer:
-      "Yes. Products displayed by RGVPRIME RESEARCH LLC are intended strictly for laboratory and in-vitro research purposes only. They are not for human consumption, veterinary use, diagnostic use, therapeutic use, cosmetic use, food use, dietary supplement use, or clinical application.",
+      "Yes. Products displayed by RGVPRIME LLC are intended strictly for laboratory and in-vitro research purposes only. They are not for human consumption, veterinary use, diagnostic use, therapeutic use, cosmetic use, food use, dietary supplement use, or clinical application.",
   },
   {
     tag: "Tracking",

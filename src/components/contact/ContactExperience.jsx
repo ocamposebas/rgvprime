@@ -105,7 +105,7 @@ export default function ContactExperience() {
                 </p>
 
                 <p className="mt-3 max-w-4xl text-xs leading-6 text-white/45 sm:text-sm sm:leading-7">
-                  Products displayed by RGVPRIME RESEARCH LLC are intended
+                  Products displayed by RGVPRIME LLC are intended
                   strictly for laboratory and in-vitro research purposes only.
                   They are not for human consumption, veterinary use, diagnostic
                   use, therapeutic use, cosmetic use, food use, dietary

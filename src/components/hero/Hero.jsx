@@ -80,7 +80,7 @@ export default function Hero() {
               RGVPRIME LLC
             </span>
             <span className="mt-1.5 block whitespace-nowrap bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-[clamp(1.45rem,7.3vw,2.7rem)] text-transparent md:mt-2 md:text-[clamp(2.9rem,4.7vw,4.65rem)]">
-              Research Peptides
+              Research Products
             </span>
           </motion.h1>
 
@@ -89,12 +89,12 @@ export default function Hero() {
             className="mx-auto mt-6 max-w-[720px] md:mt-8"
           >
             <p className="text-[13px] font-medium leading-[1.65] text-white/62 sm:text-[14px] md:hidden">
-              Research-use-only peptides with verified quality documentation,
+              Research-use-only products with verified quality documentation,
               secure checkout, and a professional ordering experience.
             </p>
 
             <p className="hidden text-[15px] font-medium leading-7 text-white/60 md:block md:text-base">
-              Research-use-only peptides presented through a clean, secure,
+              Research-use-only products presented through a clean, secure,
               and professional shopping experience. Products are intended
               strictly for in-vitro laboratory research and are not for human
               or animal use.

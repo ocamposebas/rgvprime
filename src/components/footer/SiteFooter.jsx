@@ -58,13 +58,13 @@ export default function SiteFooter() {
             >
               <img
                 src="/logo.webp"
-                alt="RGVPRIME Research LLC"
+                alt="RGVPRIME LLC"
                 className="h-16 w-auto object-contain sm:h-20 lg:h-24"
               />
             </a>
 
             <p className="mt-7 max-w-[590px] text-sm font-medium leading-7 text-white/45">
-              RGVPRIME RESEARCH LLC provides research-use-only products
+              RGVPRIME LLC provides research-use-only products
               intended strictly for qualified laboratory and in-vitro research
               purposes.
             </p>
@@ -208,7 +208,7 @@ export default function SiteFooter() {
         {/* Parte inferior */}
         <div className="mt-8 flex items-center justify-between gap-5 border-t border-white/[0.08] pt-7">
           <p className="text-[9px] font-medium text-white/28 sm:text-[11px]">
-            © {currentYear} RGVPRIME RESEARCH LLC. All rights reserved.
+            © {currentYear} RGVPRIME LLC. All rights reserved.
           </p>
 
           <p className="text-right text-[8px] font-black uppercase tracking-[0.16em] text-white/24 sm:text-[10px]">
