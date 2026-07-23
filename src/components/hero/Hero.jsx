@@ -80,7 +80,7 @@ export default function Hero() {
               RGVPRIME LLC
             </span>
             <span className="mt-1.5 block whitespace-nowrap bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-[clamp(1.45rem,7.3vw,2.7rem)] text-transparent md:mt-2 md:text-[clamp(2.9rem,4.7vw,4.65rem)]">
-              Research Products
+              Research Compounds
             </span>
           </motion.h1>
 
