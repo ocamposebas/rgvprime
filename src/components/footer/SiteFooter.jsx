@@ -36,10 +36,8 @@ export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-<footer
-  id="support"
-  className="relative scroll-mt-32 overflow-hidden border-t border-white/[0.07] bg-[#030303] text-white"
->      {/* Fondo ambiental */}
+    <footer className="relative overflow-hidden border-t border-white/[0.07] bg-[#030303] text-white">
+      {/* Fondo ambiental */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-48 -top-40 h-[560px] w-[560px] rounded-full bg-red-950/30 blur-[160px]" />
         <div className="absolute left-[25%] top-0 h-[280px] w-[480px] rounded-full bg-red-900/[0.045] blur-[140px]" />
@@ -93,7 +91,7 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          {/* Navegación y soporte integrados */}
+          {/* Navegación y soporte */}
           <div className="min-w-0">
             {/* Enlaces */}
             <div className="grid grid-cols-3 gap-x-5 sm:gap-x-8 lg:gap-x-10">
@@ -119,27 +117,30 @@ export default function SiteFooter() {
               ))}
             </div>
 
-            {/* Soporte integrado en el mismo lado */}
-            <div className="relative mt-8 overflow-hidden rounded-[22px] border border-white/[0.09] bg-white/[0.025]">
+            {/* Text Support */}
+            <div
+              id="support"
+              className="relative mt-8 scroll-mt-36 overflow-hidden rounded-[22px] border border-white/[0.09] bg-white/[0.025]"
+            >
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(127,29,29,0.13),transparent_48%,rgba(220,38,38,0.025))]" />
 
-              <div className="relative grid grid-cols-[1fr_auto] items-center gap-5 px-5 py-5 sm:px-6 lg:grid-cols-[auto_1fr_auto] lg:gap-7">
-                {/* Need help */}
+              <div className="relative grid items-center gap-5 px-5 py-5 sm:grid-cols-[auto_1fr_auto] sm:gap-7 sm:px-6 sm:py-6">
+                {/* Información */}
                 <div className="min-w-0">
                   <p className="text-[9px] font-black uppercase tracking-[0.24em] text-red-400/80">
-                    Need Help?
+                    Text Support
                   </p>
 
                   <p className="mt-1.5 text-[11px] font-semibold text-white/40">
-                    Call or text support
+                    Send our support team a message
                   </p>
                 </div>
 
-                {/* Teléfono */}
-                <div className="min-w-0 lg:border-l lg:border-white/[0.08] lg:pl-7">
+                {/* Número */}
+                <div className="min-w-0 sm:border-l sm:border-white/[0.08] sm:pl-7">
                   <a
-                    href={`tel:${supportPhone}`}
-                    aria-label={`Call RGVPRIME at ${supportPhoneDisplay}`}
+                    href={`sms:${supportPhone}`}
+                    aria-label={`Text RGVPRIME at ${supportPhoneDisplay}`}
                     className="block whitespace-nowrap text-[20px] font-black tracking-[-0.035em] text-white transition hover:text-red-400 sm:text-2xl"
                   >
                     {supportPhoneDisplay}
@@ -150,22 +151,13 @@ export default function SiteFooter() {
                   </p>
                 </div>
 
-                {/* Botones */}
-                <div className="col-span-2 flex items-center gap-2 lg:col-span-1">
-                  <a
-                    href={`tel:${supportPhone}`}
-                    className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-red-600 px-4 text-[9px] font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-500 lg:flex-none"
-                  >
-                    Call
-                  </a>
-
-                  <a
-                    href={`sms:${supportPhone}`}
-                    className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-red-500/25 bg-red-500/[0.07] px-4 text-[9px] font-black uppercase tracking-[0.12em] text-white transition hover:border-red-500/45 hover:bg-red-500/[0.12] lg:flex-none"
-                  >
-                    Text
-                  </a>
-                </div>
+                {/* Botón único */}
+                <a
+                  href={`sms:${supportPhone}`}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_35px_rgba(220,38,38,0.18)] transition hover:-translate-y-0.5 hover:bg-red-500 sm:w-auto"
+                >
+                  Text Support
+                </a>
               </div>
             </div>
           </div>

@@ -16,7 +16,7 @@ const navLinks = [
   { label: "COA", href: "/coa" },
   { label: "Track Order", href: "/track-order" },
   { label: "FAQ", href: "/faq" },
-  { label: "Support", href: "#support" },
+  { label: "Support", href: "/#support" },
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";
@@ -1104,6 +1104,33 @@ export default function Navbar({ transparent = false }) {
     };
   }, [transparent, menuOpen]);
 
+  useEffect(() => {
+    if (window.location.hash !== "#support") return;
+
+    let firstFrame = null;
+    let secondFrame = null;
+    let fallbackTimer = null;
+
+    const moveToSupport = () => {
+      scrollToSupport({
+        smooth: false,
+        updateHistory: false,
+      });
+    };
+
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(moveToSupport);
+    });
+
+    fallbackTimer = window.setTimeout(moveToSupport, 250);
+
+    return () => {
+      if (firstFrame) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+    };
+  }, []);
+
   async function loadProductsForSearch() {
     if (productsStatus === "loading" || productsStatus === "success") return;
 
@@ -1128,24 +1155,83 @@ export default function Navbar({ transparent = false }) {
     }
   }
 
+  function getFixedHeaderHeight() {
+    const header = headerRef.current;
+
+    if (!header) return 120;
+
+    const announcementBar =
+      header.querySelector(".rgv-announcement-wrap")?.parentElement;
+    const navigationBar = header.querySelector("nav");
+
+    const announcementHeight =
+      announcementBar?.getBoundingClientRect().height || 0;
+    const navigationHeight =
+      navigationBar?.getBoundingClientRect().height || 0;
+
+    return announcementHeight + navigationHeight || 120;
+  }
+
+  function scrollToSupport({
+    smooth = true,
+    updateHistory = true,
+  } = {}) {
+    const target = document.getElementById("support");
+
+    if (!target) return false;
+
+    const headerOffset = getFixedHeaderHeight() + 16;
+    const targetTop =
+      target.getBoundingClientRect().top +
+      window.scrollY -
+      headerOffset;
+
+    const lenis =
+      window.lenis ||
+      window.__lenis ||
+      window.lenisInstance ||
+      null;
+
+    if (lenis && typeof lenis.scrollTo === "function") {
+      lenis.scrollTo(target, {
+        offset: -headerOffset,
+        duration: smooth ? 1.05 : 0,
+        immediate: !smooth,
+      });
+    } else {
+      window.scrollTo({
+        top: Math.max(targetTop, 0),
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
+
+    if (updateHistory) {
+      window.history.replaceState(null, "", "#support");
+    }
+
+    return true;
+  }
+
   function handleNavClick(event, link) {
     setMenuOpen(false);
     setAccountMenuOpen(false);
 
-    if (!link.href.startsWith("#")) return;
-
-    const target = document.querySelector(link.href);
-
-    if (!target) return;
+    if (link.label !== "Support") return;
 
     event.preventDefault();
 
-    target.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+    const targetExists = Boolean(document.getElementById("support"));
 
-    window.history.replaceState(null, "", link.href);
+    if (!targetExists) {
+      window.location.assign("/#support");
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        scrollToSupport();
+      });
+    });
   }
 
   function openSearchModal() {
