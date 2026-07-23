@@ -16,7 +16,7 @@ const navLinks = [
   { label: "COA", href: "/coa" },
   { label: "Track Order", href: "/track-order" },
   { label: "FAQ", href: "/faq" },
-  { label: "Support", href: "/#support" },
+  { label: "Support", href: "#support" },
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";
@@ -1105,29 +1105,36 @@ export default function Navbar({ transparent = false }) {
   }, [transparent, menuOpen]);
 
   useEffect(() => {
-    if (window.location.hash !== "#support") return;
+    const timers = [];
 
-    let firstFrame = null;
-    let secondFrame = null;
-    let fallbackTimer = null;
+    function scheduleSupportScroll() {
+      if (window.location.hash !== "#support") return;
 
-    const moveToSupport = () => {
-      scrollToSupport({
-        smooth: false,
-        updateHistory: false,
+      // Astro puede terminar de pintar el footer después de montar el Navbar.
+      // Hacemos varios intentos breves para garantizar que el destino exista.
+      [0, 100, 300, 700].forEach((delay) => {
+        const timer = window.setTimeout(() => {
+          scrollToSupport({
+            smooth: false,
+            updateHistory: false,
+          });
+        }, delay);
+
+        timers.push(timer);
       });
-    };
+    }
 
-    firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(moveToSupport);
-    });
+    scheduleSupportScroll();
 
-    fallbackTimer = window.setTimeout(moveToSupport, 250);
+    window.addEventListener("hashchange", scheduleSupportScroll);
+    window.addEventListener("load", scheduleSupportScroll);
+    document.addEventListener("astro:page-load", scheduleSupportScroll);
 
     return () => {
-      if (firstFrame) window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      timers.forEach((timer) => window.clearTimeout(timer));
+      window.removeEventListener("hashchange", scheduleSupportScroll);
+      window.removeEventListener("load", scheduleSupportScroll);
+      document.removeEventListener("astro:page-load", scheduleSupportScroll);
     };
   }, []);
 
@@ -1180,33 +1187,70 @@ export default function Navbar({ transparent = false }) {
 
     if (!target) return false;
 
-    const headerOffset = getFixedHeaderHeight() + 16;
-    const targetTop =
+    const headerOffset = getFixedHeaderHeight() + 18;
+    const targetTop = Math.max(
       target.getBoundingClientRect().top +
-      window.scrollY -
-      headerOffset;
+        window.pageYOffset -
+        headerOffset,
+      0,
+    );
 
-    const lenis =
-      window.lenis ||
-      window.__lenis ||
-      window.lenisInstance ||
-      null;
+    const behavior = smooth ? "smooth" : "auto";
+    const startingPosition = window.pageYOffset;
 
-    if (lenis && typeof lenis.scrollTo === "function") {
-      lenis.scrollTo(target, {
-        offset: -headerOffset,
-        duration: smooth ? 1.05 : 0,
-        immediate: !smooth,
+    // Primero usamos el scroll nativo. Esto evita que una referencia vieja de
+    // Lenis intercepte el clic sin mover realmente la página.
+    window.scrollTo({
+      top: targetTop,
+      behavior,
+    });
+
+    // Si la página usa una instancia activa de Lenis y el scroll nativo no
+    // avanzó, se utiliza Lenis como respaldo.
+    window.setTimeout(() => {
+      const distanceFromTarget = Math.abs(window.pageYOffset - targetTop);
+      const didNotMove = Math.abs(window.pageYOffset - startingPosition) < 2;
+
+      if (!didNotMove || distanceFromTarget < 24) return;
+
+      const lenis =
+        window.lenis ||
+        window.__lenis ||
+        window.lenisInstance ||
+        null;
+
+      if (lenis && typeof lenis.scrollTo === "function") {
+        try {
+          lenis.scrollTo(targetTop, {
+            duration: smooth ? 1.05 : 0,
+            immediate: !smooth,
+            force: true,
+          });
+          return;
+        } catch (error) {
+          console.warn("Lenis support scroll failed:", error);
+        }
+      }
+
+      target.scrollIntoView({
+        behavior,
+        block: "start",
       });
-    } else {
-      window.scrollTo({
-        top: Math.max(targetTop, 0),
-        behavior: smooth ? "smooth" : "auto",
-      });
-    }
+
+      window.setTimeout(() => {
+        window.scrollBy({
+          top: -headerOffset,
+          behavior: "auto",
+        });
+      }, smooth ? 450 : 0);
+    }, smooth ? 100 : 0);
 
     if (updateHistory) {
-      window.history.replaceState(null, "", "#support");
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#support`,
+      );
     }
 
     return true;
@@ -1220,16 +1264,19 @@ export default function Navbar({ transparent = false }) {
 
     event.preventDefault();
 
-    const targetExists = Boolean(document.getElementById("support"));
+    const target = document.getElementById("support");
 
-    if (!targetExists) {
+    // Desde otra página forzamos la entrada al inicio con el hash.
+    // El efecto de arriba termina el desplazamiento cuando Astro pinta el footer.
+    if (!target) {
       window.location.assign("/#support");
       return;
     }
 
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        scrollToSupport();
+      scrollToSupport({
+        smooth: true,
+        updateHistory: true,
       });
     });
   }
