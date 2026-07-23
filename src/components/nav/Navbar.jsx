@@ -20,6 +20,8 @@ const navLinks = [
 ];
 
 const FALLBACK_IMAGE = "/logo.webp";
+const SUPPORT_PHONE = "+19565408538";
+const SUPPORT_PHONE_DISPLAY = "(956) 540-8538";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -933,8 +935,42 @@ function SearchModal({
   );
 }
 
+function SupportMenuCard({ mobile = false }) {
+  return (
+    <div className={cn(
+      "relative overflow-hidden border border-white/10 bg-[#070707]/98 text-white shadow-[0_28px_80px_rgba(0,0,0,0.7)]",
+      mobile ? "rounded-2xl p-4" : "w-[330px] rounded-[1.4rem] p-5 backdrop-blur-xl",
+    )}>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.2),transparent_48%)]" />
+      <div className="relative">
+        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-red-400">
+          Text Support
+        </p>
+        <a
+          href={`sms:${SUPPORT_PHONE}`}
+          className="mt-2 block text-xl font-black tracking-[-0.03em] text-white transition hover:text-red-400"
+        >
+          {SUPPORT_PHONE_DISPLAY}
+        </a>
+        <div className="mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.13em]">
+          <span className="text-red-400/80">Support Hours</span>
+          <span className="h-1 w-1 rounded-full bg-red-500" aria-hidden="true" />
+          <span className="text-white/45">8:00 AM – 5:00 PM CT</span>
+        </div>
+        <a
+          href={`sms:${SUPPORT_PHONE}`}
+          className="mt-4 flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.15em] text-white transition hover:bg-red-500"
+        >
+          Send a message
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function Navbar({ transparent = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [supportMenuOpen, setSupportMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState([]);
@@ -943,6 +979,7 @@ export default function Navbar({ transparent = false }) {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountStatus, setAccountStatus] = useState("guest");
   const [accountUser, setAccountUser] = useState(null);
+  const supportMenuRef = useRef(null);
   const accountMenuTimerRef = useRef(null);
   const accountCheckedRef = useRef(false);
 
@@ -1075,7 +1112,9 @@ export default function Navbar({ transparent = false }) {
     };
 
     const applyProgress = () => {
-      const progress = menuOpen || !transparent ? 1 : Math.min(window.scrollY / 160, 1);
+      const progress = menuOpen || supportMenuOpen || !transparent
+        ? 1
+        : Math.max(0.82, Math.min(window.scrollY / 160, 1));
 
       setNavProgress(progress);
       ticking = false;
@@ -1102,7 +1141,26 @@ export default function Navbar({ transparent = false }) {
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [transparent, menuOpen]);
+  }, [transparent, menuOpen, supportMenuOpen]);
+
+  useEffect(() => {
+    function handleOutsidePointer(event) {
+      if (headerRef.current?.contains(event.target)) return;
+      setSupportMenuOpen(false);
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setSupportMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointer);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   useEffect(() => {
     const timers = [];
@@ -1257,8 +1315,16 @@ export default function Navbar({ transparent = false }) {
   }
 
   function handleNavClick(event, link) {
-    setMenuOpen(false);
     setAccountMenuOpen(false);
+
+    if (link.label === "Support") {
+      event.preventDefault();
+      setSupportMenuOpen((open) => !open);
+      return;
+    }
+
+    setMenuOpen(false);
+    setSupportMenuOpen(false);
 
     if (link.label !== "Support") return;
 
@@ -1283,6 +1349,7 @@ export default function Navbar({ transparent = false }) {
 
   function openSearchModal() {
     setMenuOpen(false);
+    setSupportMenuOpen(false);
     setAccountMenuOpen(false);
     setSearchOpen(true);
   }
@@ -1359,7 +1426,7 @@ export default function Navbar({ transparent = false }) {
     }
   }
 
-  const initialNavProgress = menuOpen || !transparent ? 1 : 0;
+  const initialNavProgress = menuOpen || supportMenuOpen || !transparent ? 1 : 0.82;
 
   const glassStyle = {
     background: "rgba(0,0,0,0.14)",
@@ -1440,7 +1507,33 @@ export default function Navbar({ transparent = false }) {
               className="hidden items-center gap-2 rounded-full border px-2 py-2 md:flex"
               style={glassStyle}
             >
-              {navLinks.map((link) => (
+              {navLinks.map((link) => link.label === "Support" ? (
+                <div key={link.label} ref={supportMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={(event) => handleNavClick(event, link)}
+                    aria-expanded={supportMenuOpen}
+                    aria-haspopup="dialog"
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]",
+                      supportMenuOpen && "bg-white/10 text-white",
+                    )}
+                  >
+                    {link.label}
+                    <span className={cn("text-red-400 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
+                  </button>
+                  {supportMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-[calc(100%+0.8rem)] z-[120]"
+                    >
+                      <SupportMenuCard />
+                    </motion.div>
+                  )}
+                </div>
+              ) : (
                 <a
                   key={link.label}
                   href={link.href}
@@ -1490,9 +1583,10 @@ export default function Navbar({ transparent = false }) {
 
               <button
                 type="button"
-                onClick={() => {
-                  const next = !menuOpen;
-                  setMenuOpen(next);
+                 onClick={() => {
+                   const next = !menuOpen;
+                   setMenuOpen(next);
+                   if (!next) setSupportMenuOpen(false);
 
                   if (next) {
                     loadAccountOnDemand();
@@ -1516,7 +1610,20 @@ export default function Navbar({ transparent = false }) {
             className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(69,10,10,0.88),rgba(3,3,3,0.98),rgba(69,10,10,0.74))] px-4 py-5 backdrop-blur-xl sm:px-5 md:hidden"
           >
             <div className="grid gap-2">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => link.label === "Support" ? (
+                <div key={link.label}>
+                  <button
+                    type="button"
+                    onClick={(event) => handleNavClick(event, link)}
+                    aria-expanded={supportMenuOpen}
+                    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/75 transition hover:bg-red-600 hover:text-white"
+                  >
+                    {link.label}
+                    <span className={cn("text-red-400 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
+                  </button>
+                  {supportMenuOpen && <div className="mt-2"><SupportMenuCard mobile /></div>}
+                </div>
+              ) : (
                 <a
                   key={link.label}
                   href={link.href}
