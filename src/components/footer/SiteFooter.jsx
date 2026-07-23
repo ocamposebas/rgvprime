@@ -40,7 +40,9 @@ export default function SiteFooter() {
       {/* Fondo ambiental */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-48 -top-40 h-[560px] w-[560px] rounded-full bg-red-950/30 blur-[160px]" />
+
         <div className="absolute left-[25%] top-0 h-[280px] w-[480px] rounded-full bg-red-900/[0.045] blur-[140px]" />
+
         <div className="absolute right-0 top-0 h-[300px] w-[380px] rounded-full bg-red-950/[0.08] blur-[140px]" />
       </div>
 
@@ -122,21 +124,24 @@ export default function SiteFooter() {
               id="support"
               className="relative mt-8 scroll-mt-36 overflow-hidden rounded-[22px] border border-white/[0.09] bg-white/[0.025]"
             >
+              {/* Fondo de la caja */}
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(127,29,29,0.13),transparent_48%,rgba(220,38,38,0.025))]" />
 
-              <div className="relative grid items-center gap-5 px-5 py-5 sm:grid-cols-[auto_1fr_auto] sm:gap-7 sm:px-6 sm:py-6">
+              <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-red-600/[0.08] blur-[70px]" />
+
+              <div className="relative grid items-center gap-5 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-7 sm:px-6 sm:py-6">
                 {/* Información */}
                 <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[0.24em] text-red-400/80">
+                  <p className="text-[9px] font-black uppercase tracking-[0.24em] text-red-400/85">
                     Text Support
                   </p>
 
-                  <p className="mt-1.5 text-[11px] font-semibold text-white/40">
+                  <p className="mt-1.5 text-[11px] font-semibold leading-5 text-white/40">
                     Send our support team a message
                   </p>
                 </div>
 
-                {/* Número */}
+                {/* Número y horario */}
                 <div className="min-w-0 sm:border-l sm:border-white/[0.08] sm:pl-7">
                   <a
                     href={`sms:${supportPhone}`}
@@ -146,15 +151,27 @@ export default function SiteFooter() {
                     {supportPhoneDisplay}
                   </a>
 
-                  <p className="mt-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/30">
-                    Central Time · CT
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-[9px] font-black uppercase tracking-[0.16em] text-red-400/70">
+                      Support Hours
+                    </span>
+
+                    <span
+                      className="h-1 w-1 rounded-full bg-red-500/60"
+                      aria-hidden="true"
+                    />
+
+                    <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/40">
+                      8:00 AM – 5:00 PM CT
+                    </span>
+                  </div>
                 </div>
 
-                {/* Botón único */}
+                {/* Botón */}
                 <a
                   href={`sms:${supportPhone}`}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_35px_rgba(220,38,38,0.18)] transition hover:-translate-y-0.5 hover:bg-red-500 sm:w-auto"
+                  aria-label={`Text support at ${supportPhoneDisplay}`}
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_35px_rgba(220,38,38,0.18)] transition duration-300 hover:-translate-y-0.5 hover:bg-red-500 sm:w-auto"
                 >
                   Text Support
                 </a>
