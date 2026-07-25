@@ -690,6 +690,7 @@ export default function RgvCheckout() {
   const [receiptMessage, setReceiptMessage] = useState("");
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
+  const [sessionCustomer, setSessionCustomer] = useState(null);
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
 
@@ -706,6 +707,7 @@ export default function RgvCheckout() {
     const user = await sessionCustomerPromiseRef.current;
     if (!user?.email) return null;
 
+    setSessionCustomer(user);
     setCheckoutForm((current) => ({
       ...current,
       email: current.email || normalizeEmail(user.email),
@@ -827,6 +829,29 @@ export default function RgvCheckout() {
 
   const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
   const estimatedLoyaltyPoints = calculateLoyaltyPoints(discountedCartTotal);
+  const currentLoyaltyPoints = Math.max(
+    0,
+    Number(sessionCustomer?.loyalty?.points || 0)
+  );
+  const loyaltyGoal = Math.max(
+    1,
+    Number(sessionCustomer?.loyalty?.minimum_points || 1000)
+  );
+  const projectedLoyaltyPoints =
+    currentLoyaltyPoints + estimatedLoyaltyPoints;
+  const pointsMissingNow = Math.max(0, loyaltyGoal - currentLoyaltyPoints);
+  const pointsMissingAfterOrder = Math.max(
+    0,
+    loyaltyGoal - projectedLoyaltyPoints
+  );
+  const currentLoyaltyProgress = Math.min(
+    100,
+    (currentLoyaltyPoints / loyaltyGoal) * 100
+  );
+  const projectedLoyaltyProgress = Math.min(
+    100,
+    (projectedLoyaltyPoints / loyaltyGoal) * 100
+  );
 
   const selectedShippingMethod =
     SHIPPING_METHODS.find((method) => method.id === selectedShippingMethodId) ||
@@ -1891,14 +1916,63 @@ export default function RgvCheckout() {
               </div>
 
               {estimatedLoyaltyPoints > 0 && (
-                <div className="rgvx-loyalty-earned" aria-live="polite">
-                  <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
-                  <div>
-                    <span>You’ll earn</span>
-                    <strong>{formatPoints(estimatedLoyaltyPoints)} Loyalty Points</strong>
-                    <small>Added after this order is completed.</small>
+                sessionCustomer ? (
+                  <div className="rgvx-loyalty-progress-card" aria-live="polite">
+                    <div className="rgvx-loyalty-progress-head">
+                      <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
+                      <div>
+                        <span>Your reward progress</span>
+                        <strong>
+                          {formatPoints(currentLoyaltyPoints)} current points
+                        </strong>
+                      </div>
+                      <b>+{formatPoints(estimatedLoyaltyPoints)}</b>
+                    </div>
+
+                    <div className="rgvx-loyalty-progress-track">
+                      <span
+                        className="current"
+                        style={{ width: `${currentLoyaltyProgress}%` }}
+                      />
+                      <span
+                        className="projected"
+                        style={{
+                          left: `${currentLoyaltyProgress}%`,
+                          width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="rgvx-loyalty-progress-copy">
+                      {pointsMissingNow === 0 ? (
+                        <strong>Your {formatPoints(loyaltyGoal)}-point reward is already unlocked.</strong>
+                      ) : pointsMissingAfterOrder === 0 ? (
+                        <strong>
+                          This order unlocks your {formatPoints(loyaltyGoal)}-point reward.
+                        </strong>
+                      ) : (
+                        <>
+                          <span>
+                            You need {formatPoints(pointsMissingNow)} more points today.
+                          </span>
+                          <strong>
+                            After this order, only {formatPoints(pointsMissingAfterOrder)} remain.
+                          </strong>
+                        </>
+                      )}
+                      <small>Order points are added after completion.</small>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rgvx-loyalty-earned" aria-live="polite">
+                    <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
+                    <div>
+                      <span>You’ll earn</span>
+                      <strong>{formatPoints(estimatedLoyaltyPoints)} Loyalty Points</strong>
+                      <small>Sign in to track progress toward your reward.</small>
+                    </div>
+                  </div>
+                )
               )}
 
               <div className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
@@ -2042,6 +2116,112 @@ const styles = `
     color: #fde68a;
     font-size: 14px;
     font-weight: 900;
+  }
+
+  .rgvx-loyalty-progress-card {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid rgba(252, 211, 77, 0.24);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(252, 211, 77, 0.12), transparent 46%),
+      linear-gradient(135deg, rgba(28, 22, 10, 0.92), rgba(14, 8, 8, 0.94));
+  }
+
+  .rgvx-loyalty-progress-head {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rgvx-loyalty-progress-head div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .rgvx-loyalty-progress-head div > span {
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-loyalty-progress-head strong {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .rgvx-loyalty-progress-head b {
+    border: 1px solid rgba(252, 211, 77, 0.2);
+    border-radius: 999px;
+    background: rgba(252, 211, 77, 0.1);
+    padding: 7px 9px;
+    color: #fde68a;
+    font-size: 11px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .rgvx-loyalty-progress-track {
+    position: relative;
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .rgvx-loyalty-progress-track span {
+    position: absolute;
+    inset-block: 0;
+    display: block;
+    transition: width 300ms ease;
+  }
+
+  .rgvx-loyalty-progress-track .current {
+    left: 0;
+    border-radius: 999px 0 0 999px;
+    background: linear-gradient(90deg, #b45309, #f59e0b);
+  }
+
+  .rgvx-loyalty-progress-track .projected {
+    background: repeating-linear-gradient(
+      135deg,
+      #fde68a 0,
+      #fde68a 5px,
+      #d97706 5px,
+      #d97706 10px
+    );
+  }
+
+  .rgvx-loyalty-progress-copy {
+    display: grid;
+    gap: 3px;
+  }
+
+  .rgvx-loyalty-progress-copy > span {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .rgvx-loyalty-progress-copy strong {
+    color: #fde68a;
+    font-size: 11px;
+    font-weight: 950;
+    line-height: 1.35;
+  }
+
+  .rgvx-loyalty-progress-copy small {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 8px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .rgvx-page {
@@ -5250,7 +5430,8 @@ const styles = `
       order: 3;
     }
 
-    .rgvx-loyalty-earned {
+    .rgvx-loyalty-earned,
+    .rgvx-loyalty-progress-card {
       order: 4;
       margin-top: 4px;
       padding: 11px 12px;
