@@ -1746,6 +1746,169 @@ function EmptyState({ title, text }) {
   );
 }
 
+function LoyaltyPanel({ initialLoyalty }) {
+  const [loyalty, setLoyalty] = useState(initialLoyalty || {});
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [coupon, setCoupon] = useState("");
+
+  useEffect(() => {
+    setLoyalty(initialLoyalty || {});
+  }, [initialLoyalty]);
+
+  const points = Number(loyalty.points || 0);
+  const minimum = Number(loyalty.minimum_points || 1000);
+  const rewardPoints = Number(loyalty.points_per_reward || 1000);
+  const rewardValue = Number(loyalty.reward_value || 25);
+  const redeemablePoints = Number(loyalty.redeemable_points || 0);
+  const progress = Math.min(100, Math.max(0, Number(loyalty.progress || 0)));
+
+  async function redeem() {
+    setLoading(true);
+    setMessage("");
+    setError("");
+    setCoupon("");
+
+    try {
+      const response = await fetch("/api/account/redeem-points", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ points: redeemablePoints }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to redeem points.");
+      }
+      setLoyalty(data.loyalty || {});
+      setCoupon(data.coupon || "");
+      setMessage(
+        `${formatMoney(data.credit)} store credit created. Your code expires ${data.expires}.`
+      );
+    } catch (err) {
+      setError(err.message || "Unable to redeem points.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyCoupon() {
+    if (!coupon || typeof navigator === "undefined") return;
+    await navigator.clipboard.writeText(coupon);
+    setMessage("Coupon copied. Apply it during checkout.");
+  }
+
+  return (
+    <motion.div
+      key="loyalty"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.22 }}
+      className="grid gap-5"
+    >
+      <div className="overflow-hidden rounded-[2rem] border border-red-400/20 bg-[#080808]/95 shadow-[0_30px_120px_rgba(0,0,0,0.42)]">
+        <div className="relative p-5 sm:p-7">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.25),transparent_45%)]" />
+          <div className="relative">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-300">
+              Loyalty Program
+            </p>
+            <div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-5xl font-black tracking-[-0.07em] text-white">
+                  {points.toLocaleString()}
+                </p>
+                <p className="mt-1 text-sm font-bold text-white/45">available points</p>
+              </div>
+              <div className="sm:text-right">
+                <p className="text-sm font-black text-white">
+                  {rewardPoints.toLocaleString()} points = {formatMoney(rewardValue)}
+                </p>
+                <p className="mt-1 text-xs text-white/40">
+                  Earn 1 point for every $1 in eligible purchases.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+                <span>{loyalty.can_redeem ? "Reward unlocked" : "Progress to unlock"}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-white/[0.07]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="mt-3 text-xs leading-5 text-white/45">
+                {loyalty.can_redeem
+                  ? `You can redeem ${redeemablePoints.toLocaleString()} points for ${formatMoney(loyalty.redeemable_credit)} in store credit.`
+                  : `${Number(loyalty.points_to_unlock || minimum).toLocaleString()} more points needed. Redemption unlocks at ${minimum.toLocaleString()} points.`}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <ActionButton
+                type="button"
+                loading={loading}
+                disabled={!loyalty.can_redeem}
+                onClick={redeem}
+              >
+                {loyalty.can_redeem
+                  ? `Redeem ${formatMoney(loyalty.redeemable_credit)} credit`
+                  : `Locked until ${minimum.toLocaleString()} points`}
+              </ActionButton>
+              <Message type="error">{error}</Message>
+              <Message type="success">{message}</Message>
+              {coupon && (
+                <button
+                  type="button"
+                  onClick={copyCoupon}
+                  className="rounded-2xl border border-red-400/25 bg-red-500/10 px-5 py-4 text-center"
+                >
+                  <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-red-200">
+                    Store-credit code — tap to copy
+                  </span>
+                  <strong className="mt-1 block text-xl tracking-[0.12em] text-white">{coupon}</strong>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 sm:p-6">
+        <h2 className="text-xl font-black tracking-[-0.04em] text-white">Points history</h2>
+        <div className="mt-4 grid gap-2">
+          {(loyalty.history || []).length ? (
+            loyalty.history.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+                <div>
+                  <p className="text-sm font-bold text-white/75">{item.description}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/30">
+                    {new Date(`${item.date}Z`).toLocaleDateString()}
+                  </p>
+                </div>
+                <strong className={Number(item.points) >= 0 ? "text-emerald-300" : "text-red-300"}>
+                  {Number(item.points) >= 0 ? "+" : ""}{Number(item.points).toLocaleString()}
+                </strong>
+              </div>
+            ))
+          ) : (
+            <EmptyState title="No points activity yet." text="Points earned from completed purchases will appear here." />
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [editing, setEditing] = useState(false);
@@ -1843,6 +2006,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
 
   const navItems = [
     ["overview", "Overview", "spark"],
+    ["loyalty", "Loyalty Program", "spark"],
     ["orders", "Orders", "box"],
     ["profile", "Profile", "user"],
     ["security", "Security", "shield"],
@@ -2037,6 +2201,10 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                   )}
                 </div>
               </motion.div>
+            )}
+
+            {activeTab === "loyalty" && (
+              <LoyaltyPanel initialLoyalty={user?.loyalty} />
             )}
 
             {activeTab === "profile" && (
