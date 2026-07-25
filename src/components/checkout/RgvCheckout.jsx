@@ -26,6 +26,7 @@ import {
   calculateLoyaltyPoints,
   formatPoints,
 } from "../../lib/loyaltyProgram";
+import { getMeOnce } from "../../lib/accountSession";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -582,7 +583,12 @@ function buildPaymentReference(order = {}) {
     .slice(0, 12);
 }
 
-function buildWooCheckoutUrl({ cartItems, coupon, shippingMethod }) {
+function buildWooCheckoutUrl({
+  cartItems,
+  coupon,
+  shippingMethod,
+  customerEmail = "",
+}) {
   const cleanWooUrl = cleanUrl(WOO_URL);
   if (!cleanWooUrl) return null;
 
@@ -612,6 +618,14 @@ function buildWooCheckoutUrl({ cartItems, coupon, shippingMethod }) {
   if (cleanCoupon) {
     url.searchParams.set("phaseone_tagada_coupon", cleanCoupon);
     url.searchParams.set("rgv_tagada_coupon", cleanCoupon);
+  }
+
+  const cleanCustomerEmail = normalizeEmail(customerEmail);
+
+  if (cleanCustomerEmail) {
+    url.searchParams.set("customer_email", cleanCustomerEmail);
+    url.searchParams.set("billing_email", cleanCustomerEmail);
+    url.searchParams.set("rgv_customer_email", cleanCustomerEmail);
   }
 
   if (shippingMethod?.id) {
@@ -677,6 +691,37 @@ export default function RgvCheckout() {
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
   const omnisendFingerprintRef = useRef("");
+  const sessionCustomerPromiseRef = useRef(null);
+
+  async function loadSessionCustomer() {
+    if (!sessionCustomerPromiseRef.current) {
+      sessionCustomerPromiseRef.current = getMeOnce()
+        .then((result) => {
+          const data = result?.data || {};
+          return result?.ok && data?.success ? data.user || null : null;
+        })
+        .catch(() => null);
+    }
+
+    const user = await sessionCustomerPromiseRef.current;
+    if (!user?.email) return null;
+
+    setCheckoutForm((current) => ({
+      ...current,
+      email: current.email || normalizeEmail(user.email),
+      firstName: current.firstName || user.first_name || "",
+      lastName: current.lastName || user.last_name || "",
+      phone: current.phone || user.billing_phone || "",
+      address1: current.address1 || user.billing_address_1 || "",
+      address2: current.address2 || user.billing_address_2 || "",
+      city: current.city || user.billing_city || "",
+      state: current.state || user.billing_state || "",
+      postcode: current.postcode || user.billing_postcode || "",
+      country: current.country || user.billing_country || "US",
+    }));
+
+    return user;
+  }
 
   const providerCartItems = useMemo(() => {
     const sources = [cart?.cartItems, cart?.items];
@@ -697,6 +742,10 @@ export default function RgvCheckout() {
     if (couponInput) {
       localStorage.setItem("rgv_checkout_coupon", couponInput);
     }
+  }, []);
+
+  useEffect(() => {
+    loadSessionCustomer();
   }, []);
 
   const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
@@ -810,7 +859,7 @@ export default function RgvCheckout() {
 
   const progressWidth = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
 
-  const validateCouponWithWoo = async (cleanCoupon) => {
+  const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
     const checkoutItems = buildCheckoutItems(cartItems);
 
     if (!checkoutItems.length) {
@@ -829,7 +878,7 @@ export default function RgvCheckout() {
         coupon: cleanCoupon,
         items: checkoutItems,
         subtotal: cartTotal,
-        customer_email: checkoutForm.email,
+        customer_email: normalizeEmail(customerEmail || checkoutForm.email),
       }),
     });
 
@@ -856,7 +905,13 @@ export default function RgvCheckout() {
       setCouponMessage(getCouponUiMessage("checking"));
       setError("");
 
-      const data = await validateCouponWithWoo(cleanCoupon);
+      const sessionCustomer = checkoutForm.email
+        ? null
+        : await loadSessionCustomer();
+      const customerEmail = normalizeEmail(
+        checkoutForm.email || sessionCustomer?.email || ""
+      );
+      const data = await validateCouponWithWoo(cleanCoupon, customerEmail);
       const finalCode = normalizeCoupon(data?.code || cleanCoupon);
 
       setCoupon(finalCode);
@@ -965,6 +1020,7 @@ export default function RgvCheckout() {
       cartItems,
       coupon,
       shippingMethod: selectedShippingMethod,
+      customerEmail: checkoutForm.email,
     });
 
     if (!checkoutUrl) {
