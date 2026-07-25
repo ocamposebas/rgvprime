@@ -22,6 +22,10 @@ import {
   trackOmnisendCart,
   trackOmnisendStartedCheckout,
 } from "../../lib/omnisendCart";
+import {
+  calculateLoyaltyPoints,
+  formatPoints,
+} from "../../lib/loyaltyProgram";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -773,6 +777,7 @@ export default function RgvCheckout() {
     couponStatus === "valid" && Boolean(couponValidation?.free_shipping);
 
   const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
+  const estimatedLoyaltyPoints = calculateLoyaltyPoints(discountedCartTotal);
 
   const selectedShippingMethod =
     SHIPPING_METHODS.find((method) => method.id === selectedShippingMethodId) ||
@@ -1829,6 +1834,17 @@ export default function RgvCheckout() {
                 <strong>{formatMoney(estimatedDue)}</strong>
               </div>
 
+              {estimatedLoyaltyPoints > 0 && (
+                <div className="rgvx-loyalty-earned" aria-live="polite">
+                  <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
+                  <div>
+                    <span>You’ll earn</span>
+                    <strong>{formatPoints(estimatedLoyaltyPoints)} Loyalty Points</strong>
+                    <small>Added after this order is completed.</small>
+                  </div>
+                </div>
+              )}
+
               <div className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
                 <div className="rgvx-mini-coupon-header">
                   <div className="rgvx-mini-coupon-title">
@@ -1926,6 +1942,50 @@ export default function RgvCheckout() {
 const styles = `
   * {
     box-sizing: border-box;
+  }
+
+  .rgvx-loyalty-earned {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid rgba(252, 211, 77, 0.22);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.1), rgba(220, 38, 38, 0.06));
+    color: #fff;
+  }
+
+  .rgvx-loyalty-star {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(252, 211, 77, 0.14);
+    color: #fcd34d;
+    font-size: 16px;
+  }
+
+  .rgvx-loyalty-earned div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .rgvx-loyalty-earned div > span,
+  .rgvx-loyalty-earned small {
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-loyalty-earned strong {
+    color: #fde68a;
+    font-size: 14px;
+    font-weight: 900;
   }
 
   .rgvx-page {
@@ -5070,6 +5130,88 @@ const styles = `
 
     .rgvx-final-button {
       order: 6 !important;
+    }
+  }
+
+  /* Desktop summary: no nested scrolling. Show totals, earned points and then
+     the coupon in the same natural reading order. */
+  @media (min-width: 981px) {
+    .rgvx-order-summary {
+      position: static !important;
+      max-height: none !important;
+      overflow: visible !important;
+      padding-bottom: 18px !important;
+    }
+
+    .rgvx-summary-head {
+      order: 1;
+    }
+
+    .rgvx-totals {
+      order: 2;
+      position: static !important;
+      bottom: auto !important;
+      display: contents;
+    }
+
+    .rgvx-mini-coupon {
+      order: 5;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: center;
+      gap: 10px 12px;
+      margin: 14px 0 4px;
+      padding: 11px 12px;
+      border-radius: 16px;
+    }
+
+    .rgvx-mini-coupon-header {
+      grid-column: 1;
+    }
+
+    .rgvx-mini-coupon-controls {
+      grid-column: 1;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .rgvx-mini-coupon-code-wrap,
+    .rgvx-mini-coupon-action {
+      min-height: 42px;
+    }
+
+    .rgvx-mini-coupon-action {
+      width: auto;
+      min-width: 108px;
+      padding-inline: 16px;
+    }
+
+    .rgvx-coupon-message {
+      grid-column: 1 / -1;
+    }
+
+    .rgvx-total-row {
+      order: 3;
+    }
+
+    .rgvx-loyalty-earned {
+      order: 4;
+      margin-top: 4px;
+      padding: 11px 12px;
+    }
+
+    .rgvx-items-list {
+      order: 3;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    .rgvx-free-progress {
+      order: 4;
+    }
+
+    .rgvx-shipping-options {
+      order: 5;
     }
   }
 

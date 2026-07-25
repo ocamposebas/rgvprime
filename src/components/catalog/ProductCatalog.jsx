@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "../cart/CartContext";
+import {
+  formatPoints,
+  getProductLoyaltyPoints,
+} from "../../lib/loyaltyProgram";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const PRODUCTS_PER_PAGE = 12;
@@ -757,6 +761,7 @@ function ProductCard({ product, priority = false }) {
   const category = getMainCategory(product);
   const description = getDescription(product);
   const price = getPriceLabel(product);
+  const loyaltyPoints = getProductLoyaltyPoints(product);
 
   const isVariableProduct = product.type === "variable";
   const canAddToCart = !isVariableProduct && product.stock_status === "instock";
@@ -1181,6 +1186,12 @@ function ProductCard({ product, priority = false }) {
               <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-2xl">
                 {price}
               </p>
+              {loyaltyPoints > 0 && (
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-red-100/70 sm:mt-2 sm:px-2.5 sm:text-[9px]">
+                  <span className="text-red-400" aria-hidden="true">★</span>
+                  +{formatPoints(loyaltyPoints)} points
+                </span>
+              )}
             </div>
 
             {isVariableProduct ? (

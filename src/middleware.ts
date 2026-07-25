@@ -12,6 +12,7 @@ const publicPrefixes = [
   "/fonts/",
   "/videos/",
   "/assets/",
+  "/coas/",
 ];
 
 const publicFiles = new Set([
@@ -26,7 +27,7 @@ function isPublicAsset(pathname: string) {
   return (
     publicFiles.has(pathname) ||
     publicPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
-    /\.(?:css|js|mjs|map|json|png|jpe?g|webp|avif|svg|gif|ico|woff2?|ttf|mp4|webm)$/i.test(
+    /\.(?:css|js|mjs|map|json|pdf|png|jpe?g|webp|avif|svg|gif|ico|woff2?|ttf|mp4|webm)$/i.test(
       pathname,
     )
   );

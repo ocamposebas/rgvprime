@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import coaData from "../data/coas.json";
-
-const loadedPdfPreviewUrls = new Set();
 
 function isObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
@@ -134,28 +132,6 @@ function extractAllPdfItems(data) {
     });
 }
 
-function getPdfPreviewUrl(url = "") {
-  const cleanUrl = String(url || "").trim();
-
-  if (!cleanUrl) return "";
-
-  const hashIndex = cleanUrl.indexOf("#");
-  const baseUrl = hashIndex >= 0 ? cleanUrl.slice(0, hashIndex) : cleanUrl;
-  const existingHash = hashIndex >= 0 ? cleanUrl.slice(hashIndex + 1) : "";
-
-  const params = new URLSearchParams(existingHash);
-
-  params.set("toolbar", "0");
-  params.set("navpanes", "0");
-  params.set("scrollbar", "0");
-  params.set("page", "1");
-  params.set("view", "FitH");
-  params.set("zoom", "page-width");
-  params.set("pagemode", "none");
-
-  return `${baseUrl}#${params.toString()}`;
-}
-
 function buildDesktopCarouselItems(items = []) {
   if (!items.length) return [];
 
@@ -174,97 +150,18 @@ function buildDesktopCarouselItems(items = []) {
   return [...normalizedItems, ...normalizedItems];
 }
 
-function PdfPreviewFrame({
-  previewUrl = "",
-  title = "COA Document",
-  index = 0,
-  priority = false,
-}) {
-  const wrapperRef = useRef(null);
-  const [shouldLoad, setShouldLoad] = useState(priority);
-  const [frameReady, setFrameReady] = useState(false);
-
-  useEffect(() => {
-    setFrameReady(false);
-    setShouldLoad(priority || loadedPdfPreviewUrls.has(previewUrl));
-
-    if (!previewUrl || typeof window === "undefined") return;
-
-    let didCancel = false;
-    let timeoutId;
-    let observer;
-
-    const startLoading = () => {
-      if (didCancel) return;
-
-      const alreadyLoaded = loadedPdfPreviewUrls.has(previewUrl);
-      const delay = priority || alreadyLoaded ? 60 : 220 + index * 70;
-
-      timeoutId = window.setTimeout(() => {
-        if (!didCancel) {
-          setShouldLoad(true);
-        }
-      }, delay);
-    };
-
-    if (priority || loadedPdfPreviewUrls.has(previewUrl)) {
-      startLoading();
-    } else if ("IntersectionObserver" in window && wrapperRef.current) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const isVisible = entries.some((entry) => entry.isIntersecting);
-
-          if (isVisible) {
-            startLoading();
-
-            if (observer) {
-              observer.disconnect();
-            }
-          }
-        },
-        {
-          root: null,
-          rootMargin: "320px 260px",
-          threshold: 0.05,
-        }
-      );
-
-      observer.observe(wrapperRef.current);
-    } else {
-      startLoading();
-    }
-
-    return () => {
-      didCancel = true;
-
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-
-      if (observer) {
-        observer.disconnect();
-      }
-    };
-  }, [previewUrl, index, priority]);
-
+function PdfPreviewFrame({ title = "COA Document" }) {
   return (
-    <div
-      ref={wrapperRef}
-      className="coa-preview-frame absolute inset-0 overflow-hidden bg-[#080505]"
-    >
-      <div
-        className="coa-pdf-placeholder absolute inset-0 z-20 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center transition-opacity duration-500"
-        style={{
-          opacity: frameReady ? 0 : 1,
-          pointerEvents: frameReady ? "none" : "auto",
-        }}
-      >
+    <div className="coa-preview-frame absolute inset-0 flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#080505] px-5 text-center">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(220,38,38,0.2),transparent_44%),linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015))]" />
         <div className="pointer-events-none absolute inset-x-8 top-8 h-px bg-gradient-to-r from-transparent via-red-300/35 to-transparent" />
         <div className="pointer-events-none absolute inset-x-8 bottom-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-[1.35rem] border border-red-300/15 bg-red-500/10 text-[15px] font-black uppercase tracking-[-0.04em] text-red-100 shadow-[0_18px_55px_rgba(220,38,38,0.14)]">
-          COA
+        <div className="relative flex h-24 w-20 flex-col items-center justify-center rounded-md border border-red-300/20 bg-white/[0.06] text-red-100 shadow-[0_18px_55px_rgba(220,38,38,0.14)]">
+          <span className="text-xl font-black tracking-[-0.05em]">COA</span>
+          <span className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/40">
+            Verified PDF
+          </span>
         </div>
 
         <strong className="relative mt-5 max-w-[190px] text-sm font-black uppercase leading-5 text-white">
@@ -272,30 +169,8 @@ function PdfPreviewFrame({
         </strong>
 
         <span className="relative mt-4 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
-          Loading preview
+          Tap to open certificate
         </span>
-      </div>
-
-      {shouldLoad && previewUrl ? (
-        <div className="coa-pdf-stage absolute z-10 overflow-hidden">
-          <iframe
-            key={previewUrl}
-            src={previewUrl}
-            title={`${title} COA preview`}
-            loading={priority ? "eager" : "lazy"}
-            onLoad={() => {
-              loadedPdfPreviewUrls.add(previewUrl);
-              setFrameReady(true);
-            }}
-            className="coa-pdf-iframe absolute inset-0 h-full w-full border-0 bg-[#080505]"
-            style={{
-              opacity: frameReady ? 1 : 0,
-              transition: "opacity 520ms ease",
-              pointerEvents: "none",
-            }}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -303,7 +178,6 @@ function PdfPreviewFrame({
 function CoaCard({ item, index, priority = false, mobile = false }) {
   const title = item.title || `COA ${index + 1}`;
   const pdfLink = item.pdfLink;
-  const previewUrl = getPdfPreviewUrl(pdfLink);
 
   return (
     <article
@@ -311,12 +185,7 @@ function CoaCard({ item, index, priority = false, mobile = false }) {
       className="coa-card group relative w-[245px] shrink-0 overflow-hidden rounded-[1.65rem] border border-white/[0.08] bg-black/45 p-3 transition duration-300 hover:-translate-y-1 hover:border-red-400/25 hover:bg-red-950/15 sm:w-[280px] lg:w-[310px]"
     >
       <div className="coa-preview-window relative overflow-hidden rounded-[1.25rem] border border-white/[0.07] bg-[#080505]">
-        <PdfPreviewFrame
-          previewUrl={previewUrl}
-          title={title}
-          index={index}
-          priority={priority}
-        />
+        <PdfPreviewFrame title={title} />
 
         <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-transparent to-black/10 opacity-80" />
 

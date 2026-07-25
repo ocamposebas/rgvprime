@@ -677,6 +677,19 @@ async function enrichWithUsps(tracking) {
     return tracking;
   }
 
+  const { clientId, clientSecret } = uspsCredentials();
+
+  // Live USPS data is optional. When credentials have not been configured,
+  // preserve the carrier's regular tracking details without producing a
+  // customer-facing error or a noisy server warning.
+  if (!clientId || !clientSecret) {
+    return {
+      ...tracking,
+      carrier: tracking.carrier || "USPS",
+      live: false,
+    };
+  }
+
   const live = await fetchUspsTracking(tracking.number);
 
   if (!live) {
@@ -906,7 +919,6 @@ export async function POST({ request }) {
       tracking = {
         ...tracking,
         live: false,
-        live_error: String(error?.message || "USPS_LIVE_TRACKING_UNAVAILABLE"),
       };
     }
 

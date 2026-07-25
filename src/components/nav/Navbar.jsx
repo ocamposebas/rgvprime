@@ -1515,12 +1515,11 @@ export default function Navbar({ transparent = false }) {
                     aria-expanded={supportMenuOpen}
                     aria-haspopup="dialog"
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]",
-                      supportMenuOpen && "bg-white/10 text-white",
+                      "flex appearance-none items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]",
                     )}
                   >
                     {link.label}
-                    <span className={cn("text-red-400 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
+                    <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
                   </button>
                   {supportMenuOpen && (
                     <motion.div
@@ -1619,7 +1618,7 @@ export default function Navbar({ transparent = false }) {
                     className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/75 transition hover:bg-red-600 hover:text-white"
                   >
                     {link.label}
-                    <span className={cn("text-red-400 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
+                    <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
                   </button>
                   {supportMenuOpen && <div className="mt-2"><SupportMenuCard mobile /></div>}
                 </div>

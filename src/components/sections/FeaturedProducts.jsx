@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  formatPoints,
+  getProductLoyaltyPoints,
+} from "../../lib/loyaltyProgram";
 
 const FALLBACK_IMAGE = "/logo.webp";
 
@@ -285,6 +289,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                     : formatPrice(product.price);
 
                 const stockBadge = getStockBadge(product);
+                const loyaltyPoints = getProductLoyaltyPoints(product);
 
                 return (
                   <article
@@ -340,6 +345,12 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                         <p className="mt-1 text-xl font-black tracking-[-0.04em] text-white sm:text-2xl">
                           {price}
                         </p>
+                        {loyaltyPoints > 0 && (
+                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-red-100/70 sm:text-[9px]">
+                            <span className="text-red-400" aria-hidden="true">★</span>
+                            +{formatPoints(loyaltyPoints)} points
+                          </span>
+                        )}
                       </div>
 
                       <a

@@ -20,7 +20,7 @@
           "lot": "GHK-CU50-2501-01",
           "product": "GHK-Cu 50mg",
           "sku": "GHK-Cu",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060177.pdf",
+          "url": "/coas/RGVE2604060177.pdf",
           "history": [],
           "aliases": [
             "GHK-Cu 50mg",
@@ -38,7 +38,7 @@
           "lot": "LC216-2501-01",
           "product": "Lipo-C/B12 10ml",
           "sku": "Lipo-C/B12",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060180.pdf",
+          "url": "/coas/RGVE2604060180.pdf",
           "history": [],
           "aliases": [
             "Lipo-C/B12 10ml",
@@ -55,7 +55,7 @@
           "lot": "RGVE2604290145",
           "product": "KPV 10mg",
           "sku": "KPV",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290145.pdf",
+          "url": "/coas/RGVE2604290145.pdf",
           "history": [],
           "aliases": [
             "KPV 10mg",
@@ -70,7 +70,7 @@
           "lot": "RGVE2604290146",
           "product": "MT2 10mg",
           "sku": "MT2",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290146.pdf",
+          "url": "/coas/RGVE2604290146.pdf",
           "history": [],
           "aliases": [
             "MT2 10mg",
@@ -86,14 +86,14 @@
           "lot": "RGVE2605080212",
           "product": "Bacteriostatic Water 10ml",
           "sku": "Bacteriostatic Water",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080212.pdf",
+          "url": "/coas/RGVE2605080212.pdf",
           "history": [
             {
               "code": "RGVE2605080211",
               "lot": "RGVE2605080211",
               "product": "Bacteriostatic Water 10ml",
               "sku": "Bacteriostatic Water",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080211.pdf",
+              "url": "/coas/RGVE2605080211.pdf",
               "aliases": [
                 "Bacteriostatic Water 10ml",
                 "Bacteriostatic Water",
@@ -118,7 +118,7 @@
           "lot": "RGVE2605080213",
           "product": "Glutathione Inj. 1200mg",
           "sku": "Glutathione Inj.",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080213.pdf",
+          "url": "/coas/RGVE2605080213.pdf",
           "history": [],
           "aliases": [
             "Glutathione Inj. 1200mg",
@@ -136,7 +136,7 @@
           "lot": "RGVE2605080214",
           "product": "DSIP 10mg",
           "sku": "DSIP",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080214.pdf",
+          "url": "/coas/RGVE2605080214.pdf",
           "history": [],
           "aliases": [
             "DSIP 10mg",
@@ -151,14 +151,14 @@
           "lot": "RT30-2501-01",
           "product": "Retatrutide 30mg",
           "sku": "Retatrutide",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030546.pdf",
+          "url": "/coas/RGVE2607030546.pdf",
           "history": [
             {
               "code": "RGVE2605080215",
               "lot": "RGVE2605080215",
               "product": "Retatrutide 30mg",
               "sku": "Retatrutide",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080215.pdf",
+              "url": "/coas/RGVE2605080215.pdf",
               "aliases": [
                 "Retatrutide 30mg",
                 "Retatrutide",
@@ -184,14 +184,14 @@
           "lot": "RT20-2501-01",
           "product": "Retatrutide 20mg",
           "sku": "Retatrutide",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030544.pdf",
+          "url": "/coas/RGVE2607030544.pdf",
           "history": [
             {
               "code": "RGVE2605080216",
               "lot": "RGVE2605080216",
               "product": "Retatrutide 20mg",
               "sku": "Retatrutide",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080216.pdf",
+              "url": "/coas/RGVE2605080216.pdf",
               "aliases": [
                 "Retatrutide 20mg",
                 "Retatrutide",
@@ -217,14 +217,14 @@
           "lot": "MS40-2501-01",
           "product": "MOTS-C 40mg",
           "sku": "MOTS-C",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030538.pdf",
+          "url": "/coas/RGVE2607030538.pdf",
           "history": [
             {
               "code": "RGVE2605290487",
               "lot": "RGVE2605290487",
               "product": "MOTS-C 40mg",
               "sku": "MOTS-C",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290487.pdf",
+              "url": "/coas/RGVE2605290487.pdf",
               "aliases": [
                 "MOTS-C 40mg",
                 "MOTS-C",
@@ -249,7 +249,7 @@
           "lot": "RGVE2605290488",
           "product": "CJC-1295 No DAC/Ipamorelin 10mg",
           "sku": "CJC-1295 No DAC/Ipamorelin",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290488.pdf",
+          "url": "/coas/RGVE2605290488.pdf",
           "history": [],
           "aliases": [
             "CJC-1295 No DAC/Ipamorelin 10mg",
@@ -267,7 +267,7 @@
           "lot": "RGVE2605290489",
           "product": "BPC-157 / TB-500 10mg",
           "sku": "BPC-157/TB-500",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290489.pdf",
+          "url": "/coas/RGVE2605290489.pdf",
           "history": [],
           "aliases": [
             "BPC-157 / TB-500 10mg",
@@ -286,7 +286,7 @@
           "lot": "RGVE2605290491",
           "product": "Adamax 10mg",
           "sku": "Adamax",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290491.pdf",
+          "url": "/coas/RGVE2605290491.pdf",
           "history": [],
           "aliases": [
             "Adamax 10mg",
@@ -301,14 +301,14 @@
           "lot": "TSM10-250101",
           "product": "Tesamorelin 10mg",
           "sku": "Tesamorelin",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030536.pdf",
+          "url": "/coas/RGVE2607030536.pdf",
           "history": [
             {
               "code": "RGVE2605290492",
               "lot": "RGVE2605290492",
               "product": "Tesamorelin 10mg",
               "sku": "Tesamorelin",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290492.pdf",
+              "url": "/coas/RGVE2605290492.pdf",
               "aliases": [
                 "Tesamorelin 10mg",
                 "Tesamorelin",
@@ -332,7 +332,7 @@
           "lot": "RGVE2605290494",
           "product": "GLOW 70mg",
           "sku": "GLOW",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290494.pdf",
+          "url": "/coas/RGVE2605290494.pdf",
           "history": [],
           "aliases": [
             "GLOW 70mg",
@@ -347,14 +347,14 @@
           "lot": "RGVE2606010518",
           "product": "5-Amino 1MQ 50mg",
           "sku": "5-Amino 1MQ",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606010518.pdf",
+          "url": "/coas/RGVE2606010518.pdf",
           "history": [
             {
               "code": "RGVE2604290147",
               "lot": "RGVE2604290147",
               "product": "5-Amino 1MQ 50mg",
               "sku": "5-Amino 1MQ",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290147.pdf",
+              "url": "/coas/RGVE2604290147.pdf",
               "aliases": [
                 "5-Amino 1MQ 50mg",
                 "5-Amino 1MQ",
@@ -378,14 +378,14 @@
           "lot": "NJ500-2501-01",
           "product": "NAD+ 500mg",
           "sku": "NAD+",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030534.pdf",
+          "url": "/coas/RGVE2607030534.pdf",
           "history": [
             {
               "code": "RGVE2606090467",
               "lot": "RGVE2606090467",
               "product": "NAD+ 500mg",
               "sku": "NAD+",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090467.pdf",
+              "url": "/coas/RGVE2606090467.pdf",
               "aliases": [
                 "NAD+ 500mg",
                 "NAD+",
@@ -398,7 +398,7 @@
               "lot": "NJ500-2501-01",
               "product": "NAD+ 500mg",
               "sku": "NAD+",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060179.pdf",
+              "url": "/coas/RGVE2604060179.pdf",
               "aliases": [
                 "NAD+ 500mg",
                 "NAD+",
@@ -422,7 +422,7 @@
           "lot": "RGVE2606090468",
           "product": "LL37",
           "sku": "LL37",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090468.pdf",
+          "url": "/coas/RGVE2606090468.pdf",
           "history": [],
           "aliases": [
             "LL37",
@@ -437,14 +437,14 @@
           "lot": "RGVE2606090469",
           "product": "IGF-LR3 1mg",
           "sku": "IGF-LR3",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090469.pdf",
+          "url": "/coas/RGVE2606090469.pdf",
           "history": [
             {
               "code": "RGVE2605290490",
               "lot": "RGVE2605290490",
               "product": "IGF-1 LR3 1mg",
               "sku": "IGF-1 LR3",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290490.pdf",
+              "url": "/coas/RGVE2605290490.pdf",
               "aliases": [
                 "IGF-1 LR3 1mg",
                 "IGF-1 LR3",
@@ -469,14 +469,14 @@
           "lot": "RGVE2606090470",
           "product": "KLOW 80mg",
           "sku": "KLOW",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090470.pdf",
+          "url": "/coas/RGVE2606090470.pdf",
           "history": [
             {
               "code": "RGVE2604060178",
               "lot": "KLOW80-2501-01",
               "product": "KLOW 80mg",
               "sku": "KLOW",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060178.pdf",
+              "url": "/coas/RGVE2604060178.pdf",
               "aliases": [
                 "KLOW 80mg",
                 "KLOW",
@@ -498,7 +498,7 @@
           "lot": "XA10-2501-01",
           "product": "Semax 10mg",
           "sku": "Semax",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030540.pdf",
+          "url": "/coas/RGVE2607030540.pdf",
           "history": [],
           "aliases": [
             "Semax 10mg",
@@ -513,7 +513,7 @@
           "lot": "BC10-2501-01",
           "product": "BPC-157 10mg",
           "sku": "BPC-157",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030541.pdf",
+          "url": "/coas/RGVE2607030541.pdf",
           "history": [],
           "aliases": [
             "BPC-157 10mg",
@@ -529,7 +529,7 @@
           "lot": "RT10-2501-01",
           "product": "Retatrutide 10mg",
           "sku": "Retatrutide",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030542.pdf",
+          "url": "/coas/RGVE2607030542.pdf",
           "history": [],
           "aliases": [
             "Retatrutide 10mg",
@@ -548,14 +548,14 @@
           "lot": "Blue Cap",
           "product": "Raw GHK 1g",
           "sku": "Raw GHK",
-          "url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030549.pdf",
+          "url": "/coas/RGVE2607030549.pdf",
           "history": [
             {
               "code": "RGVE2605290495",
               "lot": "RGVE2605290495",
               "product": "GHK 1g",
               "sku": "GHK",
-              "url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290495.pdf",
+              "url": "/coas/RGVE2605290495.pdf",
               "aliases": [
                 "GHK 1g",
                 "GHK",

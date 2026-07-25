@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../cart/CartContext";
 import coaData from "../data/coas.json";
+import {
+  formatPoints,
+  getProductLoyaltyPoints,
+} from "../../lib/loyaltyProgram";
 
 const FALLBACK_IMAGE = "/logo.webp";
 
@@ -1501,6 +1505,8 @@ export default function ProductDetails({ slug }) {
         ? "Available"
         : "Sold Out";
 
+  const purchasePoints = getProductLoyaltyPoints(displayProduct, quantity);
+
   const handleVariantChange = (attributeName, value) => {
     setSelectedVariants((prev) => ({
       ...prev,
@@ -1780,6 +1786,12 @@ export default function ProductDetails({ slug }) {
                 </div>
 
                 {renderProductPrice(displayProduct)}
+                {purchasePoints > 0 && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.09em] text-red-100/70">
+                    <span className="text-red-400" aria-hidden="true">★</span>
+                    +{formatPoints(purchasePoints)} points
+                  </div>
+                )}
               </div>
 
               {product.short_description && (

@@ -355,9 +355,6 @@ function Icon({ name, className = "h-5 w-5" }) {
 
 function getTrackingSteps(status = "", tracking = {}) {
   const hasTracking = Boolean(tracking?.number || tracking?.url);
-  const shipmentStatus = String(tracking?.status || "").toLowerCase();
-  const delivered = /delivered|delivery complete/.test(shipmentStatus);
-  const outForDelivery = /out for delivery/.test(shipmentStatus);
   const stopped = ["cancelled", "refunded", "failed"].includes(status);
 
   if (stopped) {
@@ -365,7 +362,6 @@ function getTrackingSteps(status = "", tracking = {}) {
       { label: "Received", state: "done" },
       { label: "Stopped", state: "current" },
       { label: "Shipment", state: "idle" },
-      { label: "Delivered", state: "idle" },
     ];
   }
 
@@ -381,10 +377,6 @@ function getTrackingSteps(status = "", tracking = {}) {
     {
       label: "Shipped",
       state: hasTracking ? "done" : "idle",
-    },
-    {
-      label: "Delivered",
-      state: delivered ? "done" : outForDelivery ? "current" : "idle",
     },
   ];
 }
@@ -474,7 +466,12 @@ function ProgressRail({ status, tracking }) {
           className="absolute left-0 top-4 h-px bg-gradient-to-r from-red-600 via-red-300 to-red-100"
         />
 
-        <div className="relative grid grid-cols-4 gap-3">
+        <div
+          className="relative grid gap-3"
+          style={{
+            gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+          }}
+        >
           {steps.map((step, index) => {
             const active = step.state === "done" || step.state === "current";
 
@@ -554,8 +551,8 @@ function EmptyTracking() {
           <div className="relative">
             <div className="absolute left-0 right-0 top-4 h-px bg-white/[0.08]" />
 
-            <div className="relative grid grid-cols-4 gap-3">
-              {["Received", "Preparing", "Shipped", "Delivered"].map(
+            <div className="relative grid grid-cols-3 gap-3">
+              {["Received", "Preparing", "Shipped"].map(
                 (label, index) => (
                   <div key={label}>
                     <div
@@ -695,7 +692,9 @@ function TrackingResult({ result }) {
             rel="noreferrer"
             className="group inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition hover:bg-red-600 hover:text-white"
           >
-            Track on carrier website
+            {String(tracking.carrier).toLowerCase().includes("usps")
+              ? "Check live status on USPS"
+              : "Check live carrier status"}
             <Icon
               name="arrow"
               className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"

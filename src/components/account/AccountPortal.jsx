@@ -1002,16 +1002,20 @@ function getOrderTracking(order = {}) {
     url: String(url || "").trim(),
     status: String(status || "").trim(),
     eta: order.estimated_delivery || order.eta || tracking.eta || "",
+    live: Boolean(
+      order.live_tracking ||
+        order.live ||
+        tracking.live ||
+        tracking.is_live ||
+        tracking.live_tracking
+    ),
   };
 }
 
 function getInlineTrackingSteps(order = {}) {
   const tracking = getOrderTracking(order);
   const status = order?.status || "";
-  const shipmentStatus = tracking.status.toLowerCase();
   const hasTracking = Boolean(tracking.number || tracking.url);
-  const delivered = /delivered|delivery complete/.test(shipmentStatus);
-  const outForDelivery = /out for delivery/.test(shipmentStatus);
   const stopped = ["cancelled", "refunded", "failed"].includes(status);
 
   if (stopped) {
@@ -1019,7 +1023,6 @@ function getInlineTrackingSteps(order = {}) {
       ["Order placed", "done"],
       ["Order stopped", "current"],
       ["Shipment", "idle"],
-      ["Delivered", "idle"],
     ];
   }
 
@@ -1032,7 +1035,6 @@ function getInlineTrackingSteps(order = {}) {
         : "current",
     ],
     ["Shipped", hasTracking ? "done" : "idle"],
-    ["Delivered", delivered ? "done" : outForDelivery ? "current" : "idle"],
   ];
 }
 
@@ -1171,7 +1173,9 @@ function InlineTrackingDetails({ order, loading, error }) {
                 rel="noreferrer"
                 className="mt-1 flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/62 transition hover:bg-white/[0.07] hover:text-white"
               >
-                Carrier page
+                {tracking.carrier.toLowerCase().includes("usps")
+                  ? "Check live status on USPS"
+                  : "Check live carrier status"}
                 <Icon name="arrow" className="h-4 w-4" />
               </a>
             )}
