@@ -19,6 +19,9 @@ const navLinks = [
   { label: "Support", href: "#support" },
 ];
 
+const desktopNavItemClass =
+  "inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full px-3 py-2.5 text-xs font-black uppercase leading-none tracking-[0.16em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm";
+
 const FALLBACK_IMAGE = "/logo.webp";
 const SUPPORT_PHONE = "+19565408538";
 const SUPPORT_PHONE_DISPLAY = "(956) 540-8538";
@@ -1515,7 +1518,8 @@ export default function Navbar({ transparent = false }) {
                     aria-expanded={supportMenuOpen}
                     aria-haspopup="dialog"
                     className={cn(
-                      "flex appearance-none items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]",
+                      desktopNavItemClass,
+                      "appearance-none gap-1.5 border-0 bg-transparent",
                     )}
                   >
                     {link.label}
@@ -1537,7 +1541,7 @@ export default function Navbar({ transparent = false }) {
                   key={link.label}
                   href={link.href}
                   onClick={(event) => handleNavClick(event, link)}
-                  className="rounded-full px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm lg:tracking-[0.14em]"
+                  className={desktopNavItemClass}
                 >
                   {link.label}
                 </a>

@@ -949,14 +949,24 @@ function NavButton({ active, icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] transition",
+        "flex min-h-[52px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-[11px] font-black uppercase leading-[1.25] tracking-[0.16em] shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 sm:text-xs",
         active
-          ? "bg-red-600 text-white shadow-[0_18px_44px_rgba(220,38,38,0.22)]"
-          : "text-white/44 hover:bg-white/[0.055] hover:text-white"
+          ? "border-red-400/70 bg-red-600 text-white shadow-[0_18px_44px_rgba(220,38,38,0.28)]"
+          : "border-white/15 bg-white/[0.055] text-white/80 hover:border-red-400/45 hover:bg-red-500/15 hover:text-white"
       )}
     >
-      <Icon name={icon} className="h-[18px] w-[18px]" />
+      <span
+        className={cn(
+          "grid h-8 w-8 shrink-0 place-items-center rounded-xl border transition",
+          active
+            ? "border-white/20 bg-white/15 text-white"
+            : "border-white/10 bg-black/25 text-red-200"
+        )}
+      >
+        <Icon name={icon} className="h-[17px] w-[17px]" />
+      </span>
       <span>{label}</span>
     </button>
   );
@@ -2010,8 +2020,8 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
 
   const navItems = [
     ["overview", "Overview", "spark"],
-    ["loyalty", "Loyalty Program", "spark"],
-    ["orders", "Orders", "box"],
+    ["loyalty", "My Points", "spark"],
+    ["orders", "Track Orders", "box"],
     ["profile", "Profile", "user"],
     ["security", "Security", "shield"],
   ];
@@ -2067,7 +2077,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
               </div>
             </div>
 
-            <div className="hidden gap-1 lg:grid">
+            <div className="hidden gap-2 lg:grid">
               {navItems.map(([id, label, icon]) => (
                 <NavButton
                   key={id}
@@ -2079,7 +2089,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 lg:hidden">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:hidden">
               {navItems.map(([id, label, icon]) => (
                 <NavButton
                   key={id}

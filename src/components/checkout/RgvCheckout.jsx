@@ -163,9 +163,9 @@ const US_STATES = [
 ];
 
 const POLICY_LINKS = {
-  terms: "/polices",
-  refund: "/polices",
-  researchUse: "/polices",
+  terms: "/policies#terms",
+  refund: "/policies#refunds",
+  researchUse: "/policies#research-use",
 };
 
 function safeJsonParse(value, fallback = null) {
@@ -681,6 +681,7 @@ export default function RgvCheckout() {
   const [couponValidation, setCouponValidation] = useState(null);
   const [checkoutForm, setCheckoutForm] = useState(() => getInitialCheckoutForm());
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
+  const [finalSaleAcknowledged, setFinalSaleAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
@@ -1002,6 +1003,11 @@ export default function RgvCheckout() {
       return false;
     }
 
+    if (!finalSaleAcknowledged) {
+      setError("Please acknowledge and accept the All Sales Final Policy before continuing.");
+      return false;
+    }
+
     return true;
   };
 
@@ -1163,6 +1169,7 @@ export default function RgvCheckout() {
           researchUseAcknowledged: true,
           termsAccepted: true,
           refundPolicyAccepted: true,
+          finalSalePolicyAccepted: true,
           researchUsePolicyAccepted: true,
           policyAcknowledgedAt: new Date().toISOString(),
         }),
@@ -1812,6 +1819,24 @@ export default function RgvCheckout() {
                 laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
                 <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
                 <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
+              </span>
+            </label>
+
+            <label className={`rgvx-policy ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
+              <input
+                type="checkbox"
+                checked={finalSaleAcknowledged}
+                onChange={(event) => {
+                  setFinalSaleAcknowledged(event.target.checked);
+                  if (event.target.checked) setError("");
+                }}
+              />
+
+              <span>
+                I understand and acknowledge that, due to the nature of these products, all sales
+                are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
+                reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
+                <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
               </span>
             </label>
 

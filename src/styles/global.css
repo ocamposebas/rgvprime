@@ -40,8 +40,18 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  letter-spacing: 0.01em;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Keep display text readable across the site. Several components previously
+ * used aggressive negative tracking that made headings, prices and product
+ * names appear compressed.
+ */
+:where([class*="tracking-[-"]) {
+  letter-spacing: 0.005em !important;
 }
 
 .site-shell {
@@ -83,7 +93,7 @@ button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: inherit;
 }
 
 button {
