@@ -61,6 +61,18 @@ const SHIPPING_METHODS = [
   },
 ];
 
+const ADDRESS_CONFIRMATION_FIELDS = new Set([
+  "firstName",
+  "lastName",
+  "address1",
+  "address2",
+  "city",
+  "state",
+  "postcode",
+  "country",
+  "phone",
+]);
+
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 
 const CART_STORAGE_FALLBACK_KEYS = [
@@ -630,7 +642,8 @@ function buildWooCheckoutUrl({
 
   if (shippingMethod?.id) {
     url.searchParams.set("rgv_shipping_method", shippingMethod.id);
-    url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Priority");
+    url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Ground");
+    url.searchParams.set("rgv_shipping_label", shippingMethod.label || shippingMethod.title || "USPS Ground");
     url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
   }
 
@@ -680,6 +693,7 @@ export default function RgvCheckout() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponValidation, setCouponValidation] = useState(null);
   const [checkoutForm, setCheckoutForm] = useState(() => getInitialCheckoutForm());
+  const [shippingAddressConfirmed, setShippingAddressConfirmed] = useState(false);
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [finalSaleAcknowledged, setFinalSaleAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -882,6 +896,9 @@ export default function RgvCheckout() {
   const manualShipping = formatAddressBlock(
     manualOrder?.shipping || manualOrder?.billing || normalizeCheckoutFormForOrder(checkoutForm)
   );
+  const checkoutAddressPreview = formatAddressBlock(
+    normalizeCheckoutFormForOrder(checkoutForm)
+  );
 
   const progressWidth = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
 
@@ -988,6 +1005,9 @@ export default function RgvCheckout() {
 
   const updateCheckoutField = (field, value) => {
     setCheckoutForm((current) => ({ ...current, [field]: value }));
+    if (ADDRESS_CONFIRMATION_FIELDS.has(field)) {
+      setShippingAddressConfirmed(false);
+    }
     setError("");
     setPaymentNotice("");
   };
@@ -1005,6 +1025,11 @@ export default function RgvCheckout() {
 
     if (!finalSaleAcknowledged) {
       setError("Please acknowledge and accept the All Sales Final Policy before continuing.");
+      return false;
+    }
+
+    if (isZelleSelected && !shippingAddressConfirmed) {
+      setError("Please review and confirm your shipping address before continuing.");
       return false;
     }
 
@@ -1148,6 +1173,12 @@ export default function RgvCheckout() {
           shipping_method: selectedShippingMethod?.id,
           shippingMethodTitle: selectedShippingMethod?.title,
           shipping_method_title: selectedShippingMethod?.title,
+          shippingMethodLabel: selectedShippingMethod?.label,
+          shipping_method_label: selectedShippingMethod?.label,
+          shippingMethodName: selectedShippingMethod?.title,
+          shipping_method_name: selectedShippingMethod?.title,
+          shippingTitle: selectedShippingMethod?.title,
+          shipping_title: selectedShippingMethod?.title,
           shippingCost: shippingCostForApi,
           shipping_cost: shippingCostForApi,
           shippingBaseCost: selectedShippingBaseCost,
@@ -1195,6 +1226,9 @@ export default function RgvCheckout() {
           order.payment_reference || order.order_number || order.number || order.id || order.order_id,
         billing: order.billing || finalBilling,
         shipping: order.shipping || finalShipping,
+        shipping_method: selectedShippingMethod?.id || order.shipping_method,
+        shipping_method_title:
+          selectedShippingMethod?.title || order.shipping_method_title,
         customer: order.customer || finalCustomer,
         items: order.items || checkoutItems,
       };
@@ -1511,6 +1545,9 @@ export default function RgvCheckout() {
                   <small key={line}>{line}</small>
                 ))}
                 {manualShipping.phone && <small>{manualShipping.phone}</small>}
+                <small>
+                  {selectedShippingMethod?.title || manualOrder?.shipping_method_title || "USPS Ground"}
+                </small>
               </div>
 
               <div>
@@ -1740,6 +1777,40 @@ export default function RgvCheckout() {
                         autoComplete="tel"
                       />
                     </Field>
+                  </div>
+
+                  <div className={`rgvx-address-confirmation ${shippingAddressConfirmed ? "confirmed" : ""}`}>
+                    <div className="rgvx-address-confirmation-heading">
+                      <ShieldCheck size={17} />
+                      <div>
+                        <strong>Confirm shipping address</strong>
+                        <small>Review these details carefully before creating your order.</small>
+                      </div>
+                    </div>
+
+                    <div className="rgvx-address-preview">
+                      <strong>
+                        {checkoutAddressPreview.fullName || "Name not entered"}
+                      </strong>
+                      {checkoutAddressPreview.lines.map((line) => (
+                        <span key={line}>{line}</span>
+                      ))}
+                      {checkoutAddressPreview.phone && (
+                        <span>{checkoutAddressPreview.phone}</span>
+                      )}
+                    </div>
+
+                    <label className="rgvx-address-confirmation-check">
+                      <input
+                        type="checkbox"
+                        checked={shippingAddressConfirmed}
+                        onChange={(event) => {
+                          setShippingAddressConfirmed(event.target.checked);
+                          if (event.target.checked) setError("");
+                        }}
+                      />
+                      <span>I confirm this shipping address is complete and correct.</span>
+                    </label>
                   </div>
                 </div>
 
@@ -2825,6 +2896,88 @@ const styles = `
     font-weight: 950;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+  }
+
+  .rgvx-address-confirmation {
+    display: grid;
+    gap: 14px;
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    border-radius: 20px;
+    background: rgba(220, 38, 38, 0.07);
+    padding: 16px;
+  }
+
+  .rgvx-address-confirmation.confirmed {
+    border-color: rgba(74, 222, 128, 0.34);
+    background: rgba(34, 197, 94, 0.07);
+  }
+
+  .rgvx-address-confirmation-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rgvx-address-confirmation-heading svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: #fca5a5;
+  }
+
+  .rgvx-address-confirmation.confirmed .rgvx-address-confirmation-heading svg {
+    color: #86efac;
+  }
+
+  .rgvx-address-confirmation-heading strong,
+  .rgvx-address-preview strong {
+    display: block;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .rgvx-address-confirmation-heading small {
+    display: block;
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .rgvx-address-preview {
+    display: grid;
+    gap: 3px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.24);
+    padding: 12px;
+  }
+
+  .rgvx-address-preview span {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .rgvx-address-confirmation-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 850;
+    line-height: 1.5;
+  }
+
+  .rgvx-address-confirmation-check input {
+    width: 17px;
+    min-width: 17px;
+    height: 17px;
+    min-height: 17px;
+    margin-top: 1px;
+    accent-color: #dc2626;
   }
 
   .rgvx-marketing-inline,
