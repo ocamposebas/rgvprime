@@ -85,12 +85,10 @@ function CarrierLogo({ carrier }) {
 
   return (
     <span className="rgvx-carrier-logo usps" aria-label="USPS">
-      <svg viewBox="0 0 42 30" aria-hidden="true">
-        <path className="rgvx-usps-wing" d="M3 7h36l-16 8H3V7Z" />
-        <path className="rgvx-usps-wing" d="M3 17h20L9 23H3v-6Z" />
-        <path className="rgvx-usps-stripe" d="M3 24h36v3H3z" />
-      </svg>
-      <span>USPS</span>
+      <img
+        src="/WhatsApp%20Image%202026-07-28%20at%204.24.24%20PM.jpeg"
+        alt=""
+      />
     </span>
   );
 }
@@ -3404,36 +3402,15 @@ const styles = `
   }
 
   .rgvx-carrier-logo.usps {
-    position: relative;
-    width: 48px;
-    border-radius: 4px;
-    background: #ffffff;
+    width: 58px;
+    height: 38px;
   }
 
-  .rgvx-carrier-logo.usps svg {
-    position: absolute;
-    inset: 2px 3px auto;
-    width: 42px;
-    height: 26px;
-  }
-
-  .rgvx-usps-wing {
-    fill: #1f4e9a;
-  }
-
-  .rgvx-usps-stripe {
-    fill: #df1e36;
-  }
-
-  .rgvx-carrier-logo.usps span {
-    position: relative;
-    z-index: 1;
-    margin-top: 19px;
-    color: #1f4e9a;
-    font-family: Arial, sans-serif;
-    font-size: 7px;
-    font-weight: 900;
-    letter-spacing: -0.35px;
+  .rgvx-carrier-logo.usps img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .rgvx-shipping-option strong {
