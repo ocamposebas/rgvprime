@@ -51,6 +51,7 @@ const SHIPPING_METHODS = [
     label: "USPS Ground",
     description: "3 to 7 Business Days",
     price: 8,
+    carrier: "USPS",
   },
   {
     id: "usps_priority",
@@ -58,8 +59,41 @@ const SHIPPING_METHODS = [
     label: "USPS Priority",
     description: "3 to 5 Business Days",
     price: 12,
+    carrier: "USPS",
+  },
+  {
+    id: "ups_2_day_air",
+    title: "UPS 2 Day Air",
+    label: "UPS 2 Day Air",
+    description: "3 to 5 Business Days",
+    price: 18,
+    carrier: "UPS",
   },
 ];
+
+function CarrierLogo({ carrier }) {
+  if (carrier === "UPS") {
+    return (
+      <span className="rgvx-carrier-logo ups" aria-label="UPS">
+        <svg viewBox="0 0 32 38" aria-hidden="true">
+          <path d="M4 2h24v17c0 9-5 14-12 17C9 33 4 28 4 19V2Z" />
+          <text x="16" y="23" textAnchor="middle">UPS</text>
+        </svg>
+      </span>
+    );
+  }
+
+  return (
+    <span className="rgvx-carrier-logo usps" aria-label="USPS">
+      <svg viewBox="0 0 42 30" aria-hidden="true">
+        <path className="rgvx-usps-wing" d="M3 7h36l-16 8H3V7Z" />
+        <path className="rgvx-usps-wing" d="M3 17h20L9 23H3v-6Z" />
+        <path className="rgvx-usps-stripe" d="M3 24h36v3H3z" />
+      </svg>
+      <span>USPS</span>
+    </span>
+  );
+}
 
 const ADDRESS_CONFIRMATION_FIELDS = new Set([
   "firstName",
@@ -1823,7 +1857,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground or USPS Priority. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
                   </small>
                 </div>
               </div>
@@ -1854,14 +1888,17 @@ export default function RgvCheckout() {
                           setError("");
                         }}
                       >
-                        <div>
-                          <strong>{method.title}</strong>
-                          <small>{method.description}</small>
-                          {freeShippingUnlocked && (
-                            <small className="rgvx-shipping-free-note">
+                        <div className="rgvx-shipping-option-main">
+                          <CarrierLogo carrier={method.carrier} />
+                          <div>
+                            <strong>{method.title}</strong>
+                            <small>{method.description}</small>
+                            {freeShippingUnlocked && (
+                              <small className="rgvx-shipping-free-note">
                               Regular {formatMoney(method.price)} · free unlocked
-                            </small>
-                          )}
+                              </small>
+                            )}
+                          </div>
                         </div>
 
                         <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
@@ -3331,6 +3368,72 @@ const styles = `
 
   .rgvx-shipping-option div {
     min-width: 0;
+  }
+
+  .rgvx-shipping-option-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .rgvx-carrier-logo {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 34px;
+  }
+
+  .rgvx-carrier-logo.ups svg {
+    width: 31px;
+    height: 36px;
+  }
+
+  .rgvx-carrier-logo.ups path {
+    fill: #351c15;
+    stroke: #ffb81c;
+    stroke-width: 2;
+  }
+
+  .rgvx-carrier-logo.ups text {
+    fill: #ffb81c;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .rgvx-carrier-logo.usps {
+    position: relative;
+    width: 48px;
+    border-radius: 4px;
+    background: #ffffff;
+  }
+
+  .rgvx-carrier-logo.usps svg {
+    position: absolute;
+    inset: 2px 3px auto;
+    width: 42px;
+    height: 26px;
+  }
+
+  .rgvx-usps-wing {
+    fill: #1f4e9a;
+  }
+
+  .rgvx-usps-stripe {
+    fill: #df1e36;
+  }
+
+  .rgvx-carrier-logo.usps span {
+    position: relative;
+    z-index: 1;
+    margin-top: 19px;
+    color: #1f4e9a;
+    font-family: Arial, sans-serif;
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: -0.35px;
   }
 
   .rgvx-shipping-option strong {
