@@ -133,18 +133,18 @@ const ACCEPTED_RECEIPT_TYPES = [
 const PAYMENT_METHODS = [
   {
     id: "card",
-    label: "Card",
+    label: "Cards",
     eyebrow: "Fast route",
-    title: "Card",
+    title: "Cards",
     description: "Pay by card through our secure checkout.",
     badge: "Secure",
     icon: CreditCard,
   },
   {
     id: "edebit",
-    label: "Transfer bank",
+    label: "Bank transfer",
     eyebrow: "Bank route",
-    title: "Transfer bank",
+    title: "Bank transfer",
     description: "Link your bank securely and complete your payment.",
     badge: "Bank",
     icon: Building2,
