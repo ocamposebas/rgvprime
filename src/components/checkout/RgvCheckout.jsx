@@ -141,6 +141,15 @@ const PAYMENT_METHODS = [
     icon: CreditCard,
   },
   {
+    id: "edebit",
+    label: "Transfer bank",
+    eyebrow: "Bank route",
+    title: "Transfer bank",
+    description: "Link your bank securely and complete your payment.",
+    badge: "Bank",
+    icon: Building2,
+  },
+  {
     id: "zelle",
     label: "Zelle",
     eyebrow: "Manual route",
@@ -694,6 +703,48 @@ function getCouponValidateEndpoint() {
   return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/validate-coupon`;
 }
 
+function getEdebitOrderEndpoint() {
+  return `${cleanUrl(WP_URL)}/wp-json/rgvprime/v1/create-edebit-order`;
+}
+
+const EDEBIT_RETURN_QUERY_KEYS = [
+  "rgvprime_bank_thanks",
+  "phaseone_bank_thanks",
+  "payment",
+  "order_id",
+  "order_key",
+  "status",
+  "payment_method",
+  "source",
+  "message",
+];
+
+function getInitialEdebitReturn() {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const isEdebitReturn =
+    params.get("rgvprime_bank_thanks") === "1" ||
+    params.get("phaseone_bank_thanks") === "1";
+
+  if (!isEdebitReturn) return null;
+
+  const rawPayment = String(params.get("payment") || "failed").toLowerCase();
+  const payment = ["success", "failed", "cancelled"].includes(rawPayment)
+    ? rawPayment
+    : ["cancel", "canceled"].includes(rawPayment)
+      ? "cancelled"
+      : "failed";
+
+  return {
+    payment,
+    orderId: String(params.get("order_id") || "").replace(/[^0-9]/g, "").slice(0, 20),
+    status: String(params.get("status") || "").replace(/[^a-z0-9_-]/gi, "").slice(0, 40),
+    paymentMethod: String(params.get("payment_method") || "edebit_yodlee").slice(0, 80),
+    message: String(params.get("message") || "").slice(0, 300),
+  };
+}
+
 function getCouponUiMessage(status, hasCoupon = false) {
   if (status === "valid") return "Coupon applied.";
   if (status === "invalid") return "Code unavailable.";
@@ -714,6 +765,7 @@ function Field({ label, children, wide = false }) {
 export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
+  const [edebitReturn] = useState(() => getInitialEdebitReturn());
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
@@ -740,6 +792,7 @@ export default function RgvCheckout() {
   const [sessionCustomer, setSessionCustomer] = useState(null);
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
+  const edebitSubmittingRef = useRef(false);
 
   async function loadSessionCustomer() {
     if (!sessionCustomerPromiseRef.current) {
@@ -796,6 +849,35 @@ export default function RgvCheckout() {
   useEffect(() => {
     loadSessionCustomer();
   }, []);
+
+  useEffect(() => {
+    if (!edebitReturn || typeof window === "undefined") return;
+
+    const cleanReturnUrl = new URL(window.location.href);
+    EDEBIT_RETURN_QUERY_KEYS.forEach((key) => cleanReturnUrl.searchParams.delete(key));
+    window.history.replaceState(
+      {},
+      "",
+      `${cleanReturnUrl.pathname}${cleanReturnUrl.search}${cleanReturnUrl.hash}`
+    );
+
+    localStorage.removeItem("rgv_edebit_pending_order");
+
+    if (edebitReturn.payment !== "success") return;
+
+    CART_STORAGE_FALLBACK_KEYS.forEach((key) => localStorage.removeItem(key));
+    localStorage.removeItem("rgv_checkout_coupon");
+
+    const clearCartHandler = cart?.clearCart || cart?.emptyCart || cart?.resetCart;
+
+    if (typeof clearCartHandler === "function") {
+      try {
+        clearCartHandler();
+      } catch (clearError) {
+        console.error("Unable to clear cart after eDebit payment:", clearError);
+      }
+    }
+  }, [edebitReturn?.payment]);
 
   const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
 
@@ -904,7 +986,9 @@ export default function RgvCheckout() {
     SHIPPING_METHODS.find((method) => method.id === selectedShippingMethodId) ||
     SHIPPING_METHODS[0];
 
+  const isEdebitSelected = selectedPaymentMethodId === "edebit";
   const isZelleSelected = selectedPaymentMethodId === "zelle";
+  const requiresDirectDetails = isEdebitSelected || isZelleSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
@@ -933,6 +1017,24 @@ export default function RgvCheckout() {
   );
 
   const progressWidth = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
+
+  const paymentButtonTitle = loading
+    ? isZelleSelected
+      ? "Creating Zelle order"
+      : isEdebitSelected
+        ? "Connecting secure bank payment"
+        : "Opening card checkout"
+    : isZelleSelected
+      ? "Create Zelle order"
+      : isEdebitSelected
+      ? "Continue with bank transfer"
+        : "Continue to secure checkout";
+
+  const paymentButtonDescription = isZelleSelected
+    ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
+    : isEdebitSelected
+      ? "Your order will be created, then you will securely link your bank."
+      : "You will be redirected to secure card checkout.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
     const checkoutItems = buildCheckoutItems(cartItems);
@@ -1060,7 +1162,7 @@ export default function RgvCheckout() {
       return false;
     }
 
-    if (isZelleSelected && !shippingAddressConfirmed) {
+    if (requiresDirectDetails && !shippingAddressConfirmed) {
       setError("Please review and confirm your shipping address before continuing.");
       return false;
     }
@@ -1068,11 +1170,11 @@ export default function RgvCheckout() {
     return true;
   };
 
-  const validateZelleForm = () => {
+  const validateDirectPaymentForm = (paymentLabel) => {
     const normalizedForm = normalizeCheckoutFormForOrder(checkoutForm);
 
     if (!isValidEmail(normalizedForm.email)) {
-      setError("Enter a valid email before creating your Zelle order.");
+      setError(`Enter a valid email before continuing with ${paymentLabel}.`);
       return null;
     }
 
@@ -1089,7 +1191,14 @@ export default function RgvCheckout() {
     const missingField = requiredFields.find(([key]) => !normalizedForm[key]);
 
     if (missingField) {
-      setError(`${missingField[1]} is required before creating the Zelle order.`);
+      setError(`${missingField[1]} is required before continuing with ${paymentLabel}.`);
+      return null;
+    }
+
+    const phoneDigits = normalizedForm.phone.replace(/\D/g, "");
+
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      setError("Enter a valid phone number with 10 to 15 digits.");
       return null;
     }
 
@@ -1121,6 +1230,141 @@ export default function RgvCheckout() {
     window.location.href = checkoutUrl;
   };
 
+  const createEdebitOrder = async () => {
+    if (edebitSubmittingRef.current || loading) return;
+    if (!validateBaseCheckout()) return;
+
+    if (couponInput && couponInput !== coupon) {
+      setError("Apply or clear the coupon code before continuing with bank transfer.");
+      return;
+    }
+
+    const normalizedForm = validateDirectPaymentForm("bank transfer");
+    if (!normalizedForm) return;
+
+    const checkoutItems = buildCheckoutItems(cartItems);
+
+    if (!checkoutItems.length || checkoutItems.some((item) => !item.product_id)) {
+      setError("One or more products are missing a valid WooCommerce product ID.");
+      return;
+    }
+
+    const finalBilling = { ...normalizedForm };
+    const finalShipping = { ...normalizedForm };
+    const shippingCostForApi = Number(shippingCost).toFixed(2);
+    const controller = new AbortController();
+    const requestTimeout = window.setTimeout(() => controller.abort(), 70000);
+    let redirecting = false;
+
+    try {
+      edebitSubmittingRef.current = true;
+      setLoading(true);
+      setError("");
+      setPaymentNotice("Creating your order and opening secure bank payment...");
+
+      localStorage.setItem("rgv_checkout_email", finalBilling.email);
+      localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
+
+      const response = await fetch(getEdebitOrderEndpoint(), {
+        method: "POST",
+        credentials: "include",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          paymentMethod: "edd_draft_yodlee_gateway",
+          gatewayId: "edd_draft_yodlee_gateway",
+          customer: {
+            firstName: finalBilling.first_name,
+            lastName: finalBilling.last_name,
+            email: finalBilling.email,
+            phone: finalBilling.phone,
+          },
+          billing: finalBilling,
+          shipping: finalShipping,
+          items: checkoutItems,
+          couponCode: coupon,
+          shippingMethod: {
+            id: selectedShippingMethod?.id,
+            method_id: selectedShippingMethod?.id,
+            title: selectedShippingMethod?.title,
+            label: selectedShippingMethod?.label,
+            price: shippingCostForApi,
+            total: shippingCostForApi,
+          },
+          shippingTotal: shippingCostForApi,
+          source: "rgvprime_custom_checkout_edebit",
+          ageConfirmed: true,
+          researchUseAcknowledged: true,
+          termsAccepted: true,
+          refundPolicyAccepted: true,
+          finalSalePolicyAccepted: true,
+          researchUsePolicyAccepted: true,
+          policyAcknowledgedAt: new Date().toISOString(),
+        }),
+      });
+
+      const responseText = await response.text();
+      const data = safeJsonParse(responseText, {});
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            "Unable to start bank transfer payment. Please try again."
+        );
+      }
+
+      const redirectUrl =
+        data?.gatewayRedirectUrl || data?.redirectUrl || data?.paymentUrl || "";
+
+      if (!redirectUrl) {
+        throw new Error("Bank transfer did not return a secure payment URL.");
+      }
+
+      let parsedRedirect;
+
+      try {
+        parsedRedirect = new URL(redirectUrl);
+      } catch {
+        throw new Error("Bank transfer returned an invalid payment URL.");
+      }
+
+      if (parsedRedirect.protocol !== "https:") {
+        throw new Error("The bank transfer payment URL was not secure.");
+      }
+
+      localStorage.setItem(
+        "rgv_edebit_pending_order",
+        JSON.stringify({
+          orderId: data?.orderId || "",
+          orderNumber: data?.orderNumber || "",
+          createdAt: new Date().toISOString(),
+        })
+      );
+
+      redirecting = true;
+      window.location.assign(parsedRedirect.toString());
+    } catch (err) {
+      const message =
+        err?.name === "AbortError"
+          ? "Bank transfer took too long to respond. No second order was submitted. Please try again."
+          : err?.message || "Unable to start bank transfer payment. Please try again.";
+
+      setError(message);
+      setPaymentNotice("");
+    } finally {
+      window.clearTimeout(requestTimeout);
+
+      if (!redirecting) {
+        edebitSubmittingRef.current = false;
+        setLoading(false);
+      }
+    }
+  };
+
   const createZelleOrder = async () => {
     if (!validateBaseCheckout()) return;
 
@@ -1129,7 +1373,7 @@ export default function RgvCheckout() {
       return;
     }
 
-    const normalizedForm = validateZelleForm();
+    const normalizedForm = validateDirectPaymentForm("Zelle");
     if (!normalizedForm) return;
 
     const checkoutItems = buildCheckoutItems(cartItems);
@@ -1283,6 +1527,11 @@ export default function RgvCheckout() {
       return;
     }
 
+    if (isEdebitSelected) {
+      createEdebitOrder();
+      return;
+    }
+
     continueToCardCheckout();
   };
 
@@ -1357,6 +1606,76 @@ export default function RgvCheckout() {
       <style>{styles}</style>
     </main>
   );
+
+  if (edebitReturn) {
+    const paymentSucceeded = edebitReturn.payment === "success";
+    const paymentCancelled = edebitReturn.payment === "cancelled";
+    const orderLabel = edebitReturn.orderId ? `ORDER #${edebitReturn.orderId}` : "EDEBIT PAYMENT";
+    const returnTitle = paymentSucceeded
+      ? "Bank payment completed"
+      : paymentCancelled
+        ? "Bank payment cancelled"
+        : "Bank payment was not completed";
+    const returnMessage = edebitReturn.message ||
+      (paymentSucceeded
+        ? "Your bank transfer payment was received and your order is now being processed."
+        : paymentCancelled
+          ? "Your order was not paid. Your cart is still available so you can try again or choose another payment method."
+          : "The bank payment could not be completed. Your cart is still available and no new payment attempt will be made automatically.");
+
+    return (
+      <main className="rgvx-page rgvx-thanks-page">
+        <div className="rgvx-background-wash" />
+
+        <section className="rgvx-shell rgvx-thanks-shell">
+          <div className="rgvx-topbar">
+            <a href="/shop" className="rgvx-ghost-link">
+              <ArrowLeft size={14} /> Back to shop
+            </a>
+
+            <div className={`rgvx-lock-pill ${paymentSucceeded ? "rgvx-confirmed-pill" : ""}`}>
+              {paymentSucceeded ? <BadgeCheck size={13} /> : <X size={13} />}
+              {paymentSucceeded ? "Payment confirmed" : paymentCancelled ? "Payment cancelled" : "Payment failed"}
+            </div>
+          </div>
+
+          <section className="rgvx-receipt-thanks-card" aria-live="polite">
+            <div className="rgvx-receipt-thanks-icon">
+              {paymentSucceeded ? <BadgeCheck size={36} /> : <X size={36} />}
+            </div>
+
+            <p>{orderLabel}</p>
+            <h1>{returnTitle}</h1>
+            <span>{returnMessage}</span>
+
+            <div className="rgvx-receipt-thanks-details">
+              <div>
+                <Building2 size={17} />
+                <span>Payment method</span>
+                <strong>Bank transfer</strong>
+              </div>
+
+              <div>
+                <ShieldCheck size={17} />
+                <span>Current status</span>
+                <strong>{paymentSucceeded ? "Processing" : paymentCancelled ? "Cancelled" : "Payment required"}</strong>
+              </div>
+            </div>
+
+            <a
+              href={paymentSucceeded ? "/shop" : "/checkout/"}
+              className="rgvx-receipt-thanks-button"
+            >
+              {paymentSucceeded ? "Continue shopping" : "Return to checkout"}
+              <ChevronRight size={18} />
+            </a>
+          </section>
+        </section>
+
+        <style>{styles}</style>
+      </main>
+    );
+  }
 
   if (!hasItems) return <EmptyState />;
 
@@ -1633,7 +1952,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Step 3</p>
                 <h2>Choose payment</h2>
-                <span>Choose Card for secure payment, or Zelle to create the order here first.</span>
+                <span>Choose Card, secure bank payment, or manual payment with Zelle.</span>
               </div>
 
               <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
@@ -1647,6 +1966,7 @@ export default function RgvCheckout() {
                       type="button"
                       role="radio"
                       aria-checked={active}
+                      disabled={loading}
                       className={`rgvx-payment-option ${active ? "active" : ""}`}
                       onClick={() => {
                         setSelectedPaymentMethodId(method.id);
@@ -1669,14 +1989,16 @@ export default function RgvCheckout() {
               </div>
             </div>
 
-            {isZelleSelected && (
+            {requiresDirectDetails && (
               <div className="rgvx-zelle-area">
                 <div className="rgvx-zelle-banner">
                   <Building2 size={18} />
                   <div>
-                    <strong>Zelle selected</strong>
+                    <strong>{isEdebitSelected ? "Bank transfer selected" : "Zelle selected"}</strong>
                     <span>
-                      Enter contact and delivery details. After receipt upload, Zelle orders can take up to 24 hours to process.
+                      {isEdebitSelected
+                        ? "Enter the billing and delivery details used for your secure bank payment."
+                        : "Enter contact and delivery details. After receipt upload, Zelle orders can take up to 24 hours to process."}
                     </span>
                   </div>
                 </div>
@@ -1686,7 +2008,11 @@ export default function RgvCheckout() {
                     <Mail size={16} />
                     <div>
                       <strong>Contact</strong>
-                      <small>Email for order updates and payment instructions.</small>
+                      <small>
+                        {isEdebitSelected
+                          ? "Email for your order confirmation and secure bank-payment updates."
+                          : "Email for order updates and payment instructions."}
+                      </small>
                     </div>
                   </div>
 
@@ -1717,7 +2043,9 @@ export default function RgvCheckout() {
                     <MapPin size={16} />
                     <div>
                       <strong>Delivery</strong>
-                      <small>Required only for Zelle orders.</small>
+                      <small>
+                        Required for {isEdebitSelected ? "bank transfer" : "Zelle"} orders.
+                      </small>
                     </div>
                   </div>
 
@@ -1953,20 +2281,8 @@ export default function RgvCheckout() {
               className="rgvx-final-button"
             >
               <span>
-                <strong>
-                  {loading
-                    ? isZelleSelected
-                      ? "Creating Zelle order"
-                      : "Opening card checkout"
-                    : isZelleSelected
-                      ? "Create Zelle order"
-                      : "Continue to secure checkout"}
-                </strong>
-                <small>
-                  {isZelleSelected
-                    ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
-                    : "You will be redirected to secure card checkout."}
-                </small>
+                <strong>{paymentButtonTitle}</strong>
+                <small>{paymentButtonDescription}</small>
               </span>
               <ChevronRight size={20} />
             </button>
@@ -2682,13 +2998,16 @@ const styles = `
 
   .rgvx-payment-switch {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
 
   .rgvx-payment-option {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 13px;
+    display: flex;
+    min-height: 150px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
     align-items: center;
     width: 100%;
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -2697,7 +3016,7 @@ const styles = `
     padding: 13px;
     color: #ffffff;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
   }
 
@@ -2708,8 +3027,13 @@ const styles = `
     transform: translateY(-1px);
   }
 
+  .rgvx-payment-option:disabled {
+    cursor: wait;
+    opacity: 0.66;
+  }
+
   .rgvx-payment-option > svg {
-    display: grid;
+    display: block;
     width: 42px;
     height: 42px;
     border: 1px solid rgba(220, 38, 38, 0.22);
@@ -2731,7 +3055,7 @@ const styles = `
     display: block;
     margin-top: 3px;
     color: rgba(255, 255, 255, 0.46);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 750;
     line-height: 1.45;
   }
@@ -5275,7 +5599,7 @@ const styles = `
     }
 
     .rgvx-payment-switch {
-      grid-template-columns: 1fr 1fr !important;
+      grid-template-columns: 1fr !important;
       gap: 12px !important;
     }
 
