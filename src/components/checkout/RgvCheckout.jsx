@@ -27,6 +27,10 @@ import {
   formatPoints,
 } from "../../lib/loyaltyProgram";
 import { getMeOnce } from "../../lib/accountSession";
+import {
+  WELCOME10_FREE_SHIPPING_PROMOTION,
+  isWelcome10FreeShippingActive,
+} from "../../lib/checkoutPromotions";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -640,6 +644,7 @@ function buildWooCheckoutUrl({
   cartItems,
   coupon,
   shippingMethod,
+  freeShipping = false,
   customerEmail = "",
 }) {
   const cleanWooUrl = cleanUrl(WOO_URL);
@@ -686,6 +691,11 @@ function buildWooCheckoutUrl({
     url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Ground");
     url.searchParams.set("rgv_shipping_label", shippingMethod.label || shippingMethod.title || "USPS Ground");
     url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
+  }
+
+  if (freeShipping) {
+    url.searchParams.set("rgv_free_shipping", "1");
+    url.searchParams.set("rgv_shipping_cost", "0");
   }
 
   return url.toString();
@@ -776,6 +786,7 @@ export default function RgvCheckout() {
   const [couponStatus, setCouponStatus] = useState("idle");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponValidation, setCouponValidation] = useState(null);
+  const [promotionClock, setPromotionClock] = useState(() => Date.now());
   const [checkoutForm, setCheckoutForm] = useState(() => getInitialCheckoutForm());
   const [shippingAddressConfirmed, setShippingAddressConfirmed] = useState(false);
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
@@ -848,6 +859,20 @@ export default function RgvCheckout() {
 
   useEffect(() => {
     loadSessionCustomer();
+  }, []);
+
+  useEffect(() => {
+    const expiresAt = Date.parse(WELCOME10_FREE_SHIPPING_PROMOTION.endsAt);
+    const remainingTime = expiresAt - Date.now();
+
+    if (remainingTime <= 0) return undefined;
+
+    const timeoutId = window.setTimeout(
+      () => setPromotionClock(Date.now()),
+      remainingTime + 50
+    );
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -953,9 +978,6 @@ export default function RgvCheckout() {
         )
       : 0;
 
-  const couponHasFreeShipping =
-    couponStatus === "valid" && Boolean(couponValidation?.free_shipping);
-
   const discountedCartTotal = Math.max(cartTotal - couponDiscount, 0);
   const estimatedLoyaltyPoints = calculateLoyaltyPoints(discountedCartTotal);
   const currentLoyaltyPoints = Math.max(
@@ -992,8 +1014,34 @@ export default function RgvCheckout() {
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
-  const freeShippingUnlocked =
-    freeShippingQualifiedBySubtotal || couponHasFreeShipping;
+  const isWelcome10PromotionActiveAt = (now = Date.now()) =>
+    couponStatus === "valid" && isWelcome10FreeShippingActive(coupon, now);
+  const isFreeShippingUnlockedAt = (now = Date.now()) =>
+    freeShippingQualifiedBySubtotal ||
+    (couponStatus === "valid" &&
+      (Boolean(couponValidation?.free_shipping) ||
+        isWelcome10PromotionActiveAt(now)));
+  const getEffectiveCouponValidationAt = (now = Date.now()) => {
+    if (!couponValidation) return null;
+
+    const welcome10Active = isWelcome10PromotionActiveAt(now);
+
+    return {
+      ...couponValidation,
+      free_shipping:
+        Boolean(couponValidation.free_shipping) || welcome10Active,
+      ...(welcome10Active
+        ? {
+            free_shipping_promotion: "welcome10_50_hours",
+            free_shipping_expires_at:
+              WELCOME10_FREE_SHIPPING_PROMOTION.endsAt,
+          }
+        : {}),
+    };
+  };
+  const welcome10FreeShippingActive =
+    isWelcome10PromotionActiveAt(promotionClock);
+  const freeShippingUnlocked = isFreeShippingUnlockedAt(promotionClock);
   const amountUntilFreeShipping = Math.max(FREE_SHIPPING_MINIMUM - cartTotal, 0);
   const selectedShippingBaseCost = toMoneyNumber(selectedShippingMethod?.price, 0);
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
@@ -1016,7 +1064,9 @@ export default function RgvCheckout() {
     normalizeCheckoutFormForOrder(checkoutForm)
   );
 
-  const progressWidth = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
+  const progressWidth = freeShippingUnlocked
+    ? 100
+    : Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
 
   const paymentButtonTitle = loading
     ? isZelleSelected
@@ -1095,7 +1145,11 @@ export default function RgvCheckout() {
       setCouponInput(finalCode);
       setCouponValidation(data);
       setCouponStatus("valid");
-      setCouponMessage(getCouponUiMessage("valid", true));
+      setCouponMessage(
+        isWelcome10FreeShippingActive(finalCode)
+          ? "WELCOME10 applied with free shipping."
+          : getCouponUiMessage("valid", true)
+      );
 
       if (typeof window !== "undefined") {
         localStorage.setItem("rgv_checkout_coupon", finalCode);
@@ -1213,10 +1267,15 @@ export default function RgvCheckout() {
       return;
     }
 
+    const freeShippingForOrder = isFreeShippingUnlockedAt();
     const checkoutUrl = buildWooCheckoutUrl({
       cartItems,
       coupon,
-      shippingMethod: selectedShippingMethod,
+      shippingMethod: {
+        ...selectedShippingMethod,
+        price: freeShippingForOrder ? 0 : selectedShippingBaseCost,
+      },
+      freeShipping: freeShippingForOrder,
       customerEmail: checkoutForm.email,
     });
 
@@ -1251,7 +1310,11 @@ export default function RgvCheckout() {
 
     const finalBilling = { ...normalizedForm };
     const finalShipping = { ...normalizedForm };
-    const shippingCostForApi = Number(shippingCost).toFixed(2);
+    const freeShippingForOrder = isFreeShippingUnlockedAt();
+    const couponValidationForApi = getEffectiveCouponValidationAt();
+    const shippingCostForApi = Number(
+      freeShippingForOrder ? 0 : selectedShippingBaseCost
+    ).toFixed(2);
     const controller = new AbortController();
     const requestTimeout = window.setTimeout(() => controller.abort(), 70000);
     let redirecting = false;
@@ -1295,6 +1358,10 @@ export default function RgvCheckout() {
             total: shippingCostForApi,
           },
           shippingTotal: shippingCostForApi,
+          freeShippingUnlocked: freeShippingForOrder,
+          free_shipping_unlocked: freeShippingForOrder,
+          couponValidation: couponValidationForApi,
+          coupon_validation: couponValidationForApi,
           source: "rgvprime_custom_checkout_edebit",
           ageConfirmed: true,
           researchUseAcknowledged: true,
@@ -1412,7 +1479,11 @@ export default function RgvCheckout() {
 
       // Keep a free-shipping value explicit for PHP. The string "0.00"
       // prevents endpoints using empty() from treating a valid zero as missing.
-      const shippingCostForApi = Number(shippingCost).toFixed(2);
+      const freeShippingForOrder = isFreeShippingUnlockedAt();
+      const couponValidationForApi = getEffectiveCouponValidationAt();
+      const shippingCostForApi = Number(
+        freeShippingForOrder ? 0 : selectedShippingBaseCost
+      ).toFixed(2);
 
       const response = await fetch(getManualOrderEndpoint(), {
         method: "POST",
@@ -1434,8 +1505,8 @@ export default function RgvCheckout() {
           coupon: coupon,
           couponDiscount,
           coupon_discount: couponDiscount,
-          couponValidation,
-          coupon_validation: couponValidation,
+          couponValidation: couponValidationForApi,
+          coupon_validation: couponValidationForApi,
           subtotal: cartTotal,
           cartSubtotal: cartTotal,
           cart_subtotal: cartTotal,
@@ -1459,8 +1530,8 @@ export default function RgvCheckout() {
           shipping_cost: shippingCostForApi,
           shippingBaseCost: selectedShippingBaseCost,
           shipping_base_cost: selectedShippingBaseCost,
-          freeShippingUnlocked,
-          free_shipping_unlocked: freeShippingUnlocked,
+          freeShippingUnlocked: freeShippingForOrder,
+          free_shipping_unlocked: freeShippingForOrder,
           freeShippingQualifiedBySubtotal,
           free_shipping_qualified_by_subtotal: freeShippingQualifiedBySubtotal,
           freeShippingEvaluationBasis: "subtotal_before_coupon",
@@ -2183,7 +2254,9 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    {welcome10FreeShippingActive
+                      ? "WELCOME10 includes free shipping during this limited-time offer."
+                      : `Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at ${formatMoney(FREE_SHIPPING_MINIMUM)}.`}
                   </small>
                 </div>
               </div>
@@ -2195,7 +2268,13 @@ export default function RgvCheckout() {
               >
                 <div className="rgvx-shipping-options-head">
                   <span>Available methods</span>
-                  <strong>{freeShippingUnlocked ? "Free unlocked" : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}</strong>
+                  <strong>
+                    {welcome10FreeShippingActive
+                      ? "WELCOME10 free shipping"
+                      : freeShippingUnlocked
+                        ? "Free unlocked"
+                        : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}
+                  </strong>
                 </div>
 
                 <div className="rgvx-shipping-option-list">
@@ -2327,9 +2406,17 @@ export default function RgvCheckout() {
 
             <div className="rgvx-free-progress">
               <div>
-                <span>Free shipping over {formatMoney(FREE_SHIPPING_MINIMUM)}</span>
+                <span>
+                  {welcome10FreeShippingActive
+                    ? "WELCOME10 free shipping"
+                    : `Free shipping over ${formatMoney(FREE_SHIPPING_MINIMUM)}`}
+                </span>
                 <strong>
-                  {freeShippingUnlocked ? "Unlocked" : `${formatMoney(amountUntilFreeShipping)} away`}
+                  {welcome10FreeShippingActive
+                    ? "Limited-time offer"
+                    : freeShippingUnlocked
+                      ? "Unlocked"
+                      : `${formatMoney(amountUntilFreeShipping)} away`}
                 </strong>
               </div>
               <div className="progress-track">
