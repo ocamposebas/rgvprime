@@ -572,6 +572,26 @@
             "RGV-RAW-GHK-1G"
           ],
           "canonical_key": "rawghk"
+        },
+        {
+          "code": "RGVP2607280197",
+          "lot": "P1-BTY06",
+          "product": "GHK-Cu + KPV 60mg",
+          "sku": "GHK-Cu/KPV",
+          "url": "/coas/RGVP2607280197.pdf",
+          "history": [],
+          "aliases": [
+            "GHK-Cu + KPV 60mg",
+            "GHK-Cu/KPV",
+            "P1-BTY06",
+            "GHK Cu + KPV 60mg",
+            "GHK-Cu KPV 60mg",
+            "GHK-Cu / KPV 60mg",
+            "GHK KPV 60mg",
+            "GHK+KPV 60mg",
+            "RGVP2607280197"
+          ],
+          "canonical_key": "ghkcukpv"
         }
       ]
     }
