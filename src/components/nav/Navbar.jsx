@@ -58,13 +58,17 @@ function formatPrice(price) {
 }
 
 function getProductUrl(product) {
+  const permalink = String(product?.permalink || "").trim();
+
+  if (permalink) return permalink;
+
   const slug = product?.slug ? String(product.slug).replace(/^\/+|\/+$/g, "") : "";
 
   if (slug) {
     return `/product/${slug}`;
   }
 
-  return `/product/${product?.id || ""}`;
+  return "/shop";
 }
 
 function getImageUrl(value) {
@@ -102,12 +106,15 @@ function getCategory(product) {
 function getSearchFields(product) {
   return [
     product.name,
+    product.title,
     product.slug,
     product.sku,
     product.short_description,
     product.description,
     ...(product.categories || []).map((item) => item.name),
     ...(product.categories || []).map((item) => item.slug),
+    ...(product.tags || []).map((item) => item.name),
+    ...(product.tags || []).map((item) => item.slug),
   ]
     .filter(Boolean)
     .join(" ");
@@ -826,7 +833,7 @@ function SearchModal({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Try: BPC 157, tesamorlin, bac water..."
+              placeholder="Search by product name, SKU, or category..."
               className="h-14 w-full rounded-2xl border border-white/10 bg-black/45 pl-12 pr-4 text-base font-bold text-white outline-none transition placeholder:text-white/25 focus:border-red-500/55 focus:shadow-[0_0_0_4px_rgba(220,38,38,0.10)]"
             />
           </label>

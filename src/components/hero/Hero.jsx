@@ -1,7 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowRight,
-  BadgeCheck,
   FileCheck2,
   FlaskConical,
   LockKeyhole,
@@ -13,7 +12,7 @@ import {
 
 const trustBadges = [
   { label: "Research Use Only", icon: FlaskConical },
-  { label: "Verified Quality", icon: BadgeCheck },
+  { label: "Certificates on File", icon: FileCheck2 },
   { label: "Secure Checkout", icon: ShieldCheck },
 ];
 
@@ -36,7 +35,7 @@ const mobileBenefits = [
 ];
 
 const stats = [
-  { value: "99%+", label: "Purity Standards" },
+  { value: "COA", label: "Purity Per Certificate" },
   { value: "RUO", label: "Research Use Only" },
   { value: "COA", label: "Quality Documentation" },
 ];
@@ -89,7 +88,7 @@ export default function Hero() {
             className="mx-auto mt-6 max-w-[720px] md:mt-8"
           >
             <p className="text-[13px] font-medium leading-[1.65] text-white/62 sm:text-[14px] md:hidden">
-              Research-use-only products with verified quality documentation,
+              Research-use-only products with certificate-based documentation,
               secure checkout, and a professional ordering experience.
             </p>
 

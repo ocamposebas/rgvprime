@@ -57,10 +57,20 @@ function mapProduct(product) {
       }))
     : [];
 
+  const tags = Array.isArray(product.tags)
+    ? product.tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+      }))
+    : [];
+
   return {
     id: product.id,
     name: product.name,
+    title: product.name,
     slug: product.slug,
+    sku: product.sku,
     type: product.type,
     price: product.price,
     regular_price: product.regular_price,
@@ -69,12 +79,14 @@ function mapProduct(product) {
     short_description: product.short_description,
     image: image.src,
     image_alt: image.alt,
+    images: Array.isArray(product.images) ? product.images : [],
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
     manage_stock: product.manage_stock,
     backorders_allowed: product.backorders_allowed,
     featured: product.featured,
     categories,
+    tags,
     permalink: product.permalink,
   };
 }
@@ -117,6 +129,7 @@ async function fetchWooFeaturedProducts() {
       "id",
       "name",
       "slug",
+      "sku",
       "type",
       "price",
       "regular_price",
@@ -130,6 +143,7 @@ async function fetchWooFeaturedProducts() {
       "backorders_allowed",
       "featured",
       "categories",
+      "tags",
       "permalink",
     ].join(",")
   );

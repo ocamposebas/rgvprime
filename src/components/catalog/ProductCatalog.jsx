@@ -25,12 +25,14 @@ const sortOptions = [
 
 const customProductOrder = [
   {
-    label: "R3ta",
-    terms: ["r3ta", "reta", "retatrutide", "retarutide"],
+    rank: 1,
+    label: "RG-Rt",
+    groups: [["rg", "rt"]],
   },
   {
-    label: "Tirz",
-    terms: ["tirz", "tirzepatide", "tirzep", "tirza", "tz"],
+    rank: 2,
+    label: "RG-Tz",
+    groups: [["rg", "tz"]],
   },
   {
     label: "Mots C",
@@ -95,10 +97,6 @@ const customProductOrder = [
     terms: ["lipo c b12", "lipo-c/b12", "lipocb12", "lipo c", "lipo b12"],
   },
   {
-    label: "Fat Blaster",
-    terms: ["fat blaster", "fatblaster"],
-  },
-  {
     label: "Hospira Bac Water",
     terms: [
       "hospira bac water",
@@ -156,14 +154,17 @@ function getProductOrderAliases(item) {
   return [item?.label, ...(item?.terms || [])].filter(Boolean);
 }
 
-function normalizeSearchAliasText(value = "") {
-  return normalizeOrderText(value).replace(/3/g, "e");
+function getProductOrderGroups(item) {
+  if (Array.isArray(item?.groups) && item.groups.length) {
+    return item.groups.filter(Array.isArray);
+  }
+
+  return getProductOrderAliases(item).map((term) => [term]);
 }
 
 function getSearchVariants(value = "") {
   const normalized = normalizeOrderText(value);
-  const aliasNormalized = normalizeSearchAliasText(value);
-  const variants = [normalized, aliasNormalized]
+  const variants = [normalized]
     .flatMap((item) => [item, item.replace(/\s+/g, "")])
     .filter((item) => item.length >= 2);
 
@@ -175,8 +176,8 @@ function getCustomProductRank(product) {
   const compactText = text.replace(/\s+/g, "");
 
   const index = customProductOrder.findIndex((item) =>
-    getProductOrderAliases(item).some((term) =>
-      matchesOrderTerm(text, compactText, term),
+    getProductOrderGroups(item).some((group) =>
+      group.every((term) => matchesOrderTerm(text, compactText, term)),
     ),
   );
 
@@ -184,19 +185,16 @@ function getCustomProductRank(product) {
 }
 
 function getProductSearchText(product) {
-  const productText = getProductOrderText(product);
-  const productRank = getCustomProductRank(product);
-  const aliasText =
-    productRank >= 0 && productRank < customProductOrder.length
-      ? getProductOrderAliases(customProductOrder[productRank]).join(" ")
-      : "";
-
   return normalizeOrderText(
     [
-      productText,
-      aliasText,
-      normalizeSearchAliasText(productText),
-      normalizeSearchAliasText(aliasText),
+      product?.name,
+      product?.title,
+      product?.slug,
+      product?.sku,
+      product?.short_description,
+      product?.description,
+      ...(product?.categories || []).flatMap((item) => [item?.name, item?.slug]),
+      ...(product?.tags || []).flatMap((item) => [item?.name, item?.slug]),
     ]
       .filter(Boolean)
       .join(" "),
@@ -259,6 +257,18 @@ function getDescription(product) {
   }
 
   return cleanDescription;
+}
+
+function getProductUrl(product = {}) {
+  const permalink = String(product?.permalink || "").trim();
+
+  if (permalink) return permalink;
+
+  const slug = String(product?.slug || "")
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
+
+  return slug ? `/product/${slug}` : "/shop";
 }
 
 function getMainCategory(product) {
@@ -756,7 +766,7 @@ function ProductCard({ product, priority = false }) {
 
   const image = getImageUrl(product.image) || FALLBACK_IMAGE;
   const imageAlt = product.image_alt || product.name || "Product image";
-  const productUrl = `/product/${product.slug}`;
+  const productUrl = getProductUrl(product);
   const stockBadge = getStockBadge(product);
   const category = getMainCategory(product);
   const description = getDescription(product);
@@ -1502,7 +1512,7 @@ export default function ProductCatalog() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search reta, tirz, bac..."
+                placeholder="Search by name, SKU, or category..."
                 className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/25 focus:border-red-500/45"
               />
             </label>

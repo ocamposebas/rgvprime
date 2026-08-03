@@ -1,5 +1,20 @@
 # Astro Starter Kit: Basics
 
+## WordPress COA Library
+
+The storefront reads Certificate of Analysis records from the companion
+`RGV COA Library` WordPress plugin instead of importing
+`src/components/data/coas.json`.
+
+1. Install `wordpress-plugin/rgv-coa-library-1.0.0.zip` in WordPress.
+2. Activate the plugin and open **COA Library** in WordPress admin.
+3. Add a certificate, upload its PDF, link its WooCommerce product IDs, and
+   choose **Current Shipping** or **History**.
+4. Set `PUBLIC_WP_URL` to the WordPress base URL and redeploy the storefront.
+
+The storefront proxy is available at `/api/coas`. WordPress exposes the
+read-only source endpoints under `/wp-json/rgv-coa/v1`.
+
 ## Omnisend dynamic abandoned cart
 
 Set `PUBLIC_OMNISEND_BRAND_ID` in the deployment environment. The storefront then

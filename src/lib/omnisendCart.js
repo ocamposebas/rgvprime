@@ -1,5 +1,3 @@
-import coaData from "../components/data/coas.json";
-
 const SITE_URL = "https://rgvprimellc.com";
 const CART_ID_STORAGE_KEY = "rgv-prime-omnisend-cart-id";
 const IDENTIFIED_EMAIL_STORAGE_KEY = "rgv-prime-omnisend-email";
@@ -183,25 +181,21 @@ function absoluteUrl(value = "", baseUrl = SITE_URL) {
 }
 
 function getProductUrl(item = {}) {
+  const permalink = item.permalink || item.product_url || item.productURL;
+
+  if (permalink) return absoluteUrl(permalink);
+
   const slug = String(item.slug || item.product?.slug || "")
     .replace(/^\/+|\/+$/g, "")
     .trim();
 
   if (slug) return absoluteUrl(`/product/${slug}`);
 
-  const permalink = item.permalink || item.product_url || item.productURL;
-
-  if (permalink) return absoluteUrl(permalink);
-
   return absoluteUrl("/shop");
 }
 
 function getCOAFiles() {
-  const companies = Array.isArray(coaData?.companies) ? coaData.companies : [];
-
-  return companies.flatMap((company) =>
-    (Array.isArray(company?.files) ? company.files : []).filter(Boolean)
-  );
+  return [];
 }
 
 function getCOAMatchScore(item, file) {
@@ -255,19 +249,6 @@ function getDocumentation(item = {}) {
     return {
       url: absoluteUrl(directUrl),
       code: String(item.coa_code || item.coaCode || "").trim(),
-      direct: true,
-    };
-  }
-
-  const matchedFile = getCOAFiles()
-    .map((file) => ({ file, score: getCOAMatchScore(item, file) }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)[0]?.file;
-
-  if (matchedFile?.url) {
-    return {
-      url: absoluteUrl(matchedFile.url),
-      code: String(matchedFile.code || "").trim(),
       direct: true,
     };
   }

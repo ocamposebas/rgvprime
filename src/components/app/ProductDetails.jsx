@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../cart/CartContext";
-import coaData from "../data/coas.json";
 import {
   formatPoints,
   getProductLoyaltyPoints,
@@ -609,267 +608,6 @@ function renderProductPrice(product) {
   );
 }
 
-const COA_STRENGTH_RE = /\b(\d+(?:\.\d+)?)\s*(mg|mcg|ml|g|iu)\b/i;
-
-const COA_ALIAS_GROUPS = {
-  retatrutide: [
-    "retatrutide",
-    "r3ta",
-    "reta",
-    "retratuide",
-    "retarutide",
-    "rgv-r3ta",
-  ],
-  tirzepatide: ["tirzepatide", "tirz", "rgv-tirz"],
-  ghkcu: ["ghk-cu", "ghk cu", "ghk copper", "rgv-ghk-cu"],
-  bpc157tb500: [
-    "bpc-157/tb-500",
-    "bpc-157 / tb-500",
-    "bpc/tb",
-    "bpc tb",
-    "rgv-bpc-tb",
-  ],
-  motsc: ["mots-c", "mots c", "rgv-mots-c"],
-  bacteriostaticwater: [
-    "bacteriostatic water",
-    "bac water",
-    "hospira bac",
-    "rgv-bac-water",
-  ],
-  cjc1295nodacipamorelin: [
-    "cjc-1295 no dac/ipamorelin",
-    "cjc-1295 no dac ipamorelin",
-    "cjc/ipa (no dac)",
-    "cjc ipa no dac",
-    "rgv-cjc-ipa-no-dac",
-  ],
-  igflr3: ["igf-lr3", "igf1-lr3", "igf-1 lr3", "rgv-igf1-lr3"],
-  amino1mq: ["5-amino 1mq", "5amino-1mq", "5 amino 1mq", "rgv-5amino-1mq"],
-  glutathioneinj: [
-    "glutathione inj",
-    "glutathione inj.",
-    "glutathione injection",
-    "glutathione 1200mg",
-    "koren-glut",
-  ],
-  rawghk: ["raw ghk", "ghk 1g", "rgv-raw-ghk"],
-  nadplus: ["nad+", "nad plus", "rgv-nad-plus"],
-  lipocb12: ["lipo-c/b12", "lipo c b12", "lipocb12", "rgv-lipo-c-b12"],
-};
-
-function normalizeCOAText(value = "", { stripStrength = true } = {}) {
-  let text = String(value ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/\+/g, " plus ");
-
-  if (stripStrength) {
-    text = text.replace(new RegExp(COA_STRENGTH_RE.source, "gi"), " ");
-  }
-
-  text = text
-    .replace(/research use only/g, " ")
-    .replace(/not for human or animal use/g, " ")
-    .replace(/rgvprimeresearchllc|rgvprimer|rgvprime|rgv/g, " ")
-    .replace(/[^a-z0-9]+/g, "")
-    .trim();
-
-  return text;
-}
-
-const COA_ALIAS_TO_KEY = Object.entries(COA_ALIAS_GROUPS).reduce(
-  (map, [canonicalKey, aliases]) => {
-    aliases.forEach((alias) => {
-      const normalized = normalizeCOAText(alias);
-
-      if (normalized) {
-        map[normalized] = canonicalKey;
-      }
-    });
-
-    return map;
-  },
-  {}
-);
-
-function getCOAFields(value) {
-  if (!value) return [];
-
-  if (typeof value === "string" || typeof value === "number") {
-    return [String(value)];
-  }
-
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => getCOAFields(item));
-  }
-
-  if (typeof value !== "object") return [];
-
-  const fields = [
-    value.name,
-    value.title,
-    value.slug,
-    value.sku,
-    value.parent_sku,
-    value.option,
-    value.value,
-    value.label,
-    value.product,
-    value.canonical_key,
-    value.lot,
-    value.code,
-  ];
-
-  if (Array.isArray(value.aliases)) fields.push(...value.aliases);
-
-  if (Array.isArray(value.attributes)) {
-    value.attributes.forEach((attribute) => {
-      fields.push(attribute?.name, attribute?.slug, attribute?.option, attribute?.value);
-    });
-  }
-
-  return fields.filter(Boolean).map(String);
-}
-
-function getCOAStrength(fields = []) {
-  const text = getCOAFields(fields).join(" ");
-  const match = text.match(COA_STRENGTH_RE);
-
-  if (!match) return "";
-
-  const amount = Number(match[1]);
-  const unit = String(match[2] || "").toLowerCase();
-
-  if (!Number.isFinite(amount)) return "";
-
-  const normalizedAmount = Number.isInteger(amount)
-    ? String(amount)
-    : String(amount).replace(/\.0+$/, "");
-
-  return `${normalizedAmount}${unit}`;
-}
-
-function getCOAKeys(fields = []) {
-  const normalizedValues = getCOAFields(fields)
-    .map((field) => normalizeCOAText(field))
-    .filter((field) => field && field.length >= 2);
-
-  const keys = new Set();
-
-  normalizedValues.forEach((field) => {
-    keys.add(field);
-
-    const directAlias = COA_ALIAS_TO_KEY[field];
-
-    if (directAlias) {
-      keys.add(directAlias);
-    }
-
-    Object.entries(COA_ALIAS_TO_KEY).forEach(([alias, canonicalKey]) => {
-      if (alias.length >= 4 && (field.includes(alias) || alias.includes(field))) {
-        keys.add(canonicalKey);
-      }
-    });
-  });
-
-  return keys;
-}
-
-function flattenCOAFiles(data) {
-  const seen = new Set();
-
-  return (data?.companies ?? []).flatMap((company) => {
-    return (company?.files ?? []).flatMap((file) => {
-      const activeFile = {
-        ...file,
-        company: company.name,
-        companyAliases: company.aliases ?? [],
-        isHistory: false,
-      };
-
-      const historyFiles = Array.isArray(file?.history)
-        ? file.history.map((historyFile) => ({
-            ...historyFile,
-            company: company.name,
-            companyAliases: company.aliases ?? [],
-            parentProduct: file.product,
-            parentSku: file.sku,
-            isHistory: true,
-          }))
-        : [];
-
-      return [activeFile, ...historyFiles];
-    });
-  }).filter((file) => {
-    const uniqueKey = file?.url || file?.code || `${file?.product}-${file?.lot}`;
-
-    if (!uniqueKey || seen.has(uniqueKey)) return false;
-
-    seen.add(uniqueKey);
-    return true;
-  });
-}
-
-function valuesShareCOAKey(productKeys, coaKeys) {
-  for (const productKey of productKeys) {
-    if (coaKeys.has(productKey)) return true;
-  }
-
-  return false;
-}
-
-function findCOAFiles(product, selectedVariation = null, selectedVariants = {}) {
-  if (!product || !coaData?.companies) return [];
-
-  const variationFields = [
-    selectedVariation,
-    ...Object.values(selectedVariants || {}),
-  ];
-
-  const productKeys = getCOAKeys([product, ...variationFields]);
-
-  const selectedStrength =
-    getCOAStrength(variationFields) ||
-    (product?.type === "simple" ? getCOAStrength(product) : "");
-
-  return flattenCOAFiles(coaData)
-    .filter((coa) => {
-      const coaKeys = getCOAKeys([
-        coa.product,
-        coa.sku,
-        coa.parentProduct,
-        coa.parentSku,
-        coa.canonical_key,
-        ...(coa.aliases ?? []),
-      ]);
-
-      if (!valuesShareCOAKey(productKeys, coaKeys)) return false;
-
-      const coaStrength = getCOAStrength([coa.product, coa.lot, coa.sku]);
-
-      if (selectedStrength && coaStrength) {
-        return selectedStrength === coaStrength;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.isHistory !== b.isHistory) return a.isHistory ? 1 : -1;
-
-      const strengthA = parseFloat(getCOAStrength(a) || "0");
-      const strengthB = parseFloat(getCOAStrength(b) || "0");
-
-      if (strengthA !== strengthB) return strengthA - strengthB;
-
-      return String(a.product || "").localeCompare(String(b.product || ""), undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
-    });
-}
-
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
 }
@@ -1116,6 +854,10 @@ function isFeaturedProduct(product) {
 }
 
 function getProductUrl(product) {
+  const permalink = String(product?.permalink || "").trim();
+
+  if (permalink) return permalink;
+
   const cleanSlug = product?.slug
     ? String(product.slug).replace(/^\/+|\/+$/g, "")
     : "";
@@ -1124,7 +866,7 @@ function getProductUrl(product) {
     return `/product/${cleanSlug}`;
   }
 
-  return `/product/${product?.id || ""}`;
+  return "/shop";
 }
 
 function stripProductHtml(html = "") {
@@ -1383,6 +1125,8 @@ export default function ProductDetails({ slug }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [justAdded, setJustAdded] = useState(false);
+  const [coaFiles, setCoaFiles] = useState([]);
+  const [coaStatus, setCoaStatus] = useState("idle");
 
   const [notifyName, setNotifyName] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
@@ -1401,6 +1145,8 @@ export default function ProductDetails({ slug }) {
         setNotifyEmail("");
         setNotifyStatus("idle");
         setNotifyMessage("");
+        setCoaFiles([]);
+        setCoaStatus("idle");
 
         const cleanSlug = String(slug || "").trim();
 
@@ -1450,6 +1196,47 @@ export default function ProductDetails({ slug }) {
     return getSelectedVariation(product, selectedVariants);
   }, [product, selectedVariants]);
 
+  useEffect(() => {
+    if (!product?.id) {
+      setCoaFiles([]);
+      setCoaStatus("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    const variationId = selectedVariation?.id || 0;
+
+    async function loadProductCoas() {
+      setCoaStatus("loading");
+
+      try {
+        const params = new URLSearchParams({ product_id: String(product.id) });
+        if (variationId) params.set("variation_id", String(variationId));
+
+        const response = await fetch(`/api/coas?${params.toString()}`, {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Could not load product certificates.");
+        }
+
+        setCoaFiles(Array.isArray(payload?.items) ? payload.items : []);
+        setCoaStatus("ready");
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        console.error("COA library:", error);
+        setCoaFiles([]);
+        setCoaStatus("error");
+      }
+    }
+
+    loadProductCoas();
+    return () => controller.abort();
+  }, [product?.id, selectedVariation?.id]);
+
   const displayProduct = useMemo(() => {
     return selectedVariation
       ? mergeProductWithVariation(product, selectedVariation)
@@ -1476,9 +1263,6 @@ export default function ProductDetails({ slug }) {
   const canAddToCart =
     isInstock && (!hasVariants || !hasVariationData || Boolean(selectedVariation));
 
-  const coaFiles = product
-    ? findCOAFiles(product, selectedVariation, selectedVariants)
-    : [];
   const coaFile = coaFiles[0] || null;
 
   const sku = displayProduct?.sku ? displayProduct.sku : "N/A";
@@ -1803,34 +1587,47 @@ export default function ProductDetails({ slug }) {
                 />
               )}
 
-              {coaFile && (
-                <a
-                  href={coaFile.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group mt-5 flex max-w-2xl items-center justify-between gap-4 rounded-2xl border border-rose-400/15 bg-rose-500/[0.045] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-rose-300/35 hover:bg-rose-500/[0.075]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10 text-rose-200">
-                      <IconShield />
-                    </div>
+              {coaStatus === "loading" && (
+                <div className="mt-5 flex max-w-2xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-xs font-bold text-white/40">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-rose-400" />
+                  Checking Current Shipping certificates…
+                </div>
+              )}
 
-                    <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/85">
-                        Certificate of Analysis
-                      </p>
+              {coaFiles.length > 0 && (
+                <div className="mt-5 grid max-w-2xl gap-2.5">
+                  {coaFiles.map((coaItem) => (
+                    <a
+                      key={coaItem.id || coaItem.url || coaItem.code}
+                      href={coaItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center justify-between gap-4 rounded-2xl border border-rose-400/15 bg-rose-500/[0.045] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-rose-300/35 hover:bg-rose-500/[0.075]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10 text-rose-200">
+                          <IconShield />
+                        </div>
 
-                      <p className="mt-1 text-[12px] font-bold text-rose-200/75">
-                        Active lot file · LOT: {coaFile.lot}
-                      </p>
-                    </div>
-                  </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/85">
+                            Current Shipping COA
+                          </p>
 
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200/75 transition group-hover:text-white">
-                    View COA
-                    <IconArrow />
-                  </div>
-                </a>
+                          <p className="mt-1 truncate text-[12px] font-bold text-rose-200/75">
+                            LOT: {coaItem.lot || "Available"}
+                            {coaItem.purity ? ` · Purity: ${coaItem.purity}` : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200/75 transition group-hover:text-white">
+                        View COA
+                        <IconArrow />
+                      </div>
+                    </a>
+                  ))}
+                </div>
               )}
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">

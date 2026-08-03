@@ -105,6 +105,18 @@ function resolveVariationId(product = {}) {
   );
 }
 
+function resolveProductUrl(product = {}) {
+  const permalink = String(product?.permalink || "").trim();
+
+  if (permalink) return permalink;
+
+  const slug = String(product?.slug || "")
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
+
+  return slug ? `/product/${slug}` : "/shop";
+}
+
 function normalizeProduct(product, quantity = 1) {
   const productId = Number(resolveProductId(product) || 0);
   const variationId = Number(resolveVariationId(product) || 0);
@@ -141,7 +153,7 @@ function normalizeProduct(product, quantity = 1) {
     sale_price: toNumber(product.sale_price || product.price || 0),
     image,
     image_url: image,
-    permalink: product.permalink || `/product/${product.slug || ""}`,
+    permalink: resolveProductUrl(product),
     sku: product.sku || "",
     stock_status: product.stock_status || "instock",
     stock_quantity:

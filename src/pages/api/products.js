@@ -106,10 +106,19 @@ function mapCategory(category) {
   };
 }
 
+function mapTaxonomyItem(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+  };
+}
+
 function mapProductForCatalog(product) {
   return {
     id: product.id,
     name: product.name,
+    title: product.name,
     slug: product.slug,
     sku: product.sku,
     type: product.type,
@@ -121,12 +130,21 @@ function mapProductForCatalog(product) {
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
+    image_alt:
+      product?.images?.[0]?.alt ||
+      product?.images?.[0]?.name ||
+      product.name ||
+      "Product image",
+    images: Array.isArray(product.images) ? product.images : [],
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
     manage_stock: product.manage_stock,
     featured: product.featured,
     categories: Array.isArray(product.categories)
       ? product.categories.map(mapCategory)
+      : [],
+    tags: Array.isArray(product.tags)
+      ? product.tags.map(mapTaxonomyItem)
       : [],
     permalink: product.permalink,
   };
@@ -136,6 +154,7 @@ function mapProductForDetail(product) {
   return {
     id: product.id,
     name: product.name,
+    title: product.name,
     slug: product.slug,
     sku: product.sku,
     type: product.type,
@@ -148,6 +167,11 @@ function mapProductForDetail(product) {
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
+    image_alt:
+      product?.images?.[0]?.alt ||
+      product?.images?.[0]?.name ||
+      product.name ||
+      "Product image",
     images: Array.isArray(product.images) ? product.images : [],
     attributes: Array.isArray(product.attributes) ? product.attributes : [],
     variations: Array.isArray(product.variations) ? product.variations : [],
@@ -159,6 +183,9 @@ function mapProductForDetail(product) {
     weight: product.weight,
     categories: Array.isArray(product.categories)
       ? product.categories.map(mapCategory)
+      : [],
+    tags: Array.isArray(product.tags)
+      ? product.tags.map(mapTaxonomyItem)
       : [],
     permalink: product.permalink,
   };
@@ -234,6 +261,7 @@ function buildWooEndpoint({
         "featured",
         "weight",
         "categories",
+        "tags",
         "permalink",
       ].join(",")
     );
@@ -270,6 +298,7 @@ function buildWooEndpoint({
       "manage_stock",
       "featured",
       "categories",
+      "tags",
       "permalink",
     ].join(",")
   );

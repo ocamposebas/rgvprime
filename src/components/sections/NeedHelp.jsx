@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
-import coaData from "../data/coas.json";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function isObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
@@ -228,8 +227,31 @@ export default function NeedHelp() {
   const mobileAutoTimerRef = useRef(null);
   const mobileResumeTimerRef = useRef(null);
   const mobilePausedRef = useRef(false);
+  const [coaData, setCoaData] = useState({ companies: [] });
+  const [libraryStatus, setLibraryStatus] = useState("loading");
 
-  const coaItems = useMemo(() => extractAllPdfItems(coaData), []);
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch("/api/coas", {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || "COA library unavailable");
+        setCoaData(payload);
+        setLibraryStatus("ready");
+      })
+      .catch((error) => {
+        if (error?.name === "AbortError") return;
+        setLibraryStatus("error");
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  const coaItems = useMemo(() => extractAllPdfItems(coaData), [coaData]);
   const desktopCarouselItems = useMemo(
     () => buildDesktopCarouselItems(coaItems),
     [coaItems]
@@ -441,7 +463,11 @@ export default function NeedHelp() {
           ) : (
             <div className="px-6 py-12 text-center">
               <p className="text-sm font-bold text-white/45">
-                No COA PDF links found in data/coas.json.
+                {libraryStatus === "loading"
+                  ? "Loading certificate previews…"
+                  : libraryStatus === "error"
+                    ? "Certificate previews are temporarily unavailable."
+                    : "New certificates will appear here when they are published."}
               </p>
             </div>
           )}

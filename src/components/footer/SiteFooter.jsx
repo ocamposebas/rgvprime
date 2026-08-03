@@ -1,3 +1,5 @@
+import { MessageSquareText } from "lucide-react";
+
 const footerLinks = [
   {
     title: "Shop",
@@ -122,59 +124,66 @@ export default function SiteFooter() {
             {/* Text Support */}
             <div
               id="support"
-              className="relative mt-8 scroll-mt-36 overflow-hidden rounded-[22px] border border-white/[0.09] bg-white/[0.025]"
+              className="relative mt-10 scroll-mt-36 overflow-hidden rounded-3xl border border-white/[0.1] bg-[#0a0708] shadow-[0_24px_70px_rgba(0,0,0,0.28)]"
             >
               {/* Fondo de la caja */}
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(127,29,29,0.13),transparent_48%,rgba(220,38,38,0.025))]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(127,29,29,0.16),transparent_52%,rgba(220,38,38,0.04))]" />
 
-              <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-red-600/[0.08] blur-[70px]" />
+              <div className="pointer-events-none absolute -right-14 -top-16 h-44 w-44 rounded-full bg-red-600/[0.1] blur-[70px]" />
 
-              <div className="relative grid items-center gap-5 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-7 sm:px-6 sm:py-6">
-                {/* Información */}
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase tracking-[0.24em] text-red-400/85">
-                    Text Support
-                  </p>
+              <div className="relative p-5 sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
+                    <MessageSquareText
+                      size={20}
+                      strokeWidth={2.2}
+                      aria-hidden="true"
+                    />
+                  </div>
 
-                  <p className="mt-1.5 text-[11px] font-semibold leading-5 text-white/40">
-                    Send our support team a message
-                  </p>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-400">
+                      Text Support
+                    </p>
+
+                    <p className="mt-1 text-[12px] font-medium leading-5 text-white/45">
+                      Send our support team a message.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Número y horario */}
-                <div className="min-w-0 sm:border-l sm:border-white/[0.08] sm:pl-7">
+                <div className="mt-5 border-t border-white/[0.08] pt-5">
                   <a
                     href={`sms:${supportPhone}`}
                     aria-label={`Text RGVPRIME at ${supportPhoneDisplay}`}
-                    className="block whitespace-nowrap text-[20px] font-black tracking-[-0.035em] text-white transition hover:text-red-400 sm:text-2xl"
+                    className="inline-block whitespace-nowrap text-[clamp(1.65rem,5vw,2.1rem)] font-black leading-none text-white transition hover:text-red-400"
                   >
                     {supportPhoneDisplay}
                   </a>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-[9px] font-black uppercase tracking-[0.16em] text-red-400/70">
-                      Support Hours
-                    </span>
-
+                  <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span
-                      className="h-1 w-1 rounded-full bg-red-500/60"
+                      className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.55)]"
                       aria-hidden="true"
                     />
 
-                    <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/40">
-                      8:00 AM – 5:00 PM CT
+                    <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/55">
+                      Mon–Fri
+                    </span>
+
+                    <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/35">
+                      8:00 AM–5:00 PM CT
                     </span>
                   </div>
-                </div>
 
-                {/* Botón */}
-                <a
-                  href={`sms:${supportPhone}`}
-                  aria-label={`Text support at ${supportPhoneDisplay}`}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_35px_rgba(220,38,38,0.18)] transition duration-300 hover:-translate-y-0.5 hover:bg-red-500 sm:w-auto"
-                >
-                  Text Support
-                </a>
+                  <a
+                    href={`sms:${supportPhone}`}
+                    aria-label={`Text support at ${supportPhoneDisplay}`}
+                    className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-red-600 px-6 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-[0_12px_35px_rgba(220,38,38,0.2)] transition duration-300 hover:-translate-y-0.5 hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0708] sm:w-auto"
+                  >
+                    Start a Text
+                  </a>
+                </div>
               </div>
             </div>
           </div>

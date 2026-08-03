@@ -91,41 +91,16 @@ function getStockBadge(product) {
   };
 }
 
-function getProductSlug(product = {}) {
-  if (product.slug) {
-    return String(product.slug).trim().replace(/^\/+|\/+$/g, "");
-  }
-
-  if (product.permalink) {
-    try {
-      const url = new URL(product.permalink, "https://example.com");
-      const parts = url.pathname.split("/").filter(Boolean);
-      const productIndex = parts.lastIndexOf("product");
-
-      if (productIndex >= 0 && parts[productIndex + 1]) {
-        return parts[productIndex + 1];
-      }
-
-      return parts[parts.length - 1] || "";
-    } catch {
-      const cleanPermalink = String(product.permalink)
-        .split("?")[0]
-        .split("#")[0]
-        .replace(/\/+$/g, "");
-
-      return cleanPermalink.split("/").filter(Boolean).pop() || "";
-    }
-  }
-
-  return "";
-}
-
 function getProductUrl(product = {}) {
-  const slug = getProductSlug(product);
+  const permalink = String(product?.permalink || "").trim();
 
-  if (!slug) return "/shop";
+  if (permalink) return permalink;
 
-  return `/product/${slug}`;
+  const slug = String(product?.slug || "")
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
+
+  return slug ? `/product/${slug}` : "/shop";
 }
 
 function EyeIcon() {

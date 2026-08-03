@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import coaData from "../data/coas.json";
 
 const COAS_PER_PAGE = 8;
 const MAX_SUGGESTIONS = 8;
@@ -262,6 +261,8 @@ const COACard = memo(function COACard({
               <MetaValue label="Lot" value={file.lot} />
               <MetaValue label="Code" value={file.code} />
               <MetaValue label="SKU" value={file.sku} />
+              <MetaValue label="Purity" value={file.purity} mono={false} />
+              <MetaValue label="Content" value={file.quantity} mono={false} />
             </div>
           </div>
         </div>
@@ -316,6 +317,7 @@ const COACard = memo(function COACard({
                     <MetaValue label="Lot" value={item.lot} />
                     <MetaValue label="Code" value={item.code} />
                     <MetaValue label="SKU" value={item.sku} />
+                    <MetaValue label="Purity" value={item.purity} mono={false} />
                   </div>
 
                   <a
@@ -542,6 +544,9 @@ const MobileProductPicker = memo(function MobileProductPicker({
 });
 
 export default function COASection() {
+  const [coaData, setCoaData] = useState({ companies: [] });
+  const [libraryStatus, setLibraryStatus] = useState("loading");
+  const [libraryError, setLibraryError] = useState("");
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(ALL_ID);
   const [openHistory, setOpenHistory] = useState({});
@@ -554,6 +559,37 @@ export default function COASection() {
   const searchWrapperRef = useRef(null);
   const resultsTopRef = useRef(null);
   const urlSyncTimer = useRef(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadLibrary() {
+      setLibraryStatus("loading");
+      setLibraryError("");
+
+      try {
+        const response = await fetch("/api/coas", {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Could not load the certificate library.");
+        }
+
+        setCoaData(payload && typeof payload === "object" ? payload : { companies: [] });
+        setLibraryStatus("ready");
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        setLibraryError(error?.message || "Could not load the certificate library.");
+        setLibraryStatus("error");
+      }
+    }
+
+    loadLibrary();
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -620,7 +656,7 @@ export default function COASection() {
         };
       });
     });
-  }, []);
+  }, [coaData]);
 
   const compoundCounts = useMemo(() => {
     const counts = new Map();
@@ -952,7 +988,19 @@ export default function COASection() {
               )}
             </div>
 
-            {activeList ? (
+            {libraryStatus === "loading" ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-7 text-center">
+                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
+                <p className="mt-3 text-sm font-bold text-white/55">Loading certificate library…</p>
+              </div>
+            ) : libraryStatus === "error" ? (
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-6 text-center sm:p-7">
+                <h3 className="text-lg font-black text-white">Certificate library unavailable</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/50">
+                  {libraryError || "Please try again in a moment."}
+                </p>
+              </div>
+            ) : activeList ? (
               activeList.length > 0 ? (
                 <>
                   <div className="grid gap-3">
