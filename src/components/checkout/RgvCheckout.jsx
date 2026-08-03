@@ -70,7 +70,7 @@ const SHIPPING_METHODS = [
     title: "UPS 2 Day Air",
     label: "UPS 2 Day Air",
     description: "3 to 5 Business Days",
-    price: 18,
+    price: 15,
     carrier: "UPS",
   },
 ];
