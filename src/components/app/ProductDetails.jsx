@@ -854,10 +854,6 @@ function isFeaturedProduct(product) {
 }
 
 function getProductUrl(product) {
-  const permalink = String(product?.permalink || "").trim();
-
-  if (permalink) return permalink;
-
   const cleanSlug = product?.slug
     ? String(product.slug).replace(/^\/+|\/+$/g, "")
     : "";

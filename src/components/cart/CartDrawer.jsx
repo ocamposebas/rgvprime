@@ -12,6 +12,14 @@ function formatMoney(value) {
   return `$${number.toFixed(2).replace(".00", "")}`;
 }
 
+function getProductUrl(item = {}) {
+  const slug = String(item?.slug || "")
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
+
+  return slug ? `/product/${slug}` : "/shop";
+}
+
 function CloseIcon() {
   return (
     <svg
@@ -79,6 +87,7 @@ const CartItem = memo(function CartItem({
   const itemTotal = useMemo(() => {
     return Number(item.price || 0) * Number(item.quantity || 1);
   }, [item.price, item.quantity]);
+  const productUrl = getProductUrl(item);
 
   const handleRemove = useCallback(() => {
     removeItem(item.id);
@@ -96,7 +105,7 @@ const CartItem = memo(function CartItem({
     <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
       <div className="flex gap-3 sm:gap-4">
         <a
-          href={item.permalink}
+          href={productUrl}
           onClick={closeCart}
           className="flex h-[88px] w-[88px] shrink-0 items-center justify-center rounded-xl bg-[#101010] p-2 sm:h-24 sm:w-24"
         >
@@ -113,7 +122,7 @@ const CartItem = memo(function CartItem({
         <div className="min-w-0 flex-1">
           <div className="flex gap-3">
             <a
-              href={item.permalink}
+              href={productUrl}
               onClick={closeCart}
               className="line-clamp-2 flex-1 text-sm font-black leading-5 text-white transition hover:text-red-300"
             >

@@ -49,8 +49,7 @@ const productImage =
   product?.image || product?.images?.[0]?.src || "/logo.webp";
 const productImageAlt =
   product?.image_alt || product?.images?.[0]?.alt || productName;
-const canonicalValue =
-  product?.permalink || `/product/${product?.slug || routeSlug}`;
+const canonicalValue = `/product/${product?.slug || routeSlug}`;
 const canonicalUrl = new URL(canonicalValue, "https://rgvprimellc.com").toString();
 const numericPrice = Number(product?.price ?? product?.sale_price ?? product?.regular_price);
 

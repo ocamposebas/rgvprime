@@ -181,10 +181,6 @@ function absoluteUrl(value = "", baseUrl = SITE_URL) {
 }
 
 function getProductUrl(item = {}) {
-  const permalink = item.permalink || item.product_url || item.productURL;
-
-  if (permalink) return absoluteUrl(permalink);
-
   const slug = String(item.slug || item.product?.slug || "")
     .replace(/^\/+|\/+$/g, "")
     .trim();

@@ -92,10 +92,6 @@ function getStockBadge(product) {
 }
 
 function getProductUrl(product = {}) {
-  const permalink = String(product?.permalink || "").trim();
-
-  if (permalink) return permalink;
-
   const slug = String(product?.slug || "")
     .replace(/^\/+|\/+$/g, "")
     .trim();

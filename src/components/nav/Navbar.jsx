@@ -58,10 +58,6 @@ function formatPrice(price) {
 }
 
 function getProductUrl(product) {
-  const permalink = String(product?.permalink || "").trim();
-
-  if (permalink) return permalink;
-
   const slug = product?.slug ? String(product.slug).replace(/^\/+|\/+$/g, "") : "";
 
   if (slug) {
