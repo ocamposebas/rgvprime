@@ -64,7 +64,7 @@ export default function Hero() {
 
       <div className="pointer-events-none absolute left-1/2 top-[40%] -z-20 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/[0.10] blur-[85px] sm:top-[41%] sm:h-[500px] sm:w-[500px] sm:blur-[120px] md:top-[50%] lg:top-[51%] lg:h-[650px] lg:w-[650px]" />
 
-      <div className="pointer-events-none absolute inset-x-0 top-[58%] -z-20 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent md:top-[68%] lg:top-[69%]" />
+      <div className="pointer-events-none absolute inset-x-0 top-[68%] -z-20 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent lg:top-[69%]" />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-20 h-[38%] bg-gradient-to-t from-black via-black/75 to-transparent" />
 
