@@ -5,6 +5,22 @@ import SingleProductPage from "../../components/app/SingleProductPage.jsx";
 const { slug } = Astro.params;
 const routeSlug = String(slug || "").trim();
 
+const permanentProductRedirects = new Map([
+  ["cagrilintide-5mg", "/product/rg-cag"],
+  ["tesamorelin-10mg", "/product/rg-tesa"],
+  ["fat-blaster-10ml", "/product/lemon-bottle-10ml"],
+  ["hospira-bac-30ml", "/product/hosp-recon-water"],
+  ["bac-water", "/product/recon-water"],
+  ["pl-rt", "/product/rg-rt"],
+  ["rgv-tesa", "/product/rg-tesa"],
+]);
+
+const redirectTarget = permanentProductRedirects.get(routeSlug.toLowerCase());
+
+if (redirectTarget) {
+  return Astro.redirect(redirectTarget, 301);
+}
+
 function toPlainText(value = "") {
   return String(value)
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -19,6 +35,7 @@ function toPlainText(value = "") {
 }
 
 let product = null;
+let productFetchStatus = 503;
 
 try {
   const productResponse = await fetch(
@@ -31,12 +48,23 @@ try {
     },
   );
 
+  productFetchStatus = productResponse.status;
+
   if (productResponse.ok) {
     const payload = await productResponse.json();
     product = payload?.product || payload?.products?.[0] || null;
+    productFetchStatus = product ? 200 : 404;
   }
 } catch {
   product = null;
+  productFetchStatus = 503;
+}
+
+const isUnavailable = !product;
+
+if (isUnavailable) {
+  Astro.response.status = productFetchStatus === 404 ? 404 : 503;
+  Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
 }
 
 const fallbackName = routeSlug.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -109,17 +137,24 @@ const breadcrumbSchema = {
   image={productImage}
   imageAlt={productImageAlt}
   canonical={canonicalValue}
+  noindex={isUnavailable}
 >
-  <script
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify(productSchema)}
-  />
-  <script
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify(breadcrumbSchema)}
-  />
+  {
+    product && (
+      <>
+        <script
+          slot="head"
+          type="application/ld+json"
+          set:html={JSON.stringify(productSchema)}
+        />
+        <script
+          slot="head"
+          type="application/ld+json"
+          set:html={JSON.stringify(breadcrumbSchema)}
+        />
+      </>
+    )
+  }
 
   <SingleProductPage slug={routeSlug} client:load />
 </BaseLayout>

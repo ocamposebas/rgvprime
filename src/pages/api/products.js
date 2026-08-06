@@ -2,7 +2,24 @@ export const prerender = false;
 
 const FALLBACK_IMAGE = "/logo.webp";
 const DEFAULT_CATALOG_LIMIT = 45;
-const MAX_CATALOG_LIMIT = 45;
+const MAX_CATALOG_LIMIT = 100;
+
+const PUBLIC_PRODUCT_SLUGS = new Map([
+  ["rgv-tesa", "rg-tesa"],
+]);
+
+const WOO_PRODUCT_SLUGS = new Map(
+  Array.from(PUBLIC_PRODUCT_SLUGS, ([wooSlug, publicSlug]) => [
+    publicSlug,
+    wooSlug,
+  ]),
+);
+
+const PRODUCTS_WITHOUT_COA = new Set([
+  "ahk-cu-100mg",
+  "l-carnitine-600mg",
+  "aod-9604",
+]);
 
 const NO_CACHE_CONTROL = "no-store, no-cache, must-revalidate, max-age=0";
 
@@ -106,6 +123,41 @@ function mapCategory(category) {
   };
 }
 
+function getPublicProductSlug(slug = "") {
+  const cleanSlug = String(slug || "").trim();
+  return PUBLIC_PRODUCT_SLUGS.get(cleanSlug) || cleanSlug;
+}
+
+function getWooProductSlug(slug = "") {
+  const cleanSlug = String(slug || "").trim();
+  return WOO_PRODUCT_SLUGS.get(cleanSlug) || cleanSlug;
+}
+
+function removeUnverifiedPurityClaims(value, slug = "") {
+  if (!PRODUCTS_WITHOUT_COA.has(String(slug || "").trim())) {
+    return value;
+  }
+
+  let sanitized = String(value || "");
+
+  if (slug === "aod-9604") {
+    sanitized = sanitized.replace(
+      /high[\s-]*purity\s+reagent[\s-]*grade\s+synthetic\s+peptide\.?/gi,
+      "",
+    );
+  }
+
+  return sanitized
+    .replace(
+      /purity\s*:\s*(?:(?:&(?:ge|#8805);|≥)\s*)?99\s*%\s*(?:\(\s*hplc\s*\))?\.?/gi,
+      "",
+    )
+    .replace(/<p>\s*<\/p>/gi, "")
+    .replace(/(?:<br\s*\/?>\s*){2,}/gi, "<br>")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function mapTaxonomyItem(item) {
   return {
     id: item.id,
@@ -119,14 +171,17 @@ function mapProductForCatalog(product) {
     id: product.id,
     name: product.name,
     title: product.name,
-    slug: product.slug,
+    slug: getPublicProductSlug(product.slug),
     sku: product.sku,
     type: product.type,
     price: product.price,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
     price_html: product.price_html,
-    short_description: product.short_description,
+    short_description: removeUnverifiedPurityClaims(
+      product.short_description,
+      product.slug,
+    ),
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
@@ -155,15 +210,18 @@ function mapProductForDetail(product) {
     id: product.id,
     name: product.name,
     title: product.name,
-    slug: product.slug,
+    slug: getPublicProductSlug(product.slug),
     sku: product.sku,
     type: product.type,
     price: product.price,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
     price_html: product.price_html,
-    description: product.description,
-    short_description: product.short_description,
+    description: removeUnverifiedPurityClaims(product.description, product.slug),
+    short_description: removeUnverifiedPurityClaims(
+      product.short_description,
+      product.slug,
+    ),
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
@@ -529,7 +587,8 @@ async function fetchWooProductVariations({
 export async function GET({ request }) {
   const requestUrl = new URL(request.url);
 
-  const slug = requestUrl.searchParams.get("slug");
+  const requestedSlug = requestUrl.searchParams.get("slug");
+  const slug = requestedSlug ? getWooProductSlug(requestedSlug) : null;
   const limit = sanitizeLimit(requestUrl.searchParams.get("limit"));
   const featured = normalizeBoolean(requestUrl.searchParams.get("featured"));
   const debug = shouldBypassCache(requestUrl.searchParams.get("debug"));

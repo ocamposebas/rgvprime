@@ -10,8 +10,8 @@ const trustItems = [
     icon: "bolt",
   },
   {
-    title: "Quality Focused",
-    subtitle: "Premium standards",
+    title: "Certificates on File",
+    subtitle: "Research grade reagents",
     icon: "shield",
   },
   {
