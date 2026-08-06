@@ -7,7 +7,6 @@ const announcementItems = [
   "Same day / Next day shipping",
   "Fast & Secure Shopping",
   "Research Use Only",
-  "Quality-Focused Products",
 ];
 
 const navLinks = [
