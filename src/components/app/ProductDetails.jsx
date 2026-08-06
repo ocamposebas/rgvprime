@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCart } from "../cart/CartContext";
 import {
   formatPoints,
@@ -1115,6 +1116,7 @@ function ProductComplements({ currentProductId }) {
 
 export default function ProductDetails({ slug }) {
   const { addItem, openCart } = useCart();
+  const shouldReduceMotion = useReducedMotion();
 
   const [product, setProduct] = useState(null);
   const [status, setStatus] = useState("loading");
@@ -1286,6 +1288,15 @@ export default function ProductDetails({ slug }) {
         : "Sold Out";
 
   const purchasePoints = getProductLoyaltyPoints(displayProduct, quantity);
+  const selectionTransition = shouldReduceMotion
+    ? { duration: 0 }
+    : { duration: 0.28, ease: [0.22, 1, 0.36, 1] };
+  const priceTransitionKey = [
+    selectedVariation?.id || "base",
+    displayProduct?.price || "",
+    displayProduct?.sale_price || "",
+    displayProduct?.regular_price || "",
+  ].join(":");
 
   const handleVariantChange = (attributeName, value) => {
     setSelectedVariants((prev) => ({
@@ -1441,7 +1452,7 @@ export default function ProductDetails({ slug }) {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#030303] pb-24 pt-[138px] text-white sm:pt-[158px] lg:pt-[170px]">
+    <section className="relative bg-[#030303] pb-24 pt-[138px] text-white sm:pt-[158px] lg:pt-[170px]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute right-[-16%] top-[-18%] h-[620px] w-[620px] rounded-full bg-red-600/10 blur-[135px]" />
         <div className="absolute left-[-18%] top-[18%] h-[620px] w-[620px] rounded-full bg-red-950/24 blur-[145px]" />
@@ -1475,7 +1486,7 @@ export default function ProductDetails({ slug }) {
               <div className="pointer-events-none absolute left-1/2 top-[50%] h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
               <div className="pointer-events-none absolute left-1/2 top-[50%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.025]" />
 
-              <div className="relative flex min-h-[520px] flex-col justify-between p-5 sm:min-h-[640px] sm:p-7 lg:min-h-[720px]">
+              <div className="relative flex min-h-[520px] flex-col justify-between p-5 sm:min-h-[640px] sm:p-7 lg:h-[calc(100svh-8rem)] lg:min-h-[560px] lg:max-h-[760px]">
                 <div className="z-20 flex items-start justify-between gap-4">
                   {stockBadge && (
                     <span
@@ -1493,15 +1504,21 @@ export default function ProductDetails({ slug }) {
                   </span>
                 </div>
 
-                <div className="relative z-10 flex flex-1 items-center justify-center py-10">
+                <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center py-8">
                   <div className="pointer-events-none absolute bottom-[18%] left-1/2 h-28 w-[68%] -translate-x-1/2 rounded-full bg-black/80 blur-[42px]" />
 
-                  <img
-                    key={image}
-                    src={image}
-                    alt={product.name}
-                    className="relative w-full max-w-[390px] object-contain drop-shadow-[0_34px_70px_rgba(0,0,0,0.7)] transition duration-700 hover:scale-[1.035] sm:max-w-[470px]"
-                  />
+                  <AnimatePresence initial={false} mode="popLayout">
+                    <motion.img
+                      key={image}
+                      src={image}
+                      alt={product.name}
+                      initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.975 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 1.015 }}
+                      transition={selectionTransition}
+                      className="relative max-h-[390px] w-full max-w-[390px] object-contain drop-shadow-[0_34px_70px_rgba(0,0,0,0.7)] hover:scale-[1.025] sm:max-h-[470px] sm:max-w-[470px] lg:max-h-[500px]"
+                    />
+                  </AnimatePresence>
                 </div>
 
                 <div className="relative z-20 grid gap-3 rounded-[1.8rem] border border-white/[0.08] bg-black/35 p-4 backdrop-blur-xl sm:grid-cols-3">
@@ -1560,12 +1577,23 @@ export default function ProductDetails({ slug }) {
                     </p>
                   </div>
 
-                  <div className="rounded-full border border-white/[0.08] bg-black/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/45">
+                  <div className="max-w-full truncate rounded-full border border-white/[0.08] bg-black/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 sm:max-w-[55%]">
                     {selectedConfigLabel}
                   </div>
                 </div>
 
-                {renderProductPrice(displayProduct)}
+                <AnimatePresence initial={false} mode="wait">
+                  <motion.div
+                    key={priceTransitionKey}
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+                    transition={selectionTransition}
+                    className="min-h-[52px]"
+                  >
+                    {renderProductPrice(displayProduct)}
+                  </motion.div>
+                </AnimatePresence>
                 {purchasePoints > 0 && (
                   <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.09em] text-red-100/70">
                     <span className="text-red-400" aria-hidden="true">★</span>
@@ -1583,7 +1611,7 @@ export default function ProductDetails({ slug }) {
                 />
               )}
 
-              {coaStatus === "loading" && (
+              {coaStatus === "loading" && coaFiles.length === 0 && (
                 <div className="mt-5 flex max-w-2xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-xs font-bold text-white/40">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-rose-400" />
                   Checking Current Shipping certificates…
@@ -1675,7 +1703,11 @@ export default function ProductDetails({ slug }) {
               </div>
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-[2.2rem] border border-white/[0.08] bg-[#080808]/85 p-5 shadow-[0_28px_95px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6">
+            <motion.div
+              layout
+              transition={selectionTransition}
+              className="relative mt-8 overflow-hidden rounded-[2.2rem] border border-white/[0.08] bg-[#080808]/85 p-5 shadow-[0_28px_95px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 lg:sticky lg:top-28 lg:max-h-[calc(100svh-8rem)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-gutter:stable]"
+            >
               <div className="pointer-events-none absolute inset-0" />
 
               <div className="mb-6 flex items-center justify-between gap-4">
@@ -1811,8 +1843,16 @@ export default function ProductDetails({ slug }) {
                 </div>
               )}
 
-              {isInstock ? (
-                <div className="grid gap-3 sm:grid-cols-[150px_1fr]">
+              <AnimatePresence initial={false} mode="wait">
+                {isInstock ? (
+                  <motion.div
+                    key="purchase-controls"
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                    transition={selectionTransition}
+                    className="grid gap-3 sm:grid-cols-[150px_1fr]"
+                  >
                   <div className="flex h-14 items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] px-2">
                     <button
                       type="button"
@@ -1859,18 +1899,27 @@ export default function ProductDetails({ slug }) {
                       <IconBag />
                     </span>
                   </button>
-                </div>
-              ) : (
-                <BackInStockForm
-                  notifyName={notifyName}
-                  setNotifyName={setNotifyName}
-                  notifyEmail={notifyEmail}
-                  setNotifyEmail={setNotifyEmail}
-                  notifyStatus={notifyStatus}
-                  notifyMessage={notifyMessage}
-                  onSubmit={handleBackInStockSubmit}
-                />
-              )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="back-in-stock-controls"
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                    transition={selectionTransition}
+                  >
+                    <BackInStockForm
+                      notifyName={notifyName}
+                      setNotifyName={setNotifyName}
+                      notifyEmail={notifyEmail}
+                      setNotifyEmail={setNotifyEmail}
+                      notifyStatus={notifyStatus}
+                      notifyMessage={notifyMessage}
+                      onSubmit={handleBackInStockSubmit}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="mt-6 rounded-2xl border border-red-500/15 bg-[linear-gradient(135deg,rgba(220,38,38,0.08),rgba(255,255,255,0.025))] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
                 <div className="flex items-start gap-3">
@@ -1908,7 +1957,7 @@ export default function ProductDetails({ slug }) {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
 
