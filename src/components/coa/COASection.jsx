@@ -7,12 +7,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useDragControls } from "motion/react";
 
 const COAS_PER_PAGE = 8;
 const MAX_SUGGESTIONS = 8;
 const URL_SYNC_DELAY = 400;
 const ALL_ID = "";
+const RECENT_COAS_STORAGE_KEY = "rgvprime_recent_coas_v1";
 
 const customProductOrder = [
   {
@@ -207,6 +208,100 @@ function matchesSearchText(searchText = "", query = "") {
   return tokens.every((token) => haystack.includes(token));
 }
 
+function normalizeExactLookup(value = "") {
+  return normalize(value)
+    .replace(/^(lot|sku|code)\s*[:#-]?\s*/i, "")
+    .trim();
+}
+
+function findExactCertificateMatch(files = [], query = "") {
+  const search = normalizeExactLookup(query);
+  if (!search) return null;
+
+  for (const file of files) {
+    const currentFields = [
+      ["lot", file?.lot],
+      ["sku", file?.sku],
+      ["code", file?.code],
+    ];
+
+    for (const [field, value] of currentFields) {
+      if (normalizeExactLookup(value) === search) {
+        return {
+          file,
+          versionIndex: 0,
+          field,
+          value,
+          certificate: file,
+        };
+      }
+    }
+
+    const history = getEarlierCoas(file);
+    for (let index = 0; index < history.length; index += 1) {
+      const item = history[index];
+      const historicalFields = [
+        ["lot", item?.lot],
+        ["sku", item?.sku],
+        ["code", item?.code],
+      ];
+
+      for (const [field, value] of historicalFields) {
+        if (normalizeExactLookup(value) === search) {
+          return {
+            file,
+            versionIndex: index + 1,
+            field,
+            value,
+            certificate: { ...file, ...item },
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function escapeRegExp(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function HighlightText({ text, query, className = "" }) {
+  const value = String(text || "");
+  const cleanQuery = normalizeExactLookup(query);
+  if (!value || !cleanQuery) return <span className={className}>{value}</span>;
+
+  const tokens = cleanQuery
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  if (!tokens.length) return <span className={className}>{value}</span>;
+
+  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "ig");
+  const parts = value.split(pattern);
+
+  return (
+    <span className={className}>
+      {parts.map((part, index) => {
+        const isMatch = tokens.some((token) => normalize(part) === normalize(token));
+        return isMatch ? (
+          <mark
+            key={`${part}-${index}`}
+            className="rounded bg-red-500/20 px-0.5 text-red-100 ring-1 ring-inset ring-red-400/20"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={`${part}-${index}`}>{part}</span>
+        );
+      })}
+    </span>
+  );
+}
+
 function getVisiblePages(currentPage, totalPages) {
   if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -365,7 +460,7 @@ const Pagination = memo(function Pagination({
   );
 });
 
-function MetaValue({ label, value, mono = true }) {
+function MetaValue({ label, value, mono = true, highlightQuery = "" }) {
   if (!value) return null;
   return (
     <span className="inline-flex items-baseline gap-1.5">
@@ -373,7 +468,7 @@ function MetaValue({ label, value, mono = true }) {
         {label}
       </span>
       <span className={cn("text-[13px] font-semibold text-white/80", mono && "font-mono")}>
-        {value}
+        <HighlightText text={value} query={highlightQuery} />
       </span>
     </span>
   );
@@ -386,6 +481,7 @@ const COACard = memo(function COACard({
   historyKey,
   onToggleHistory,
   onOpen,
+  highlightQuery = "",
 }) {
   const earlierCoas = getEarlierCoas(file);
 
@@ -409,8 +505,11 @@ const COACard = memo(function COACard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="break-words text-base font-black tracking-[-0.01em] text-white">
-                {file.product || file.code}
+                <HighlightText text={file.product || file.code} query={highlightQuery} />
               </h3>
+              <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-200">
+                Latest
+              </span>
               {fileHasHistory && (
                 <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
                   {earlierCoas.length} Earlier COA{earlierCoas.length === 1 ? "" : "s"}
@@ -419,11 +518,11 @@ const COACard = memo(function COACard({
             </div>
 
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-baseline">
-              <MetaValue label="Lot" value={file.lot} />
-              <MetaValue label="Code" value={file.code} />
-              <MetaValue label="SKU" value={file.sku} />
-              <MetaValue label="Purity" value={file.purity} mono={false} />
-              <MetaValue label="Content" value={file.quantity} mono={false} />
+              <MetaValue label="Lot" value={file.lot} highlightQuery={highlightQuery} />
+              <MetaValue label="Code" value={file.code} highlightQuery={highlightQuery} />
+              <MetaValue label="SKU" value={file.sku} highlightQuery={highlightQuery} />
+              <MetaValue label="Purity" value={file.purity} mono={false} highlightQuery={highlightQuery} />
+              <MetaValue label="Content" value={file.quantity} mono={false} highlightQuery={highlightQuery} />
             </div>
           </div>
 
@@ -449,7 +548,7 @@ const COACard = memo(function COACard({
             type="button"
             onClick={() => onOpen?.(file)}
             className={cn(
-              "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-black uppercase tracking-wide text-white shadow-[0_10px_25px_rgba(220,38,38,0.25)] transition hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0 active:scale-[0.98] sm:h-10",
+              "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-xs font-black uppercase tracking-wide text-white shadow-[0_10px_25px_rgba(220,38,38,0.25)] transition hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0 active:scale-[0.98] sm:h-11",
               "col-span-2 sm:col-span-1"
             )}
           >
@@ -478,10 +577,10 @@ const COACard = memo(function COACard({
                   className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <MetaValue label="Lot" value={item.lot} />
-                    <MetaValue label="Code" value={item.code} />
-                    <MetaValue label="SKU" value={item.sku} />
-                    <MetaValue label="Purity" value={item.purity} mono={false} />
+                    <MetaValue label="Lot" value={item.lot} highlightQuery={highlightQuery} />
+                    <MetaValue label="Code" value={item.code} highlightQuery={highlightQuery} />
+                    <MetaValue label="SKU" value={item.sku} highlightQuery={highlightQuery} />
+                    <MetaValue label="Purity" value={item.purity} mono={false} highlightQuery={highlightQuery} />
                   </div>
 
                   <button
@@ -504,6 +603,18 @@ const COACard = memo(function COACard({
 
 const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionChange, onClose }) {
   const [earlierOpen, setEarlierOpen] = useState(false);
+  const [copiedLot, setCopiedLot] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const dragControls = useDragControls();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobileViewport(media.matches);
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
 
   useEffect(() => {
     if (!file || typeof document === "undefined") return undefined;
@@ -559,6 +670,10 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
     setEarlierOpen(safeVersionIndex > 0);
   }, [file, safeVersionIndex]);
 
+  useEffect(() => {
+    setCopiedLot(false);
+  }, [file, safeVersionIndex]);
+
   if (!file) return null;
 
   const activeFile = versions[safeVersionIndex] || file;
@@ -583,6 +698,21 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
     onVersionChange?.(index + 1);
     setEarlierOpen(true);
   };
+
+  const copyLot = async () => {
+    const lot = String(activeFile?.lot || "").trim();
+    if (!lot || typeof navigator === "undefined") return;
+    try {
+      await navigator.clipboard?.writeText(lot);
+      setCopiedLot(true);
+      window.setTimeout(() => setCopiedLot(false), 1400);
+    } catch {
+      setCopiedLot(false);
+    }
+  };
+
+  const certificateDate =
+    activeFile?.date || activeFile?.test_date || activeFile?.testDate || activeFile?.created_at || "";
 
   return (
     <AnimatePresence>
@@ -609,10 +739,24 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 24, opacity: 0, scale: 0.99 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-1 bottom-1 flex h-[92dvh] min-h-[540px] max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#050505] shadow-[0_-24px_80px_rgba(0,0,0,0.62)] sm:inset-x-2 sm:bottom-2 sm:h-[90dvh] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:max-h-none lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-none lg:rounded-l-[2rem] lg:border-y-0 lg:border-r-0 lg:border-l lg:shadow-[-30px_0_100px_rgba(0,0,0,0.65)]"
+          drag={isMobileViewport ? "y" : false}
+          dragControls={dragControls}
+          dragListener={false}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={isMobileViewport ? { top: 0, bottom: 0.2 } : 0}
+          onDragEnd={(_, info) => {
+            if (isMobileViewport && (info.offset.y > 120 || info.velocity.y > 650)) {
+              onClose?.();
+            }
+          }}
+          className="absolute inset-x-1 bottom-1 flex h-[95dvh] min-h-[540px] max-h-[calc(100dvh-0.35rem)] flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#050505] shadow-[0_-24px_80px_rgba(0,0,0,0.62)] sm:inset-x-2 sm:bottom-2 sm:h-[92dvh] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:max-h-none lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-none lg:rounded-l-[2rem] lg:border-y-0 lg:border-r-0 lg:border-l lg:shadow-[-30px_0_100px_rgba(0,0,0,0.65)]"
         >
-          <div className="flex shrink-0 justify-center pb-1.5 pt-2 lg:hidden">
-            <span className="h-1 w-10 rounded-full bg-white/20" />
+          <div
+            className="flex h-7 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing lg:hidden"
+            onPointerDown={(event) => dragControls.start(event)}
+            role="presentation"
+          >
+            <span className="h-1.5 w-12 rounded-full bg-white/25" />
           </div>
 
           <div className="relative z-20 flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#080808]/96 px-2.5 pb-2.5 pt-1.5 backdrop-blur-xl sm:px-4 sm:py-3 lg:min-h-[70px] lg:px-5">
@@ -630,11 +774,21 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
               <p className="truncate text-[13px] font-black text-white sm:text-sm lg:text-base">
                 {activeFile.product || activeFile.code || "Certificate"}
               </p>
-              <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.09em] text-white/38 sm:text-[10px]">
-                {[activeFile.lot && `Lot ${activeFile.lot}`, activeFile.sku, activeFile.purity]
-                  .filter(Boolean)
-                  .join(" · ") || "Latest COA"}
-              </p>
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[9px] font-bold uppercase tracking-[0.07em] text-white/38 sm:text-[10px]">
+                {activeFile.lot && (
+                  <button
+                    type="button"
+                    onClick={copyLot}
+                    className="relative z-30 inline-flex min-h-7 items-center rounded-lg border border-white/10 bg-white/[0.035] px-2 font-mono text-white/65 transition active:scale-[0.97] active:bg-red-600/20 hover:border-red-500/30 hover:text-white"
+                    aria-label={`Copy lot ${activeFile.lot}`}
+                  >
+                    {copiedLot ? "Copied ✓" : `Lot ${activeFile.lot}`}
+                  </button>
+                )}
+                {activeFile.sku && <span className="truncate">SKU {activeFile.sku}</span>}
+                {activeFile.purity && <span>{activeFile.purity}</span>}
+                {certificateDate && <span>{certificateDate}</span>}
+              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
@@ -787,19 +941,33 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
             )}
           </div>
 
-          {pdfUrl && (
-            <div className="shrink-0 border-t border-white/[0.08] bg-[#080808] p-2 lg:hidden">
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white/[0.065] text-[11px] font-black uppercase tracking-[0.1em] text-white/75 active:scale-[0.99] active:bg-white/10"
+          <div className="shrink-0 border-t border-white/[0.08] bg-[#080808]/98 p-2 backdrop-blur-xl lg:hidden">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.055] text-[11px] font-black uppercase tracking-[0.08em] text-white/80 active:scale-[0.98] active:bg-white/10"
               >
-                Open original PDF
-                <ArrowIcon />
-              </a>
+                <ChevronLeftIcon />
+                Back
+              </button>
+              {pdfUrl ? (
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-red-600 text-[11px] font-black uppercase tracking-[0.08em] text-white shadow-[0_10px_26px_rgba(220,38,38,0.2)] active:scale-[0.98] active:bg-red-500"
+                >
+                  Open PDF
+                  <ArrowIcon />
+                </a>
+              ) : (
+                <div className="flex h-12 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-[10px] font-black uppercase tracking-[0.08em] text-white/25">
+                  PDF unavailable
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -1023,6 +1191,7 @@ export default function COASection() {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [activeCoa, setActiveCoa] = useState(null);
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   const deferredQuery = useDeferredValue(query);
   const searchWrapperRef = useRef(null);
@@ -1067,6 +1236,16 @@ export default function COASection() {
     const product = params.get("product");
     if (q) setQuery(q);
     else if (product) setSelectedCategory(product);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(RECENT_COAS_STORAGE_KEY) || "[]");
+      if (Array.isArray(stored)) setRecentlyViewed(stored.slice(0, 3));
+    } catch {
+      setRecentlyViewed([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -1195,6 +1374,24 @@ export default function COASection() {
       .map((item) => item.file);
   }, [allCoas, deferredQuery]);
 
+  const exactCertificateMatch = useMemo(
+    () => findExactCertificateMatch(allCoas, deferredQuery),
+    [allCoas, deferredQuery]
+  );
+
+  const resolvedRecentCoas = useMemo(() => {
+    return recentlyViewed
+      .map((entry) => {
+        const file = allCoas.find((item) => item.key === entry.key);
+        if (!file) return null;
+        const versionIndex = Math.max(0, Number(entry.versionIndex) || 0);
+        const version = versionIndex > 0 ? getEarlierCoas(file)[versionIndex - 1] : file;
+        return { entry, file, versionIndex, version: version || file };
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+  }, [allCoas, recentlyViewed]);
+
   const categoryResults = useMemo(() => {
     if (!selectedCategory) return [];
     const target = normalize(selectedCategory);
@@ -1212,17 +1409,50 @@ export default function COASection() {
   const pageEnd = pageStart + COAS_PER_PAGE;
   const paginatedResults = activeList ? activeList.slice(pageStart, pageEnd) : [];
 
+  const rememberCoa = useCallback((file, versionIndex = 0) => {
+    if (!file) return;
+    const key = file.key || getHistoryKey(file);
+    const entry = {
+      key,
+      versionIndex: Math.max(0, Number(versionIndex) || 0),
+      viewedAt: Date.now(),
+    };
+
+    setRecentlyViewed((current) => {
+      const next = [entry, ...current.filter((item) => item?.key !== key)].slice(0, 3);
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(RECENT_COAS_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // Storage may be unavailable in private/restricted browsing.
+        }
+      }
+      return next;
+    });
+  }, []);
+
   const openCoa = useCallback((file, versionIndex = 0) => {
     if (!file) return;
+    const safeIndex = Math.max(0, Number(versionIndex) || 0);
     setSuggestionsOpen(false);
     setActiveCoa(file);
-    setActiveCoaVersionIndex(Math.max(0, Number(versionIndex) || 0));
-  }, []);
+    setActiveCoaVersionIndex(safeIndex);
+    rememberCoa(file, safeIndex);
+  }, [rememberCoa]);
 
   const closeCoa = useCallback(() => {
     setActiveCoa(null);
     setActiveCoaVersionIndex(0);
   }, []);
+
+  const changeActiveCoaVersion = useCallback(
+    (versionIndex) => {
+      const safeIndex = Math.max(0, Number(versionIndex) || 0);
+      setActiveCoaVersionIndex(safeIndex);
+      if (activeCoa) rememberCoa(activeCoa, safeIndex);
+    },
+    [activeCoa, rememberCoa]
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1290,6 +1520,13 @@ export default function COASection() {
 
   const handleInputKeyDown = useCallback(
     (event) => {
+      if (event.key === "Enter" && exactCertificateMatch) {
+        event.preventDefault();
+        openCoa(exactCertificateMatch.file, exactCertificateMatch.versionIndex);
+        event.currentTarget.blur();
+        return;
+      }
+
       if (!suggestionsOpen || suggestions.length === 0) {
         if (event.key === "Escape") event.currentTarget.blur();
         return;
@@ -1307,7 +1544,7 @@ export default function COASection() {
         setSuggestionsOpen(false);
       }
     },
-    [suggestionsOpen, suggestions, activeSuggestion, selectCategory]
+    [suggestionsOpen, suggestions, activeSuggestion, selectCategory, exactCertificateMatch, openCoa]
   );
 
   const totalCoaCount = allCoas.length;
@@ -1359,7 +1596,7 @@ export default function COASection() {
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto mt-6 w-full max-w-[620px] sm:mt-9"
+          className="sticky top-[72px] z-[90] mx-auto mt-6 w-full max-w-[620px] rounded-[1.35rem] bg-[#030303]/92 p-1.5 shadow-[0_12px_45px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:mt-9 lg:static lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
         >
           <div ref={searchWrapperRef} className="relative">
             <label className="relative block">
@@ -1402,7 +1639,7 @@ export default function COASection() {
 
             {/* Mobile: ranked certificate matches with one-tap opening. */}
             <AnimatePresence>
-              {suggestionsOpen && query.trim() && mobileQuickMatches.length > 0 && (
+              {suggestionsOpen && query.trim() && (exactCertificateMatch || mobileQuickMatches.length > 0) && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.99 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1420,7 +1657,41 @@ export default function COASection() {
                   </div>
 
                   <div className="max-h-[min(58dvh,390px)] overflow-y-auto overscroll-contain p-1.5">
-                    {mobileQuickMatches.map((file) => (
+                    {exactCertificateMatch && (
+                      <button
+                        type="button"
+                        onClick={() => openCoa(exactCertificateMatch.file, exactCertificateMatch.versionIndex)}
+                        className="mb-1.5 w-full rounded-xl border border-emerald-400/25 bg-emerald-400/[0.08] p-3.5 text-left shadow-[0_10px_30px_rgba(16,185,129,0.08)] transition active:scale-[0.995] active:bg-emerald-400/[0.13]"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-[0.13em] text-emerald-300">
+                              Exact certificate found ✓
+                            </p>
+                            <p className="mt-1 truncate text-[15px] font-black text-white">
+                              {exactCertificateMatch.file.product || exactCertificateMatch.file.code || "Certificate"}
+                            </p>
+                            <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.07em] text-white/45">
+                              {[
+                                exactCertificateMatch.certificate?.lot && `Lot ${exactCertificateMatch.certificate.lot}`,
+                                exactCertificateMatch.certificate?.sku && `SKU ${exactCertificateMatch.certificate.sku}`,
+                                exactCertificateMatch.certificate?.purity,
+                                exactCertificateMatch.versionIndex > 0 ? "Earlier COA" : "Latest COA",
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          </div>
+                          <span className="flex h-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 text-[10px] font-black uppercase tracking-[0.08em] text-black">
+                            View COA
+                          </span>
+                        </div>
+                      </button>
+                    )}
+
+                    {mobileQuickMatches
+                      .filter((file) => file.key !== exactCertificateMatch?.file?.key)
+                      .map((file) => (
                       <button
                         key={file.key || `${file.code}-${file.lot || file.url}`}
                         type="button"
@@ -1429,11 +1700,13 @@ export default function COASection() {
                       >
                         <div className="min-w-0">
                           <p className="truncate text-[14px] font-black text-white">
-                            {file.product || file.code || "Certificate"}
+                            <HighlightText text={file.product || file.code || "Certificate"} query={query} />
                           </p>
                           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/38">
-                            {file.lot && <span className="text-red-300/85">Lot {file.lot}</span>}
-                            {file.sku && <span>SKU {file.sku}</span>}
+                            {file.lot && (
+                              <span className="text-red-300/85">Lot <HighlightText text={file.lot} query={query} /></span>
+                            )}
+                            {file.sku && <span>SKU <HighlightText text={file.sku} query={query} /></span>}
                             {file.purity && <span>{file.purity}</span>}
                           </div>
                         </div>
@@ -1477,6 +1750,40 @@ export default function COASection() {
             </span>
           </button>
         </motion.div>
+
+        {resolvedRecentCoas.length > 0 && !isSearching && (
+          <div className="mx-auto mt-4 w-full max-w-[760px] sm:mt-6">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Recently viewed</p>
+              <span className="text-[10px] font-semibold text-white/25">Last 3</span>
+            </div>
+            <div className="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {resolvedRecentCoas.map(({ entry, file, versionIndex, version }) => (
+                <button
+                  key={`${entry.key}-${versionIndex}`}
+                  type="button"
+                  onClick={() => openCoa(file, versionIndex)}
+                  className="min-w-[210px] snap-start rounded-2xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-left transition active:scale-[0.985] active:bg-white/[0.07] hover:border-red-500/25"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-[12px] font-black text-white">{file.product || file.code}</p>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.08em]",
+                      versionIndex > 0 ? "bg-white/[0.07] text-white/45" : "bg-emerald-400/10 text-emerald-200"
+                    )}>
+                      {versionIndex > 0 ? "Earlier" : "Latest"}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 truncate text-[9px] font-bold uppercase tracking-[0.07em] text-white/35">
+                    {[version?.lot && `Lot ${version.lot}`, version?.sku && `SKU ${version.sku}`, version?.purity]
+                      .filter(Boolean)
+                      .join(" · ") || "Certificate"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -1543,6 +1850,7 @@ export default function COASection() {
                           isHistoryOpen={Boolean(openHistory[historyKey])}
                           onToggleHistory={toggleHistory}
                           onOpen={openCoa}
+                          highlightQuery={isSearching ? query : ""}
                         />
                       );
                     })}
@@ -1583,7 +1891,7 @@ export default function COASection() {
       <COAViewer
         file={activeCoa}
         versionIndex={activeCoaVersionIndex}
-        onVersionChange={setActiveCoaVersionIndex}
+        onVersionChange={changeActiveCoaVersion}
         onClose={closeCoa}
       />
 
