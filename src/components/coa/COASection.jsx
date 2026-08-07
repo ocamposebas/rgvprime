@@ -1069,7 +1069,7 @@ const MobileProductPicker = memo(function MobileProductPicker({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[140] lg:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-product-picker-title">
+        <div className="fixed inset-0 z-[210] lg:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-product-picker-title">
           <motion.button
             type="button"
             aria-label="Close product list"
@@ -1588,7 +1588,7 @@ export default function COASection() {
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 right-3 z-[120] mx-auto w-auto max-w-[620px] rounded-[1.35rem] border border-white/10 bg-[#070707]/96 p-1.5 shadow-[0_18px_65px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:left-4 sm:right-4 lg:static lg:mt-9 lg:w-full lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
+          className="mx-auto mt-7 w-full max-w-[760px] sm:mt-9"
         >
           <div ref={searchWrapperRef} className="relative">
             <label className="relative block">
@@ -1637,7 +1637,7 @@ export default function COASection() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.99 }}
                   transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute bottom-[calc(100%+0.55rem)] left-0 right-0 z-50 overflow-hidden rounded-2xl border border-white/12 bg-[#080808]/98 shadow-[0_26px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden"
+                  className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-50 overflow-hidden rounded-2xl border border-white/12 bg-[#080808]/98 shadow-[0_26px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden"
                 >
                   <div className="flex items-center justify-between border-b border-white/10 px-3.5 py-2.5">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
@@ -1718,29 +1718,6 @@ export default function COASection() {
             </AnimatePresence>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setSuggestionsOpen(false);
-              setMobileProductsOpen(true);
-            }}
-            className="mt-3 flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 text-left text-sm font-bold text-white transition active:bg-white/10 lg:hidden"
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-600/15 text-red-300">
-                <SlidersIcon />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-white/35">Or browse manually</span>
-                <span className="mt-0.5 block truncate">
-                  {selectedCategory || `All ${navItems.length} products`}
-                </span>
-              </span>
-            </span>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/55">
-              <ChevronIcon />
-            </span>
-          </button>
         </motion.div>
 
         {resolvedRecentCoas.length > 0 && !isSearching && (
@@ -1879,6 +1856,45 @@ export default function COASection() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {!mobileProductsOpen && !activeCoa && (
+          <motion.button
+            type="button"
+            onClick={() => {
+              setSuggestionsOpen(false);
+              setMobileProductsOpen(true);
+            }}
+            initial={{ opacity: 0, y: 22, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 18, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            aria-label="Browse COA products"
+            className="fixed bottom-[max(0.9rem,env(safe-area-inset-bottom))] left-1/2 z-[180] flex min-h-[64px] w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl active:scale-[0.985] lg:hidden"
+          >
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
+                <SlidersIcon />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
+                  Browse COAs
+                </span>
+                <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
+                  {selectedCategory || `All ${navItems.length} products`}
+                </span>
+                <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
+                  Tap to choose a product
+                </span>
+              </span>
+            </span>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
+              <ChevronIcon />
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <COAViewer
         file={activeCoa}
