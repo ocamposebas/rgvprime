@@ -742,34 +742,26 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
           drag={isMobileViewport ? "y" : false}
           dragControls={dragControls}
           dragListener={false}
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={isMobileViewport ? { top: 0, bottom: 0.2 } : 0}
+          dragConstraints={isMobileViewport ? { top: 0, bottom: 720 } : { top: 0, bottom: 0 }}
+          dragElastic={isMobileViewport ? 0.04 : 0}
+          dragMomentum={false}
+          dragSnapToOrigin={isMobileViewport}
           onDragEnd={(_, info) => {
-            if (isMobileViewport && (info.offset.y > 120 || info.velocity.y > 650)) {
+            if (isMobileViewport && (info.offset.y > 105 || info.velocity.y > 520)) {
               onClose?.();
             }
           }}
           className="absolute inset-x-1 bottom-1 flex h-[95dvh] min-h-[540px] max-h-[calc(100dvh-0.35rem)] flex-col overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#050505] shadow-[0_-24px_80px_rgba(0,0,0,0.62)] sm:inset-x-2 sm:bottom-2 sm:h-[92dvh] lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:max-h-none lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-none lg:rounded-l-[2rem] lg:border-y-0 lg:border-r-0 lg:border-l lg:shadow-[-30px_0_100px_rgba(0,0,0,0.65)]"
         >
           <div
-            className="flex h-7 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing lg:hidden"
+            className="flex h-9 shrink-0 cursor-grab touch-none select-none items-center justify-center active:cursor-grabbing lg:hidden"
             onPointerDown={(event) => dragControls.start(event)}
             role="presentation"
           >
-            <span className="h-1.5 w-12 rounded-full bg-white/25" />
+            <span className="h-1.5 w-14 rounded-full bg-white/35" />
           </div>
 
           <div className="relative z-20 flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#080808]/96 px-2.5 pb-2.5 pt-1.5 backdrop-blur-xl sm:px-4 sm:py-3 lg:min-h-[70px] lg:px-5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 min-w-[92px] shrink-0 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.065] px-3 text-[12px] font-black text-white transition active:scale-[0.97] active:bg-red-600 lg:hidden"
-              aria-label="Back to certificates"
-            >
-              <ChevronLeftIcon />
-              Back
-            </button>
-
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-black text-white sm:text-sm lg:text-base">
                 {activeFile.product || activeFile.code || "Certificate"}
@@ -1563,7 +1555,7 @@ export default function COASection() {
   return (
     <section
       id="coa"
-      className="relative w-full overflow-x-hidden bg-[#030303] px-3 pb-14 pt-[148px] text-white sm:px-4 sm:pb-16 sm:pt-[160px] lg:px-6 lg:pb-20 lg:pt-[180px]"
+      className="relative w-full overflow-x-hidden bg-[#030303] px-3 pb-[9.5rem] pt-[148px] text-white sm:px-4 sm:pb-[10rem] sm:pt-[160px] lg:px-6 lg:pb-20 lg:pt-[180px]"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(220,38,38,0.13),transparent_34%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.16] [mask-image:linear-gradient(to_bottom,black,transparent_72%)]" />
@@ -1596,7 +1588,7 @@ export default function COASection() {
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="sticky top-[72px] z-[90] mx-auto mt-6 w-full max-w-[620px] rounded-[1.35rem] bg-[#030303]/92 p-1.5 shadow-[0_12px_45px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:mt-9 lg:static lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
+          className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 right-3 z-[120] mx-auto w-auto max-w-[620px] rounded-[1.35rem] border border-white/10 bg-[#070707]/96 p-1.5 shadow-[0_18px_65px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:left-4 sm:right-4 lg:static lg:mt-9 lg:w-full lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
         >
           <div ref={searchWrapperRef} className="relative">
             <label className="relative block">
@@ -1645,7 +1637,7 @@ export default function COASection() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.99 }}
                   transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-white/12 bg-[#080808]/98 shadow-[0_26px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden"
+                  className="absolute bottom-[calc(100%+0.55rem)] left-0 right-0 z-50 overflow-hidden rounded-2xl border border-white/12 bg-[#080808]/98 shadow-[0_26px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden"
                 >
                   <div className="flex items-center justify-between border-b border-white/10 px-3.5 py-2.5">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
