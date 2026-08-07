@@ -1184,7 +1184,7 @@ export default function COASection() {
   const [activeCoa, setActiveCoa] = useState(null);
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [footerNearby, setFooterNearby] = useState(false);
+  const [footerLift, setFooterLift] = useState(0);
 
   const deferredQuery = useDeferredValue(query);
   const searchWrapperRef = useRef(null);
@@ -1245,34 +1245,44 @@ export default function COASection() {
     if (typeof window === "undefined") return undefined;
 
     let frame = 0;
+    const BASE_BOTTOM = 14;
+    const FOOTER_GAP = 12;
+    const CONTROL_HEIGHT = 72;
     const getFooter = () =>
       document.querySelector('footer, [role="contentinfo"], #footer, .site-footer');
 
-    const updateFooterProximity = () => {
+    const updateFooterLift = () => {
       if (frame) window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         const footer = getFooter();
         if (!footer) {
-          setFooterNearby(false);
+          setFooterLift(0);
           return;
         }
 
         const rect = footer.getBoundingClientRect();
-        // Hide the floating Browse control shortly BEFORE the footer enters view,
-        // so it never sits on top of footer content.
-        const hideBeforeFooter = rect.top <= window.innerHeight + 120;
-        setFooterNearby(hideBeforeFooter);
+        const footerInsideViewport = Math.max(0, window.innerHeight - rect.top);
+        const requestedLift = Math.max(0, footerInsideViewport + FOOTER_GAP - BASE_BOTTOM);
+
+        // Keep Browse visible at all times. Near the footer it docks upward instead
+        // of disappearing. Clamp the lift so the control can never leave the viewport.
+        const maxLift = Math.max(0, window.innerHeight - CONTROL_HEIGHT - BASE_BOTTOM - 12);
+        const nextLift = Math.min(requestedLift, maxLift);
+
+        setFooterLift((current) =>
+          Math.abs(current - nextLift) < 1 ? current : nextLift
+        );
       });
     };
 
-    updateFooterProximity();
-    window.addEventListener("scroll", updateFooterProximity, { passive: true });
-    window.addEventListener("resize", updateFooterProximity);
+    updateFooterLift();
+    window.addEventListener("scroll", updateFooterLift, { passive: true });
+    window.addEventListener("resize", updateFooterLift);
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", updateFooterProximity);
-      window.removeEventListener("resize", updateFooterProximity);
+      window.removeEventListener("scroll", updateFooterLift);
+      window.removeEventListener("resize", updateFooterLift);
     };
   }, []);
 
@@ -1911,7 +1921,7 @@ export default function COASection() {
       </div>
 
       <AnimatePresence>
-        {!mobileProductsOpen && !activeCoa && !footerNearby && (
+        {!mobileProductsOpen && !activeCoa && (
           <motion.button
             type="button"
             onClick={() => {
@@ -1923,7 +1933,10 @@ export default function COASection() {
             exit={{ opacity: 0, y: 34, scale: 0.985 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             aria-label="Browse COA products"
-            className="fixed bottom-[max(0.9rem,env(safe-area-inset-bottom))] left-1/2 z-[180] flex min-h-[64px] w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl active:scale-[0.985] lg:hidden"
+            style={{
+              bottom: `calc(${14 + footerLift}px + env(safe-area-inset-bottom))`,
+            }}
+            className="fixed left-1/2 z-[180] flex min-h-[64px] w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl transition-[bottom] duration-200 ease-out active:scale-[0.985] lg:hidden"
           >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
             <span className="flex min-w-0 items-center gap-3">
