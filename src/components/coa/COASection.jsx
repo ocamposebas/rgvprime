@@ -14,6 +14,94 @@ const MAX_SUGGESTIONS = 8;
 const URL_SYNC_DELAY = 400;
 const ALL_ID = "";
 
+const customProductOrder = [
+  {
+    rank: 1,
+    label: "RG-Rt",
+    groups: [["rg", "rt"]],
+  },
+  {
+    rank: 2,
+    label: "RG-Tz",
+    groups: [["rg", "tz"]],
+  },
+  {
+    label: "Mots C",
+    terms: ["mots c", "mots-c", "motsc", "mots"],
+  },
+  {
+    label: "NAD",
+    terms: ["nad", "nad plus", "nad+"],
+  },
+  {
+    label: "SS31",
+    terms: ["ss31", "ss 31", "ss-31"],
+  },
+  {
+    label: "Tesamorelin",
+    terms: ["tesamorelin", "tesa", "tesam"],
+  },
+  {
+    label: "CJC/IPA",
+    terms: ["cjc ipa", "cjc/ipa", "cjc ipamorelin", "ipamorelin", "ipa", "cjc"],
+  },
+  {
+    label: "Adamax",
+    terms: ["adamax"],
+  },
+  {
+    label: "Semax",
+    terms: ["semax"],
+  },
+  {
+    label: "Selank",
+    terms: ["selank"],
+  },
+  {
+    label: "GHK-Cu 50/100",
+    terms: ["ghk cu", "ghk-cu", "ghkcu", "ghk 50", "ghk 100"],
+  },
+  {
+    label: "Klow",
+    terms: ["klow"],
+  },
+  {
+    label: "Glow",
+    terms: ["glow"],
+  },
+  {
+    label: "Raw GHK",
+    terms: ["raw ghk", "rawghk"],
+  },
+  {
+    label: "Korean Glutathione 1200mg",
+    terms: [
+      "korean glutathione 1200",
+      "korean glutathione",
+      "glutathione 1200",
+      "glutathione",
+      "gluta",
+    ],
+  },
+  {
+    label: "Lipo-C/B12",
+    terms: ["lipo c b12", "lipo-c/b12", "lipocb12", "lipo c", "lipo b12"],
+  },
+  {
+    label: "Hospira Bac Water",
+    terms: [
+      "hospira bac water",
+      "hospira bacteriostatic water",
+      "hospira bac",
+      "bac water",
+      "bacteriostatic water",
+      "bac 30ml",
+      "bac",
+      "hospira",
+    ],
+  },
+];
+
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -24,6 +112,52 @@ function normalize(value) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+}
+
+function normalizeProductOrderValue(value) {
+  return normalize(value)
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCustomProductPriority(label) {
+  const value = normalizeProductOrderValue(label);
+  if (!value) return Number.POSITIVE_INFINITY;
+
+  const matchIndex = customProductOrder.findIndex((entry) => {
+    if (Array.isArray(entry.groups) && entry.groups.length > 0) {
+      return entry.groups.some((group) =>
+        group.every((term) => value.includes(normalizeProductOrderValue(term)))
+      );
+    }
+
+    if (Array.isArray(entry.terms) && entry.terms.length > 0) {
+      return entry.terms.some((term) => {
+        const cleanTerm = normalizeProductOrderValue(term);
+        return cleanTerm && (value === cleanTerm || value.includes(cleanTerm));
+      });
+    }
+
+    return false;
+  });
+
+  if (matchIndex < 0) return Number.POSITIVE_INFINITY;
+
+  const explicitRank = Number(customProductOrder[matchIndex]?.rank);
+  return Number.isFinite(explicitRank) ? explicitRank : matchIndex + 1;
+}
+
+function compareProductsByCustomOrder(a, b) {
+  const priorityA = getCustomProductPriority(a);
+  const priorityB = getCustomProductPriority(b);
+
+  if (priorityA !== priorityB) return priorityA - priorityB;
+
+  return String(a || "").localeCompare(String(b || ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
 }
 
 function getHistoryKey(file) {
@@ -249,8 +383,17 @@ const COACard = memo(function COACard({
   onOpen,
 }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-[0_12px_35px_rgba(0,0,0,0.18)] transition hover:border-red-500/30">
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-[0_12px_35px_rgba(0,0,0,0.18)] transition hover:border-red-500/30 sm:hover:-translate-y-0.5">
+      <button
+        type="button"
+        onClick={() => onOpen?.(file)}
+        className="absolute inset-0 z-20 sm:hidden"
+        aria-label={`Open ${file.product || file.code || "COA"}`}
+      >
+        <span className="sr-only">Open COA</span>
+      </button>
+
+      <div className="flex min-h-[104px] flex-col gap-3 p-4 sm:min-h-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5">
         <div className="flex min-w-0 items-start gap-3">
           <div className="mt-0.5 hidden h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 sm:grid">
             <FileIcon />
@@ -276,9 +419,13 @@ const COACard = memo(function COACard({
               <MetaValue label="Content" value={file.quantity} mono={false} />
             </div>
           </div>
+
+          <span className="pointer-events-none flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/25 bg-red-500/10 text-red-300 shadow-[0_10px_28px_rgba(220,38,38,0.12)] transition group-active:scale-95 group-active:bg-red-600 group-active:text-white sm:hidden">
+            <ArrowIcon />
+          </span>
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
+        <div className="hidden shrink-0 grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
           {fileHasHistory && (
             <button
               type="button"
@@ -286,7 +433,7 @@ const COACard = memo(function COACard({
               aria-expanded={isHistoryOpen}
               className="hidden h-10 items-center justify-center gap-1.5 rounded-xl border border-transparent px-3 text-xs font-bold text-white/65 transition hover:border-white/10 hover:text-white sm:inline-flex"
             >
-              History
+              Earlier COAs
               <ChevronIcon open={isHistoryOpen} />
             </button>
           )}
@@ -374,7 +521,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
     const current = {
       ...file,
       isHistorical: false,
-      versionLabel: "Current",
+      versionLabel: "Latest COA",
     };
 
     const history = Array.isArray(file.history)
@@ -427,21 +574,31 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 24, opacity: 0, scale: 0.99 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-2 bottom-2 flex h-[76dvh] max-h-[760px] flex-col overflow-hidden rounded-[1.55rem] border border-white/10 bg-[#050505] shadow-[0_-20px_70px_rgba(0,0,0,0.58)] sm:inset-x-3 sm:bottom-3 lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:max-h-none lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-none lg:rounded-l-[2rem] lg:border-y-0 lg:border-r-0 lg:border-l lg:shadow-[-30px_0_100px_rgba(0,0,0,0.65)]"
+          className="absolute inset-x-2 bottom-2 flex h-[68dvh] min-h-[420px] max-h-[680px] flex-col overflow-hidden rounded-[1.55rem] border border-white/10 bg-[#050505] shadow-[0_-20px_70px_rgba(0,0,0,0.58)] sm:inset-x-3 sm:bottom-3 lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:max-h-none lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-none lg:rounded-l-[2rem] lg:border-y-0 lg:border-r-0 lg:border-l lg:shadow-[-30px_0_100px_rgba(0,0,0,0.65)]"
         >
           <div className="flex shrink-0 justify-center pb-1.5 pt-2 lg:hidden">
             <span className="h-1 w-10 rounded-full bg-white/20" />
           </div>
 
-          <div className="relative z-20 flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-[#080808]/96 px-3 pb-2.5 pt-1.5 backdrop-blur-xl sm:px-4 sm:py-3 lg:min-h-[70px] lg:px-5">
-            <div className="min-w-0">
+          <div className="relative z-20 flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#080808]/96 px-2.5 pb-2.5 pt-1.5 backdrop-blur-xl sm:px-4 sm:py-3 lg:min-h-[70px] lg:px-5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 min-w-[92px] shrink-0 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.065] px-3 text-[12px] font-black text-white transition active:scale-[0.97] active:bg-red-600 lg:hidden"
+              aria-label="Back to certificates"
+            >
+              <ChevronLeftIcon />
+              Back
+            </button>
+
+            <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-black text-white sm:text-sm lg:text-base">
                 {activeFile.product || activeFile.code || "Certificate"}
               </p>
               <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.09em] text-white/38 sm:text-[10px]">
                 {[activeFile.lot && `Lot ${activeFile.lot}`, activeFile.sku, activeFile.purity]
                   .filter(Boolean)
-                  .join(" · ") || "Current certificate"}
+                  .join(" · ") || "Latest COA"}
               </p>
             </div>
 
@@ -451,7 +608,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
                   href={pdfUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="hidden h-9 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-[9px] font-black uppercase tracking-[0.1em] text-white/55 transition hover:border-red-500/30 hover:text-white sm:inline-flex"
+                  className="hidden h-9 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-[9px] font-black uppercase tracking-[0.1em] text-white/55 transition hover:border-red-500/30 hover:text-white lg:inline-flex"
                 >
                   Original
                   <ArrowIcon />
@@ -461,7 +618,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-white/70 transition active:scale-95 lg:hover:border-red-500/30 lg:hover:bg-red-500/10 lg:hover:text-white"
+                className="hidden h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-white/70 transition active:scale-95 lg:flex lg:hover:border-red-500/30 lg:hover:bg-red-500/10 lg:hover:text-white"
                 aria-label="Close COA viewer"
               >
                 <CloseIcon />
@@ -475,7 +632,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
                 {versions.map((version, index) => {
                   const selected = index === safeVersionIndex;
                   const label = index === 0
-                    ? "Current"
+                    ? "Latest COA"
                     : version.lot
                       ? `Lot ${version.lot}`
                       : `Version ${index}`;
@@ -486,7 +643,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
                       type="button"
                       onClick={() => onVersionChange?.(index)}
                       className={cn(
-                        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-[10px] font-black transition active:scale-[0.97]",
+                        "inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border px-4 text-[11px] font-black transition active:scale-[0.97] sm:h-10 sm:px-3 sm:text-[10px]",
                         selected
                           ? "border-red-500/50 bg-red-600 text-white shadow-[0_8px_20px_rgba(220,38,38,0.18)]"
                           : "border-white/10 bg-white/[0.035] text-white/55 hover:border-white/20 hover:text-white"
@@ -534,7 +691,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
                 href={pdfUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/[0.055] text-[10px] font-black uppercase tracking-[0.11em] text-white/65 active:bg-white/10"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white/[0.065] text-[11px] font-black uppercase tracking-[0.1em] text-white/75 active:scale-[0.99] active:bg-white/10"
               >
                 Open original PDF
                 <ArrowIcon />
@@ -846,26 +1003,28 @@ export default function COASection() {
   const allCoas = useMemo(() => {
     const companies = Array.isArray(coaData?.companies) ? coaData.companies : [];
 
-    return companies.flatMap((company) => {
-      const companyName = company?.name || "";
-      const aliases = Array.isArray(company?.aliases) ? company.aliases : [];
-      const files = Array.isArray(company?.files) ? company.files : [];
+    return companies
+      .flatMap((company) => {
+        const companyName = company?.name || "";
+        const aliases = Array.isArray(company?.aliases) ? company.aliases : [];
+        const files = Array.isArray(company?.files) ? company.files : [];
 
-      return files.filter(Boolean).map((file) => {
-        const history = Array.isArray(file.history) ? file.history.filter(Boolean) : [];
-        const historyText = buildHistoryText(history);
-        const key = getHistoryKey(file);
+        return files.filter(Boolean).map((file) => {
+          const history = Array.isArray(file.history) ? file.history.filter(Boolean) : [];
+          const historyText = buildHistoryText(history);
+          const key = getHistoryKey(file);
 
-        return {
-          ...file,
-          key,
-          history,
-          company: companyName,
-          aliases,
-          searchText: buildSearchText(file, companyName, aliases, historyText),
-        };
-      });
-    });
+          return {
+            ...file,
+            key,
+            history,
+            company: companyName,
+            aliases,
+            searchText: buildSearchText(file, companyName, aliases, historyText),
+          };
+        });
+      })
+      .sort((a, b) => compareProductsByCustomOrder(a?.product, b?.product));
   }, [coaData]);
 
   const compoundCounts = useMemo(() => {
@@ -878,9 +1037,7 @@ export default function COASection() {
   }, [allCoas]);
 
   const compoundList = useMemo(() => {
-    return [...compoundCounts.keys()].sort((a, b) =>
-      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
-    );
+    return [...compoundCounts.keys()].sort(compareProductsByCustomOrder);
   }, [compoundCounts]);
 
   const navItems = useMemo(
@@ -929,7 +1086,9 @@ export default function COASection() {
 
         return { file, score };
       })
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) =>
+        b.score - a.score || compareProductsByCustomOrder(a.file?.product, b.file?.product)
+      )
       .slice(0, 6)
       .map((item) => item.file);
   }, [allCoas, deferredQuery]);
@@ -1132,7 +1291,7 @@ export default function COASection() {
                   type="button"
                   onClick={clearSearch}
                   aria-label="Clear search"
-                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white"
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-white/45 transition active:bg-white/10 hover:bg-white/10 hover:text-white"
                 >
                   <CloseIcon />
                 </button>
@@ -1164,7 +1323,7 @@ export default function COASection() {
                         key={file.key || `${file.code}-${file.lot || file.url}`}
                         type="button"
                         onClick={() => openCoa(file)}
-                        className="group flex min-h-[68px] w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition active:bg-red-600/20"
+                        className="group flex min-h-[76px] w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left transition active:scale-[0.995] active:bg-red-600/20"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-[14px] font-black text-white">
@@ -1177,7 +1336,7 @@ export default function COASection() {
                           </div>
                         </div>
 
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.1)]">
                           <ArrowIcon />
                         </span>
                       </button>
