@@ -1184,6 +1184,7 @@ export default function COASection() {
   const [activeCoa, setActiveCoa] = useState(null);
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [footerNearby, setFooterNearby] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
   const searchWrapperRef = useRef(null);
@@ -1238,6 +1239,41 @@ export default function COASection() {
     } catch {
       setRecentlyViewed([]);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let frame = 0;
+    const getFooter = () =>
+      document.querySelector('footer, [role="contentinfo"], #footer, .site-footer');
+
+    const updateFooterProximity = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const footer = getFooter();
+        if (!footer) {
+          setFooterNearby(false);
+          return;
+        }
+
+        const rect = footer.getBoundingClientRect();
+        // Hide the floating Browse control shortly BEFORE the footer enters view,
+        // so it never sits on top of footer content.
+        const hideBeforeFooter = rect.top <= window.innerHeight + 120;
+        setFooterNearby(hideBeforeFooter);
+      });
+    };
+
+    updateFooterProximity();
+    window.addEventListener("scroll", updateFooterProximity, { passive: true });
+    window.addEventListener("resize", updateFooterProximity);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updateFooterProximity);
+      window.removeEventListener("resize", updateFooterProximity);
+    };
   }, []);
 
   useEffect(() => {
@@ -1475,14 +1511,23 @@ export default function COASection() {
   }, [deferredQuery, selectedCategory, updateUrl]);
 
   const selectCategory = useCallback((id) => {
+    const preservedScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+
     setSelectedCategory(id);
     setQuery("");
     setSuggestionsOpen(false);
     setMobileProductsOpen(false);
     setActiveSuggestion(-1);
-    window.requestAnimationFrame(() => {
-      resultsTopRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    });
+
+    // Changing products should feel like swapping content in-place, not navigating
+    // somewhere else on the page. Keep the viewport anchored exactly where it was.
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          window.scrollTo({ top: preservedScrollY, left: 0, behavior: "auto" });
+        });
+      });
+    }
   }, []);
 
   const clearSearch = useCallback(() => {
@@ -1762,7 +1807,7 @@ export default function COASection() {
         >
           <CategoryNav items={navItems} activeId={isSearching ? null : selectedCategory} onSelect={selectCategory} />
 
-          <div ref={resultsTopRef} className="min-w-0 flex-1 scroll-mt-24">
+          <div ref={resultsTopRef} className="min-w-0 flex-1 scroll-mt-24 [overflow-anchor:none]">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
                 {!isSearching && selectedCategory && (
@@ -1790,6 +1835,13 @@ export default function COASection() {
               )}
             </div>
 
+            <motion.div
+              key={isSearching ? `search:${deferredQuery}` : `product:${selectedCategory || ALL_ID}`}
+              initial={{ opacity: 0.72 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="[overflow-anchor:none]"
+            >
             {libraryStatus === "loading" ? (
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-7 text-center">
                 <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
@@ -1853,12 +1905,13 @@ export default function COASection() {
                 ))}
               </div>
             )}
+            </motion.div>
           </div>
         </motion.div>
       </div>
 
       <AnimatePresence>
-        {!mobileProductsOpen && !activeCoa && (
+        {!mobileProductsOpen && !activeCoa && !footerNearby && (
           <motion.button
             type="button"
             onClick={() => {
@@ -1867,8 +1920,8 @@ export default function COASection() {
             }}
             initial={{ opacity: 0, y: 22, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.98 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, y: 34, scale: 0.985 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             aria-label="Browse COA products"
             className="fixed bottom-[max(0.9rem,env(safe-area-inset-bottom))] left-1/2 z-[180] flex min-h-[64px] w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl active:scale-[0.985] lg:hidden"
           >
