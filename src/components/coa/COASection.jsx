@@ -15,43 +15,6 @@ const URL_SYNC_DELAY = 400;
 const ALL_ID = "";
 const RECENT_COAS_STORAGE_KEY = "rgvprime_recent_coas_v1";
 
-function smoothScrollWindowTo(targetY, duration = 720) {
-  if (typeof window === "undefined") return;
-
-  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-  if (prefersReducedMotion) {
-    window.scrollTo(0, targetY);
-    return;
-  }
-
-  const startY = window.scrollY;
-  const distance = targetY - startY;
-  if (Math.abs(distance) < 4) return;
-
-  if (window.__rgvCoaScrollFrame) {
-    window.cancelAnimationFrame(window.__rgvCoaScrollFrame);
-  }
-
-  const startedAt = performance.now();
-  // Smootherstep gives a calm start and a calm stop instead of the old fast kick.
-  const smootherStep = (value) =>
-    value * value * value * (value * (value * 6 - 15) + 10);
-
-  const step = (now) => {
-    const progress = Math.min(1, (now - startedAt) / duration);
-    const eased = smootherStep(progress);
-    window.scrollTo(0, startY + distance * eased);
-
-    if (progress < 1) {
-      window.__rgvCoaScrollFrame = window.requestAnimationFrame(step);
-    } else {
-      window.__rgvCoaScrollFrame = null;
-    }
-  };
-
-  window.__rgvCoaScrollFrame = window.requestAnimationFrame(step);
-}
-
 const customProductOrder = [
   {
     rank: 1,
@@ -1221,19 +1184,15 @@ export default function COASection() {
   const [activeCoa, setActiveCoa] = useState(null);
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [resultsMinHeight, setResultsMinHeight] = useState(null);
   const [browseDocked, setBrowseDocked] = useState(false);
-  const [browseVisible, setBrowseVisible] = useState(true);
 
   const deferredQuery = useDeferredValue(query);
   const sectionRef = useRef(null);
   const browseButtonRef = useRef(null);
-  const browsePositionFrameRef = useRef(null);
   const searchWrapperRef = useRef(null);
   const resultsTopRef = useRef(null);
-  const resultsPanelRef = useRef(null);
-  const categoryScrollTimerRef = useRef(null);
-  const resultsHeightReleaseTimerRef = useRef(null);
+  const browseEndSentinelRef = useRef(null);
+  const categoryApplyTimerRef = useRef(null);
   const urlSyncTimer = useRef(null);
 
   useEffect(() => {
@@ -1288,66 +1247,33 @@ export default function COASection() {
 
   useEffect(() => {
     return () => {
-      if (typeof window !== "undefined" && window.__rgvCoaScrollFrame) {
-        window.cancelAnimationFrame(window.__rgvCoaScrollFrame);
-        window.__rgvCoaScrollFrame = null;
-      }
-      window.clearTimeout(categoryScrollTimerRef.current);
-      window.clearTimeout(resultsHeightReleaseTimerRef.current);
-      if (browsePositionFrameRef.current) {
-        window.cancelAnimationFrame(browsePositionFrameRef.current);
-        browsePositionFrameRef.current = null;
+      if (typeof window !== "undefined") {
+        window.clearTimeout(categoryApplyTimerRef.current);
       }
     };
   }, []);
 
-  // One Browse control only. It is fixed while the COA section has room below it,
-  // then the SAME element docks to the bottom of this section before the footer.
-  // Once the section itself has almost left the viewport, it fades away instead
-  // of travelling upward into the site's navigation area.
+  // Browse uses one DOM node only. No scroll listener, no per-frame measurements.
+  // A 1px sentinel at the end of the COA section tells us when the fixed button
+  // should become section-anchored. The handoff happens exactly when the section
+  // bottom reaches the viewport bottom, so the button does not visibly jump.
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    const updateBrowsePosition = () => {
-      browsePositionFrameRef.current = null;
-      const section = sectionRef.current;
-      if (!section) return;
+    const sentinel = browseEndSentinelRef.current;
+    if (!sentinel || !("IntersectionObserver" in window)) return undefined;
 
-      const sectionRect = section.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-      const browseHeight = browseButtonRef.current?.getBoundingClientRect().height || 64;
-      const fixedBottomGap = 14;
-      const navigationSafeTop = 104;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const viewportBottom = entry.rootBounds?.bottom ?? window.innerHeight;
+        setBrowseDocked(entry.boundingClientRect.top <= viewportBottom);
+      },
+      { root: null, threshold: 0 }
+    );
 
-      // Dock at almost the exact point where a fixed button would begin crossing
-      // the end of the COA section. This keeps the handoff visually seamless.
-      const shouldDock = sectionRect.bottom <= viewportHeight - fixedBottomGap + 8;
-      const shouldShow =
-        sectionRect.top < viewportHeight &&
-        sectionRect.bottom > navigationSafeTop + browseHeight + 18;
-
-      setBrowseDocked((current) => (current === shouldDock ? current : shouldDock));
-      setBrowseVisible((current) => (current === shouldShow ? current : shouldShow));
-    };
-
-    const requestUpdate = () => {
-      if (browsePositionFrameRef.current) return;
-      browsePositionFrameRef.current = window.requestAnimationFrame(updateBrowsePosition);
-    };
-
-    requestUpdate();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", requestUpdate);
-      window.removeEventListener("resize", requestUpdate);
-      if (browsePositionFrameRef.current) {
-        window.cancelAnimationFrame(browsePositionFrameRef.current);
-        browsePositionFrameRef.current = null;
-      }
-    };
-  }, []);
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [libraryStatus, navItems.length]);
 
   useEffect(() => {
     if (!mobileProductsOpen) return;
@@ -1584,48 +1510,58 @@ export default function COASection() {
   }, [deferredQuery, selectedCategory, updateUrl]);
 
   const selectCategory = useCallback((id) => {
-    const currentPanelHeight = resultsPanelRef.current?.getBoundingClientRect().height;
-    if (currentPanelHeight && Number.isFinite(currentPanelHeight)) {
-      // Hold the old result height while the new compound renders. Without this,
-      // choosing a compound with fewer COAs can make the document collapse first
-      // and create the ugly jump the user was seeing.
-      setResultsMinHeight(Math.ceil(currentPanelHeight));
+    const applySelection = () => {
+      setSelectedCategory(id);
+      setQuery("");
+      setSuggestionsOpen(false);
+      setMobileProductsOpen(false);
+      setActiveSuggestion(-1);
+      setCurrentPage(1);
+      setOpenHistory({});
+    };
+
+    if (typeof window === "undefined" || window.innerWidth >= 1024) {
+      applySelection();
+      return;
     }
 
-    setSelectedCategory(id);
-    setQuery("");
+    // Close the picker first, but keep the current result list in place while the
+    // viewport glides upward. Changing a long list into a short one BEFORE the
+    // scroll was the main cause of the hard mobile jump / page-height collapse.
     setSuggestionsOpen(false);
     setMobileProductsOpen(false);
     setActiveSuggestion(-1);
+    window.clearTimeout(categoryApplyTimerRef.current);
 
-    if (typeof window === "undefined") return;
-
-    window.clearTimeout(categoryScrollTimerRef.current);
-    window.clearTimeout(resultsHeightReleaseTimerRef.current);
-
-    // Give the mobile picker one short beat to close and restore body scrolling.
-    // Then glide to the result header with a slow accelerate/decelerate curve.
-    categoryScrollTimerRef.current = window.setTimeout(() => {
+    window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         const target = resultsTopRef.current;
         if (!target) {
-          setResultsMinHeight(null);
+          applySelection();
           return;
         }
 
-        const topOffset = window.innerWidth < 640 ? 96 : window.innerWidth < 1024 ? 108 : 118;
+        const topOffset = window.innerWidth < 640 ? 88 : 104;
         const targetY = Math.max(
           0,
           target.getBoundingClientRect().top + window.scrollY - topOffset
         );
+        const distance = Math.abs(window.scrollY - targetY);
 
-        smoothScrollWindowTo(targetY, 920);
+        if (distance < 72) {
+          applySelection();
+          return;
+        }
 
-        resultsHeightReleaseTimerRef.current = window.setTimeout(() => {
-          setResultsMinHeight(null);
-        }, 1020);
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+
+        // Apply the compound after the viewport has started moving. Native smooth
+        // scrolling stays on the browser compositor and is much less janky than
+        // calling window.scrollTo() on every animation frame from React code.
+        const delay = distance > 900 ? 520 : distance > 450 ? 430 : 330;
+        categoryApplyTimerRef.current = window.setTimeout(applySelection, delay);
       });
-    }, 110);
+    });
   }, []);
 
   const clearSearch = useCallback(() => {
@@ -1686,7 +1622,10 @@ export default function COASection() {
   const resultLabel = activeList && activeList.length === 1 ? "result" : "results";
 
   let panelTitle = "All products";
-  let panelSubtitle = `${navItems.length} products · ${totalCoaCount} certificates`;
+  let panelSubtitle =
+    libraryStatus === "ready"
+      ? `${navItems.length} products · ${totalCoaCount} certificates`
+      : "Loading certificate library…";
   if (isSearching) {
     panelTitle = `Results for "${query}"`;
     panelSubtitle = null;
@@ -1699,7 +1638,7 @@ export default function COASection() {
     <section
       ref={sectionRef}
       id="coa"
-      className="relative w-full overflow-x-clip bg-[#030303] px-3 pb-[7.25rem] pt-[148px] text-white sm:px-4 sm:pb-[7.5rem] sm:pt-[160px] lg:px-6 lg:pb-20 lg:pt-[180px]"
+      className="relative w-full overflow-x-clip bg-[#030303] px-3 pb-[8rem] pt-[148px] text-white sm:px-4 sm:pb-[8rem] sm:pt-[160px] lg:px-6 lg:pb-20 lg:pt-[180px]"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(220,38,38,0.13),transparent_34%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.16] [mask-image:linear-gradient(to_bottom,black,transparent_72%)]" />
@@ -1909,12 +1848,8 @@ export default function COASection() {
           <CategoryNav items={navItems} activeId={isSearching ? null : selectedCategory} onSelect={selectCategory} />
 
           <div
-            ref={(node) => {
-              resultsTopRef.current = node;
-              resultsPanelRef.current = node;
-            }}
-            style={{ minHeight: resultsMinHeight ? `${resultsMinHeight}px` : undefined }}
-            className="min-w-0 flex-1 scroll-mt-24 [overflow-anchor:none] transition-[min-height] duration-500 ease-out"
+            ref={resultsTopRef}
+            className="min-w-0 flex-1 scroll-mt-24 [overflow-anchor:none]"
           >
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
@@ -2018,55 +1953,52 @@ export default function COASection() {
         </motion.div>
       </div>
 
-      {/* One mobile Browse control. Fixed while browsing, then the same DOM node
-          docks to the section bottom before the footer can overlap it. */}
-      <AnimatePresence>
-        {!mobileProductsOpen && !activeCoa && browseVisible && (
-          <motion.button
-            ref={browseButtonRef}
-            type="button"
-            onClick={() => {
-              setSuggestionsOpen(false);
-              setMobileProductsOpen(true);
-            }}
-            initial={{ opacity: 0, y: 14, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.99 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            aria-label="Browse COA products"
-            style={
-              browseDocked
-                ? undefined
-                : { bottom: "calc(14px + env(safe-area-inset-bottom))" }
-            }
-            className={cn(
-              "left-1/2 z-[120] flex min-h-[64px] w-[calc(100%_-_1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.76),0_0_0_1px_rgba(255,255,255,0.025)] backdrop-blur-2xl active:scale-[0.985] lg:hidden",
-              browseDocked ? "absolute bottom-4" : "fixed"
-            )}
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
-                <SlidersIcon />
+      {/* End-of-section sentinel for the single mobile Browse control. */}
+      <div
+        ref={browseEndSentinelRef}
+        className="pointer-events-none absolute bottom-0 left-0 h-px w-px lg:hidden"
+        aria-hidden="true"
+      />
+
+      {/* Exactly one Browse control. It stays fixed while browsing and becomes
+          section-anchored only when the section bottom reaches the viewport. */}
+      {libraryStatus === "ready" && navItems.length > 0 && !mobileProductsOpen && !activeCoa && (
+        <button
+          ref={browseButtonRef}
+          type="button"
+          onClick={() => {
+            setSuggestionsOpen(false);
+            setMobileProductsOpen(true);
+          }}
+          aria-label="Browse COA products"
+          style={{ bottom: "calc(14px + env(safe-area-inset-bottom))" }}
+          className={cn(
+            "left-1/2 z-[120] flex min-h-[64px] w-[calc(100%_-_1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.76),0_0_0_1px_rgba(255,255,255,0.025)] backdrop-blur-2xl transition-[background-color,border-color,box-shadow] duration-200 active:scale-[0.985] lg:hidden",
+            browseDocked ? "absolute" : "fixed"
+          )}
+        >
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
+              <SlidersIcon />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
+                Browse COAs
               </span>
-              <span className="min-w-0">
-                <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
-                  Browse COAs
-                </span>
-                <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
-                  {selectedCategory || `All ${navItems.length} products`}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
-                  Tap to choose a product
-                </span>
+              <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
+                {selectedCategory || `All ${navItems.length} products`}
+              </span>
+              <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
+                Tap to choose a product
               </span>
             </span>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
-              <ChevronIcon />
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
+          </span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
+            <ChevronIcon />
+          </span>
+        </button>
+      )}
 
       <COAViewer
         file={activeCoa}
