@@ -1273,7 +1273,7 @@ export default function COASection() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [libraryStatus, navItems.length]);
+  }, [libraryStatus]);
 
   useEffect(() => {
     if (!mobileProductsOpen) return;
