@@ -15,6 +15,41 @@ const URL_SYNC_DELAY = 400;
 const ALL_ID = "";
 const RECENT_COAS_STORAGE_KEY = "rgvprime_recent_coas_v1";
 
+function smoothScrollWindowTo(targetY, duration = 720) {
+  if (typeof window === "undefined") return;
+
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  if (prefersReducedMotion) {
+    window.scrollTo(0, targetY);
+    return;
+  }
+
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+  if (Math.abs(distance) < 4) return;
+
+  if (window.__rgvCoaScrollFrame) {
+    window.cancelAnimationFrame(window.__rgvCoaScrollFrame);
+  }
+
+  const startedAt = performance.now();
+  const easeOutQuart = (value) => 1 - Math.pow(1 - value, 4);
+
+  const step = (now) => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = easeOutQuart(progress);
+    window.scrollTo(0, startY + distance * eased);
+
+    if (progress < 1) {
+      window.__rgvCoaScrollFrame = window.requestAnimationFrame(step);
+    } else {
+      window.__rgvCoaScrollFrame = null;
+    }
+  };
+
+  window.__rgvCoaScrollFrame = window.requestAnimationFrame(step);
+}
+
 const customProductOrder = [
   {
     rank: 1,
@@ -1184,12 +1219,14 @@ export default function COASection() {
   const [activeCoa, setActiveCoa] = useState(null);
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [isBrowseDocked, setIsBrowseDocked] = useState(false);
+  const [resultsMinHeight, setResultsMinHeight] = useState(null);
 
   const deferredQuery = useDeferredValue(query);
   const searchWrapperRef = useRef(null);
   const resultsTopRef = useRef(null);
-  const browseDockRef = useRef(null);
+  const resultsPanelRef = useRef(null);
+  const categoryScrollTimerRef = useRef(null);
+  const resultsHeightReleaseTimerRef = useRef(null);
   const urlSyncTimer = useRef(null);
 
   useEffect(() => {
@@ -1243,27 +1280,14 @@ export default function COASection() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const node = browseDockRef.current;
-    if (!node || !("IntersectionObserver" in window)) return undefined;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsBrowseDocked(Boolean(entry?.isIntersecting));
-      },
-      {
-        root: null,
-        // Switch from the floating control to the in-flow dock a little before
-        // the end of the COA section reaches the viewport. This prevents the
-        // floating control from ever entering or covering the footer/nav area.
-        rootMargin: "0px 0px 92px 0px",
-        threshold: 0.01,
+    return () => {
+      if (typeof window !== "undefined" && window.__rgvCoaScrollFrame) {
+        window.cancelAnimationFrame(window.__rgvCoaScrollFrame);
+        window.__rgvCoaScrollFrame = null;
       }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
+      window.clearTimeout(categoryScrollTimerRef.current);
+      window.clearTimeout(resultsHeightReleaseTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -1501,15 +1525,43 @@ export default function COASection() {
   }, [deferredQuery, selectedCategory, updateUrl]);
 
   const selectCategory = useCallback((id) => {
+    const currentPanelHeight = resultsPanelRef.current?.getBoundingClientRect().height;
+    if (currentPanelHeight && Number.isFinite(currentPanelHeight)) {
+      // Freeze the current result area briefly. This prevents the document from
+      // collapsing when the next compound has fewer COAs, which is what caused
+      // the ugly instant jump near the bottom of the page.
+      setResultsMinHeight(Math.ceil(currentPanelHeight));
+    }
+
     setSelectedCategory(id);
     setQuery("");
     setSuggestionsOpen(false);
     setMobileProductsOpen(false);
     setActiveSuggestion(-1);
 
-    // Do not force window.scrollTo() here. Keeping the viewport untouched avoids
-    // the hard jump that happened when switching from a long product list to a
-    // shorter one and the browser clamped the old scroll position.
+    if (typeof window === "undefined") return;
+
+    window.clearTimeout(categoryScrollTimerRef.current);
+    window.clearTimeout(resultsHeightReleaseTimerRef.current);
+
+    categoryScrollTimerRef.current = window.setTimeout(() => {
+      const target = resultsTopRef.current;
+      if (!target) {
+        setResultsMinHeight(null);
+        return;
+      }
+
+      // Leave enough breathing room for the site header so the selected compound
+      // lands high on screen without being hidden under navigation.
+      const topOffset = window.innerWidth < 640 ? 92 : window.innerWidth < 1024 ? 104 : 118;
+      const targetY = Math.max(0, target.getBoundingClientRect().top + window.scrollY - topOffset);
+
+      smoothScrollWindowTo(targetY, 760);
+
+      resultsHeightReleaseTimerRef.current = window.setTimeout(() => {
+        setResultsMinHeight(null);
+      }, 860);
+    }, 90);
   }, []);
 
   const clearSearch = useCallback(() => {
@@ -1747,6 +1799,54 @@ export default function COASection() {
 
         </motion.div>
 
+        {/* One mobile Browse control only. It is sticky inside the COA section, so it
+            behaves like a bottom action while browsing but naturally stops at the
+            section boundary instead of floating over the footer/navigation. */}
+        <div
+          className="pointer-events-none sticky z-[120] -mb-[70px] h-[70px] lg:hidden"
+          style={{ top: "calc(100svh - 84px - env(safe-area-inset-bottom))" }}
+        >
+          <AnimatePresence>
+            {!mobileProductsOpen && !activeCoa && (
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setSuggestionsOpen(false);
+                  setMobileProductsOpen(true);
+                }}
+                initial={{ opacity: 0, y: 10, scale: 0.99 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.99 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                aria-label="Browse COA products"
+                className="pointer-events-auto relative mx-auto flex min-h-[64px] w-[calc(100%_-_0.75rem)] max-w-[430px] items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.76),0_0_0_1px_rgba(255,255,255,0.025)] backdrop-blur-2xl active:scale-[0.985]"
+              >
+                <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
+                    <SlidersIcon />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
+                      Browse COAs
+                    </span>
+                    <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
+                      {selectedCategory || `All ${navItems.length} products`}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
+                      Tap to choose a product
+                    </span>
+                  </span>
+                </span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
+                  <ChevronIcon />
+                </span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+
+
         {resolvedRecentCoas.length > 0 && !isSearching && (
           <div className="mx-auto mt-4 w-full max-w-[760px] sm:mt-6">
             <div className="mb-2 flex items-center justify-between px-1">
@@ -1789,7 +1889,14 @@ export default function COASection() {
         >
           <CategoryNav items={navItems} activeId={isSearching ? null : selectedCategory} onSelect={selectCategory} />
 
-          <div ref={resultsTopRef} className="min-w-0 flex-1 scroll-mt-24 [overflow-anchor:none]">
+          <div
+            ref={(node) => {
+              resultsTopRef.current = node;
+              resultsPanelRef.current = node;
+            }}
+            style={{ minHeight: resultsMinHeight ? `${resultsMinHeight}px` : undefined }}
+            className="min-w-0 flex-1 scroll-mt-24 [overflow-anchor:none] transition-[min-height] duration-500 ease-out"
+          >
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
                 {!isSearching && selectedCategory && (
@@ -1891,85 +1998,6 @@ export default function COASection() {
           </div>
         </motion.div>
       </div>
-
-      {/* Mobile browse dock: this lives in normal document flow directly above the
-          footer boundary. The fixed Browse control hands off to this copy before
-          the footer enters, so nothing can overlap the footer or navigation. */}
-      <div className="h-[5.5rem] lg:hidden" aria-hidden="true" />
-      <div ref={browseDockRef} className="relative z-20 mx-auto w-full max-w-[430px] lg:hidden">
-        {!mobileProductsOpen && !activeCoa && (
-          <button
-            type="button"
-            onClick={() => {
-              setSuggestionsOpen(false);
-              setMobileProductsOpen(true);
-            }}
-            aria-label="Browse COA products"
-            className="relative flex min-h-[64px] w-full items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_18px_55px_rgba(0,0,0,0.58),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl active:scale-[0.985]"
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
-                <SlidersIcon />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
-                  Browse COAs
-                </span>
-                <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
-                  {selectedCategory || `All ${navItems.length} products`}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
-                  Tap to choose a product
-                </span>
-              </span>
-            </span>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
-              <ChevronIcon />
-            </span>
-          </button>
-        )}
-      </div>
-
-      <AnimatePresence>
-        {!isBrowseDocked && !mobileProductsOpen && !activeCoa && (
-          <motion.button
-            type="button"
-            onClick={() => {
-              setSuggestionsOpen(false);
-              setMobileProductsOpen(true);
-            }}
-            initial={{ opacity: 0, y: 18, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.99 }}
-            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            aria-label="Browse COA products"
-            style={{ bottom: "calc(14px + env(safe-area-inset-bottom))" }}
-            className="fixed left-1/2 z-[120] flex min-h-[64px] w-[calc(100%-1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl active:scale-[0.985] lg:hidden"
-          >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/12 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.12)]">
-                <SlidersIcon />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-red-300/80">
-                  Browse COAs
-                </span>
-                <span className="mt-0.5 block truncate text-[13px] font-black tracking-[-0.01em] text-white">
-                  {selectedCategory || `All ${navItems.length} products`}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/35">
-                  Tap to choose a product
-                </span>
-              </span>
-            </span>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white/60">
-              <ChevronIcon />
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
 
       <COAViewer
         file={activeCoa}
