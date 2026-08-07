@@ -634,23 +634,6 @@ function cleanNotifierMessage(value, type = "success") {
   return plain || "Something went wrong. Please try again.";
 }
 
-function IconShield() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-
 function IconBag() {
   return (
     <svg
@@ -1123,9 +1106,6 @@ export default function ProductDetails({ slug }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [justAdded, setJustAdded] = useState(false);
-  const [coaFiles, setCoaFiles] = useState([]);
-  const [coaStatus, setCoaStatus] = useState("idle");
-
   const [notifyName, setNotifyName] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState("idle");
@@ -1143,9 +1123,6 @@ export default function ProductDetails({ slug }) {
         setNotifyEmail("");
         setNotifyStatus("idle");
         setNotifyMessage("");
-        setCoaFiles([]);
-        setCoaStatus("idle");
-
         const cleanSlug = String(slug || "").trim();
 
         if (!cleanSlug) {
@@ -1194,47 +1171,6 @@ export default function ProductDetails({ slug }) {
     return getSelectedVariation(product, selectedVariants);
   }, [product, selectedVariants]);
 
-  useEffect(() => {
-    if (!product?.id) {
-      setCoaFiles([]);
-      setCoaStatus("idle");
-      return;
-    }
-
-    const controller = new AbortController();
-    const variationId = selectedVariation?.id || 0;
-
-    async function loadProductCoas() {
-      setCoaStatus("loading");
-
-      try {
-        const params = new URLSearchParams({ product_id: String(product.id) });
-        if (variationId) params.set("variation_id", String(variationId));
-
-        const response = await fetch(`/api/coas?${params.toString()}`, {
-          headers: { Accept: "application/json" },
-          signal: controller.signal,
-        });
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(payload?.error || "Could not load product certificates.");
-        }
-
-        setCoaFiles(Array.isArray(payload?.items) ? payload.items : []);
-        setCoaStatus("ready");
-      } catch (error) {
-        if (error?.name === "AbortError") return;
-        console.error("COA library:", error);
-        setCoaFiles([]);
-        setCoaStatus("error");
-      }
-    }
-
-    loadProductCoas();
-    return () => controller.abort();
-  }, [product?.id, selectedVariation?.id]);
-
   const displayProduct = useMemo(() => {
     return selectedVariation
       ? mergeProductWithVariation(product, selectedVariation)
@@ -1260,8 +1196,6 @@ export default function ProductDetails({ slug }) {
 
   const canAddToCart =
     isInstock && (!hasVariants || !hasVariationData || Boolean(selectedVariation));
-
-  const coaFile = coaFiles[0] || null;
 
   const sku = displayProduct?.sku ? displayProduct.sku : "N/A";
   const productType = selectedVariation
@@ -1323,8 +1257,6 @@ export default function ProductDetails({ slug }) {
         : String(product.id),
       short_description: product.short_description || "",
       description: product.description || "",
-      coa_url: coaFile?.url || "",
-      coa_code: coaFile?.code || "",
     };
 
     addItem(itemToAdd, quantity);
@@ -1611,56 +1543,7 @@ export default function ProductDetails({ slug }) {
                 />
               )}
 
-              {coaStatus === "loading" && coaFiles.length === 0 && (
-                <div className="mt-5 flex max-w-2xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-xs font-bold text-white/40">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-rose-400" />
-                  Checking Current Shipping certificates…
-                </div>
-              )}
-
-              {coaFiles.length > 0 && (
-                <div className="mt-5 grid max-w-2xl gap-2.5">
-                  {coaFiles.map((coaItem) => (
-                    <a
-                      key={coaItem.id || coaItem.url || coaItem.code}
-                      href={coaItem.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-between gap-4 rounded-2xl border border-rose-400/15 bg-rose-500/[0.045] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-rose-300/35 hover:bg-rose-500/[0.075]"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10 text-rose-200">
-                          <IconShield />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/85">
-                            Current Shipping COA
-                          </p>
-
-                          <p className="mt-1 truncate text-[12px] font-bold text-rose-200/75">
-                            LOT: {coaItem.lot || "Available"}
-                            {coaItem.purity ? ` · Purity: ${coaItem.purity}` : ""}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200/75 transition group-hover:text-white">
-                        View COA
-                        <IconArrow />
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <MiniTrustItem
-                  title="Lab File"
-                  text={coaFile ? "COA available" : "Upon availability"}
-                  icon={<IconShield />}
-                />
-
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 <MiniTrustItem
                   title="Secure"
                   text="Protected checkout"
@@ -2092,11 +1975,6 @@ export default function ProductDetails({ slug }) {
                 value={stockQuantity}
               />
 
-              <TechnicalRow
-                icon={<IconShield />}
-                label="COA Status"
-                value={coaFile ? "Available" : "Upon Availability"}
-              />
             </div>
           </aside>
         </div>

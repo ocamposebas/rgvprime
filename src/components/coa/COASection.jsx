@@ -58,6 +58,16 @@ function buildSearchText(file, companyName, aliases = [], historyText = "") {
     .join(" ");
 }
 
+function matchesSearchText(searchText = "", query = "") {
+  const search = normalize(query);
+  if (!search) return false;
+
+  const haystack = normalize(searchText);
+  const tokens = search.split(/\s+/).filter(Boolean);
+
+  return tokens.every((token) => haystack.includes(token));
+}
+
 function getVisiblePages(currentPage, totalPages) {
   if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -236,6 +246,7 @@ const COACard = memo(function COACard({
   fileHasHistory,
   historyKey,
   onToggleHistory,
+  onOpen,
 }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-[0_12px_35px_rgba(0,0,0,0.18)] transition hover:border-red-500/30">
@@ -280,18 +291,17 @@ const COACard = memo(function COACard({
             </button>
           )}
 
-          <a
-            href={file.url}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => onOpen?.(file)}
             className={cn(
-              "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-black uppercase tracking-wide text-white no-underline shadow-[0_10px_25px_rgba(220,38,38,0.25)] transition hover:bg-red-500 active:scale-[0.98] sm:h-10",
+              "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-black uppercase tracking-wide text-white shadow-[0_10px_25px_rgba(220,38,38,0.25)] transition hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0 active:scale-[0.98] sm:h-10",
               !fileHasHistory && "col-span-2 sm:col-span-1"
             )}
           >
-            Open certificate
+            View COA
             <ArrowIcon />
-          </a>
+          </button>
         </div>
       </div>
 
@@ -320,15 +330,22 @@ const COACard = memo(function COACard({
                     <MetaValue label="Purity" value={item.purity} mono={false} />
                   </div>
 
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-9 w-fit shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-[11px] font-bold text-white/65 no-underline transition hover:border-red-500/30 hover:text-white"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onOpen?.({
+                        ...file,
+                        ...item,
+                        product: item.product || file.product,
+                        company: file.company,
+                        isHistorical: true,
+                      })
+                    }
+                    className="inline-flex h-9 w-fit shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-[11px] font-bold text-white/65 transition hover:border-red-500/30 hover:bg-white/[0.04] hover:text-white"
                   >
-                    Open PDF
+                    View COA
                     <ArrowIcon />
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>
@@ -336,6 +353,185 @@ const COACard = memo(function COACard({
         )}
       </AnimatePresence>
     </article>
+  );
+});
+
+const COAViewer = memo(function COAViewer({ file, onClose, onPrevious, onNext, hasPrevious, hasNext }) {
+  useEffect(() => {
+    if (!file || typeof document === "undefined") return undefined;
+
+    // Mobile behaves like a full-screen document viewer. Desktop keeps the
+    // directory visible behind a right-side document drawer.
+    const previousOverflow = document.body.style.overflow;
+    const shouldLockPage = typeof window !== "undefined" && window.innerWidth < 1024;
+    if (shouldLockPage) document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose?.();
+      if (event.key === "ArrowLeft" && hasPrevious) onPrevious?.();
+      if (event.key === "ArrowRight" && hasNext) onNext?.();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      if (shouldLockPage) document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [file, hasPrevious, hasNext, onClose, onPrevious, onNext]);
+
+  if (!file) return null;
+
+  const pdfUrl = String(file.url || "").trim();
+  const viewerUrl = pdfUrl
+    ? `${pdfUrl}${pdfUrl.includes("#") ? "&" : "#"}view=FitH&toolbar=1&navpanes=0`
+    : "";
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key={file.url || file.code || file.lot}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.16 }}
+        className="fixed inset-0 z-[220] bg-black/75 backdrop-blur-sm lg:bg-black/25 lg:backdrop-blur-[2px]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`COA viewer for ${file.product || file.code || "certificate"}`}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close COA viewer"
+          className="absolute inset-0 h-full w-full cursor-default"
+        />
+
+        <motion.div
+          initial={{ x: "100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "100%" }}
+          transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute inset-0 flex flex-col overflow-hidden bg-[#050505] shadow-[-30px_0_100px_rgba(0,0,0,0.65)] lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[52vw] lg:min-w-[620px] lg:max-w-[940px] lg:rounded-l-[2rem] lg:border-l lg:border-white/10"
+        >
+          <div className="relative z-20 flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#080808]/95 px-3 py-3 backdrop-blur-xl sm:px-5 lg:min-h-[74px]">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 sm:flex">
+                <FileIcon />
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-black text-white sm:text-base">
+                    {file.product || file.code || "Certificate"}
+                  </p>
+                  {file.isHistorical && (
+                    <span className="hidden rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-white/45 sm:inline-flex">
+                      History
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.11em] text-white/35 sm:text-[11px]">
+                  {[file.lot && `Lot ${file.lot}`, file.code, file.sku, file.purity]
+                    .filter(Boolean)
+                    .join(" · ") || "Current certificate"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/[0.035] p-1 lg:flex">
+                <button
+                  type="button"
+                  onClick={onPrevious}
+                  disabled={!hasPrevious}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-20"
+                  aria-label="Previous COA"
+                >
+                  <PaginationArrow direction="previous" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-20"
+                  aria-label="Next COA"
+                >
+                  <PaginationArrow />
+                </button>
+              </div>
+
+              {pdfUrl && (
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hidden h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-[10px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/30 hover:text-white sm:inline-flex"
+                >
+                  Original
+                  <ArrowIcon />
+                </a>
+              )}
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] text-white/65 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-white"
+                aria-label="Close COA viewer"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative min-h-0 flex-1 bg-[#111]">
+            {viewerUrl ? (
+              <iframe
+                key={viewerUrl}
+                src={viewerUrl}
+                title={`${file.product || file.code || "COA"} certificate`}
+                className="h-full w-full border-0 bg-white"
+                loading="eager"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center p-8 text-center">
+                <div className="max-w-sm">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300">
+                    <FileIcon />
+                  </div>
+                  <h3 className="mt-4 text-xl font-black text-white">Certificate unavailable</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/45">
+                    This COA does not currently have a PDF URL.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-white/10 bg-[#080808] px-3 py-2.5 lg:hidden">
+            <button
+              type="button"
+              onClick={onPrevious}
+              disabled={!hasPrevious}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-xs font-black text-white/60 disabled:pointer-events-none disabled:opacity-20"
+            >
+              <PaginationArrow direction="previous" />
+              Previous
+            </button>
+            <span className="text-[9px] font-black uppercase tracking-[0.12em] text-white/30">COA</span>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!hasNext}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-xs font-black text-white/60 disabled:pointer-events-none disabled:opacity-20"
+            >
+              Next
+              <PaginationArrow />
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 });
 
@@ -554,6 +750,7 @@ export default function COASection() {
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [currentPage, setCurrentPage] = useState(1);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+  const [activeCoa, setActiveCoa] = useState(null);
 
   const deferredQuery = useDeferredValue(query);
   const searchWrapperRef = useRef(null);
@@ -691,7 +888,37 @@ export default function COASection() {
   const searchResults = useMemo(() => {
     const search = normalize(deferredQuery);
     if (!search) return [];
-    return allCoas.filter((file) => file.searchText.includes(search));
+    return allCoas.filter((file) => matchesSearchText(file.searchText, search));
+  }, [allCoas, deferredQuery]);
+
+  const mobileQuickMatches = useMemo(() => {
+    const search = normalize(deferredQuery);
+    if (!search) return [];
+
+    return allCoas
+      .filter((file) => matchesSearchText(file.searchText, search))
+      .map((file) => {
+        const product = normalize(file.product);
+        const lot = normalize(file.lot);
+        const sku = normalize(file.sku);
+        const code = normalize(file.code);
+
+        let score = 0;
+        if (lot === search) score += 140;
+        if (sku === search) score += 135;
+        if (code === search) score += 130;
+        if (product === search) score += 125;
+        if (lot.startsWith(search)) score += 90;
+        if (sku.startsWith(search)) score += 85;
+        if (code.startsWith(search)) score += 80;
+        if (product.startsWith(search)) score += 75;
+        if (product.includes(search)) score += 40;
+
+        return { file, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map((item) => item.file);
   }, [allCoas, deferredQuery]);
 
   const categoryResults = useMemo(() => {
@@ -710,6 +937,32 @@ export default function COASection() {
   const pageStart = (safeCurrentPage - 1) * COAS_PER_PAGE;
   const pageEnd = pageStart + COAS_PER_PAGE;
   const paginatedResults = activeList ? activeList.slice(pageStart, pageEnd) : [];
+
+  const activeCoaIndex = useMemo(() => {
+    if (!activeCoa || !activeList || activeCoa.isHistorical) return -1;
+    return activeList.findIndex((item) =>
+      (activeCoa.url && item.url === activeCoa.url) ||
+      (activeCoa.key && item.key === activeCoa.key)
+    );
+  }, [activeCoa, activeList]);
+
+  const openCoa = useCallback((file) => {
+    if (!file) return;
+    setSuggestionsOpen(false);
+    setActiveCoa(file);
+  }, []);
+
+  const closeCoa = useCallback(() => setActiveCoa(null), []);
+
+  const openPreviousCoa = useCallback(() => {
+    if (!activeList || activeCoaIndex <= 0) return;
+    setActiveCoa(activeList[activeCoaIndex - 1]);
+  }, [activeList, activeCoaIndex]);
+
+  const openNextCoa = useCallback(() => {
+    if (!activeList || activeCoaIndex < 0 || activeCoaIndex >= activeList.length - 1) return;
+    setActiveCoa(activeList[activeCoaIndex + 1]);
+  }, [activeList, activeCoaIndex]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -855,7 +1108,10 @@ export default function COASection() {
               </span>
 
               <input
-                type="text"
+                type="search"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
                 value={query}
                 role="combobox"
                 aria-expanded={suggestionsOpen}
@@ -867,9 +1123,9 @@ export default function COASection() {
                 }}
                 onFocus={() => setSuggestionsOpen(true)}
                 onKeyDown={handleInputKeyDown}
-                placeholder="Product, SKU, or lot number"
+                placeholder="Search product, SKU or lot…"
                 aria-label="Search certificates by product, SKU, or lot number"
-                className="h-[3.75rem] w-full rounded-2xl border border-white/15 bg-white/[0.055] pl-12 pr-11 text-base font-semibold text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] outline-none transition placeholder:text-white/35 focus:border-red-500/60 focus:bg-white/[0.07] sm:h-14 sm:text-sm"
+                className="h-[4rem] w-full rounded-2xl border border-white/15 bg-white/[0.065] pl-12 pr-11 text-[16px] font-bold text-white shadow-[0_18px_55px_rgba(0,0,0,0.28)] outline-none transition placeholder:text-white/35 focus:border-red-500/70 focus:bg-white/[0.08] sm:h-14 sm:text-sm"
               />
 
               {query && (
@@ -884,43 +1140,53 @@ export default function COASection() {
               )}
             </label>
 
-            {/* Mobile fallback for browsing products, since the sidebar is desktop-only */}
+            {/* Mobile: ranked certificate matches with one-tap opening. */}
             <AnimatePresence>
-              {suggestionsOpen && query.trim() && suggestions.length > 0 && (
+              {suggestionsOpen && query.trim() && mobileQuickMatches.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 6, scale: 0.99 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.99 }}
                   transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-                  role="listbox"
-                  className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-white/10 bg-[#080808]/95 shadow-[0_24px_70px_rgba(0,0,0,0.65)] backdrop-blur-xl lg:hidden"
+                  className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-white/12 bg-[#080808]/98 shadow-[0_26px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden"
                 >
-                  <p className="border-b border-white/10 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/35">
-                    Matching products
-                  </p>
+                  <div className="flex items-center justify-between border-b border-white/10 px-3.5 py-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                      Quick matches
+                    </p>
+                    <span className="text-[10px] font-bold text-red-300/80">
+                      Tap to open
+                    </span>
+                  </div>
 
-                  <div className="max-h-[280px] overflow-y-auto p-1.5">
-                    {suggestions.map((compound, index) => (
+                  <div className="max-h-[min(58dvh,390px)] overflow-y-auto overscroll-contain p-1.5">
+                    {mobileQuickMatches.map((file) => (
                       <button
-                        key={compound}
+                        key={file.key || `${file.code}-${file.lot || file.url}`}
                         type="button"
-                        role="option"
-                        aria-selected={index === activeSuggestion}
-                        onMouseEnter={() => setActiveSuggestion(index)}
-                        onClick={() => selectCategory(compound)}
-                        className={cn(
-                          "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition",
-                          index === activeSuggestion
-                            ? "bg-red-600 text-white"
-                            : "text-white/70 hover:bg-white/[0.06] hover:text-white"
-                        )}
+                        onClick={() => openCoa(file)}
+                        className="group flex min-h-[68px] w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition active:bg-red-600/20"
                       >
-                        <span className="min-w-0 truncate">{compound}</span>
-                        <span className={cn("shrink-0 text-xs font-bold tabular-nums", index === activeSuggestion ? "text-white/80" : "text-white/35")}>
-                          {compoundCounts.get(compound)}
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-black text-white">
+                            {file.product || file.code || "Certificate"}
+                          </p>
+                          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/38">
+                            {file.lot && <span className="text-red-300/85">Lot {file.lot}</span>}
+                            {file.sku && <span>SKU {file.sku}</span>}
+                            {file.purity && <span>{file.purity}</span>}
+                          </div>
+                        </div>
+
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300">
+                          <ArrowIcon />
                         </span>
                       </button>
                     ))}
+                  </div>
+
+                  <div className="border-t border-white/10 px-3 py-2 text-center text-[10px] font-semibold text-white/30">
+                    Full results continue below as you type
                   </div>
                 </motion.div>
               )}
@@ -940,7 +1206,7 @@ export default function COASection() {
                 <SlidersIcon />
               </span>
               <span className="min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-white/35">Browse directory</span>
+                <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-white/35">Or browse manually</span>
                 <span className="mt-0.5 block truncate">
                   {selectedCategory || `All ${navItems.length} products`}
                 </span>
@@ -1016,6 +1282,7 @@ export default function COASection() {
                           fileHasHistory={fileHasHistory}
                           isHistoryOpen={Boolean(openHistory[historyKey])}
                           onToggleHistory={toggleHistory}
+                          onOpen={openCoa}
                         />
                       );
                     })}
@@ -1052,6 +1319,15 @@ export default function COASection() {
           </div>
         </motion.div>
       </div>
+
+      <COAViewer
+        file={activeCoa}
+        onClose={closeCoa}
+        onPrevious={openPreviousCoa}
+        onNext={openNextCoa}
+        hasPrevious={activeCoaIndex > 0}
+        hasNext={Boolean(activeList && activeCoaIndex >= 0 && activeCoaIndex < activeList.length - 1)}
+      />
 
       <MobileProductPicker
         open={mobileProductsOpen}
