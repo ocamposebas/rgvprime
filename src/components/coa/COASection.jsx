@@ -1185,6 +1185,7 @@ export default function COASection() {
   const [activeCoaVersionIndex, setActiveCoaVersionIndex] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [browseDocked, setBrowseDocked] = useState(false);
+  const [browseBoundaryReady, setBrowseBoundaryReady] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
   const sectionRef = useRef(null);
@@ -1193,6 +1194,9 @@ export default function COASection() {
   const resultsTopRef = useRef(null);
   const browseEndSentinelRef = useRef(null);
   const categoryApplyTimerRef = useRef(null);
+  const browseStableTimerRef = useRef(null);
+  const browseMaxWaitTimerRef = useRef(null);
+  const previousSentinelTopRef = useRef(null);
   const urlSyncTimer = useRef(null);
 
   useEffect(() => {
@@ -1249,16 +1253,100 @@ export default function COASection() {
     return () => {
       if (typeof window !== "undefined") {
         window.clearTimeout(categoryApplyTimerRef.current);
+        window.clearTimeout(browseStableTimerRef.current);
+        window.clearTimeout(browseMaxWaitTimerRef.current);
       }
     };
   }, []);
 
-  // Browse uses one DOM node only. No scroll listener, no per-frame measurements.
-  // A 1px sentinel at the end of the COA section tells us when the fixed button
-  // should become section-anchored. The handoff happens exactly when the section
-  // bottom reaches the viewport bottom, so the button does not visibly jump.
+  // Do not decide where Browse should dock while the COA section is still changing
+  // height. On mobile the API response, font metrics and lazily rendered content can
+  // all move the section bottom after the user has already scrolled there. Waiting
+  // for a quiet layout window prevents the late "drop then snap upward" effect.
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
+
+    window.clearTimeout(browseStableTimerRef.current);
+    window.clearTimeout(browseMaxWaitTimerRef.current);
+    previousSentinelTopRef.current = null;
+    setBrowseDocked(false);
+
+    if (libraryStatus !== "ready") {
+      setBrowseBoundaryReady(false);
+      return undefined;
+    }
+
+    const section = sectionRef.current;
+    if (!section) {
+      setBrowseBoundaryReady(true);
+      return undefined;
+    }
+
+    let disposed = false;
+    let lastHeight = Math.round(section.getBoundingClientRect().height);
+
+    const markStableSoon = () => {
+      window.clearTimeout(browseStableTimerRef.current);
+      browseStableTimerRef.current = window.setTimeout(() => {
+        if (!disposed) setBrowseBoundaryReady(true);
+      }, 850);
+    };
+
+    const handlePossibleLayoutChange = () => {
+      if (disposed) return;
+      const nextHeight = Math.round(section.getBoundingClientRect().height);
+      if (Math.abs(nextHeight - lastHeight) > 2) {
+        lastHeight = nextHeight;
+        setBrowseBoundaryReady(false);
+        setBrowseDocked(false);
+        previousSentinelTopRef.current = null;
+      }
+      markStableSoon();
+    };
+
+    setBrowseBoundaryReady(false);
+    markStableSoon();
+
+    const resizeObserver =
+      "ResizeObserver" in window ? new ResizeObserver(handlePossibleLayoutChange) : null;
+    resizeObserver?.observe(section);
+
+    const handleWindowLoad = () => handlePossibleLayoutChange();
+    window.addEventListener("load", handleWindowLoad, { once: true });
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (!disposed) handlePossibleLayoutChange();
+      });
+    }
+
+    // Failsafe: never keep the boundary disabled forever on browsers where a
+    // third-party element keeps producing tiny layout changes.
+    browseMaxWaitTimerRef.current = window.setTimeout(() => {
+      if (!disposed) setBrowseBoundaryReady(true);
+    }, 4500);
+
+    return () => {
+      disposed = true;
+      resizeObserver?.disconnect();
+      window.removeEventListener("load", handleWindowLoad);
+      window.clearTimeout(browseStableTimerRef.current);
+      window.clearTimeout(browseMaxWaitTimerRef.current);
+    };
+  }, [libraryStatus]);
+
+  // One Browse node, one boundary crossing. Importantly, when this observer first
+  // attaches we do NOT retroactively dock a button if the user is already far past
+  // the section end. Docking only happens on a real crossing after layout is stable,
+  // which removes the delayed snap caused by content finishing below the viewport.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    if (!browseBoundaryReady) {
+      previousSentinelTopRef.current = null;
+      setBrowseDocked(false);
+      return undefined;
+    }
 
     const sentinel = browseEndSentinelRef.current;
     if (!sentinel || !("IntersectionObserver" in window)) return undefined;
@@ -1266,14 +1354,34 @@ export default function COASection() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         const viewportBottom = entry.rootBounds?.bottom ?? window.innerHeight;
-        setBrowseDocked(entry.boundingClientRect.top <= viewportBottom);
+        const currentTop = entry.boundingClientRect.top;
+        const previousTop = previousSentinelTopRef.current;
+        previousSentinelTopRef.current = currentTop;
+
+        if (previousTop === null) {
+          // Initial observation after a late load: only accept it when the boundary
+          // is already close to the bottom edge. Never yank Browse upward from deep
+          // inside the footer because some lower content just finished rendering.
+          if (Math.abs(currentTop - viewportBottom) <= 96) {
+            setBrowseDocked(currentTop <= viewportBottom);
+          } else {
+            setBrowseDocked(false);
+          }
+          return;
+        }
+
+        if (previousTop > viewportBottom && currentTop <= viewportBottom) {
+          setBrowseDocked(true);
+        } else if (previousTop <= viewportBottom && currentTop > viewportBottom) {
+          setBrowseDocked(false);
+        }
       },
       { root: null, threshold: 0 }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [libraryStatus]);
+  }, [browseBoundaryReady]);
 
   useEffect(() => {
     if (!mobileProductsOpen) return;
@@ -1973,7 +2081,7 @@ export default function COASection() {
           aria-label="Browse COA products"
           style={{ bottom: "calc(14px + env(safe-area-inset-bottom))" }}
           className={cn(
-            "left-1/2 z-[120] flex min-h-[64px] w-[calc(100%_-_1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.76),0_0_0_1px_rgba(255,255,255,0.025)] backdrop-blur-2xl transition-[background-color,border-color,box-shadow] duration-200 active:scale-[0.985] lg:hidden",
+            "left-1/2 z-[120] flex min-h-[64px] w-[calc(100%_-_1.5rem)] max-w-[430px] -translate-x-1/2 items-center justify-between gap-3 overflow-hidden rounded-[1.35rem] border border-white/15 bg-[#090909]/98 px-3.5 py-2.5 text-left text-white shadow-[0_20px_70px_rgba(0,0,0,0.76),0_0_0_1px_rgba(255,255,255,0.025)] backdrop-blur-2xl transition-[background-color,border-color,box-shadow,opacity] duration-200 active:scale-[0.985] lg:hidden",
             browseDocked ? "absolute" : "fixed"
           )}
         >
