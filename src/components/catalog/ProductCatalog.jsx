@@ -1342,7 +1342,7 @@ export default function ProductCatalog() {
 
         const cacheBuster = Date.now();
         const response = await fetch(
-          `/api/products?limit=45&refresh=1&_=${cacheBuster}`,
+          `/api/products?limit=70&refresh=1&_=${cacheBuster}`,
           {
             method: "GET",
             headers: {

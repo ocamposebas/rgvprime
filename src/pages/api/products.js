@@ -1,7 +1,7 @@
 export const prerender = false;
 
 const FALLBACK_IMAGE = "/logo.webp";
-const DEFAULT_CATALOG_LIMIT = 45;
+const DEFAULT_CATALOG_LIMIT = 70;
 const MAX_CATALOG_LIMIT = 100;
 
 const PUBLIC_PRODUCT_SLUGS = new Map([
