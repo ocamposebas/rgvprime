@@ -42,7 +42,10 @@ const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
 
 const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
-const FREE_SHIPPING_MINIMUM = 150;
+// Orders qualify at $190, while the storefront promotion is presented as $200.
+const FREE_SHIPPING_MINIMUM = 190;
+const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
+const FREE_SHIPPING_LABEL = "Free Shipping";
 
 const SHIPPING_METHODS = [
   {
@@ -70,6 +73,12 @@ const SHIPPING_METHODS = [
     carrier: "UPS",
   },
 ];
+
+function getShippingOrderLabel(shippingMethod, freeShipping = false) {
+  if (freeShipping) return FREE_SHIPPING_LABEL;
+
+  return shippingMethod?.label || shippingMethod?.title || "USPS Ground";
+}
 
 function CarrierLogo({ carrier }) {
   if (carrier === "UPS") {
@@ -683,9 +692,12 @@ function buildWooCheckoutUrl({
   }
 
   if (shippingMethod?.id) {
+    const shippingTitle = getShippingOrderLabel(shippingMethod, freeShipping);
+    const shippingLabel = getShippingOrderLabel(shippingMethod, freeShipping);
+
     url.searchParams.set("rgv_shipping_method", shippingMethod.id);
-    url.searchParams.set("rgv_shipping_title", shippingMethod.title || shippingMethod.label || "USPS Ground");
-    url.searchParams.set("rgv_shipping_label", shippingMethod.label || shippingMethod.title || "USPS Ground");
+    url.searchParams.set("rgv_shipping_title", shippingTitle);
+    url.searchParams.set("rgv_shipping_label", shippingLabel);
     url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
   }
 
@@ -1000,7 +1012,14 @@ export default function RgvCheckout() {
     (couponStatus === "valid" &&
       Boolean(couponValidation?.free_shipping));
   const freeShippingUnlocked = isFreeShippingUnlocked();
-  const amountUntilFreeShipping = Math.max(FREE_SHIPPING_MINIMUM - cartTotal, 0);
+  const shippingLabelForDisplay = getShippingOrderLabel(
+    selectedShippingMethod,
+    freeShippingUnlocked
+  );
+  const amountUntilFreeShipping = Math.max(
+    FREE_SHIPPING_DISPLAY_MINIMUM - cartTotal,
+    0
+  );
   const selectedShippingBaseCost = toMoneyNumber(selectedShippingMethod?.price, 0);
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
   const estimatedDue = Math.max(discountedCartTotal + shippingCost, 0);
@@ -1024,7 +1043,10 @@ export default function RgvCheckout() {
 
   const progressWidth = freeShippingUnlocked
     ? 100
-    : Math.min(100, Math.round((cartTotal / FREE_SHIPPING_MINIMUM) * 100));
+    : Math.min(
+        100,
+        Math.round((cartTotal / FREE_SHIPPING_DISPLAY_MINIMUM) * 100)
+      );
 
   const paymentButtonTitle = loading
     ? isZelleSelected
@@ -1268,6 +1290,10 @@ export default function RgvCheckout() {
     const shippingCostForApi = Number(
       freeShippingForOrder ? 0 : selectedShippingBaseCost
     ).toFixed(2);
+    const shippingLabelForOrder = getShippingOrderLabel(
+      selectedShippingMethod,
+      freeShippingForOrder
+    );
     const controller = new AbortController();
     const requestTimeout = window.setTimeout(() => controller.abort(), 70000);
     let redirecting = false;
@@ -1305,8 +1331,8 @@ export default function RgvCheckout() {
           shippingMethod: {
             id: selectedShippingMethod?.id,
             method_id: selectedShippingMethod?.id,
-            title: selectedShippingMethod?.title,
-            label: selectedShippingMethod?.label,
+            title: shippingLabelForOrder,
+            label: shippingLabelForOrder,
             price: shippingCostForApi,
             total: shippingCostForApi,
           },
@@ -1436,6 +1462,10 @@ export default function RgvCheckout() {
       const shippingCostForApi = Number(
         freeShippingForOrder ? 0 : selectedShippingBaseCost
       ).toFixed(2);
+      const shippingLabelForOrder = getShippingOrderLabel(
+        selectedShippingMethod,
+        freeShippingForOrder
+      );
 
       const response = await fetch(getManualOrderEndpoint(), {
         method: "POST",
@@ -1470,14 +1500,14 @@ export default function RgvCheckout() {
           discounted_subtotal: discountedCartTotal,
           shippingMethod: selectedShippingMethod?.id,
           shipping_method: selectedShippingMethod?.id,
-          shippingMethodTitle: selectedShippingMethod?.title,
-          shipping_method_title: selectedShippingMethod?.title,
-          shippingMethodLabel: selectedShippingMethod?.label,
-          shipping_method_label: selectedShippingMethod?.label,
-          shippingMethodName: selectedShippingMethod?.title,
-          shipping_method_name: selectedShippingMethod?.title,
-          shippingTitle: selectedShippingMethod?.title,
-          shipping_title: selectedShippingMethod?.title,
+          shippingMethodTitle: shippingLabelForOrder,
+          shipping_method_title: shippingLabelForOrder,
+          shippingMethodLabel: shippingLabelForOrder,
+          shipping_method_label: shippingLabelForOrder,
+          shippingMethodName: shippingLabelForOrder,
+          shipping_method_name: shippingLabelForOrder,
+          shippingTitle: shippingLabelForOrder,
+          shipping_title: shippingLabelForOrder,
           shippingCost: shippingCostForApi,
           shipping_cost: shippingCostForApi,
           shippingBaseCost: selectedShippingBaseCost,
@@ -1527,7 +1557,7 @@ export default function RgvCheckout() {
         shipping: order.shipping || finalShipping,
         shipping_method: selectedShippingMethod?.id || order.shipping_method,
         shipping_method_title:
-          selectedShippingMethod?.title || order.shipping_method_title,
+          shippingLabelForOrder || order.shipping_method_title,
         customer: order.customer || finalCustomer,
         items: order.items || checkoutItems,
       };
@@ -1920,7 +1950,7 @@ export default function RgvCheckout() {
                 ))}
                 {manualShipping.phone && <small>{manualShipping.phone}</small>}
                 <small>
-                  {selectedShippingMethod?.title || manualOrder?.shipping_method_title || "USPS Ground"}
+                  {shippingLabelForDisplay || manualOrder?.shipping_method_title}
                 </small>
               </div>
 
@@ -2206,7 +2236,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at {formatMoney(FREE_SHIPPING_MINIMUM)}.
+                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
                   </small>
                 </div>
               </div>
@@ -2244,13 +2274,13 @@ export default function RgvCheckout() {
                             <small>{method.description}</small>
                             {freeShippingUnlocked && (
                               <small className="rgvx-shipping-free-note">
-                              Regular {formatMoney(method.price)} · free unlocked
+                                {FREE_SHIPPING_LABEL}
                               </small>
                             )}
                           </div>
                         </div>
 
-                        <em>{freeShippingUnlocked ? "FREE" : formatMoney(method.price)}</em>
+                        <em>{freeShippingUnlocked ? FREE_SHIPPING_LABEL : formatMoney(method.price)}</em>
                       </button>
                     );
                   })}
@@ -2350,7 +2380,7 @@ export default function RgvCheckout() {
 
             <div className="rgvx-free-progress">
               <div>
-                <span>Free shipping over {formatMoney(FREE_SHIPPING_MINIMUM)}</span>
+                <span>Free shipping over {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}</span>
                 <strong>
                   {freeShippingUnlocked ? "Unlocked" : `${formatMoney(amountUntilFreeShipping)} away`}
                 </strong>
@@ -2374,9 +2404,9 @@ export default function RgvCheckout() {
               )}
 
               <div className="rgvx-total-row">
-                <span>{selectedShippingMethod?.label || "Shipping"}</span>
+                <span>{shippingLabelForDisplay}</span>
                 <strong className={freeShippingUnlocked ? "free" : ""}>
-                  {freeShippingUnlocked ? "FREE" : formatMoney(shippingCost)}
+                  {freeShippingUnlocked ? FREE_SHIPPING_LABEL : formatMoney(shippingCost)}
                 </strong>
               </div>
 
