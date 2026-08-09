@@ -967,21 +967,40 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
 });
 
 // A single "product" tile shown on the home/directory view.
-const CategoryTile = memo(function CategoryTile({ label, count, onSelect }) {
+const CategoryTile = memo(function CategoryTile({ label, count, detail, onSelect }) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4 text-left transition hover:border-red-500/30 hover:bg-white/[0.045]"
+      className="group relative flex min-h-[116px] items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-4 text-left shadow-[0_14px_38px_rgba(0,0,0,0.24)] transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-[linear-gradient(135deg,rgba(220,38,38,0.08),rgba(255,255,255,0.025))] hover:shadow-[0_20px_50px_rgba(0,0,0,0.3),0_8px_28px_rgba(220,38,38,0.07)]"
     >
-      <div className="min-w-0">
+      <span className="pointer-events-none absolute -right-8 -top-12 h-28 w-28 rounded-full bg-red-600/10 blur-3xl transition duration-500 group-hover:bg-red-500/20" />
+      <span className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-red-300/45 to-transparent opacity-70" />
+      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-400/20 bg-[linear-gradient(145deg,rgba(220,38,38,0.18),rgba(127,29,29,0.08))] text-red-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(220,38,38,0.1)] transition duration-300 group-hover:border-red-300/35 group-hover:text-red-100">
+        <FileIcon />
+      </span>
+      <div className="relative min-w-0">
         <p className="truncate text-sm font-black text-white">{label}</p>
-        <p className="mt-1 text-xs font-semibold text-white/40">
-          {count} {count === 1 ? "certificate" : "certificates"}
-        </p>
+        {detail && (
+          <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.07em] text-white/35">
+            {detail}
+          </p>
+        )}
+        <span className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_22px_rgba(16,185,129,0.08)]">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-40" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]" />
+          </span>
+          {count === 1 ? "COA Available" : `${count} COAs Available`}
+        </span>
       </div>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/40 transition group-hover:border-red-500/40 group-hover:text-red-300">
-        <ArrowIcon />
+      <span className="relative ml-auto flex shrink-0 items-center gap-2.5">
+        <span className="hidden text-[8px] font-black uppercase tracking-[0.14em] text-white/25 transition group-hover:text-red-200/70 sm:block">
+          View COA
+        </span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-red-400/15 bg-red-500/[0.07] text-red-200/60 transition duration-300 group-hover:border-red-300/35 group-hover:bg-red-500/15 group-hover:text-red-100">
+          <ArrowIcon />
+        </span>
       </span>
     </button>
   );
@@ -1457,8 +1476,30 @@ export default function COASection() {
   }, [compoundCounts]);
 
   const navItems = useMemo(
-    () => compoundList.map((label) => ({ id: label, label, count: compoundCounts.get(label) })),
-    [compoundList, compoundCounts]
+    () =>
+      compoundList.map((label) => {
+        const latestFile = allCoas.find((file) => file.product === label);
+        const latestDate =
+          latestFile?.date ||
+          latestFile?.test_date ||
+          latestFile?.testDate ||
+          latestFile?.created_at ||
+          "";
+        const detail = [
+          latestFile?.lot ? `Lot ${latestFile.lot}` : "",
+          latestDate,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
+        return {
+          id: label,
+          label,
+          count: compoundCounts.get(label),
+          detail,
+        };
+      }),
+    [allCoas, compoundList, compoundCounts]
   );
 
   const isSearching = deferredQuery.trim().length > 0;
@@ -1618,6 +1659,20 @@ export default function COASection() {
   }, [deferredQuery, selectedCategory, updateUrl]);
 
   const selectCategory = useCallback((id) => {
+    if (id !== ALL_ID) {
+      const matchingCoas = allCoas.filter(
+        (file) => normalize(file.product) === normalize(id)
+      );
+
+      if (matchingCoas.length === 1) {
+        setSuggestionsOpen(false);
+        setMobileProductsOpen(false);
+        setActiveSuggestion(-1);
+        openCoa(matchingCoas[0]);
+        return;
+      }
+    }
+
     const applySelection = () => {
       setSelectedCategory(id);
       setQuery("");
@@ -1670,7 +1725,7 @@ export default function COASection() {
         categoryApplyTimerRef.current = window.setTimeout(applySelection, delay);
       });
     });
-  }, []);
+  }, [allCoas, openCoa]);
 
   const clearSearch = useCallback(() => {
     setQuery("");
@@ -2051,6 +2106,7 @@ export default function COASection() {
                     key={item.id}
                     label={item.label}
                     count={item.count}
+                    detail={item.detail}
                     onSelect={() => selectCategory(item.id)}
                   />
                 ))}
