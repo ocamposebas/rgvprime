@@ -45,7 +45,7 @@ const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 // Orders qualify at $190, while the storefront promotion is presented as $200.
 const FREE_SHIPPING_MINIMUM = 190;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
-const FREE_SHIPPING_LABEL = "Free Shipping";
+const FREE_SHIPPING_LABEL = "Free Shipping $200+";
 
 const SHIPPING_METHODS = [
   {
@@ -2236,7 +2236,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping unlocks at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
+                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
                   </small>
                 </div>
               </div>
@@ -2248,7 +2248,11 @@ export default function RgvCheckout() {
               >
                 <div className="rgvx-shipping-options-head">
                   <span>Available methods</span>
-                  <strong>{freeShippingUnlocked ? "Free unlocked" : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping`}</strong>
+                  <strong>
+                    {freeShippingUnlocked
+                      ? FREE_SHIPPING_LABEL
+                      : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping at ${formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}`}
+                  </strong>
                 </div>
 
                 <div className="rgvx-shipping-option-list">
@@ -2380,9 +2384,11 @@ export default function RgvCheckout() {
 
             <div className="rgvx-free-progress">
               <div>
-                <span>Free shipping over {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}</span>
+                <span>Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}</span>
                 <strong>
-                  {freeShippingUnlocked ? "Unlocked" : `${formatMoney(amountUntilFreeShipping)} away`}
+                  {freeShippingUnlocked
+                    ? FREE_SHIPPING_LABEL
+                    : `${formatMoney(amountUntilFreeShipping)} away`}
                 </strong>
               </div>
               <div className="progress-track">
