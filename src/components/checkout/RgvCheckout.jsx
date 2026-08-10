@@ -45,7 +45,7 @@ const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 // Orders qualify at $190, while the storefront promotion is presented as $200.
 const FREE_SHIPPING_MINIMUM = 190;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
-const FREE_SHIPPING_LABEL = "Free Shipping $200+";
+const FREE_SHIPPING_LABEL = "Free Shipping";
 
 const SHIPPING_METHODS = [
   {
@@ -696,8 +696,13 @@ function buildWooCheckoutUrl({
     const shippingLabel = getShippingOrderLabel(shippingMethod, freeShipping);
 
     url.searchParams.set("rgv_shipping_method", shippingMethod.id);
+    url.searchParams.set("rgv_shipping_method_id", shippingMethod.id);
     url.searchParams.set("rgv_shipping_title", shippingTitle);
     url.searchParams.set("rgv_shipping_label", shippingLabel);
+    url.searchParams.set("shipping_method", shippingMethod.id);
+    url.searchParams.set("shipping_method_id", shippingMethod.id);
+    url.searchParams.set("shipping_method_title", shippingTitle);
+    url.searchParams.set("shipping_method_label", shippingLabel);
     url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
   }
 
@@ -1333,9 +1338,20 @@ export default function RgvCheckout() {
             method_id: selectedShippingMethod?.id,
             title: shippingLabelForOrder,
             label: shippingLabelForOrder,
+            method_title: shippingLabelForOrder,
+            carrier: selectedShippingMethod?.carrier,
             price: shippingCostForApi,
             total: shippingCostForApi,
           },
+          shipping_method: selectedShippingMethod?.id,
+          shippingMethodId: selectedShippingMethod?.id,
+          shipping_method_id: selectedShippingMethod?.id,
+          shippingMethodTitle: shippingLabelForOrder,
+          shipping_method_title: shippingLabelForOrder,
+          shippingMethodLabel: shippingLabelForOrder,
+          shipping_method_label: shippingLabelForOrder,
+          shippingCarrier: selectedShippingMethod?.carrier,
+          shipping_carrier: selectedShippingMethod?.carrier,
           shippingTotal: shippingCostForApi,
           freeShippingUnlocked: freeShippingForOrder,
           free_shipping_unlocked: freeShippingForOrder,
@@ -1500,6 +1516,8 @@ export default function RgvCheckout() {
           discounted_subtotal: discountedCartTotal,
           shippingMethod: selectedShippingMethod?.id,
           shipping_method: selectedShippingMethod?.id,
+          shippingMethodId: selectedShippingMethod?.id,
+          shipping_method_id: selectedShippingMethod?.id,
           shippingMethodTitle: shippingLabelForOrder,
           shipping_method_title: shippingLabelForOrder,
           shippingMethodLabel: shippingLabelForOrder,
@@ -1508,6 +1526,8 @@ export default function RgvCheckout() {
           shipping_method_name: shippingLabelForOrder,
           shippingTitle: shippingLabelForOrder,
           shipping_title: shippingLabelForOrder,
+          shippingCarrier: selectedShippingMethod?.carrier,
+          shipping_carrier: selectedShippingMethod?.carrier,
           shippingCost: shippingCostForApi,
           shipping_cost: shippingCostForApi,
           shippingBaseCost: selectedShippingBaseCost,
