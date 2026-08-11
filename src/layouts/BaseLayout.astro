@@ -107,7 +107,7 @@ const webpageSchema = {
 ---
 
 <!doctype html>
-<html lang="en-US">
+<html lang="en-US" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
 
@@ -181,6 +181,25 @@ const webpageSchema = {
 
     <meta name="theme-color" content="#050505" />
     <meta name="color-scheme" content="dark" />
+
+    <script is:inline>
+      (() => {
+        const storageKey = "rgv-color-theme";
+
+        try {
+          const savedTheme = window.localStorage.getItem(storageKey);
+
+          if (savedTheme === "light") {
+            document.documentElement.dataset.theme = "light";
+            document
+              .querySelector('meta[name="theme-color"]')
+              ?.setAttribute("content", "#ffffff");
+          }
+        } catch {
+          // The dark design remains the default when storage is unavailable.
+        }
+      })();
+    </script>
 
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
@@ -264,6 +283,74 @@ const webpageSchema = {
 
       <slot />
     </div>
+
+    <button
+      id="rgv-theme-toggle"
+      class="rgv-theme-toggle"
+      type="button"
+      aria-label="Activate light mode"
+      aria-pressed="false"
+      title="Activate light mode"
+    >
+      <span class="rgv-theme-toggle__icon" aria-hidden="true">
+        <svg class="rgv-theme-toggle__sun" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+        </svg>
+        <svg class="rgv-theme-toggle__moon" viewBox="0 0 24 24" fill="none">
+          <path d="M20.5 14.2A8.4 8.4 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />
+        </svg>
+      </span>
+      <span class="rgv-theme-toggle__label">Light</span>
+    </button>
+
+    <script is:inline>
+      (() => {
+        const storageKey = "rgv-color-theme";
+        const root = document.documentElement;
+        const toggle = document.getElementById("rgv-theme-toggle");
+        const label = toggle?.querySelector(".rgv-theme-toggle__label");
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+
+        if (!toggle || !label) return;
+
+        const applyTheme = (theme, persist = false) => {
+          const isLight = theme === "light";
+          root.dataset.theme = isLight ? "light" : "dark";
+          toggle.setAttribute("aria-pressed", String(isLight));
+          toggle.setAttribute(
+            "aria-label",
+            isLight ? "Activate dark mode" : "Activate light mode",
+          );
+          toggle.title = isLight ? "Activate dark mode" : "Activate light mode";
+          label.textContent = isLight ? "Dark" : "Light";
+
+          if (themeColor) {
+            themeColor.setAttribute("content", isLight ? "#ffffff" : "#050505");
+          }
+
+          if (persist) {
+            try {
+              window.localStorage.setItem(storageKey, isLight ? "light" : "dark");
+            } catch {
+              // Theme still works for this visit when storage is unavailable.
+            }
+          }
+        };
+
+        applyTheme(root.dataset.theme);
+
+        toggle.addEventListener("click", () => {
+          applyTheme(root.dataset.theme === "light" ? "dark" : "light", true);
+        });
+
+        window.addEventListener("storage", (event) => {
+          if (event.key === storageKey) {
+            applyTheme(event.newValue === "light" ? "light" : "dark");
+          }
+        });
+      })();
+    </script>
 
     <WelcomeDiscountPopup />
   </body>

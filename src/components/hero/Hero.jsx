@@ -56,7 +56,7 @@ export default function Hero() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative isolate min-h-[100svh] overflow-hidden bg-[#020202] text-white">
+    <section className="rgv-hero relative isolate min-h-[100svh] overflow-hidden bg-[#020202] text-white">
       {/* Layered background */}
       <div className="pointer-events-none absolute inset-0 -z-30 bg-[radial-gradient(circle_at_50%_20%,rgba(220,38,38,0.18),transparent_32%),radial-gradient(circle_at_8%_55%,rgba(127,29,29,0.12),transparent_32%),radial-gradient(circle_at_95%_70%,rgba(220,38,38,0.08),transparent_28%),linear-gradient(180deg,#020202_0%,#080303_48%,#020202_100%)]" />
 
@@ -105,7 +105,7 @@ export default function Hero() {
           >
             <a
               href="/shop"
-              className="group relative col-span-2 inline-flex min-h-[52px] items-center justify-center overflow-hidden rounded-[18px] border border-red-400/25 bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-5 text-[9px] font-black uppercase tracking-[0.17em] text-white shadow-[0_18px_44px_rgba(220,38,38,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:min-h-[54px] sm:text-[9.5px] md:col-auto md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.19em]"
+              className="rgv-hero-primary group relative col-span-2 inline-flex min-h-[52px] items-center justify-center overflow-hidden rounded-[18px] border border-red-400/25 bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-5 text-[9px] font-black uppercase tracking-[0.17em] text-white shadow-[0_18px_44px_rgba(220,38,38,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 sm:min-h-[54px] sm:text-[9.5px] md:col-auto md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.19em]"
             >
               <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent" />
               <ShoppingBag className="mr-2 h-4 w-4 md:mr-2.5 md:h-[18px] md:w-[18px]" strokeWidth={1.8} />
@@ -115,7 +115,7 @@ export default function Hero() {
 
             <a
               href="/coa"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
+              className="rgv-hero-secondary inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
               <FileCheck2 className="mr-1.5 h-[15px] w-[15px] text-red-400 md:mr-2 md:h-[17px] md:w-[17px]" strokeWidth={1.8} />
               View COA
@@ -123,7 +123,7 @@ export default function Hero() {
 
             <a
               href="/track-order"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
+              className="rgv-hero-secondary inline-flex min-h-[48px] items-center justify-center rounded-2xl border border-white/13 bg-white/[0.045] px-2.5 text-[8.5px] font-black uppercase tracking-[0.11em] text-white/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-400/30 hover:bg-red-500/[0.08] hover:text-white sm:min-h-[50px] sm:text-[9px] md:min-h-12 md:rounded-full md:px-8 md:text-[11px] md:tracking-[0.18em]"
             >
               <PackageSearch className="mr-1.5 h-[15px] w-[15px] text-red-400 md:mr-2 md:h-[17px] md:w-[17px]" strokeWidth={1.8} />
               Track Order
@@ -164,7 +164,7 @@ export default function Hero() {
             {trustBadges.map(({ label, icon: Icon }) => (
               <div
                 key={label}
-                className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-black/35 px-3 text-[7.5px] font-black uppercase tracking-[0.105em] text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl sm:px-4 sm:text-[9px] sm:tracking-[0.14em]"
+                className="rgv-trust-pill inline-flex min-h-9 items-center rounded-full border border-white/10 bg-black/35 px-3 text-[7.5px] font-black uppercase tracking-[0.105em] text-white/66 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl sm:px-4 sm:text-[9px] sm:tracking-[0.14em]"
               >
                 <Icon className="mr-1.5 h-3.5 w-3.5 text-red-500" strokeWidth={2.2} />
                 {label}

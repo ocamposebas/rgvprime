@@ -176,7 +176,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
   }, [initialProducts]);
 
   return (
-    <section className="relative overflow-hidden bg-[#050505] py-14 text-white sm:py-16 lg:py-20">
+    <section className="rgv-featured-products relative overflow-hidden bg-[#050505] py-14 text-white sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(220,38,38,0.12),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(127,29,29,0.1),transparent_32%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-600/35 to-transparent" />
 
@@ -265,11 +265,11 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                 return (
                   <article
                     key={product.id || product.slug || product.name}
-                    className="group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]"
+                    className="rgv-product-card group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]"
                   >
                     <a
                       href={productUrl}
-                      className="relative flex h-40 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
+                      className="rgv-product-media relative flex h-40 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
                     >
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
 
@@ -289,12 +289,12 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                       />
 
                       <span
-                        className={`absolute left-2 top-2 rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${stockBadge.className}`}
+                        className={`rgv-stock-badge absolute left-2 top-2 rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${stockBadge.className}`}
                       >
                         {stockBadge.label}
                       </span>
 
-                      <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/65 text-white/80 backdrop-blur transition duration-300 group-hover:border-red-500/35 group-hover:bg-red-600 group-hover:text-white sm:right-3 sm:top-3">
+                      <span className="rgv-product-eye absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/65 text-white/80 backdrop-blur transition duration-300 group-hover:border-red-500/35 group-hover:bg-red-600 group-hover:text-white sm:right-3 sm:top-3">
                         <EyeIcon />
                       </span>
                     </a>
@@ -339,7 +339,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
             <div className="mt-7 text-center">
               <a
                 href="/shop"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-7 text-sm font-black text-white transition hover:border-red-500/35 hover:bg-red-600"
+                className="rgv-products-secondary inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-7 text-sm font-black text-white transition hover:border-red-500/35 hover:bg-red-600"
               >
                 View All Products
               </a>

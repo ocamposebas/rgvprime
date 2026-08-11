@@ -9,6 +9,9 @@ try {
     headers: {
       Accept: "application/json",
     },
+    // Never let a cold WooCommerce request delay the homepage. The client-side
+    // featured section retries in the background when this fast path times out.
+    signal: AbortSignal.timeout(1400),
   });
 
   if (response.ok) {
