@@ -936,11 +936,11 @@ function ProductCard({ product, priority = false }) {
 
     return (
       <div
-        className={
+        className={`rgv-variations-panel ${
           isMobile
             ? "rounded-t-[1.65rem] border-t border-white/10 bg-[#070707] p-4 shadow-[0_-24px_80px_rgba(0,0,0,0.75)]"
             : "mt-3 rounded-2xl border border-red-500/20 bg-black/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-        }
+        }`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -1077,6 +1077,7 @@ function ProductCard({ product, priority = false }) {
                           <button
                             key={variationKey}
                             type="button"
+                            aria-pressed={active}
                             disabled={!available}
                             onClick={() => setSelectedVariationKey(variationKey)}
                             className={`min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -1127,7 +1128,7 @@ function ProductCard({ product, priority = false }) {
                 !selectedVariation || !isVariationAvailable(selectedVariation)
               }
               onClick={handleAddVariation}
-              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 ${
+              className={`rgv-variation-add-button mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 ${
                 isMobile ? "h-12 text-[10px]" : "h-10 text-[9px]"
               }`}
             >

@@ -1634,6 +1634,7 @@ export default function ProductDetails({ slug }) {
                             <button
                               key={option}
                               type="button"
+                              aria-pressed={isSelected}
                               onClick={() =>
                                 handleVariantChange(attribute.name, option)
                               }
@@ -1764,7 +1765,7 @@ export default function ProductDetails({ slug }) {
                     type="button"
                     onClick={handleAddToCart}
                     disabled={!canAddToCart}
-                    className={`group relative flex h-14 items-center justify-center overflow-hidden rounded-2xl px-8 text-white shadow-[0_18px_45px_rgba(220,38,38,0.28)] transition active:scale-[0.985] ${
+                    className={`rgv-product-add-button group relative flex h-14 items-center justify-center overflow-hidden rounded-2xl px-8 text-white shadow-[0_18px_45px_rgba(220,38,38,0.28)] transition active:scale-[0.985] ${
                       canAddToCart
                         ? "bg-red-600 hover:bg-red-500"
                         : "cursor-not-allowed bg-white/10 text-white/40 shadow-none"

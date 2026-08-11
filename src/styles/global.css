@@ -326,7 +326,7 @@ html[data-theme="light"] .launch-page::before {
 
 /* Dark-theme glows and overlays would muddy the white canvas. They are purely
    decorative, so the light theme removes them and keeps actual images crisp. */
-html[data-theme="light"] .site-shell [class*="pointer-events-none"] {
+html[data-theme="light"] .site-shell [class*="pointer-events-none"]:not(:has(svg)):not(:has(img)) {
   display: none !important;
 }
 
@@ -416,7 +416,7 @@ html[data-theme="light"] :where(
   .glass-card,
   [class^="bg-white/"],
   [class*=" bg-white/"],
-  input,
+  input:not([type="checkbox"]):not([type="radio"]),
   textarea,
   select
 ) {
@@ -432,6 +432,14 @@ html[data-theme="light"] :where(input, textarea)::placeholder {
 
 html[data-theme="light"] input {
   accent-color: #d1372f;
+}
+
+html[data-theme="light"] :where(
+  input[type="checkbox"],
+  input[type="radio"]
+) {
+  accent-color: #d1372f !important;
+  color-scheme: light;
 }
 
 /* Primary actions use the brand red; hover-only utilities are left alone. */
@@ -454,6 +462,38 @@ html[data-theme="light"] :where(
   [class~="bg-red-600"],
   [class~="bg-red-700"]
 ) * {
+  color: #fff !important;
+}
+
+/* Keep checkmarks and state icons visible when a red control is selected. */
+html[data-theme="light"] :where(
+  [aria-pressed="true"],
+  [aria-checked="true"],
+  [class~="bg-red-500"],
+  [class~="bg-red-600"],
+  [class~="bg-red-700"]
+) :where(
+  [class^="bg-white/"],
+  [class*=" bg-white/"]
+) {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  color: #fff !important;
+}
+
+html[data-theme="light"] :where(
+  [aria-pressed="true"],
+  [aria-checked="true"]
+) :where(svg, [class*="icon"], [class*="Icon"]) {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+}
+
+html[data-theme="light"] :where(
+  [aria-pressed="true"],
+  [aria-checked="true"]
+) [class*="text-transparent"] {
   color: #fff !important;
 }
 
@@ -562,6 +602,49 @@ html[data-theme="light"] .rgv-products-secondary:hover {
   background: #d1372f !important;
   border-color: #d1372f !important;
   color: #fff !important;
+}
+
+/* Product variation panels need an explicit purchase action on white pages. */
+html[data-theme="light"] .rgv-variations-panel {
+  background: #fff !important;
+  border-color: #fecaca !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme="light"] :where(
+  .rgv-variation-add-button,
+  .rgv-product-add-button
+) {
+  background: #d1372f !important;
+  border: 1px solid #d1372f !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(209, 55, 47, 0.22) !important;
+  opacity: 1;
+}
+
+html[data-theme="light"] :where(
+  .rgv-variation-add-button,
+  .rgv-product-add-button
+) :where(span, svg) {
+  color: #fff !important;
+}
+
+html[data-theme="light"] :where(
+  .rgv-variation-add-button,
+  .rgv-product-add-button
+):hover:not(:disabled) {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+html[data-theme="light"] :where(
+  .rgv-variation-add-button,
+  .rgv-product-add-button
+):disabled {
+  background: #fca5a5 !important;
+  border-color: #fca5a5 !important;
+  color: #fff !important;
+  opacity: 0.62 !important;
 }
 
 /* Navbar uses inline dark gradients, so its light surface is explicit. */
