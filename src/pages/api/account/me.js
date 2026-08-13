@@ -1,6 +1,7 @@
 import {
   PORTAL_COOKIE,
   clearCookieOptions,
+  getCookieOptions,
   json,
   portalRequest,
 } from "../../../lib/portalApi";
@@ -48,6 +49,9 @@ export async function GET({ cookies, url }) {
       method: "GET",
       token,
     });
+
+    // Keep active customers signed in for 30 days from their latest visit.
+    cookies.set(PORTAL_COOKIE, token, getCookieOptions(url));
 
     return noStore(
       json({

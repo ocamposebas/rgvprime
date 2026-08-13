@@ -568,12 +568,9 @@ function AnnouncementItem({ text }) {
   );
 }
 
-function AnnouncementGroup({ ariaHidden = false }) {
+function AnnouncementSequence({ measureRef }) {
   return (
-    <div
-      className="rgv-announcement-group"
-      aria-hidden={ariaHidden ? "true" : undefined}
-    >
+    <div className="rgv-announcement-sequence" ref={measureRef}>
       {announcementItems.map((text) => (
         <AnnouncementItem key={text} text={text} />
       ))}
@@ -581,12 +578,65 @@ function AnnouncementGroup({ ariaHidden = false }) {
   );
 }
 
-function AnnouncementTrack() {
+function AnnouncementGroup({ ariaHidden = false, repeats, measureRef }) {
   return (
-    <div className="rgv-announcement-wrap">
-      <div className="rgv-announcement-track">
-        <AnnouncementGroup />
-        <AnnouncementGroup ariaHidden />
+    <div
+      className="rgv-announcement-group"
+      aria-hidden={ariaHidden ? "true" : undefined}
+    >
+      {Array.from({ length: repeats }, (_, index) => (
+        <AnnouncementSequence
+          key={index}
+          measureRef={index === 0 && !ariaHidden ? measureRef : undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AnnouncementTrack() {
+  const wrapRef = useRef(null);
+  const sequenceRef = useRef(null);
+  const [repeats, setRepeats] = useState(8);
+  const [duration, setDuration] = useState(240);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const sequence = sequenceRef.current;
+
+    if (!wrap || !sequence) return undefined;
+
+    function fillTrack() {
+      const wrapWidth = wrap.getBoundingClientRect().width;
+      const sequenceWidth = sequence.getBoundingClientRect().width;
+
+      if (!wrapWidth || !sequenceWidth) return;
+
+      // Each half of the track must be wider than the viewport so the next
+      // identical half is already visible before the animation loops.
+      const nextRepeats = Math.max(2, Math.ceil(wrapWidth / sequenceWidth) + 2);
+
+      setRepeats(nextRepeats);
+      setDuration(Math.max(46, (sequenceWidth * nextRepeats) / 16));
+    }
+
+    fillTrack();
+
+    const observer = new ResizeObserver(fillTrack);
+    observer.observe(wrap);
+    observer.observe(sequence);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="rgv-announcement-wrap" ref={wrapRef}>
+      <div
+        className="rgv-announcement-track"
+        style={{ animationDuration: `${duration}s` }}
+      >
+        <AnnouncementGroup repeats={repeats} measureRef={sequenceRef} />
+        <AnnouncementGroup repeats={repeats} ariaHidden />
       </div>
 
       <style>{`
@@ -644,6 +694,14 @@ function AnnouncementTrack() {
           white-space: nowrap;
         }
 
+        .rgv-announcement-sequence {
+          display: flex;
+          flex: 0 0 auto;
+          align-items: center;
+          height: 100%;
+          white-space: nowrap;
+        }
+
         .rgv-announcement-item {
           display: inline-flex;
           flex: 0 0 auto;
@@ -674,10 +732,6 @@ function AnnouncementTrack() {
         }
 
         @media (max-width: 640px) {
-          .rgv-announcement-track {
-            animation-duration: 38s;
-          }
-
           .rgv-announcement-item {
             gap: 22px;
             padding: 0 22px;
@@ -1386,7 +1440,7 @@ export default function Navbar({ transparent = false }) {
 
   async function handleAccountLogout() {
     const fallbackLogoutUrl =
-      "/api/account/logout?next=/account%3Fmode%3Dlogin%26logged_out%3D1";
+      "/api/account/logout?next=%2F";
 
     let logoutOk = false;
 
@@ -1427,7 +1481,7 @@ export default function Navbar({ transparent = false }) {
     window.dispatchEvent(new Event("rgv-account-logout"));
 
     if (window.location.pathname.startsWith("/account")) {
-      window.history.replaceState({}, "", "/account?mode=login&logged_out=1");
+      window.location.assign("/");
     }
   }
 

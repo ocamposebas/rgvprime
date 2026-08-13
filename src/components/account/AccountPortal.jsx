@@ -2459,6 +2459,28 @@ export default function AccountPortal() {
     loadMe();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function syncAuthenticatedSession() {
+      const result = await getMeOnce({ force: true });
+      const data = result?.data || {};
+
+      if (!active || !result?.ok || !data.success || !data.user) return;
+
+      setUser(data.user);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setBooting(false);
+    }
+
+    window.addEventListener("rgv-account-login", syncAuthenticatedSession);
+
+    return () => {
+      active = false;
+      window.removeEventListener("rgv-account-login", syncAuthenticatedSession);
+    };
+  }, []);
+
   function handleAuthSuccess(data) {
     resetMeCache();
     setUser(data.user);
@@ -2476,7 +2498,7 @@ export default function AccountPortal() {
 
   async function handleLogout() {
     const fallbackLogoutUrl =
-      "/api/account/logout?next=/account%3Fmode%3Dlogin%26logged_out%3D1";
+      "/api/account/logout?next=%2F";
 
     let logoutOk = false;
 
@@ -2515,12 +2537,7 @@ export default function AccountPortal() {
     } catch {}
 
     window.dispatchEvent(new Event("rgv-account-logout"));
-
-    window.history.replaceState(
-      {},
-      "",
-      "/account?mode=login&logged_out=1"
-    );
+    window.location.assign("/");
   }
   if (booting) {
     return (

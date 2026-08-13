@@ -2,6 +2,8 @@ const WP_URL = String(import.meta.env.PUBLIC_WP_URL || "").replace(/\/+$/, "");
 const PORTAL_API_SECRET = import.meta.env.PORTAL_API_SECRET;
 const PUBLIC_SITE_URL = String(import.meta.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
 
+const PORTAL_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
+
 export const PORTAL_COOKIE = "rgv_customer_session";
 
 function getPortalBaseUrl() {
@@ -21,7 +23,7 @@ export function getCookieOptions(url) {
     httpOnly: true,
     secure: isSecure,
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: PORTAL_SESSION_MAX_AGE,
   };
 }
 
