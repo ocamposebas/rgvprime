@@ -184,7 +184,13 @@ const webpageSchema = {
 
     <script is:inline>
       (() => {
+        const lightThemeEnabled = false;
         const storageKey = "rgv-color-theme";
+
+        if (!lightThemeEnabled) {
+          document.documentElement.dataset.theme = "dark";
+          return;
+        }
 
         try {
           const savedTheme = window.localStorage.getItem(storageKey);
@@ -288,6 +294,7 @@ const webpageSchema = {
       id="rgv-theme-toggle"
       class="rgv-theme-toggle"
       type="button"
+      hidden
       aria-label="Activate light mode"
       aria-pressed="false"
       title="Activate light mode"
@@ -312,7 +319,7 @@ const webpageSchema = {
         const label = toggle?.querySelector(".rgv-theme-toggle__label");
         const themeColor = document.querySelector('meta[name="theme-color"]');
 
-        if (!toggle || !label) return;
+        if (!toggle || !label || toggle.hidden) return;
 
         const applyTheme = (theme, persist = false) => {
           const isLight = theme === "light";
