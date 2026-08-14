@@ -716,14 +716,14 @@ final class RGV_Zelle_Checkout {
     if ($is_free_shipping) {
       return [
         'id' => 'free_shipping',
-        'title' => 'Free Shipping',
+        'title' => "Free Shipping (Order's Over $200)",
       ];
     }
 
     $shipping_methods = [
+      'ups_2_day_air' => 'UPS Shipping',
       'usps_ground_advantage' => 'USPS Ground',
-      'usps_priority' => 'USPS Priority',
-      'ups_2_day_air' => 'UPS 2 Day Air',
+      'usps_priority' => 'USPS Priority Mail',
     ];
 
     $method_value = $data['shippingMethod']

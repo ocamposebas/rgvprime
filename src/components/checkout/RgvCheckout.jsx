@@ -42,35 +42,35 @@ const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
 
 const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
-// Orders qualify at $190, while the storefront promotion is presented as $200.
-const FREE_SHIPPING_MINIMUM = 190;
+const FREE_SHIPPING_MINIMUM = 200;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
 const FREE_SHIPPING_LABEL = "Free Shipping";
+const FREE_SHIPPING_METHOD_LABEL = "Free Shipping (Order's Over $200)";
 
 const SHIPPING_METHODS = [
+  {
+    id: "ups_2_day_air",
+    title: "UPS Shipping",
+    label: "UPS Shipping",
+    description: "Estimated 3-5 Business days after processing",
+    price: 15,
+    carrier: "UPS",
+  },
   {
     id: "usps_ground_advantage",
     title: "USPS Ground",
     label: "USPS Ground",
-    description: "3 to 7 Business Days",
+    description: "Estimated 3-8 Business days after processing",
     price: 8,
     carrier: "USPS",
   },
   {
     id: "usps_priority",
-    title: "USPS Priority",
-    label: "USPS Priority",
-    description: "3 to 5 Business Days",
+    title: "USPS Priority Mail",
+    label: "USPS Priority Mail",
+    description: "Estimated 3-8 Business days after processing",
     price: 12,
     carrier: "USPS",
-  },
-  {
-    id: "ups_2_day_air",
-    title: "UPS 2 Day Air",
-    label: "UPS 2 Day Air",
-    description: "3 to 5 Business Days",
-    price: 15,
-    carrier: "UPS",
   },
 ];
 
@@ -2256,7 +2256,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Shipping method</strong>
                   <small>
-                    Choose USPS Ground, USPS Priority, or UPS 2 Day Air. Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
+                    Choose UPS Shipping, USPS Ground, or USPS Priority Mail. Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
                   </small>
                 </div>
               </div>
@@ -2270,8 +2270,8 @@ export default function RgvCheckout() {
                   <span>Available methods</span>
                   <strong>
                     {freeShippingUnlocked
-                      ? FREE_SHIPPING_LABEL
-                      : `Only ${formatMoney(amountUntilFreeShipping)} more for free shipping at ${formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}`}
+                      ? FREE_SHIPPING_METHOD_LABEL
+                      : `${FREE_SHIPPING_METHOD_LABEL} — Only ${formatMoney(amountUntilFreeShipping)} more`}
                   </strong>
                 </div>
 
