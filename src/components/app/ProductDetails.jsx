@@ -1250,8 +1250,13 @@ export default function ProductDetails({ slug }) {
     };
 
     setIsAdding(true);
-    const result = await addItem(itemToAdd, quantity);
-    setIsAdding(false);
+    let result;
+
+    try {
+      result = await addItem(itemToAdd, quantity);
+    } finally {
+      setIsAdding(false);
+    }
 
     if (!result?.valid) return;
 
@@ -1758,6 +1763,7 @@ export default function ProductDetails({ slug }) {
                     type="button"
                     onClick={handleAddToCart}
                     disabled={!canAddToCart || isAdding}
+                    aria-busy={isAdding}
                     className={`rgv-product-add-button group relative flex h-14 items-center justify-center overflow-hidden rounded-2xl px-8 text-white shadow-[0_18px_45px_rgba(220,38,38,0.28)] transition active:scale-[0.985] ${
                       canAddToCart
                         ? "bg-red-600 hover:bg-red-500"
@@ -1767,9 +1773,7 @@ export default function ProductDetails({ slug }) {
                     <span className="absolute inset-0 translate-x-[-120%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
 
                     <span className="relative z-10 flex items-center gap-3 text-[12px] font-black uppercase tracking-[0.18em]">
-                      {isAdding
-                        ? "Checking Stock"
-                        : hasVariants && hasVariationData && !selectedVariation
+                      {hasVariants && hasVariationData && !selectedVariation
                         ? "Select Options"
                         : justAdded
                           ? "Added to Cart"

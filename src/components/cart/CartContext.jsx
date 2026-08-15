@@ -226,6 +226,7 @@ export function CartProvider({ children }) {
 
   const itemsRef = useRef([]);
   const pendingOmnisendItemRef = useRef(null);
+  const pendingAdditionsRef = useRef(new Set());
   const identifiedEmailRef = useRef("");
   const lastCheckoutSignatureRef = useRef("");
 
@@ -437,12 +438,13 @@ export function CartProvider({ children }) {
       ? currentItems
       : itemsRef.current;
     const reconcile = options.reconcile !== false;
+    const reportStatus = options.reportStatus !== false;
 
     if (!itemsToValidate.length) {
       return { success: true, valid: false, items: [] };
     }
 
-    setIsCheckingStock(true);
+    if (reportStatus) setIsCheckingStock(true);
 
     try {
       const response = await fetch("/api/cart/validate-stock", {
@@ -484,10 +486,11 @@ export function CartProvider({ children }) {
             if (!validation) return [];
             if (!validation.available) return [];
 
-            const allowedQuantity = Math.max(
-              1,
-              Number(validation.allowed_quantity || item.quantity || 1),
-            );
+            const availableQuantity = Number(validation.stock_quantity);
+            const hasStockLimit =
+              validation.backorders_allowed !== true &&
+              validation.stock_quantity !== null &&
+              Number.isFinite(availableQuantity);
 
             return [
               {
@@ -496,20 +499,22 @@ export function CartProvider({ children }) {
                 stock_status: validation.stock_status,
                 stock_quantity: validation.stock_quantity,
                 backorders_allowed: validation.backorders_allowed === true,
-                quantity: Math.min(Number(item.quantity || 1), allowedQuantity),
+                quantity: hasStockLimit
+                  ? Math.min(Number(item.quantity || 1), availableQuantity)
+                  : Number(item.quantity || 1),
               },
             ];
           }),
         );
       }
 
-      if (unavailable.length) {
+      if (reportStatus && unavailable.length) {
         const names = unavailable.map((item) => item.name).join(", ");
         setCartNotice(`Removed from cart because it is sold out: ${names}.`);
-      } else if (reduced.length) {
+      } else if (reportStatus && reduced.length) {
         const names = reduced.map((item) => item.name).join(", ");
         setCartNotice(`Quantity adjusted to current stock for: ${names}.`);
-      } else {
+      } else if (reportStatus) {
         setCartNotice("");
       }
 
@@ -517,10 +522,10 @@ export function CartProvider({ children }) {
     } catch (error) {
       const message =
         error?.message || "Inventory could not be verified. Please try again.";
-      setCartNotice(message);
+      if (reportStatus) setCartNotice(message);
       return { success: false, valid: false, message, items: [] };
     } finally {
-      setIsCheckingStock(false);
+      if (reportStatus) setIsCheckingStock(false);
     }
   }, []);
 
@@ -541,74 +546,87 @@ export function CartProvider({ children }) {
       return { success: true, valid: false };
     }
 
-    openCart();
-    setCartNotice("Checking current availability...");
-
-    const existingItem = itemsRef.current.find((item) => item.id === newItem.id);
-    const desiredQuantity =
-      Number(existingItem?.quantity || 0) + Math.max(1, Number(quantity) || 1);
-    const validation = await validateStock(
-      [{ ...newItem, quantity: desiredQuantity }],
-      { reconcile: false },
-    );
-    const liveItem = validation.items?.[0];
-
-    if (!validation.success || !validation.valid || !liveItem?.available) {
-      if (liveItem && !liveItem.available) {
-        setCartNotice(`${liveItem.name} is sold out and was not added to your cart.`);
-      } else if (liveItem?.reason === "insufficient_stock") {
-        setCartNotice(
-          `Only ${liveItem.allowed_quantity} unit(s) of ${liveItem.name} are available.`,
-        );
-      }
-
-      return { ...validation, valid: false };
+    if (pendingAdditionsRef.current.has(newItem.id)) {
+      return { success: false, valid: false, pending: true };
     }
 
-    const verifiedItem = {
-      ...newItem,
-      stock_status: liveItem.stock_status,
-      stock_quantity: liveItem.stock_quantity,
-      backorders_allowed: liveItem.backorders_allowed === true,
-    };
+    pendingAdditionsRef.current.add(newItem.id);
 
-    pendingOmnisendItemRef.current = verifiedItem;
+    try {
+      const existingItem = itemsRef.current.find((item) => item.id === newItem.id);
+      const desiredQuantity =
+        Number(existingItem?.quantity || 0) + Math.max(1, Number(quantity) || 1);
+      const validation = await validateStock(
+        [{ ...newItem, quantity: desiredQuantity }],
+        { reconcile: false, reportStatus: false },
+      );
+      const liveItem = validation.items?.[0];
 
-    setItems((currentItems) => {
-      const currentItem = currentItems.find((item) => item.id === verifiedItem.id);
+      if (!validation.success || !validation.valid || !liveItem?.available) {
+        if (liveItem && !liveItem.available) {
+          setCartNotice(`${liveItem.name} is sold out and was not added to your cart.`);
+        } else if (liveItem?.reason === "insufficient_stock") {
+          setCartNotice(
+            `Only ${liveItem.allowed_quantity} unit(s) of ${liveItem.name} are available.`,
+          );
+        } else {
+          setCartNotice(
+            validation.message || "Inventory could not be verified. Please try again.",
+          );
+        }
 
-      if (!currentItem) {
-        return [
-          ...currentItems,
-          {
-            ...verifiedItem,
-            quantity: Math.min(
-              Number(quantity || 1),
-              getMaxQuantity(verifiedItem),
-            ),
-          },
-        ];
+        openCart();
+        return { ...validation, valid: false };
       }
 
-      const maxQuantity = getMaxQuantity(verifiedItem);
-      const nextQuantity = Math.min(
-        Number(currentItem.quantity || 1) + Number(quantity || 1),
-        maxQuantity,
-      );
+      const verifiedItem = {
+        ...newItem,
+        stock_status: liveItem.stock_status,
+        stock_quantity: liveItem.stock_quantity,
+        backorders_allowed: liveItem.backorders_allowed === true,
+      };
 
-      return currentItems.map((item) =>
-        item.id === verifiedItem.id
-          ? {
-              ...item,
+      pendingOmnisendItemRef.current = verifiedItem;
+
+      setItems((currentItems) => {
+        const currentItem = currentItems.find((item) => item.id === verifiedItem.id);
+
+        if (!currentItem) {
+          return [
+            ...currentItems,
+            {
               ...verifiedItem,
-              quantity: nextQuantity,
-            }
-          : item,
-      );
-    });
+              quantity: Math.min(
+                Number(quantity || 1),
+                getMaxQuantity(verifiedItem),
+              ),
+            },
+          ];
+        }
 
-    setCartNotice("");
-    return { success: true, valid: true, item: verifiedItem };
+        const maxQuantity = getMaxQuantity(verifiedItem);
+        const nextQuantity = Math.min(
+          Number(currentItem.quantity || 1) + Number(quantity || 1),
+          maxQuantity,
+        );
+
+        return currentItems.map((item) =>
+          item.id === verifiedItem.id
+            ? {
+                ...item,
+                ...verifiedItem,
+                quantity: nextQuantity,
+              }
+            : item,
+        );
+      });
+
+      setCartNotice("");
+      openCart();
+      return { success: true, valid: true, item: verifiedItem };
+    } finally {
+      pendingAdditionsRef.current.delete(newItem.id);
+    }
   }
 
   function removeItem(productId) {

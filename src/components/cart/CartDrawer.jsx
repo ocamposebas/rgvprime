@@ -229,6 +229,11 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     if (!isCartOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = Math.max(
+      0,
+      window.innerWidth - document.documentElement.clientWidth,
+    );
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
@@ -237,18 +242,24 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     }
 
     document.body.style.overflow = "hidden";
+
+    if (scrollbarWidth > 0) {
+      const currentPadding = Number.parseFloat(
+        window.getComputedStyle(document.body).paddingRight,
+      );
+      document.body.style.paddingRight = `${
+        (Number.isFinite(currentPadding) ? currentPadding : 0) + scrollbarWidth
+      }px`;
+    }
+
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isCartOpen, closeCart]);
-
-  useEffect(() => {
-    if (!isCartOpen || !safeItems.length) return;
-    void validateStock(safeItems, { reconcile: true });
-  }, [isCartOpen]);
 
   return (
     <AnimatePresence initial={false}>
