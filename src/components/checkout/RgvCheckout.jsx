@@ -1205,6 +1205,43 @@ export default function RgvCheckout() {
     return true;
   };
 
+  const validateCheckoutInventory = async () => {
+    if (typeof cart?.validateStock !== "function") {
+      setError("Inventory could not be verified. Please refresh and try again.");
+      return false;
+    }
+
+    setError("");
+    setPaymentNotice("Checking current inventory...");
+
+    const validation = await cart.validateStock(cartItems, { reconcile: true });
+
+    if (!validation?.success) {
+      setPaymentNotice("");
+      setError(validation?.message || "Inventory could not be verified. Please try again.");
+      return false;
+    }
+
+    if (!validation.valid) {
+      const unavailableNames = validation.items
+        ?.filter((item) => !item.available)
+        .map((item) => item.name)
+        .filter(Boolean)
+        .join(", ");
+
+      setPaymentNotice("");
+      setError(
+        unavailableNames
+          ? `Sold-out products were removed from your cart: ${unavailableNames}. Review the cart before continuing.`
+          : "Some quantities were adjusted to current stock. Review the cart before continuing.",
+      );
+      return false;
+    }
+
+    setPaymentNotice("");
+    return true;
+  };
+
   const validateDirectPaymentForm = (paymentLabel) => {
     const normalizedForm = normalizeCheckoutFormForOrder(checkoutForm);
 
@@ -1240,13 +1277,15 @@ export default function RgvCheckout() {
     return normalizedForm;
   };
 
-  const continueToCardCheckout = () => {
+  const continueToCardCheckout = async () => {
     if (!validateBaseCheckout()) return;
 
     if (couponInput && couponInput !== coupon) {
       setError("Apply or clear the coupon code before continuing.");
       return;
     }
+
+    if (!(await validateCheckoutInventory())) return;
 
     const freeShippingForOrder = isFreeShippingUnlocked();
     const checkoutUrl = buildWooCheckoutUrl({
@@ -1278,6 +1317,8 @@ export default function RgvCheckout() {
       setError("Apply or clear the coupon code before continuing with bank transfer.");
       return;
     }
+
+    if (!(await validateCheckoutInventory())) return;
 
     const normalizedForm = validateDirectPaymentForm("bank transfer");
     if (!normalizedForm) return;
@@ -1434,6 +1475,8 @@ export default function RgvCheckout() {
       setError("Apply or clear the coupon code before creating your Zelle order.");
       return;
     }
+
+    if (!(await validateCheckoutInventory())) return;
 
     const normalizedForm = validateDirectPaymentForm("Zelle");
     if (!normalizedForm) return;

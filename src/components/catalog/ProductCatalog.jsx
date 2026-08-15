@@ -4,6 +4,7 @@ import {
   formatPoints,
   getProductLoyaltyPoints,
 } from "../../lib/loyaltyProgram";
+import { isProductAvailable } from "../../lib/inventory";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const PRODUCTS_PER_PAGE = 12;
@@ -283,7 +284,7 @@ function getStockBadge(product) {
       ? Number(product.stock_quantity)
       : null;
 
-  if (product.stock_status !== "instock") {
+  if (!isProductAvailable(product)) {
     return {
       label: "Sold Out",
       status: "out",
@@ -529,7 +530,7 @@ function getVariationStockLabel(variation) {
       ? Number(variation.stock_quantity)
       : null;
 
-  if (variation?.stock_status && variation.stock_status !== "instock") {
+  if (!isProductAvailable(variation)) {
     return "Sold Out";
   }
 
@@ -540,13 +541,7 @@ function getVariationStockLabel(variation) {
 }
 
 function isVariationAvailable(variation) {
-  if (!variation) return false;
-  if (variation.purchasable === false) return false;
-  if (variation.stock_status && variation.stock_status !== "instock") {
-    return false;
-  }
-
-  return true;
+  return isProductAvailable(variation);
 }
 
 function getPaginationItems(currentPage, totalPages) {
@@ -770,7 +765,7 @@ function ProductCard({ product, priority = false }) {
   const loyaltyPoints = getProductLoyaltyPoints(product);
 
   const isVariableProduct = product.type === "variable";
-  const canAddToCart = !isVariableProduct && product.stock_status === "instock";
+  const canAddToCart = !isVariableProduct && isProductAvailable(product);
 
   const selectedVariation = useMemo(() => {
     if (!variations.length) return null;
@@ -1393,10 +1388,10 @@ export default function ProductCatalog() {
 
       const matchesFilter =
         activeFilter === "all" ||
-        (activeFilter === "available" && product.stock_status === "instock") ||
+        (activeFilter === "available" && isProductAvailable(product)) ||
         (activeFilter === "low" &&
           (stockBadge.status === "low" || stockBadge.status === "medium")) ||
-        (activeFilter === "sold-out" && product.stock_status !== "instock");
+        (activeFilter === "sold-out" && !isProductAvailable(product));
 
       return matchesSearch && matchesFilter;
     });

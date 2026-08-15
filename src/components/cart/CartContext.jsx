@@ -17,6 +17,10 @@ import {
   trackOmnisendStartedCheckout,
 } from "../../lib/omnisendCart";
 import { getMeOnce } from "../../lib/accountSession";
+import {
+  getMaximumPurchasableQuantity,
+  isProductAvailable,
+} from "../../lib/inventory";
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
 const OMNISEND_CHECKOUT_SIGNATURE_KEY =
@@ -37,6 +41,8 @@ const fallbackCart = {
   subtotal: 0,
   cartTotal: 0,
   paidSubtotal: 0,
+  cartNotice: "",
+  isCheckingStock: false,
   isCartOpen: false,
   openCart: () => {},
   closeCart: () => {},
@@ -45,6 +51,8 @@ const fallbackCart = {
   removeItem: () => {},
   updateQuantity: () => {},
   clearCart: () => {},
+  clearCartNotice: () => {},
+  validateStock: () => Promise.resolve({ success: false, valid: false }),
   identifyContact: () => Promise.resolve(false),
   trackStartedCheckout: () => Promise.resolve(false),
 };
@@ -151,13 +159,16 @@ function normalizeProduct(product, quantity = 1) {
     image_url: image,
     permalink: resolveProductUrl(product),
     sku: product.sku || "",
-    stock_status: product.stock_status || "instock",
+    stock_status: String(product.stock_status || "unknown").toLowerCase(),
     stock_quantity:
       product.stock_quantity !== null &&
       product.stock_quantity !== undefined &&
       product.stock_quantity !== ""
         ? Number(product.stock_quantity)
         : null,
+    manage_stock: product.manage_stock === true,
+    backorders_allowed: product.backorders_allowed === true,
+    purchasable: product.purchasable !== false,
     quantity: Number(quantity || product.quantity || 1),
     selectedOption: product.selectedOption || product.selected_option || "",
     selectedAttributes:
@@ -184,16 +195,7 @@ function normalizeProduct(product, quantity = 1) {
 }
 
 function getMaxQuantity(item) {
-  if (
-    item.stock_quantity !== null &&
-    item.stock_quantity !== undefined &&
-    Number.isFinite(Number(item.stock_quantity)) &&
-    Number(item.stock_quantity) > 0
-  ) {
-    return Number(item.stock_quantity);
-  }
-
-  return 99;
+  return getMaximumPurchasableQuantity(item, 99);
 }
 
 function cleanOldCartStorage() {
@@ -219,6 +221,8 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [cartNotice, setCartNotice] = useState("");
+  const [isCheckingStock, setIsCheckingStock] = useState(false);
 
   const itemsRef = useRef([]);
   const pendingOmnisendItemRef = useRef(null);
@@ -426,51 +430,185 @@ export function CartProvider({ children }) {
     setIsCartOpen((previous) => !previous);
   }
 
-  function addItem(product, quantity = 1) {
+  const clearCartNotice = useCallback(() => setCartNotice(""), []);
+
+  const validateStock = useCallback(async (currentItems, options = {}) => {
+    const itemsToValidate = Array.isArray(currentItems)
+      ? currentItems
+      : itemsRef.current;
+    const reconcile = options.reconcile !== false;
+
+    if (!itemsToValidate.length) {
+      return { success: true, valid: false, items: [] };
+    }
+
+    setIsCheckingStock(true);
+
+    try {
+      const response = await fetch("/api/cart/validate-stock", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          items: itemsToValidate.map((item) => ({
+            cart_id: item.id || item.cartKey || item.cart_key,
+            product_id: item.product_id || item.productId,
+            variation_id: item.variation_id || item.variationId || 0,
+            quantity: Number(item.quantity || 1),
+            name: item.name || item.title || "Product",
+          })),
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || data?.success !== true || !Array.isArray(data.items)) {
+        throw new Error(data?.message || "Inventory could not be verified.");
+      }
+
+      const validationById = new Map(
+        data.items.map((item) => [String(item.cart_id), item]),
+      );
+      const unavailable = data.items.filter((item) => !item.available);
+      const reduced = data.items.filter(
+        (item) => item.available && item.valid === false,
+      );
+
+      if (reconcile) {
+        setItems((storedItems) =>
+          storedItems.flatMap((item) => {
+            const validation = validationById.get(String(item.id));
+            if (!validation) return [];
+            if (!validation.available) return [];
+
+            const allowedQuantity = Math.max(
+              1,
+              Number(validation.allowed_quantity || item.quantity || 1),
+            );
+
+            return [
+              {
+                ...item,
+                name: validation.name || item.name,
+                stock_status: validation.stock_status,
+                stock_quantity: validation.stock_quantity,
+                backorders_allowed: validation.backorders_allowed === true,
+                quantity: Math.min(Number(item.quantity || 1), allowedQuantity),
+              },
+            ];
+          }),
+        );
+      }
+
+      if (unavailable.length) {
+        const names = unavailable.map((item) => item.name).join(", ");
+        setCartNotice(`Removed from cart because it is sold out: ${names}.`);
+      } else if (reduced.length) {
+        const names = reduced.map((item) => item.name).join(", ");
+        setCartNotice(`Quantity adjusted to current stock for: ${names}.`);
+      } else {
+        setCartNotice("");
+      }
+
+      return data;
+    } catch (error) {
+      const message =
+        error?.message || "Inventory could not be verified. Please try again.";
+      setCartNotice(message);
+      return { success: false, valid: false, message, items: [] };
+    } finally {
+      setIsCheckingStock(false);
+    }
+  }, []);
+
+  async function addItem(product, quantity = 1) {
     const newItem = normalizeProduct(product, quantity);
 
     if (!newItem.product_id) {
       console.error("Invalid product added to cart:", product);
-      return;
+      return { success: false, valid: false };
     }
 
-    if (newItem.stock_status !== "instock") {
+    const hasKnownInventory =
+      newItem.stock_status !== "unknown" || newItem.stock_quantity !== null;
+
+    if (hasKnownInventory && !isProductAvailable(newItem, quantity)) {
+      setCartNotice(`${newItem.name} is sold out and was not added to your cart.`);
       openCart();
-      return;
+      return { success: true, valid: false };
     }
 
-    pendingOmnisendItemRef.current = newItem;
+    openCart();
+    setCartNotice("Checking current availability...");
+
+    const existingItem = itemsRef.current.find((item) => item.id === newItem.id);
+    const desiredQuantity =
+      Number(existingItem?.quantity || 0) + Math.max(1, Number(quantity) || 1);
+    const validation = await validateStock(
+      [{ ...newItem, quantity: desiredQuantity }],
+      { reconcile: false },
+    );
+    const liveItem = validation.items?.[0];
+
+    if (!validation.success || !validation.valid || !liveItem?.available) {
+      if (liveItem && !liveItem.available) {
+        setCartNotice(`${liveItem.name} is sold out and was not added to your cart.`);
+      } else if (liveItem?.reason === "insufficient_stock") {
+        setCartNotice(
+          `Only ${liveItem.allowed_quantity} unit(s) of ${liveItem.name} are available.`,
+        );
+      }
+
+      return { ...validation, valid: false };
+    }
+
+    const verifiedItem = {
+      ...newItem,
+      stock_status: liveItem.stock_status,
+      stock_quantity: liveItem.stock_quantity,
+      backorders_allowed: liveItem.backorders_allowed === true,
+    };
+
+    pendingOmnisendItemRef.current = verifiedItem;
 
     setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.id === newItem.id);
+      const currentItem = currentItems.find((item) => item.id === verifiedItem.id);
 
-      if (!existingItem) {
+      if (!currentItem) {
         return [
           ...currentItems,
           {
-            ...newItem,
-            quantity: Math.min(Number(quantity || 1), getMaxQuantity(newItem)),
+            ...verifiedItem,
+            quantity: Math.min(
+              Number(quantity || 1),
+              getMaxQuantity(verifiedItem),
+            ),
           },
         ];
       }
 
-      const maxQuantity = getMaxQuantity(existingItem);
+      const maxQuantity = getMaxQuantity(verifiedItem);
       const nextQuantity = Math.min(
-        Number(existingItem.quantity || 1) + Number(quantity || 1),
+        Number(currentItem.quantity || 1) + Number(quantity || 1),
         maxQuantity,
       );
 
       return currentItems.map((item) =>
-        item.id === newItem.id
+        item.id === verifiedItem.id
           ? {
               ...item,
+              ...verifiedItem,
               quantity: nextQuantity,
             }
           : item,
       );
     });
 
-    openCart();
+    setCartNotice("");
+    return { success: true, valid: true, item: verifiedItem };
   }
 
   function removeItem(productId) {
@@ -515,6 +653,7 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setItems([]);
+    setCartNotice("");
     pendingOmnisendItemRef.current = null;
     identifiedEmailRef.current = "";
     lastCheckoutSignatureRef.current = "";
@@ -550,6 +689,8 @@ export function CartProvider({ children }) {
     subtotal,
     cartTotal: subtotal,
     paidSubtotal: subtotal,
+    cartNotice,
+    isCheckingStock,
     isCartOpen,
     openCart,
     closeCart,
@@ -558,6 +699,8 @@ export function CartProvider({ children }) {
     removeItem,
     updateQuantity,
     clearCart,
+    clearCartNotice,
+    validateStock,
     identifyContact,
     trackStartedCheckout,
   };

@@ -188,6 +188,9 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     removeItem,
     updateQuantity,
     clearCart,
+    cartNotice,
+    isCheckingStock,
+    validateStock,
   } = useCart();
 
   const safeItems = useMemo(() => {
@@ -208,9 +211,19 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     clearCart();
   }, [clearCart]);
 
-  const handleCheckoutClick = useCallback(() => {
-    closeCart();
-  }, [closeCart]);
+  const handleCheckoutClick = useCallback(
+    async (event) => {
+      event.preventDefault();
+
+      const validation = await validateStock(safeItems, { reconcile: true });
+
+      if (!validation.success || !validation.valid) return;
+
+      closeCart();
+      window.location.assign(checkoutPath);
+    },
+    [checkoutPath, closeCart, safeItems, validateStock],
+  );
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -231,6 +244,11 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isCartOpen, closeCart]);
+
+  useEffect(() => {
+    if (!isCartOpen || !safeItems.length) return;
+    void validateStock(safeItems, { reconcile: true });
+  }, [isCartOpen]);
 
   return (
     <AnimatePresence initial={false}>
@@ -403,12 +421,26 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
                     </p>
                   </div>
 
+                  {cartNotice && (
+                    <p
+                      role="alert"
+                      className="mb-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs font-bold leading-5 text-amber-100"
+                    >
+                      {cartNotice}
+                    </p>
+                  )}
+
                   <a
                     href={checkoutPath}
                     onClick={handleCheckoutClick}
-                    className="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-red-600 px-6 text-sm font-black uppercase tracking-[0.1em] text-white transition hover:bg-red-500"
+                    aria-disabled={isCheckingStock}
+                    className={`flex min-h-[52px] w-full items-center justify-center rounded-xl px-6 text-sm font-black uppercase tracking-[0.1em] text-white transition ${
+                      isCheckingStock
+                        ? "pointer-events-none cursor-wait bg-red-950 text-white/55"
+                        : "bg-red-600 hover:bg-red-500"
+                    }`}
                   >
-                    Continue to Checkout
+                    {isCheckingStock ? "Checking Stock..." : "Continue to Checkout"}
                   </a>
 
                   <p className="mt-4 text-center text-[11px] leading-5 text-white/35">

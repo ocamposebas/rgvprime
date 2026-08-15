@@ -194,6 +194,8 @@ function mapProductForCatalog(product) {
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
     manage_stock: product.manage_stock,
+    backorders_allowed: product.backorders_allowed,
+    purchasable: product.purchasable,
     featured: product.featured,
     categories: Array.isArray(product.categories)
       ? product.categories.map(mapCategory)
@@ -237,6 +239,7 @@ function mapProductForDetail(product) {
     stock_quantity: product.stock_quantity,
     manage_stock: product.manage_stock,
     backorders_allowed: product.backorders_allowed,
+    purchasable: product.purchasable,
     featured: product.featured,
     weight: product.weight,
     categories: Array.isArray(product.categories)
@@ -316,6 +319,7 @@ function buildWooEndpoint({
         "stock_quantity",
         "manage_stock",
         "backorders_allowed",
+        "purchasable",
         "featured",
         "weight",
         "categories",
@@ -354,6 +358,8 @@ function buildWooEndpoint({
       "stock_status",
       "stock_quantity",
       "manage_stock",
+      "backorders_allowed",
+      "purchasable",
       "featured",
       "categories",
       "tags",

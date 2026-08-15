@@ -5,6 +5,10 @@ import {
   formatPoints,
   getProductLoyaltyPoints,
 } from "../../lib/loyaltyProgram";
+import {
+  getMaximumPurchasableQuantity,
+  isProductAvailable,
+} from "../../lib/inventory";
 
 const FALLBACK_IMAGE = "/logo.webp";
 
@@ -16,7 +20,7 @@ function getStockBadge(product) {
       ? Number(product.stock_quantity)
       : null;
 
-  if (product?.stock_status !== "instock" && product?.backorders_allowed !== true) {
+  if (!isProductAvailable(product)) {
     return {
       label: "Sold Out",
       status: "out",
@@ -254,10 +258,9 @@ function getLowestAvailableVariation(product) {
   const variations = sortVariationsByStrength(getVariationList(product));
 
   return (
-    variations.find(
-      (variation) =>
-        variation?.stock_status === "instock" || variation?.backorders_allowed === true
-    ) || variations[0] || null
+    variations.find((variation) => isProductAvailable(variation)) ||
+    variations[0] ||
+    null
   );
 }
 
@@ -454,11 +457,7 @@ function getVariantPricePreview(product, selectedVariants, attributeName, option
 
   const formattedPrice = formatMoney(rawPrice, currency);
 
-  const isAvailable =
-    variation &&
-    variation?.purchasable !== false &&
-    (variation?.stock_status === "instock" ||
-      variation?.backorders_allowed === true);
+  const isAvailable = isProductAvailable(variation);
 
   const stockLabel = getVariationStockLabel(variation, isAvailable);
 
@@ -886,7 +885,7 @@ function ComplementProductCard({ product }) {
   const productUrl = getProductUrl(product);
   const description = getComplementDescription(product);
   const price = getComplementPrice(product);
-  const isSoldOut = product?.stock_status !== "instock";
+  const isSoldOut = !isProductAvailable(product);
 
   return (
     <article className="group relative overflow-hidden rounded-[1.7rem] border border-white/[0.08] bg-[#080808] shadow-[0_24px_70px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_34px_95px_rgba(0,0,0,0.48)]">
@@ -1098,7 +1097,7 @@ function ProductComplements({ currentProductId }) {
 }
 
 export default function ProductDetails({ slug }) {
-  const { addItem, openCart } = useCart();
+  const { addItem } = useCart();
   const shouldReduceMotion = useReducedMotion();
 
   const [product, setProduct] = useState(null);
@@ -1106,6 +1105,7 @@ export default function ProductDetails({ slug }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [justAdded, setJustAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [notifyName, setNotifyName] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState("idle");
@@ -1190,9 +1190,7 @@ export default function ProductDetails({ slug }) {
       .filter(Boolean)
       .join(" · ") || "Base configuration";
 
-  const isInstock =
-    displayProduct?.stock_status === "instock" ||
-    displayProduct?.backorders_allowed === true;
+  const isInstock = isProductAvailable(displayProduct);
 
   const canAddToCart =
     isInstock && (!hasVariants || !hasVariationData || Boolean(selectedVariation));
@@ -1203,23 +1201,15 @@ export default function ProductDetails({ slug }) {
     : product?.type || "Simple Compound";
 
   const maxQuantity = useMemo(() => {
-    const stock = Number(displayProduct?.stock_quantity);
-
-    if (!Number.isNaN(stock) && stock > 0) {
-      return stock;
-    }
-
-    return 99;
+    return getMaximumPurchasableQuantity(displayProduct, 99);
   }, [displayProduct]);
 
-  const stockQuantity =
-    displayProduct?.stock_quantity !== null &&
-    displayProduct?.stock_quantity !== undefined
+  const stockQuantity = !isInstock
+    ? "Sold Out"
+    : displayProduct?.stock_quantity !== null &&
+        displayProduct?.stock_quantity !== undefined
       ? `${displayProduct.stock_quantity} Units`
-      : displayProduct?.stock_status === "instock" ||
-          displayProduct?.backorders_allowed === true
-        ? "Available"
-        : "Sold Out";
+      : "Available";
 
   const purchasePoints = getProductLoyaltyPoints(displayProduct, quantity);
   const selectionTransition = shouldReduceMotion
@@ -1242,8 +1232,8 @@ export default function ProductDetails({ slug }) {
     setJustAdded(false);
   };
 
-  const handleAddToCart = () => {
-    if (!product || !displayProduct || !canAddToCart) return;
+  const handleAddToCart = async () => {
+    if (!product || !displayProduct || !canAddToCart || isAdding) return;
 
     const itemToAdd = {
       ...displayProduct,
@@ -1259,8 +1249,11 @@ export default function ProductDetails({ slug }) {
       description: product.description || "",
     };
 
-    addItem(itemToAdd, quantity);
-    openCart?.();
+    setIsAdding(true);
+    const result = await addItem(itemToAdd, quantity);
+    setIsAdding(false);
+
+    if (!result?.valid) return;
 
     setJustAdded(true);
 
@@ -1764,7 +1757,7 @@ export default function ProductDetails({ slug }) {
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    disabled={!canAddToCart}
+                    disabled={!canAddToCart || isAdding}
                     className={`rgv-product-add-button group relative flex h-14 items-center justify-center overflow-hidden rounded-2xl px-8 text-white shadow-[0_18px_45px_rgba(220,38,38,0.28)] transition active:scale-[0.985] ${
                       canAddToCart
                         ? "bg-red-600 hover:bg-red-500"
@@ -1774,7 +1767,9 @@ export default function ProductDetails({ slug }) {
                     <span className="absolute inset-0 translate-x-[-120%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
 
                     <span className="relative z-10 flex items-center gap-3 text-[12px] font-black uppercase tracking-[0.18em]">
-                      {hasVariants && hasVariationData && !selectedVariation
+                      {isAdding
+                        ? "Checking Stock"
+                        : hasVariants && hasVariationData && !selectedVariation
                         ? "Select Options"
                         : justAdded
                           ? "Added to Cart"

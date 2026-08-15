@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.2
+ * Version: 1.3.3
  * Author: RGVPRIME LLC
  */
 
@@ -688,6 +688,78 @@ final class RGV_Zelle_Checkout {
       return new WP_Error('rgv_invalid_email', 'A valid email is required.');
     }
 
+    foreach ($items as $item) {
+      $stock_validation = $this->validate_order_item_stock($item);
+
+      if (is_wp_error($stock_validation)) {
+        return $stock_validation;
+      }
+    }
+
+    return true;
+  }
+
+  private function get_order_item_product($item) {
+    $product_id = isset($item['product_id']) ? absint($item['product_id']) : 0;
+    $variation_id = isset($item['variation_id']) ? absint($item['variation_id']) : 0;
+
+    if ($variation_id > 0) {
+      $variation = wc_get_product($variation_id);
+
+      if (
+        $variation instanceof WC_Product &&
+        $variation->is_type('variation') &&
+        (!$product_id || (int) $variation->get_parent_id() === $product_id)
+      ) {
+        return $variation;
+      }
+
+      return null;
+    }
+
+    return $product_id > 0 ? wc_get_product($product_id) : null;
+  }
+
+  private function validate_order_item_stock($item) {
+    $product = $this->get_order_item_product($item);
+    $quantity = isset($item['quantity']) ? max(1, absint($item['quantity'])) : 1;
+
+    if (!$product instanceof WC_Product || !$product->exists()) {
+      return new WP_Error(
+        'rgv_product_not_found',
+        'A product in the cart could not be found.'
+      );
+    }
+
+    $product_name = wp_strip_all_tags($product->get_name());
+
+    if (!$product->is_purchasable()) {
+      return new WP_Error(
+        'rgv_product_unavailable',
+        sprintf('%s is no longer available for purchase.', $product_name)
+      );
+    }
+
+    if (!$product->is_in_stock() && !$product->backorders_allowed()) {
+      return new WP_Error(
+        'rgv_product_sold_out',
+        sprintf('%s is sold out. Remove it from your cart before continuing.', $product_name)
+      );
+    }
+
+    if (!$product->backorders_allowed() && !$product->has_enough_stock($quantity)) {
+      $remaining_stock = max(0, (int) $product->get_stock_quantity());
+
+      return new WP_Error(
+        'rgv_insufficient_stock',
+        sprintf(
+          'Only %d unit(s) of %s are available. Update your cart before continuing.',
+          $remaining_stock,
+          $product_name
+        )
+      );
+    }
+
     return true;
   }
 
@@ -769,26 +841,18 @@ final class RGV_Zelle_Checkout {
   }
 
   private function add_order_item(WC_Order $order, $item) {
-    $product_id = isset($item['product_id']) ? absint($item['product_id']) : 0;
-    $variation_id = isset($item['variation_id']) ? absint($item['variation_id']) : 0;
     $quantity = isset($item['quantity']) ? max(1, absint($item['quantity'])) : 1;
     $line_total = isset($item['line_total'])
       ? (float) $item['line_total']
       : (isset($item['total']) ? (float) $item['total'] : 0);
 
-    $product = null;
+    $stock_validation = $this->validate_order_item_stock($item);
 
-    if ($variation_id > 0) {
-      $product = wc_get_product($variation_id);
+    if (is_wp_error($stock_validation)) {
+      throw new Exception($stock_validation->get_error_message());
     }
 
-    if (!$product && $product_id > 0) {
-      $product = wc_get_product($product_id);
-    }
-
-    if (!$product) {
-      throw new Exception('A product in the cart could not be found.');
-    }
+    $product = $this->get_order_item_product($item);
 
     if ($line_total <= 0) {
       $line_total = (float) $product->get_price() * $quantity;
