@@ -1382,8 +1382,8 @@ export default function ProductDetails({ slug }) {
   }
 
   return (
-    <section className="relative bg-[#030303] pb-24 pt-[138px] text-white sm:pt-[158px] lg:pt-[170px]">
-      <div className="pointer-events-none absolute inset-0">
+    <section className="relative w-full min-w-0 overflow-x-clip bg-[#030303] pb-24 pt-[138px] text-white sm:pt-[158px] lg:pt-[170px]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute right-[-16%] top-[-18%] h-[620px] w-[620px] rounded-full bg-red-600/10 blur-[135px]" />
         <div className="absolute left-[-18%] top-[18%] h-[620px] w-[620px] rounded-full bg-red-950/24 blur-[145px]" />
         <div className="absolute bottom-[-18%] right-[18%] h-[500px] w-[500px] rounded-full bg-white/[0.035] blur-[130px]" />
@@ -1391,7 +1391,7 @@ export default function ProductDetails({ slug }) {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.12]" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-[1320px] px-6 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-24">
+      <div className="relative z-10 mx-auto w-full min-w-0 max-w-[1320px] px-6 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-24">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
             <a href="/shop" className="transition hover:text-white">
@@ -1409,8 +1409,8 @@ export default function ProductDetails({ slug }) {
           </div>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12 xl:gap-16">
-          <div className="lg:sticky lg:top-28 lg:self-start">
+        <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12 xl:gap-16">
+          <div className="min-w-0 lg:sticky lg:top-28 lg:self-start">
             <div className="relative overflow-hidden rounded-[2.4rem] border border-white/[0.08] bg-[#070707] shadow-[0_45px_130px_rgba(0,0,0,0.72)]">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(220,38,38,0.22),transparent_38%),linear-gradient(145deg,rgba(255,255,255,0.09),transparent_28%,rgba(255,255,255,0.025)_70%,rgba(220,38,38,0.08))]" />
               <div className="pointer-events-none absolute left-1/2 top-[50%] h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
@@ -1483,7 +1483,7 @@ export default function ProductDetails({ slug }) {
             </div>
           </div>
 
-          <div className="flex flex-col justify-start lg:pt-3">
+          <div className="min-w-0 flex flex-col justify-start lg:pt-3">
             <div>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
@@ -1844,8 +1844,8 @@ export default function ProductDetails({ slug }) {
           </div>
         </div>
 
-        <div className="mt-20 grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-16">
-          <div className="relative">
+        <div className="mt-20 grid min-w-0 gap-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
+          <div className="relative min-w-0">
             <div className="mb-8">
               <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-red-400">
                 Compound Profile
