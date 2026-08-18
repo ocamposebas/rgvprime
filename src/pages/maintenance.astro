@@ -1,0 +1,391 @@
+---
+export const prerender = false;
+
+import "../styles/global.css";
+import { getMaintenanceDurationHours } from "../lib/maintenance-config";
+
+const durationHours = getMaintenanceDurationHours();
+const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
+---
+
+<!doctype html>
+<html lang="en-US" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive" />
+    <meta
+      name="description"
+      content="RGVPRIME is completing scheduled maintenance and will be back shortly."
+    />
+    <title>Scheduled Maintenance | RGVPRIME LLC</title>
+    <link rel="icon" type="image/webp" href="/logo.webp" sizes="any" />
+    <link rel="preload" as="image" type="image/webp" href="/logo.webp" />
+  </head>
+
+  <body class="maintenance-body">
+    <main class="maintenance-page">
+      <div class="maintenance-glow maintenance-glow--one" aria-hidden="true"></div>
+      <div class="maintenance-glow maintenance-glow--two" aria-hidden="true"></div>
+
+      <section class="maintenance-card" aria-labelledby="maintenance-title">
+        <div class="maintenance-card__line" aria-hidden="true"></div>
+
+        <header class="maintenance-header">
+          <img
+            class="maintenance-logo"
+            src="/logo.webp"
+            alt="RGVPRIME LLC"
+            width="190"
+            height="72"
+          />
+
+          <span class="maintenance-status">
+            <span class="maintenance-status__dot" aria-hidden="true"></span>
+            Scheduled maintenance in progress
+          </span>
+        </header>
+
+        <div class="maintenance-content">
+          <div class="maintenance-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 3a9 9 0 1 0 9 9" />
+              <path d="M12 7v5l3.25 2" />
+              <path d="M17.5 3.5H21V7" />
+              <path d="m21 3.5-4 4" />
+            </svg>
+          </div>
+
+          <p class="maintenance-eyebrow">We’ll be back soon</p>
+          <h1 id="maintenance-title">RGVPRIME is getting everything ready.</h1>
+
+          <p class="maintenance-copy">
+            Our team is performing a scheduled VPS cleanup and reviewing the
+            platform’s code and components to keep everything fast, stable, and
+            ready for what’s next.
+          </p>
+
+          <div class="maintenance-duration">
+            <div class="maintenance-duration__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 7.5V12l3 2" />
+              </svg>
+            </div>
+            <div>
+              <span>Estimated duration</span>
+              <strong>{durationLabel}</strong>
+            </div>
+          </div>
+
+          <p class="maintenance-note">
+            Thank you for your patience. Please check back shortly.
+          </p>
+        </div>
+
+        <footer class="maintenance-footer">
+          <span>RGVPRIME LLC</span>
+          <span class="maintenance-footer__separator" aria-hidden="true"></span>
+          <span>Systems &amp; infrastructure maintenance</span>
+        </footer>
+      </section>
+    </main>
+
+    <style>
+      :global(html) {
+        overflow: hidden;
+        background: #030303;
+      }
+
+      :global(.maintenance-body) {
+        min-height: 100svh;
+        overflow: hidden;
+        background: #030303;
+      }
+
+      .maintenance-page {
+        position: relative;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        overflow: hidden;
+        padding: 24px;
+        isolation: isolate;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          radial-gradient(circle at 50% 0%, rgba(170, 18, 32, 0.18), transparent 44%),
+          linear-gradient(145deg, #070707 0%, #020202 58%, #080202 100%);
+        background-size: 72px 72px, 72px 72px, auto, auto;
+      }
+
+      .maintenance-page::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(circle at center, transparent 20%, rgba(0, 0, 0, 0.7) 100%);
+      }
+
+      .maintenance-glow {
+        position: absolute;
+        z-index: -1;
+        width: min(620px, 75vw);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        filter: blur(130px);
+        opacity: 0.18;
+        pointer-events: none;
+      }
+
+      .maintenance-glow--one {
+        top: -42%;
+        left: -12%;
+        background: #ef233c;
+      }
+
+      .maintenance-glow--two {
+        right: -20%;
+        bottom: -50%;
+        background: #ff7a18;
+        opacity: 0.1;
+      }
+
+      .maintenance-card {
+        position: relative;
+        width: min(760px, 100%);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        background: linear-gradient(145deg, rgba(18, 18, 20, 0.94), rgba(7, 7, 8, 0.96));
+        box-shadow: 0 36px 120px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(22px);
+      }
+
+      .maintenance-card__line {
+        position: absolute;
+        inset: 0 10% auto;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #ff344d, transparent);
+        box-shadow: 0 0 30px rgba(255, 36, 61, 0.65);
+      }
+
+      .maintenance-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        padding: 24px 28px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .maintenance-logo {
+        width: auto;
+        height: 48px;
+        object-fit: contain;
+      }
+
+      .maintenance-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .maintenance-status__dot {
+        width: 8px;
+        height: 8px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: #ff344d;
+        box-shadow: 0 0 0 5px rgba(255, 52, 77, 0.1), 0 0 18px rgba(255, 52, 77, 0.75);
+        animation: status-pulse 2s ease-in-out infinite;
+      }
+
+      .maintenance-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 52px 56px 48px;
+        text-align: center;
+      }
+
+      .maintenance-icon {
+        display: grid;
+        width: 72px;
+        height: 72px;
+        place-items: center;
+        margin-bottom: 26px;
+        border: 1px solid rgba(255, 73, 93, 0.22);
+        border-radius: 22px;
+        background: linear-gradient(145deg, rgba(255, 36, 61, 0.14), rgba(255, 122, 24, 0.04));
+        color: #ff697b;
+        box-shadow: 0 18px 54px rgba(255, 36, 61, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      }
+
+      .maintenance-icon svg {
+        width: 34px;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .maintenance-eyebrow {
+        margin: 0 0 12px;
+        color: #ff586c;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 600px;
+        margin: 0;
+        color: #fff;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 900;
+        line-height: 1.02;
+        letter-spacing: -0.045em;
+      }
+
+      .maintenance-copy {
+        max-width: 590px;
+        margin: 22px 0 0;
+        color: rgba(255, 255, 255, 0.57);
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .maintenance-duration {
+        display: flex;
+        width: min(390px, 100%);
+        align-items: center;
+        gap: 15px;
+        margin-top: 30px;
+        padding: 16px 19px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.035);
+        text-align: left;
+      }
+
+      .maintenance-duration__icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 13px;
+        background: rgba(255, 36, 61, 0.11);
+        color: #ff6577;
+      }
+
+      .maintenance-duration__icon svg {
+        width: 22px;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .maintenance-duration span,
+      .maintenance-duration strong {
+        display: block;
+      }
+
+      .maintenance-duration span {
+        margin-bottom: 3px;
+        color: rgba(255, 255, 255, 0.38);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .maintenance-duration strong {
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 17px;
+        letter-spacing: -0.01em;
+      }
+
+      .maintenance-note {
+        margin: 25px 0 0;
+        color: rgba(255, 255, 255, 0.32);
+        font-size: 12px;
+      }
+
+      .maintenance-footer {
+        display: flex;
+        min-height: 58px;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 15px 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.27);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .maintenance-footer__separator {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.24);
+      }
+
+      @keyframes status-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.58; transform: scale(0.86); }
+      }
+
+      @media (max-width: 620px) {
+        .maintenance-page { padding: 14px; }
+        .maintenance-card { border-radius: 24px; }
+        .maintenance-header {
+          flex-direction: column;
+          gap: 13px;
+          padding: 20px;
+        }
+        .maintenance-logo { height: 43px; }
+        .maintenance-content { padding: 36px 22px 34px; }
+        .maintenance-icon { width: 62px; height: 62px; margin-bottom: 22px; }
+        h1 { font-size: clamp(1.85rem, 9.5vw, 2.65rem); }
+        .maintenance-copy { margin-top: 18px; font-size: 13px; line-height: 1.7; }
+        .maintenance-duration { margin-top: 24px; }
+        .maintenance-footer { flex-direction: column; gap: 5px; }
+        .maintenance-footer__separator { display: none; }
+      }
+
+      @media (max-height: 720px) and (min-width: 621px) {
+        .maintenance-page { padding: 16px; }
+        .maintenance-content { padding-block: 28px; }
+        .maintenance-icon { width: 58px; height: 58px; margin-bottom: 16px; }
+        .maintenance-copy { margin-top: 15px; }
+        .maintenance-duration { margin-top: 19px; }
+        .maintenance-note { margin-top: 17px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .maintenance-status__dot { animation: none; }
+      }
+    </style>
+  </body>
+</html>

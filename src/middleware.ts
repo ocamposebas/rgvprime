@@ -3,6 +3,10 @@ import {
   isStoreOpen,
   OPEN_COOKIE_NAME,
 } from "./lib/launch-config";
+import {
+  getMaintenanceRetryAfterSeconds,
+  isMaintenanceModeEnabled,
+} from "./lib/maintenance-config";
 
 const publicPrefixes = [
   "/_astro/",
@@ -50,9 +54,69 @@ function withNoCache(response: Response) {
   });
 }
 
+function asMaintenanceResponse(response: Response) {
+  const headers = new Headers(response.headers);
+
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  headers.set("Retry-After", String(getMaintenanceRetryAfterSeconds()));
+  headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+
+  return new Response(response.body, {
+    status: 503,
+    statusText: "Service Unavailable",
+    headers,
+  });
+}
+
+function maintenanceApiResponse() {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      maintenance: true,
+      message: "RGVPRIME is undergoing scheduled maintenance. Please try again shortly.",
+      estimatedDurationHours: getMaintenanceRetryAfterSeconds() / 3600,
+    }),
+    {
+      status: 503,
+      statusText: "Service Unavailable",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Retry-After": String(getMaintenanceRetryAfterSeconds()),
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+      },
+    },
+  );
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const pathname = context.url.pathname;
   const method = context.request.method;
+
+  if (isMaintenanceModeEnabled()) {
+    const isStaticAsset =
+      isPublicAsset(pathname) && !pathname.startsWith("/api/");
+
+    if (isStaticAsset || pathname === "/api/health") {
+      return next();
+    }
+
+    if (pathname.startsWith("/api/")) {
+      return maintenanceApiResponse();
+    }
+
+    if (method !== "GET" && method !== "HEAD") {
+      return maintenanceApiResponse();
+    }
+
+    if (pathname === "/maintenance" || pathname === "/maintenance/") {
+      return asMaintenanceResponse(await next());
+    }
+
+    return asMaintenanceResponse(await next("/maintenance"));
+  }
 
   if (method !== "GET" && method !== "HEAD") {
     return next();

@@ -1,5 +1,21 @@
 # Astro Starter Kit: Basics
 
+## Maintenance mode
+
+The storefront includes a maintenance screen for VPS cleanup and code reviews.
+Configure these environment variables in Coolify (or in `.env` locally):
+
+```env
+MAINTENANCE_MODE=true
+MAINTENANCE_DURATION_HOURS=2
+```
+
+Restart or redeploy the Node service after changing the value. Set
+`MAINTENANCE_MODE=false` and restart/redeploy to reopen the storefront. While
+enabled, public pages return HTTP `503` with a two-hour `Retry-After` header and
+API routes return a JSON maintenance response. Static assets and `/api/health`
+remain available; use `/api/health` as the VPS/container health-check path.
+
 ## WordPress COA Library
 
 The storefront reads Certificate of Analysis records from the companion
