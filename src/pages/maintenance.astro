@@ -48,7 +48,7 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
           <span class="maintenance-status">
             <span class="maintenance-status__dot" aria-hidden="true"></span>
-            Scheduled maintenance in progress
+            Scheduled service update
           </span>
         </header>
 
@@ -62,13 +62,13 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
             </svg>
           </div>
 
-          <p class="maintenance-eyebrow">We’ll be back soon</p>
-          <h1 id="maintenance-title">RGVPRIME is getting everything ready.</h1>
+          <p class="maintenance-eyebrow">A brief pause</p>
+          <h1 id="maintenance-title">We’ll be back shortly.</h1>
 
           <p class="maintenance-copy">
-            Our team is performing a scheduled VPS cleanup and reviewing the
-            platform’s code and components to keep everything fast, stable, and
-            ready for what’s next.
+            RGVPRIME is completing scheduled improvements to deliver the
+            dependable experience you expect. Thank you for your patience while
+            we finish up.
           </p>
 
           <div class="maintenance-duration">
@@ -79,31 +79,39 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
               </svg>
             </div>
             <div>
-              <span>Estimated duration</span>
-              <strong>{durationLabel}</strong>
+              <span>Expected availability</span>
+              <strong>Within {durationLabel}</strong>
             </div>
           </div>
 
+          <div class="maintenance-progress" aria-hidden="true">
+            <span></span>
+          </div>
+
           <p class="maintenance-note">
-            Thank you for your patience. Please check back shortly.
+            We appreciate your understanding and look forward to welcoming you back.
           </p>
         </div>
 
         <footer class="maintenance-footer">
           <span>RGVPRIME LLC</span>
           <span class="maintenance-footer__separator" aria-hidden="true"></span>
-          <span>Systems &amp; infrastructure maintenance</span>
+          <span>Service update</span>
         </footer>
       </section>
     </main>
 
     <style>
       :global(html) {
+        width: 100%;
+        max-width: 100vw;
         overflow: hidden;
         background: #030303;
       }
 
       :global(.maintenance-body) {
+        width: 100%;
+        max-width: 100vw;
         min-height: 100svh;
         overflow: hidden;
         background: #030303;
@@ -112,6 +120,9 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
       .maintenance-page {
         position: relative;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+        max-width: 100vw;
         min-height: 100svh;
         place-items: center;
         overflow: hidden;
@@ -160,13 +171,25 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
       .maintenance-card {
         position: relative;
-        width: min(760px, 100%);
+        width: calc(100vw - 48px);
+        min-width: 0;
+        max-width: 760px;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 30px;
         background: linear-gradient(145deg, rgba(18, 18, 20, 0.94), rgba(7, 7, 8, 0.96));
         box-shadow: 0 36px 120px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.04);
         backdrop-filter: blur(22px);
+      }
+
+      .maintenance-card::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        z-index: -1;
+        border-radius: 29px;
+        pointer-events: none;
+        box-shadow: inset 0 0 90px rgba(255, 36, 61, 0.025);
       }
 
       .maintenance-card__line {
@@ -179,6 +202,7 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
       .maintenance-header {
         display: flex;
+        min-width: 0;
         align-items: center;
         justify-content: space-between;
         gap: 22px;
@@ -194,12 +218,15 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
       .maintenance-status {
         display: inline-flex;
+        max-width: 100%;
         align-items: center;
+        justify-content: center;
         gap: 9px;
         color: rgba(255, 255, 255, 0.58);
         font-size: 10px;
         font-weight: 800;
         letter-spacing: 0.12em;
+        text-align: center;
         text-transform: uppercase;
       }
 
@@ -215,6 +242,8 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
       .maintenance-content {
         display: flex;
+        width: 100%;
+        min-width: 0;
         flex-direction: column;
         align-items: center;
         padding: 52px 56px 48px;
@@ -252,6 +281,7 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
       }
 
       h1 {
+        width: 100%;
         max-width: 600px;
         margin: 0;
         color: #fff;
@@ -259,9 +289,11 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
         font-weight: 900;
         line-height: 1.02;
         letter-spacing: -0.045em;
+        overflow-wrap: break-word;
       }
 
       .maintenance-copy {
+        width: 100%;
         max-width: 590px;
         margin: 22px 0 0;
         color: rgba(255, 255, 255, 0.57);
@@ -271,7 +303,9 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
       .maintenance-duration {
         display: flex;
-        width: min(390px, 100%);
+        width: 100%;
+        max-width: 390px;
+        min-width: 0;
         align-items: center;
         gap: 15px;
         margin-top: 30px;
@@ -321,10 +355,32 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
         letter-spacing: -0.01em;
       }
 
+      .maintenance-progress {
+        position: relative;
+        width: 92px;
+        height: 3px;
+        margin-top: 28px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .maintenance-progress span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 42%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff243d, #ff6a58);
+        box-shadow: 0 0 15px rgba(255, 36, 61, 0.58);
+        animation: maintenance-progress 2.2s ease-in-out infinite;
+      }
+
       .maintenance-note {
-        margin: 25px 0 0;
+        max-width: 420px;
+        margin: 18px 0 0;
         color: rgba(255, 255, 255, 0.32);
         font-size: 12px;
+        line-height: 1.6;
       }
 
       .maintenance-footer {
@@ -356,21 +412,30 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
         50% { opacity: 0.58; transform: scale(0.86); }
       }
 
+      @keyframes maintenance-progress {
+        0% { left: -42%; }
+        50%, 100% { left: 100%; }
+      }
+
       @media (max-width: 620px) {
-        .maintenance-page { padding: 14px; }
-        .maintenance-card { border-radius: 24px; }
+        .maintenance-page { padding: 12px; }
+        .maintenance-card { width: calc(100vw - 24px); max-width: none; border-radius: 24px; }
+        .maintenance-card::after { border-radius: 23px; }
         .maintenance-header {
           flex-direction: column;
           gap: 13px;
-          padding: 20px;
+          padding: 18px 16px;
         }
         .maintenance-logo { height: 43px; }
-        .maintenance-content { padding: 36px 22px 34px; }
+        .maintenance-status { font-size: 8px; letter-spacing: 0.09em; }
+        .maintenance-content { width: 100%; padding: 34px 18px 30px; }
         .maintenance-icon { width: 62px; height: 62px; margin-bottom: 22px; }
-        h1 { font-size: clamp(1.85rem, 9.5vw, 2.65rem); }
+        h1 { font-size: clamp(1.85rem, 9.5vw, 2.5rem); letter-spacing: -0.035em; }
         .maintenance-copy { margin-top: 18px; font-size: 13px; line-height: 1.7; }
-        .maintenance-duration { margin-top: 24px; }
-        .maintenance-footer { flex-direction: column; gap: 5px; }
+        .maintenance-duration { max-width: 100%; margin-top: 24px; padding: 14px; }
+        .maintenance-progress { margin-top: 23px; }
+        .maintenance-note { margin-top: 15px; font-size: 11px; }
+        .maintenance-footer { min-width: 0; flex-direction: column; gap: 5px; padding-inline: 14px; }
         .maintenance-footer__separator { display: none; }
       }
 
@@ -384,7 +449,10 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .maintenance-status__dot { animation: none; }
+        .maintenance-status__dot,
+        .maintenance-progress span { animation: none; }
+
+        .maintenance-progress span { left: 29%; }
       }
     </style>
   </body>
