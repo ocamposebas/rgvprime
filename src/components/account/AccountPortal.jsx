@@ -579,7 +579,6 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
         data = text ? JSON.parse(text) : {};
       } catch {
         console.error("Non JSON response from:", endpoint);
-        console.error(text);
 
         throw new Error("The portal returned an invalid response. Check the account connection.");
       }

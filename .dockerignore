@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.astro
+.vercel
+.vscode
+dist
+node_modules
+*.log
+*.zip
+*.php
+wordpress-plugin
+coa-mobile-review.png

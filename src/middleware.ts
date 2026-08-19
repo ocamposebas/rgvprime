@@ -91,39 +91,66 @@ function maintenanceApiResponse() {
   );
 }
 
+function withSecurityHeaders(response: Response, requestUrl: URL) {
+  const headers = new Headers(response.headers);
+
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(self)",
+  );
+
+  if (requestUrl.protocol === "https:") {
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const pathname = context.url.pathname;
   const method = context.request.method;
+  const secure = (response: Response) =>
+    withSecurityHeaders(response, context.url);
 
   if (isMaintenanceModeEnabled()) {
     const isStaticAsset =
       isPublicAsset(pathname) && !pathname.startsWith("/api/");
 
     if (isStaticAsset || pathname === "/api/health") {
-      return next();
+      return secure(await next());
     }
 
     if (pathname.startsWith("/api/")) {
-      return maintenanceApiResponse();
+      return secure(maintenanceApiResponse());
     }
 
     if (method !== "GET" && method !== "HEAD") {
-      return maintenanceApiResponse();
+      return secure(maintenanceApiResponse());
     }
 
     if (pathname === "/maintenance" || pathname === "/maintenance/") {
-      return asMaintenanceResponse(await next());
+      return secure(asMaintenanceResponse(await next()));
     }
 
-    return asMaintenanceResponse(await next("/maintenance"));
+    return secure(asMaintenanceResponse(await next("/maintenance")));
   }
 
   if (method !== "GET" && method !== "HEAD") {
-    return next();
+    return secure(await next());
   }
 
   if (isPublicAsset(pathname)) {
-    return next();
+    return secure(await next());
   }
 
   const hasServerOpenCookie =
@@ -133,19 +160,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (storeOpen) {
     if (pathname === "/launch" || pathname === "/launch/") {
-      return context.redirect("/", 302);
+      return secure(context.redirect("/", 302));
     }
 
-    return next();
+    return secure(await next());
   }
 
   if (pathname === "/launch" || pathname === "/launch/") {
-    return withNoCache(await next());
+    return secure(withNoCache(await next()));
   }
 
   const response = await next("/launch");
   const protectedResponse = withNoCache(response);
   protectedResponse.headers.set("X-Robots-Tag", "noindex");
 
-  return protectedResponse;
+  return secure(protectedResponse);
 });

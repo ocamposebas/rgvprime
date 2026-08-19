@@ -1,4 +1,9 @@
 import { portalRequest } from "../../../lib/portalApi";
+import {
+  checkRateLimit,
+  isRequestBodyTooLarge,
+  requestSecurityResponse,
+} from "../../../lib/requestSecurity";
 
 export const prerender = false;
 
@@ -12,6 +17,24 @@ function jsonResponse(data, status = 200) {
 }
 
 export async function POST({ request }) {
+  if (isRequestBodyTooLarge(request, 16 * 1024)) {
+    return requestSecurityResponse("Request is too large.", 413);
+  }
+
+  const rate = checkRateLimit(request, {
+    namespace: "account-reset-password",
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return requestSecurityResponse(
+      "Too many reset attempts. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
 

@@ -2,6 +2,12 @@ import { Buffer } from "node:buffer";
 
 export const prerender = false;
 
+import {
+  checkRateLimit,
+  isRequestBodyTooLarge,
+  requestSecurityResponse,
+} from "../../../lib/requestSecurity";
+
 const TRACKING_ITEM_META_KEYS = [
   "_wc_shipment_tracking_items",
   "wc_shipment_tracking_items",
@@ -860,6 +866,24 @@ function publicOrder(order, tracking) {
 }
 
 export async function POST({ request }) {
+  if (isRequestBodyTooLarge(request, 16 * 1024)) {
+    return requestSecurityResponse("Request is too large.", 413);
+  }
+
+  const rate = checkRateLimit(request, {
+    namespace: "order-tracking",
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return requestSecurityResponse(
+      "Too many tracking attempts. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
+  }
+
   try {
     let body = null;
 

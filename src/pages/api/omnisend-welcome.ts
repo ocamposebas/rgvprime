@@ -12,6 +12,7 @@ const CONTACT_TAGS = [
 
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_MAX_IDENTIFIERS = 5000;
 
 type RateStore = Map<string, number[]>;
 
@@ -24,6 +25,8 @@ const rateStore =
   new Map<string, number[]>();
 
 globalRateStore.__rgvWelcomeRateStore = rateStore;
+
+let lastRateCleanupAt = 0;
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -79,6 +82,29 @@ function rateLimitExceeded(
 ): boolean {
   const now = Date.now();
   const cutoff = now - RATE_LIMIT_WINDOW;
+
+  if (
+    now - lastRateCleanupAt > 60_000 ||
+    rateStore.size >= RATE_LIMIT_MAX_IDENTIFIERS
+  ) {
+    lastRateCleanupAt = now;
+
+    for (const [key, timestamps] of rateStore) {
+      const active = timestamps.filter((timestamp) => timestamp > cutoff);
+
+      if (active.length > 0) {
+        rateStore.set(key, active);
+      } else {
+        rateStore.delete(key);
+      }
+    }
+
+    while (rateStore.size >= RATE_LIMIT_MAX_IDENTIFIERS) {
+      const oldestKey = rateStore.keys().next().value;
+      if (!oldestKey) break;
+      rateStore.delete(oldestKey);
+    }
+  }
 
   const previousRequests = (
     rateStore.get(identifier) || []

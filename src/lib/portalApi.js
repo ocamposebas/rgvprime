@@ -56,8 +56,6 @@ export async function portalRequest(path, options = {}) {
 
   const endpoint = `${getPortalBaseUrl()}/${cleanPath}/`;
 
-  console.log("Portal request:", method, endpoint);
-
   const response = await fetch(endpoint, {
     method,
     redirect: "follow",
@@ -84,7 +82,6 @@ export async function portalRequest(path, options = {}) {
     data = text ? JSON.parse(text) : null;
   } catch {
     console.error("WordPress returned non JSON from:", endpoint);
-    console.error(text);
 
     throw new Error(
       "WordPress returned HTML instead of JSON. Check plugin routes and WordPress REST API."

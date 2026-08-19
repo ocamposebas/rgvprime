@@ -1,3 +1,8 @@
+import {
+  checkRateLimit,
+  requestSecurityResponse,
+} from "../../lib/requestSecurity";
+
 const CACHE_TTL = 1000 * 60 * 10;
 const STALE_TTL = 1000 * 60 * 60 * 12;
 const REQUEST_TIMEOUT = 8000;
@@ -24,10 +29,8 @@ function createJsonResponse(payload, status = 200, cacheStatus = "MISS") {
   });
 }
 
-function hideSecrets(url, consumerKey, consumerSecret) {
-  return url
-    .replaceAll(consumerKey, "HIDDEN_KEY")
-    .replaceAll(consumerSecret, "HIDDEN_SECRET");
+function getBasicAuthHeader(consumerKey, consumerSecret) {
+  return `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")}`;
 }
 
 function getImage(product) {
@@ -102,13 +105,7 @@ async function fetchWooFeaturedProducts() {
       status: 500,
       payload: {
         success: false,
-        message: "Missing WooCommerce API environment variables.",
-        received: {
-          WC_API_URL: Boolean(import.meta.env.WC_API_URL),
-          PUBLIC_WP_URL: Boolean(import.meta.env.PUBLIC_WP_URL),
-          WC_CONSUMER_KEY: Boolean(consumerKey),
-          WC_CONSUMER_SECRET: Boolean(consumerSecret),
-        },
+        message: "The product service is not configured.",
       },
     };
   }
@@ -148,9 +145,6 @@ async function fetchWooFeaturedProducts() {
     ].join(",")
   );
 
-  endpoint.searchParams.set("consumer_key", consumerKey);
-  endpoint.searchParams.set("consumer_secret", consumerSecret);
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
@@ -160,6 +154,7 @@ async function fetchWooFeaturedProducts() {
       signal: controller.signal,
       headers: {
         Accept: "application/json",
+        Authorization: getBasicAuthHeader(consumerKey, consumerSecret),
       },
     });
 
@@ -174,12 +169,6 @@ async function fetchWooFeaturedProducts() {
           message: "WooCommerce API request failed.",
           status: response.status,
           statusText: response.statusText,
-          request_url: hideSecrets(
-            endpoint.toString(),
-            consumerKey,
-            consumerSecret
-          ),
-          response_preview: rawText.slice(0, 1200),
         },
       };
     }
@@ -195,7 +184,6 @@ async function fetchWooFeaturedProducts() {
         payload: {
           success: false,
           message: "WooCommerce did not return valid JSON.",
-          response_preview: rawText.slice(0, 1200),
         },
       };
     }
@@ -224,12 +212,6 @@ async function fetchWooFeaturedProducts() {
           error.name === "AbortError"
             ? "WooCommerce request timed out."
             : "Server could not reach WooCommerce.",
-        error: error.message,
-        request_url: hideSecrets(
-          endpoint.toString(),
-          consumerKey,
-          consumerSecret
-        ),
       },
     };
   } finally {
@@ -237,7 +219,21 @@ async function fetchWooFeaturedProducts() {
   }
 }
 
-export async function GET() {
+export async function GET({ request }) {
+  const rate = checkRateLimit(request, {
+    namespace: "featured-products",
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return requestSecurityResponse(
+      "Too many product requests. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
+  }
+
   const now = Date.now();
   const cacheAge = now - cachedAt;
 

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.3
+ * Version: 1.3.4
  * Author: RGVPRIME LLC
  */
 
@@ -18,6 +18,28 @@ final class RGV_Zelle_Checkout {
   const RECEIPT_DELETE_HOOK = 'rgv_delete_zelle_receipt';
   const RECEIPT_CLEANUP_HOOK = 'rgv_cleanup_expired_zelle_receipts';
   const RECEIPT_CLEANUP_VERSION = '1';
+  const ORDER_RATE_LIMIT_WINDOW = 600;
+  const ORDER_RATE_LIMIT_MAX_REQUESTS = 10;
+  const STATUS_RATE_LIMIT_MAX_REQUESTS = 30;
+  const RECEIPT_RATE_LIMIT_WINDOW = 3600;
+  const RECEIPT_RATE_LIMIT_MAX_REQUESTS = 10;
+  const MAX_ORDER_ITEMS = 50;
+  const MAX_ITEM_QUANTITY = 100;
+  const FREE_SHIPPING_MINIMUM = 200.0;
+  const SHIPPING_RATES = [
+    'ups_2_day_air' => [
+      'title' => 'UPS Shipping',
+      'cost' => 15.0,
+    ],
+    'usps_ground_advantage' => [
+      'title' => 'USPS Ground',
+      'cost' => 8.0,
+    ],
+    'usps_priority' => [
+      'title' => 'USPS Priority Mail',
+      'cost' => 12.0,
+    ],
+  ];
 
   public function __construct() {
     add_action('rest_api_init', [$this, 'register_routes']);
@@ -92,6 +114,57 @@ final class RGV_Zelle_Checkout {
       substr($host, -strlen('.rgvprimellc.com')) === '.rgvprimellc.com' ||
       $host === 'localhost' ||
       $host === '127.0.0.1';
+  }
+
+  private function get_client_ip() {
+    $candidates = [
+      $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '',
+      $_SERVER['REMOTE_ADDR'] ?? '',
+    ];
+
+    foreach ($candidates as $candidate) {
+      $ip = trim(sanitize_text_field(wp_unslash((string) $candidate)));
+
+      if ($ip && filter_var($ip, FILTER_VALIDATE_IP)) {
+        return $ip;
+      }
+    }
+
+    return 'unknown';
+  }
+
+  private function enforce_rate_limit($namespace, $max_requests, $window) {
+    $namespace = sanitize_key((string) $namespace);
+    $max_requests = max(1, absint($max_requests));
+    $window = max(60, absint($window));
+    $key = 'rgv_zelle_rate_' . substr(hash('sha256', $namespace . '|' . $this->get_client_ip()), 0, 32);
+    $state = get_transient($key);
+
+    if (!is_array($state)) {
+      $state = [
+        'count' => 0,
+        'started_at' => time(),
+      ];
+    }
+
+    if ((int) ($state['started_at'] ?? 0) + $window <= time()) {
+      $state = [
+        'count' => 0,
+        'started_at' => time(),
+      ];
+    }
+
+    if ((int) ($state['count'] ?? 0) >= $max_requests) {
+      return new WP_Error(
+        'rgv_request_rate_limited',
+        'Too many requests. Please wait a few minutes and try again.'
+      );
+    }
+
+    $state['count'] = (int) ($state['count'] ?? 0) + 1;
+    set_transient($key, $state, $window);
+
+    return true;
   }
 
   public function disable_default_zelle_customer_email($enabled, $order) {
@@ -294,7 +367,6 @@ final class RGV_Zelle_Checkout {
         'product_id' => absint($item['product_id'] ?? 0),
         'variation_id' => absint($item['variation_id'] ?? 0),
         'quantity' => max(1, absint($item['quantity'] ?? 1)),
-        'line_total' => round((float) ($item['line_total'] ?? $item['total'] ?? 0), 2),
       ];
     }
 
@@ -408,6 +480,28 @@ final class RGV_Zelle_Checkout {
       ], 500);
     }
 
+    $content_type = strtolower((string) $request->get_header('content-type'));
+
+    if (strpos($content_type, 'application/json') === false) {
+      return new WP_REST_Response([
+        'success' => false,
+        'message' => 'Invalid checkout request format.',
+      ], 415);
+    }
+
+    $rate_limit = $this->enforce_rate_limit(
+      'create_order',
+      self::ORDER_RATE_LIMIT_MAX_REQUESTS,
+      self::ORDER_RATE_LIMIT_WINDOW
+    );
+
+    if (is_wp_error($rate_limit)) {
+      return new WP_REST_Response([
+        'success' => false,
+        'message' => $rate_limit->get_error_message(),
+      ], 429);
+    }
+
     $data = $request->get_json_params();
 
     if (!is_array($data)) {
@@ -489,16 +583,15 @@ final class RGV_Zelle_Checkout {
         }
       }
 
-      $free_shipping_minimum = isset($data['freeShippingMinimum'])
-        ? (float) $data['freeShippingMinimum']
-        : (float) ($data['free_shipping_minimum'] ?? 35);
-
-      $standard_shipping_cost = isset($data['standardShippingCost'])
-        ? (float) $data['standardShippingCost']
-        : (float) ($data['standard_shipping_cost'] ?? 9.95);
-
-      $shipping_total = $subtotal >= $free_shipping_minimum ? 0 : $standard_shipping_cost;
-      $shipping_method = $this->get_shipping_method_details($data, $shipping_total <= 0);
+      $free_shipping_minimum = max(0, (float) apply_filters(
+        'rgv_zelle_free_shipping_minimum',
+        self::FREE_SHIPPING_MINIMUM
+      ));
+      $shipping_method = $this->get_shipping_method_details(
+        $data,
+        $subtotal >= $free_shipping_minimum
+      );
+      $shipping_total = (float) $shipping_method['cost'];
 
       $shipping_item = new WC_Order_Item_Shipping();
       $shipping_item->set_method_title($shipping_method['title']);
@@ -664,6 +757,10 @@ final class RGV_Zelle_Checkout {
       return new WP_Error('rgv_empty_items', 'No valid cart items were received.');
     }
 
+    if (count($items) > self::MAX_ORDER_ITEMS) {
+      return new WP_Error('rgv_too_many_items', 'Too many cart items were received.');
+    }
+
     $required = [
       'first_name' => 'First name',
       'last_name' => 'Last name',
@@ -689,6 +786,16 @@ final class RGV_Zelle_Checkout {
     }
 
     foreach ($items as $item) {
+      if (!is_array($item)) {
+        return new WP_Error('rgv_invalid_item', 'A cart item is invalid.');
+      }
+
+      $quantity = absint($item['quantity'] ?? 0);
+
+      if ($quantity < 1 || $quantity > self::MAX_ITEM_QUANTITY) {
+        return new WP_Error('rgv_invalid_quantity', 'A cart item has an invalid quantity.');
+      }
+
       $stock_validation = $this->validate_order_item_stock($item);
 
       if (is_wp_error($stock_validation)) {
@@ -789,14 +896,15 @@ final class RGV_Zelle_Checkout {
       return [
         'id' => 'free_shipping',
         'title' => "Free Shipping (Order's Over $200)",
+        'cost' => 0.0,
       ];
     }
 
-    $shipping_methods = [
-      'ups_2_day_air' => 'UPS Shipping',
-      'usps_ground_advantage' => 'USPS Ground',
-      'usps_priority' => 'USPS Priority Mail',
-    ];
+    $shipping_methods = apply_filters('rgv_zelle_shipping_rates', self::SHIPPING_RATES);
+
+    if (!is_array($shipping_methods)) {
+      $shipping_methods = self::SHIPPING_RATES;
+    }
 
     $method_value = $data['shippingMethod']
       ?? $data['shipping_method']
@@ -810,41 +918,27 @@ final class RGV_Zelle_Checkout {
 
     $method_id = sanitize_key((string) $method_value);
 
-    if (isset($shipping_methods[$method_id])) {
+    if (isset($shipping_methods[$method_id]) && is_array($shipping_methods[$method_id])) {
       return [
         'id' => $method_id,
-        'title' => $shipping_methods[$method_id],
+        'title' => sanitize_text_field((string) ($shipping_methods[$method_id]['title'] ?? 'Shipping')),
+        'cost' => max(0, (float) ($shipping_methods[$method_id]['cost'] ?? 0)),
       ];
     }
 
-    $method_title = sanitize_text_field((string) (
-      $data['shippingMethodTitle']
-      ?? $data['shipping_method_title']
-      ?? $data['shippingMethodLabel']
-      ?? $data['shipping_method_label']
-      ?? ''
-    ));
-
-    foreach ($shipping_methods as $allowed_id => $allowed_title) {
-      if (strcasecmp($method_title, $allowed_title) === 0) {
-        return [
-          'id' => $allowed_id,
-          'title' => $allowed_title,
-        ];
-      }
-    }
+    $fallback = isset($shipping_methods['usps_ground_advantage']) && is_array($shipping_methods['usps_ground_advantage'])
+      ? $shipping_methods['usps_ground_advantage']
+      : self::SHIPPING_RATES['usps_ground_advantage'];
 
     return [
-      'id' => 'flat_rate',
-      'title' => 'Standard Shipping',
+      'id' => 'usps_ground_advantage',
+      'title' => sanitize_text_field((string) ($fallback['title'] ?? 'USPS Ground')),
+      'cost' => max(0, (float) ($fallback['cost'] ?? 8)),
     ];
   }
 
   private function add_order_item(WC_Order $order, $item) {
     $quantity = isset($item['quantity']) ? max(1, absint($item['quantity'])) : 1;
-    $line_total = isset($item['line_total'])
-      ? (float) $item['line_total']
-      : (isset($item['total']) ? (float) $item['total'] : 0);
 
     $stock_validation = $this->validate_order_item_stock($item);
 
@@ -853,10 +947,7 @@ final class RGV_Zelle_Checkout {
     }
 
     $product = $this->get_order_item_product($item);
-
-    if ($line_total <= 0) {
-      $line_total = (float) $product->get_price() * $quantity;
-    }
+    $line_total = (float) wc_format_decimal((float) $product->get_price() * $quantity);
 
     $order->add_product($product, $quantity, [
       'subtotal' => $line_total,
@@ -876,6 +967,19 @@ final class RGV_Zelle_Checkout {
         'success' => false,
         'message' => 'WooCommerce is not available.',
       ], 500);
+    }
+
+    $rate_limit = $this->enforce_rate_limit(
+      'payment_status',
+      self::STATUS_RATE_LIMIT_MAX_REQUESTS,
+      self::ORDER_RATE_LIMIT_WINDOW
+    );
+
+    if (is_wp_error($rate_limit)) {
+      return new WP_REST_Response([
+        'success' => false,
+        'message' => $rate_limit->get_error_message(),
+      ], 429);
     }
 
     $data = $request->get_json_params();
@@ -1007,6 +1111,19 @@ final class RGV_Zelle_Checkout {
         'success' => false,
         'message' => 'WooCommerce is not available.',
       ], 500);
+    }
+
+    $rate_limit = $this->enforce_rate_limit(
+      'payment_upload',
+      self::RECEIPT_RATE_LIMIT_MAX_REQUESTS,
+      self::RECEIPT_RATE_LIMIT_WINDOW
+    );
+
+    if (is_wp_error($rate_limit)) {
+      return new WP_REST_Response([
+        'success' => false,
+        'message' => $rate_limit->get_error_message(),
+      ], 429);
     }
 
     $order_id = absint($request->get_param('order_id'));

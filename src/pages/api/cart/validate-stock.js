@@ -1,5 +1,11 @@
 export const prerender = false;
 
+import {
+  checkRateLimit,
+  isRequestBodyTooLarge,
+  requestSecurityResponse,
+} from "../../../lib/requestSecurity";
+
 const NO_CACHE_CONTROL = "no-store, no-cache, must-revalidate, max-age=0";
 const MAX_ITEMS = 50;
 
@@ -19,16 +25,8 @@ function getBasicAuthHeader(consumerKey, consumerSecret) {
   return `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")}`;
 }
 
-function addCredentialsToUrl(url, consumerKey, consumerSecret) {
-  const endpoint = new URL(url);
-  endpoint.searchParams.set("consumer_key", consumerKey);
-  endpoint.searchParams.set("consumer_secret", consumerSecret);
-  endpoint.searchParams.set("_", String(Date.now()));
-  return endpoint.toString();
-}
-
 async function fetchWooProduct(endpoint, consumerKey, consumerSecret, signal) {
-  const response = await fetch(endpoint.toString(), {
+  return fetch(endpoint.toString(), {
     method: "GET",
     cache: "no-store",
     signal,
@@ -40,18 +38,6 @@ async function fetchWooProduct(endpoint, consumerKey, consumerSecret, signal) {
     },
   });
 
-  if (response.status !== 401 && response.status !== 403) return response;
-
-  return fetch(addCredentialsToUrl(endpoint, consumerKey, consumerSecret), {
-    method: "GET",
-    cache: "no-store",
-    signal,
-    headers: {
-      Accept: "application/json",
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-    },
-  });
 }
 
 function normalizeItem(item = {}, index = 0) {
@@ -121,6 +107,24 @@ function validateProduct(item, product) {
 }
 
 export async function POST({ request }) {
+  if (isRequestBodyTooLarge(request, 64 * 1024)) {
+    return requestSecurityResponse("Request is too large.", 413);
+  }
+
+  const rate = checkRateLimit(request, {
+    namespace: "stock-validation",
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return requestSecurityResponse(
+      "Too many inventory checks. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
+  }
+
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
   const consumerKey = import.meta.env.WC_CONSUMER_KEY;
   const consumerSecret = import.meta.env.WC_CONSUMER_SECRET;

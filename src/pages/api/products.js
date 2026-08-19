@@ -1,3 +1,9 @@
+import sanitizeHtml from "sanitize-html";
+import {
+  checkRateLimit,
+  requestSecurityResponse,
+} from "../../lib/requestSecurity";
+
 export const prerender = false;
 
 const FALLBACK_IMAGE = "/logo.webp";
@@ -22,6 +28,58 @@ const PRODUCTS_WITHOUT_COA = new Set([
 ]);
 
 const NO_CACHE_CONTROL = "no-store, no-cache, must-revalidate, max-age=0";
+
+const DESCRIPTION_TAGS = [
+  "p",
+  "br",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "ul",
+  "ol",
+  "li",
+  "h2",
+  "h3",
+  "h4",
+  "blockquote",
+  "a",
+  "span",
+];
+
+function sanitizeProductDescription(value) {
+  return sanitizeHtml(String(value || ""), {
+    allowedTags: DESCRIPTION_TAGS,
+    allowedAttributes: {
+      a: ["href", "title", "target", "rel"],
+      span: ["class"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowProtocolRelative: false,
+    transformTags: {
+      a: (_tagName, attribs) => ({
+        tagName: "a",
+        attribs: {
+          ...attribs,
+          rel: "noopener noreferrer nofollow",
+          ...(attribs.target === "_blank" ? { target: "_blank" } : {}),
+        },
+      }),
+    },
+  });
+}
+
+function sanitizePriceHtml(value) {
+  return sanitizeHtml(String(value || ""), {
+    allowedTags: ["span", "bdi", "del", "ins", "small"],
+    allowedAttributes: {
+      span: ["class", "aria-hidden"],
+      del: ["aria-hidden"],
+      ins: ["aria-hidden"],
+      small: ["class"],
+    },
+  });
+}
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -177,9 +235,9 @@ function mapProductForCatalog(product) {
     price: product.price,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
-    price_html: product.price_html,
+    price_html: sanitizePriceHtml(product.price_html),
     short_description: removeUnverifiedPurityClaims(
-      product.short_description,
+      sanitizeProductDescription(product.short_description),
       product.slug,
     ),
     date_modified: product.date_modified,
@@ -218,10 +276,13 @@ function mapProductForDetail(product) {
     price: product.price,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
-    price_html: product.price_html,
-    description: removeUnverifiedPurityClaims(product.description, product.slug),
+    price_html: sanitizePriceHtml(product.price_html),
+    description: removeUnverifiedPurityClaims(
+      sanitizeProductDescription(product.description),
+      product.slug,
+    ),
     short_description: removeUnverifiedPurityClaims(
-      product.short_description,
+      sanitizeProductDescription(product.short_description),
       product.slug,
     ),
     date_modified: product.date_modified,
@@ -264,8 +325,8 @@ function mapVariationForDetail(variation) {
     price: variation.price,
     regular_price: variation.regular_price,
     sale_price: variation.sale_price,
-    price_html: variation.price_html || "",
-    description: variation.description,
+    price_html: sanitizePriceHtml(variation.price_html),
+    description: sanitizeProductDescription(variation.description),
     date_modified: variation.date_modified,
     date_modified_gmt: variation.date_modified_gmt,
     image: getWooVariationImage(variation),
@@ -422,16 +483,6 @@ function getBasicAuthHeader(consumerKey, consumerSecret) {
   return `Basic ${btoa(token)}`;
 }
 
-function addCredentialsToUrl(url, consumerKey, consumerSecret) {
-  const endpoint = new URL(url);
-
-  endpoint.searchParams.set("consumer_key", consumerKey);
-  endpoint.searchParams.set("consumer_secret", consumerSecret);
-  endpoint.searchParams.set("_", String(Date.now()));
-
-  return endpoint.toString();
-}
-
 async function fetchWooCommerce(endpoint, consumerKey, consumerSecret, signal) {
   const authorization = getBasicAuthHeader(consumerKey, consumerSecret);
 
@@ -447,23 +498,7 @@ async function fetchWooCommerce(endpoint, consumerKey, consumerSecret, signal) {
     signal,
   });
 
-  if (firstResponse.status !== 401 && firstResponse.status !== 403) {
-    return firstResponse;
-  }
-
-  return fetch(
-    addCredentialsToUrl(endpoint.toString(), consumerKey, consumerSecret),
-    {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
-      signal,
-    }
-  );
+  return firstResponse;
 }
 
 async function parseWooProducts(response) {
@@ -475,7 +510,7 @@ async function parseWooProducts(response) {
       status: response.status,
       statusText: response.statusText,
       message: "WooCommerce API request failed.",
-      details: rawText.slice(0, 500),
+      details: "",
       products: null,
     };
   }
@@ -489,7 +524,7 @@ async function parseWooProducts(response) {
         status: 500,
         statusText: "Invalid WooCommerce response",
         message: "WooCommerce response was not an array.",
-        details: rawText.slice(0, 500),
+        details: "",
         products: null,
       };
     }
@@ -508,7 +543,7 @@ async function parseWooProducts(response) {
       status: 500,
       statusText: "Invalid JSON",
       message: "WooCommerce did not return valid JSON.",
-      details: rawText.slice(0, 500),
+      details: "",
       products: null,
     };
   }
@@ -591,6 +626,20 @@ async function fetchWooProductVariations({
 }
 
 export async function GET({ request }) {
+  const rate = checkRateLimit(request, {
+    namespace: "products",
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return requestSecurityResponse(
+      "Too many product requests. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
+  }
+
   const requestUrl = new URL(request.url);
 
   const requestedSlug = requestUrl.searchParams.get("slug");
@@ -611,13 +660,7 @@ export async function GET({ request }) {
     return jsonResponse(
       {
         success: false,
-        message: "Missing WooCommerce API environment variables.",
-        received: {
-          WC_API_URL: Boolean(import.meta.env.WC_API_URL),
-          PUBLIC_WP_URL: Boolean(import.meta.env.PUBLIC_WP_URL),
-          WC_CONSUMER_KEY: Boolean(consumerKey),
-          WC_CONSUMER_SECRET: Boolean(consumerSecret),
-        },
+        message: "The product service is not configured.",
       },
       500
     );
@@ -760,7 +803,6 @@ export async function GET({ request }) {
         message: isTimeout
           ? "WooCommerce took too long to respond."
           : "Server could not reach WooCommerce.",
-        error: error.message,
       },
       500
     );
