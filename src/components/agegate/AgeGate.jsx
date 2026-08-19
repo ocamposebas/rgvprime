@@ -127,20 +127,6 @@ function StatusMessage({ type, children }) {
   );
 }
 
-function LoadingScreen() {
-  return (
-    <div className="fixed inset-0 z-[2147483646] grid min-h-[100svh] place-items-center bg-[#050505] text-white">
-      <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">
-        <img src="/logo.webp" alt="RGVPRIME" className="h-14 w-auto object-contain opacity-90" />
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-red-500" />
-        <span className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">
-          Securing access
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function AgeGate() {
   const [status, setStatus] = useState("checking");
   const [mode, setMode] = useState("login");
@@ -404,7 +390,7 @@ export default function AgeGate() {
     }
   }
 
-  if (status === "checking") return <LoadingScreen />;
+  if (status === "checking") return null;
   if (status === "authenticated") return null;
 
   const isAccessMode = mode === "login" || mode === "register";
