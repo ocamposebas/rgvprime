@@ -10,7 +10,13 @@ export default defineConfig({
   }),
   integrations: [react()],
   build: {
-    inlineStylesheets: "always",
+    // Keep large stylesheets cacheable between pages instead of embedding the
+    // complete design system in every HTML response.
+    inlineStylesheets: "auto",
+  },
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: "hover",
   },
   vite: {
     plugins: [tailwindcss()],

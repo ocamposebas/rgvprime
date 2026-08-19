@@ -2,7 +2,6 @@
 import "../styles/global.css";
 
 import Agegate from "../components/agegate/AgeGate";
-import GlobalPreloader from "../components/preloader/GlobalPreloader.astro";
 
 interface Props {
   title?: string;
@@ -231,6 +230,9 @@ const webpageSchema = {
       fetchpriority="high"
     />
 
+    <link rel="dns-prefetch" href="//wp.rgvprimellc.com" />
+    <link rel="preconnect" href="https://wp.rgvprimellc.com" crossorigin="anonymous" />
+
     <script
       type="application/ld+json"
       set:html={JSON.stringify(organizationSchema)}
@@ -260,19 +262,43 @@ const webpageSchema = {
             'script[src="https://omnisnippet1.com/inshop/launcher-v2.js"]',
           )
         ) {
-          var omnisendScript = document.createElement("script");
+          var loadOmnisend = function () {
+            if (
+              document.querySelector(
+                'script[src="https://omnisnippet1.com/inshop/launcher-v2.js"]',
+              )
+            ) {
+              return;
+            }
 
-          omnisendScript.type = "text/javascript";
-          omnisendScript.async = true;
-          omnisendScript.src =
-            "https://omnisnippet1.com/inshop/launcher-v2.js";
+            var omnisendScript = document.createElement("script");
 
-          omnisendScript.setAttribute(
-            "data-rgv-omnisend",
-            "true",
-          );
+            omnisendScript.type = "text/javascript";
+            omnisendScript.async = true;
+            omnisendScript.src =
+              "https://omnisnippet1.com/inshop/launcher-v2.js";
 
-          document.head.appendChild(omnisendScript);
+            omnisendScript.setAttribute(
+              "data-rgv-omnisend",
+              "true",
+            );
+
+            document.head.appendChild(omnisendScript);
+          };
+
+          var scheduleOmnisend = function () {
+            if ("requestIdleCallback" in window) {
+              window.requestIdleCallback(loadOmnisend, { timeout: 2000 });
+            } else {
+              window.setTimeout(loadOmnisend, 800);
+            }
+          };
+
+          if (document.readyState === "complete") {
+            scheduleOmnisend();
+          } else {
+            window.addEventListener("load", scheduleOmnisend, { once: true });
+          }
         }
       }
     </script>
@@ -281,8 +307,6 @@ const webpageSchema = {
   </head>
 
   <body>
-    <GlobalPreloader logoSrc="/logo.webp" />
-
     <div class="site-shell">
       <Agegate client:load />
 

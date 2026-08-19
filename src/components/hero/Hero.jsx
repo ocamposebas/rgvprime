@@ -69,8 +69,7 @@ export default function Hero() {
       {/* Main content */}
       <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[1440px] items-center justify-center px-4 pb-7 pt-[158px] sm:px-6 sm:pb-10 sm:pt-[166px] md:px-10 md:pb-20 md:pt-[150px]">
         <div className="mx-auto w-full max-w-[1120px] translate-y-3 text-center sm:translate-y-4 md:translate-y-[48px] lg:translate-y-[54px] xl:translate-y-[60px]">
-          <motion.h1
-            {...reveal(reduceMotion, 0.07, 20)}
+          <h1
             className="mx-auto max-w-[980px] font-black uppercase leading-[0.88] tracking-[-0.062em] text-white [font-family:Inter,ui-sans-serif,system-ui,sans-serif]"
           >
             <span className="block whitespace-nowrap text-[clamp(2.05rem,9.8vw,3.15rem)] md:text-[clamp(3.3rem,5.2vw,5.2rem)]">
@@ -79,12 +78,9 @@ export default function Hero() {
             <span className="mt-1.5 block whitespace-nowrap bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-[clamp(1.45rem,7.3vw,2.7rem)] text-transparent md:mt-2 md:text-[clamp(2.9rem,4.7vw,4.65rem)]">
               Research Compounds
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.div
-            {...reveal(reduceMotion, 0.16, 15)}
-            className="mx-auto mt-6 max-w-[720px] md:mt-8"
-          >
+          <div className="mx-auto mt-6 max-w-[720px] md:mt-8">
             <p className="text-[13px] font-medium leading-[1.65] text-white/62 sm:text-[14px] md:hidden">
               Research-use-only products with certificate-based documentation,
               secure checkout, and a professional ordering experience.
@@ -96,7 +92,7 @@ export default function Hero() {
               strictly for in-vitro laboratory research and are not for human
               or animal use.
             </p>
-          </motion.div>
+          </div>
 
           {/* CTAs: full-width primary + two compact secondary actions on mobile */}
           <motion.div

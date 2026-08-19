@@ -973,25 +973,6 @@ html[data-theme="light"] :where(
   box-shadow: none !important;
 }
 
-html[data-theme="light"] #rgv-global-preloader,
-html[data-theme="light"] #rgv-global-preloader .rgv-preloader-bg {
-  background: #fff !important;
-  color: #080808 !important;
-}
-
-html[data-theme="light"] #rgv-global-preloader :where(h2, p, span) {
-  color: #080808 !important;
-}
-
-html[data-theme="light"] #rgv-global-preloader :where(
-  .rgv-preloader-bar,
-  .rgv-preloader-bar span,
-  .rgv-preloader-bottom-bar
-) {
-  background: #080808 !important;
-  box-shadow: none !important;
-}
-
 html[data-theme="light"] img[src*="logo"] {
   filter: grayscale(1) contrast(1.12);
 }
