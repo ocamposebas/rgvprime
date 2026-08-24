@@ -190,6 +190,7 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     clearCart,
     cartNotice,
     isCheckingStock,
+    persistCart,
     validateStock,
   } = useCart();
 
@@ -219,10 +220,11 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
 
       if (!validation.success || !validation.valid) return;
 
+      persistCart(safeItems);
       closeCart();
       window.location.assign(checkoutPath);
     },
-    [checkoutPath, closeCart, safeItems, validateStock],
+    [checkoutPath, closeCart, persistCart, safeItems, validateStock],
   );
 
   useEffect(() => {

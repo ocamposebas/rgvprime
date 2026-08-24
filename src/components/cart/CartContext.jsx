@@ -52,6 +52,7 @@ const fallbackCart = {
   updateQuantity: () => {},
   clearCart: () => {},
   clearCartNotice: () => {},
+  persistCart: () => false,
   validateStock: () => Promise.resolve({ success: false, valid: false }),
   identifyContact: () => Promise.resolve(false),
   trackStartedCheckout: () => Promise.resolve(false),
@@ -433,6 +434,22 @@ export function CartProvider({ children }) {
 
   const clearCartNotice = useCallback(() => setCartNotice(""), []);
 
+  const persistCart = useCallback((currentItems) => {
+    if (typeof window === "undefined") return false;
+
+    const itemsToPersist = Array.isArray(currentItems)
+      ? currentItems
+      : itemsRef.current;
+
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(itemsToPersist));
+      return true;
+    } catch (error) {
+      console.error("Cart save error:", error);
+      return false;
+    }
+  }, []);
+
   const validateStock = useCallback(async (currentItems, options = {}) => {
     const itemsToValidate = Array.isArray(currentItems)
       ? currentItems
@@ -718,6 +735,7 @@ export function CartProvider({ children }) {
     updateQuantity,
     clearCart,
     clearCartNotice,
+    persistCart,
     validateStock,
     identifyContact,
     trackStartedCheckout,

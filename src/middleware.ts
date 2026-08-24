@@ -1,12 +1,17 @@
 import { defineMiddleware } from "astro:middleware";
+import { createHash, timingSafeEqual } from "node:crypto";
 import {
   isStoreOpen,
   OPEN_COOKIE_NAME,
 } from "./lib/launch-config";
 import {
+  getMaintenanceBypassToken,
   getMaintenanceRetryAfterSeconds,
   isMaintenanceModeEnabled,
 } from "./lib/maintenance-config";
+
+const MAINTENANCE_ACCESS_PARAM = "maintenance_access";
+const MAINTENANCE_ACCESS_COOKIE = "rgv_maintenance_access";
 
 const publicPrefixes = [
   "/_astro/",
@@ -52,6 +57,19 @@ function withNoCache(response: Response) {
     statusText: response.statusText,
     headers,
   });
+}
+
+function maintenanceTokenDigest(value: string) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function maintenanceTokensMatch(candidate: string, configured: string) {
+  if (!candidate || !configured) return false;
+
+  const candidateDigest = Buffer.from(maintenanceTokenDigest(candidate), "hex");
+  const configuredDigest = Buffer.from(maintenanceTokenDigest(configured), "hex");
+
+  return timingSafeEqual(candidateDigest, configuredDigest);
 }
 
 function asMaintenanceResponse(response: Response) {
@@ -123,6 +141,37 @@ export const onRequest = defineMiddleware(async (context, next) => {
     withSecurityHeaders(response, context.url);
 
   if (isMaintenanceModeEnabled()) {
+    const configuredBypassToken = getMaintenanceBypassToken();
+    const requestedBypassToken = context.url.searchParams.get(
+      MAINTENANCE_ACCESS_PARAM,
+    ) || "";
+    const expectedCookieValue = configuredBypassToken
+      ? maintenanceTokenDigest(configuredBypassToken)
+      : "";
+    const hasBypassCookie = Boolean(
+      expectedCookieValue &&
+      context.cookies.get(MAINTENANCE_ACCESS_COOKIE)?.value === expectedCookieValue,
+    );
+
+    if (maintenanceTokensMatch(requestedBypassToken, configuredBypassToken)) {
+      context.cookies.set(MAINTENANCE_ACCESS_COOKIE, expectedCookieValue, {
+        httpOnly: true,
+        path: "/",
+        sameSite: "strict",
+        secure: context.url.protocol === "https:",
+      });
+
+      const cleanUrl = new URL(context.url);
+      cleanUrl.searchParams.delete(MAINTENANCE_ACCESS_PARAM);
+      const cleanDestination = `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`;
+
+      return secure(withNoCache(context.redirect(cleanDestination || "/", 303)));
+    }
+
+    if (hasBypassCookie) {
+      return secure(await next());
+    }
+
     const isStaticAsset =
       isPublicAsset(pathname) && !pathname.startsWith("/api/");
 

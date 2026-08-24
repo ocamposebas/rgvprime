@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Building2,
+  ChevronDown,
   ChevronRight,
   CreditCard,
   FileUp,
@@ -27,15 +28,18 @@ import {
   formatPoints,
 } from "../../lib/loyaltyProgram";
 import { getMeOnce } from "../../lib/accountSession";
+import OrbitCardPayment from "./OrbitCardPayment";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
   import.meta.env.PUBLIC_WP_SITE_URL ||
+  import.meta.env.PUBLIC_WP_URL ||
   "https://wp.rgvprimellc.com";
 
 const WP_URL =
   import.meta.env.PUBLIC_WP_SITE_URL ||
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
+  import.meta.env.PUBLIC_WP_URL ||
   WOO_URL;
 
 const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
@@ -142,19 +146,19 @@ const ACCEPTED_RECEIPT_TYPES = [
 const PAYMENT_METHODS = [
   {
     id: "card",
-    label: "Cards",
+    label: "Card & Wallets",
     eyebrow: "Fast route",
-    title: "Cards",
-    description: "Pay by card through our secure checkout.",
+    title: "Card & Wallets",
+    description: "Apple Pay · Google Pay · Cards",
     badge: "Secure",
     icon: CreditCard,
   },
   {
     id: "edebit",
-    label: "Bank transfer",
+    label: "eDebit",
     eyebrow: "Bank route",
-    title: "Bank transfer",
-    description: "Link your bank securely and complete your payment.",
+    title: "eDebit",
+    description: "Secure bank payment",
     badge: "Bank",
     icon: Building2,
   },
@@ -163,8 +167,7 @@ const PAYMENT_METHODS = [
     label: "Zelle",
     eyebrow: "Manual route",
     title: "Zelle",
-    description:
-      "Create your order here and upload your receipt. Processing may take up to 24 hours.",
+    description: "Manual payment",
     badge: "Manual",
     icon: Building2,
   },
@@ -301,14 +304,6 @@ function sanitizeCouponInput(value = "") {
     .toUpperCase()
     .replace(/[^A-Z0-9-_]/g, "")
     .slice(0, 32);
-}
-
-function encodeCheckoutPayload(payload) {
-  try {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  } catch {
-    return "";
-  }
 }
 
 function decodePossibleGlobalId(value = "") {
@@ -645,75 +640,6 @@ function buildPaymentReference(order = {}) {
     .slice(0, 12);
 }
 
-function buildWooCheckoutUrl({
-  cartItems,
-  coupon,
-  shippingMethod,
-  freeShipping = false,
-  customerEmail = "",
-}) {
-  const cleanWooUrl = cleanUrl(WOO_URL);
-  if (!cleanWooUrl) return null;
-
-  const checkoutItems = buildCheckoutItems(cartItems);
-  const encodedPayload = encodeCheckoutPayload(checkoutItems);
-  const legacyItems = checkoutItems
-    .map((item) => {
-      const productId = Number(item.product_id);
-      const variationId = Number(item.variation_id || 0);
-      const idForLegacy = variationId || productId;
-
-      return `${idForLegacy}:${Number(item.quantity || 1)}`;
-    })
-    .join(",");
-
-  const url = new URL(`${cleanWooUrl}/checkout/`);
-
-  url.searchParams.set("phaseone_cart_sync", "1");
-  url.searchParams.set("rgv_cart_sync", "1");
-  url.searchParams.set("lab_checkout_payload", encodedPayload);
-  url.searchParams.set("rgv_checkout_payload", encodedPayload);
-  url.searchParams.set("lab_checkout", legacyItems);
-  url.searchParams.set("rgv_checkout", legacyItems);
-
-  const cleanCoupon = normalizeCoupon(coupon);
-
-  if (cleanCoupon) {
-    url.searchParams.set("phaseone_tagada_coupon", cleanCoupon);
-    url.searchParams.set("rgv_tagada_coupon", cleanCoupon);
-  }
-
-  const cleanCustomerEmail = normalizeEmail(customerEmail);
-
-  if (cleanCustomerEmail) {
-    url.searchParams.set("customer_email", cleanCustomerEmail);
-    url.searchParams.set("billing_email", cleanCustomerEmail);
-    url.searchParams.set("rgv_customer_email", cleanCustomerEmail);
-  }
-
-  if (shippingMethod?.id) {
-    const shippingTitle = getShippingOrderLabel(shippingMethod, freeShipping);
-    const shippingLabel = getShippingOrderLabel(shippingMethod, freeShipping);
-
-    url.searchParams.set("rgv_shipping_method", shippingMethod.id);
-    url.searchParams.set("rgv_shipping_method_id", shippingMethod.id);
-    url.searchParams.set("rgv_shipping_title", shippingTitle);
-    url.searchParams.set("rgv_shipping_label", shippingLabel);
-    url.searchParams.set("shipping_method", shippingMethod.id);
-    url.searchParams.set("shipping_method_id", shippingMethod.id);
-    url.searchParams.set("shipping_method_title", shippingTitle);
-    url.searchParams.set("shipping_method_label", shippingLabel);
-    url.searchParams.set("rgv_shipping_cost", String(toMoneyNumber(shippingMethod.price, 0)));
-  }
-
-  if (freeShipping) {
-    url.searchParams.set("rgv_free_shipping", "1");
-    url.searchParams.set("rgv_shipping_cost", "0");
-  }
-
-  return url.toString();
-}
-
 function getManualOrderEndpoint() {
   return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/manual-zelle-order`;
 }
@@ -728,6 +654,50 @@ function getCouponValidateEndpoint() {
 
 function getEdebitOrderEndpoint() {
   return `${cleanUrl(WP_URL)}/wp-json/rgvprime/v1/create-edebit-order`;
+}
+
+function getOrbitCardCheckoutEndpoint() {
+  return `${cleanUrl(WP_URL)}/wp-json/orbit/v1/card-checkout`;
+}
+
+function getOrbitCardQuoteEndpoint() {
+  return `${cleanUrl(WP_URL)}/wp-json/orbit/v1/card-quote`;
+}
+
+function createCheckoutAttemptId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+const ORBIT_CARD_RETURN_STORAGE_KEY = "rgv_orbit_card_return";
+
+function getInitialOrbitCardReturn() {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const clientSecret = String(params.get("payment_intent_client_secret") || "");
+
+  if (params.get("orbit_card_return") !== "1" || !/^pi_[A-Za-z0-9_]+_secret_[A-Za-z0-9_]+$/.test(clientSecret)) {
+    return null;
+  }
+
+  const stored = safeJsonParse(sessionStorage.getItem(ORBIT_CARD_RETURN_STORAGE_KEY), null);
+
+  if (
+    !stored ||
+    !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(stored.publishableKey || "")) ||
+    !/^acct_[A-Za-z0-9]+$/.test(String(stored.connectedAccountId || ""))
+  ) {
+    return null;
+  }
+
+  return {
+    ...stored,
+    clientSecret,
+    isReturn: true,
+  };
 }
 
 const EDEBIT_RETURN_QUERY_KEYS = [
@@ -789,6 +759,12 @@ export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
   const [edebitReturn] = useState(() => getInitialEdebitReturn());
+  const [orbitCardCheckout, setOrbitCardCheckout] = useState(() => getInitialOrbitCardReturn());
+  const [checkoutQuote, setCheckoutQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
+  const [orbitCardReady, setOrbitCardReady] = useState(false);
+  const [orbitPaymentResult, setOrbitPaymentResult] = useState(null);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
@@ -812,10 +788,14 @@ export default function RgvCheckout() {
   const [receiptMessage, setReceiptMessage] = useState("");
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
   const [sessionCustomer, setSessionCustomer] = useState(null);
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
   const edebitSubmittingRef = useRef(false);
+  const orbitCardSubmittingRef = useRef(false);
+  const orbitCardPaymentRef = useRef(null);
+  const checkoutAttemptIdRef = useRef(createCheckoutAttemptId());
 
   async function loadSessionCustomer() {
     if (!sessionCustomerPromiseRef.current) {
@@ -901,6 +881,23 @@ export default function RgvCheckout() {
       }
     }
   }, [edebitReturn?.payment]);
+
+  useEffect(() => {
+    if (!orbitCardCheckout?.isReturn || typeof window === "undefined") return;
+
+    const cleanReturnUrl = new URL(window.location.href);
+    [
+      "orbit_card_return",
+      "payment_intent",
+      "payment_intent_client_secret",
+      "redirect_status",
+    ].forEach((key) => cleanReturnUrl.searchParams.delete(key));
+    window.history.replaceState(
+      {},
+      "",
+      `${cleanReturnUrl.pathname}${cleanReturnUrl.search}${cleanReturnUrl.hash}`,
+    );
+  }, [orbitCardCheckout?.isReturn]);
 
   const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
 
@@ -1008,7 +1005,8 @@ export default function RgvCheckout() {
 
   const isEdebitSelected = selectedPaymentMethodId === "edebit";
   const isZelleSelected = selectedPaymentMethodId === "zelle";
-  const requiresDirectDetails = isEdebitSelected || isZelleSelected;
+  const isCardSelected = selectedPaymentMethodId === "card";
+  const requiresDirectDetails = isCardSelected || isEdebitSelected || isZelleSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
@@ -1029,6 +1027,40 @@ export default function RgvCheckout() {
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
   const estimatedDue = Math.max(discountedCartTotal + shippingCost, 0);
 
+  useEffect(() => {
+    if (!hasItems || !isCardSelected || orbitCardCheckout?.isReturn) return undefined;
+    const items = buildCheckoutItems(cartItems);
+    if (!items.length || items.some((item) => !item.product_id)) return undefined;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setQuoteLoading(true);
+        setQuoteError("");
+        const address = normalizeCheckoutFormForOrder(checkoutForm);
+        const response = await fetch(getOrbitCardQuoteEndpoint(), {
+          method: "POST", credentials: "include", signal: controller.signal,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ items, billing: address, shipping: address, couponCode: coupon, shippingMethod: selectedShippingMethodId }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.success === false || !/^orb_quote_[a-f0-9]{32}$/.test(String(data?.quoteId || ""))) {
+          throw new Error("We could not refresh the secure order total.");
+        }
+        setCheckoutQuote(data);
+      } catch (cause) {
+        if (cause?.name !== "AbortError") {
+          setCheckoutQuote(null);
+          setQuoteError("Secure checkout totals are temporarily unavailable. Please try again.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setQuoteLoading(false);
+      }
+    }, 450);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [cartItems, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, selectedShippingMethodId]);
+
+  const authoritativeDue = checkoutQuote ? checkoutQuote.totalMinor / 100 : estimatedDue;
+
   const orderReference = buildPaymentReference(manualOrder || {});
   const zelleMemoCode = `RGV-${orderReference || manualOrder?.order_number || manualOrder?.number || manualOrder?.id || ""}`;
   const manualOrderTotal = Number(manualOrder?.total || estimatedDue || 0);
@@ -1045,6 +1077,44 @@ export default function RgvCheckout() {
   const checkoutAddressPreview = formatAddressBlock(
     normalizeCheckoutFormForOrder(checkoutForm)
   );
+  const normalizedCardAddress = normalizeCheckoutFormForOrder(checkoutForm);
+  const cardPaymentEnabled = Boolean(
+    checkoutQuote && !quoteLoading && !loading && policyAcknowledged && finalSaleAcknowledged &&
+    shippingAddressConfirmed && isValidEmail(normalizedCardAddress.email) &&
+    normalizedCardAddress.first_name && normalizedCardAddress.last_name && normalizedCardAddress.address_1 &&
+    normalizedCardAddress.city && normalizedCardAddress.state && normalizedCardAddress.postcode && normalizedCardAddress.phone
+  );
+  const stripePaymentContext = orbitCardCheckout?.isReturn ? orbitCardCheckout : checkoutQuote ? {
+    publishableKey: checkoutQuote.publishableKey,
+    connectedAccountId: checkoutQuote.connectedAccountId,
+    totalMinor: checkoutQuote.totalMinor,
+    currency: checkoutQuote.currency,
+    customerEmail: normalizedCardAddress.email,
+    customerName: `${normalizedCardAddress.first_name} ${normalizedCardAddress.last_name}`.trim(),
+    customerPhone: normalizedCardAddress.phone,
+    billingAddress: {
+      line1: normalizedCardAddress.address_1,
+      line2: normalizedCardAddress.address_2 || undefined,
+      city: normalizedCardAddress.city,
+      state: normalizedCardAddress.state,
+      postal_code: normalizedCardAddress.postcode,
+      country: normalizedCardAddress.country,
+    },
+    isReturn: false,
+  } : null;
+  const summarySubtotal = isCardSelected && checkoutQuote ? checkoutQuote.subtotalMinor / 100 : cartTotal;
+  const summaryDiscount = isCardSelected && checkoutQuote ? checkoutQuote.discountMinor / 100 : couponDiscount;
+  const summaryShipping = isCardSelected && checkoutQuote ? checkoutQuote.shippingMinor / 100 : shippingCost;
+  const summaryTax = isCardSelected && checkoutQuote ? checkoutQuote.taxMinor / 100 : 0;
+  const summaryTotal = isCardSelected ? authoritativeDue : estimatedDue;
+  const displayedSummaryItems = isCardSelected && checkoutQuote?.items?.length === summaryItems.length
+    ? summaryItems.map((item, index) => ({
+        ...item,
+        name: checkoutQuote.items[index].name || item.name,
+        quantity: checkoutQuote.items[index].quantity || item.quantity,
+        lineTotal: checkoutQuote.items[index].totalMinor / 100,
+      }))
+    : summaryItems;
 
   const progressWidth = freeShippingUnlocked
     ? 100
@@ -1058,18 +1128,22 @@ export default function RgvCheckout() {
       ? "Creating Zelle order"
       : isEdebitSelected
         ? "Connecting secure bank payment"
-        : "Opening card checkout"
+        : isCardSelected
+          ? "Processing card payment"
+          : "Preparing secure card payment"
     : isZelleSelected
-      ? "Create Zelle order"
+      ? "Place order with Zelle"
       : isEdebitSelected
-      ? "Continue with bank transfer"
-        : "Continue to secure checkout";
+      ? "Continue with eDebit"
+        : `Pay ${formatMoney(authoritativeDue)} securely`;
 
   const paymentButtonDescription = isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
       ? "Your order will be created, then you will securely link your bank."
-      : "You will be redirected to secure card checkout.";
+      : isCardSelected
+        ? "Your card details are encrypted and handled securely by Stripe."
+        : "Your WooCommerce order total is verified before payment.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
     const checkoutItems = buildCheckoutItems(cartItems);
@@ -1277,7 +1351,9 @@ export default function RgvCheckout() {
     return normalizedForm;
   };
 
-  const continueToCardCheckout = async () => {
+  const createOrbitCardPayment = async (confirmationTokenId) => {
+    if (orbitCardSubmittingRef.current || loading) return;
+
     if (!validateBaseCheckout()) return;
 
     if (couponInput && couponInput !== coupon) {
@@ -1287,26 +1363,205 @@ export default function RgvCheckout() {
 
     if (!(await validateCheckoutInventory())) return;
 
-    const freeShippingForOrder = isFreeShippingUnlocked();
-    const checkoutUrl = buildWooCheckoutUrl({
-      cartItems,
-      coupon,
-      shippingMethod: {
-        ...selectedShippingMethod,
-        price: freeShippingForOrder ? 0 : selectedShippingBaseCost,
-      },
-      freeShipping: freeShippingForOrder,
-      customerEmail: checkoutForm.email,
-    });
+    const normalizedForm = validateDirectPaymentForm("card payment");
+    if (!normalizedForm) return;
 
-    if (!checkoutUrl) {
-      setError("Secure checkout is temporarily unavailable. Please contact support.");
+    const checkoutItems = buildCheckoutItems(cartItems);
+
+    if (!checkoutItems.length || checkoutItems.some((item) => !item.product_id)) {
+      setError("One or more products are missing a valid WooCommerce product ID.");
+      throw new Error("One or more products are no longer available.");
+    }
+
+    if (!checkoutQuote || checkoutQuote.quoteExpiresAt <= Math.floor(Date.now() / 1000)) {
+      setError("The secure order total is still updating. Please wait a moment.");
+      throw new Error("The secure order total is still updating. Please wait a moment.");
+    }
+
+    const billing = { ...normalizedForm };
+    const shipping = { ...normalizedForm };
+    const controller = new AbortController();
+    const requestTimeout = window.setTimeout(() => controller.abort(), 45000);
+
+    try {
+      orbitCardSubmittingRef.current = true;
+      setLoading(true);
+      setError("");
+      setPaymentNotice("Creating your pending WooCommerce order and securing the card payment...");
+
+      localStorage.setItem("rgv_checkout_email", billing.email);
+      localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
+
+      const response = await fetch(getOrbitCardCheckoutEndpoint(), {
+        method: "POST",
+        credentials: "include",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          billing,
+          shipping,
+          items: checkoutItems,
+          couponCode: coupon,
+          shippingMethod: selectedShippingMethod?.id,
+          source: "rgv_custom_checkout_orbit_card",
+          ageConfirmed: true,
+          researchUseAcknowledged: true,
+          termsAccepted: true,
+          refundPolicyAccepted: true,
+          finalSalePolicyAccepted: true,
+          researchUsePolicyAccepted: true,
+          policyAcknowledgedAt: new Date().toISOString(),
+          confirmationTokenId,
+          checkoutAttemptId: checkoutAttemptIdRef.current,
+          quoteId: checkoutQuote.quoteId,
+          quoteExpiresAt: checkoutQuote.quoteExpiresAt,
+        }),
+      });
+
+      const responseText = await response.text();
+      const data = safeJsonParse(responseText, {});
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            "Unable to prepare secure card payment. Please try again.",
+        );
+      }
+
+      if (
+        !/^orb_tx_[A-Za-z0-9_-]+$/.test(String(data?.orbitTransactionId || "")) ||
+        !/^pi_[A-Za-z0-9_]+_secret_[A-Za-z0-9_]+$/.test(String(data?.clientSecret || "")) ||
+        !/^acct_[A-Za-z0-9]+$/.test(String(data?.connectedAccountId || "")) ||
+        !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(data?.publishableKey || ""))
+      ) {
+        throw new Error("Secure card payment returned an invalid configuration.");
+      }
+
+      const checkout = {
+        orbitTransactionId: data.orbitTransactionId,
+        clientSecret: data.clientSecret,
+        connectedAccountId: data.connectedAccountId,
+        publishableKey: data.publishableKey,
+        orderId: data.orderId,
+        orderNumber: data.orderNumber || data.orderId,
+        currency: String(data.currency || "USD").toUpperCase(),
+        total: data.total,
+        customerEmail: billing.email,
+        customerName: `${billing.first_name} ${billing.last_name}`.trim(),
+        customerPhone: billing.phone,
+        billingAddress: {
+          line1: billing.address_1,
+          line2: billing.address_2 || undefined,
+          city: billing.city,
+          state: billing.state,
+          postal_code: billing.postcode,
+          country: billing.country,
+        },
+        isReturn: false,
+      };
+
+      sessionStorage.setItem(
+        ORBIT_CARD_RETURN_STORAGE_KEY,
+        JSON.stringify({
+          orbitTransactionId: checkout.orbitTransactionId,
+          connectedAccountId: checkout.connectedAccountId,
+          publishableKey: checkout.publishableKey,
+          orderId: checkout.orderId,
+          orderNumber: checkout.orderNumber,
+          currency: checkout.currency,
+          total: checkout.total,
+          customerEmail: checkout.customerEmail,
+          customerName: checkout.customerName,
+          customerPhone: checkout.customerPhone,
+          billingAddress: checkout.billingAddress,
+        }),
+      );
+
+      setOrbitCardCheckout(checkout);
+      setPaymentNotice("Payment received. Confirming your order…");
+      return checkout;
+    } catch (err) {
+      const safeMessage = err?.name === "AbortError"
+          ? "Card payment setup took too long. Your order was not submitted twice; please try again."
+          : err?.message || "Unable to prepare secure card payment. Please try again.";
+      setError(safeMessage);
+      setPaymentNotice("");
+      throw new Error(safeMessage);
+    } finally {
+      window.clearTimeout(requestTimeout);
+      orbitCardSubmittingRef.current = false;
+      setLoading(false);
+    }
+  };
+
+  const continueToCardCheckout = async () => {
+    if (!validateBaseCheckout()) return;
+    if (!validateDirectPaymentForm("card payment")) return;
+    if (!checkoutQuote || quoteLoading) {
+      setError("The secure order total is still updating. Please wait a moment.");
+      return;
+    }
+    setError("");
+    const result = await orbitCardPaymentRef.current?.confirm();
+    if (!result || result.ignored) return;
+    handleOrbitPaymentResult(result);
+  };
+
+  const clearCartAfterOrbitPayment = () => {
+    if (typeof window === "undefined") return;
+
+    CART_STORAGE_FALLBACK_KEYS.forEach((key) => localStorage.removeItem(key));
+    localStorage.removeItem("rgv_checkout_coupon");
+    sessionStorage.removeItem(ORBIT_CARD_RETURN_STORAGE_KEY);
+
+    const clearCartHandler = cart?.clearCart || cart?.emptyCart || cart?.resetCart;
+
+    if (typeof clearCartHandler === "function") {
+      try {
+        clearCartHandler();
+      } catch (clearError) {
+        console.error("Unable to clear cart after card payment:", clearError);
+      }
+    }
+  };
+
+  const handleOrbitPaymentResult = (result = {}) => {
+    if (result.error) {
+      setError(result.error);
+      setPaymentNotice("");
       return;
     }
 
-    setLoading(true);
-    setPaymentNotice("Opening secure card checkout...");
-    window.location.href = checkoutUrl;
+    const status = result.paymentIntent?.status;
+    const paymentCheckout = result.checkout || orbitCardCheckout;
+
+    if (status === "succeeded" || status === "processing") {
+      setOrbitPaymentResult({
+        status,
+        orderNumber: paymentCheckout?.orderNumber,
+        orbitTransactionId: paymentCheckout?.orbitTransactionId,
+      });
+      clearCartAfterOrbitPayment();
+      return;
+    }
+
+    if (status === "requires_payment_method") {
+      setError("Your card was not accepted. Choose another card and try again.");
+      setPaymentNotice("");
+      return;
+    }
+
+    if (status === "canceled") {
+      setError("The card payment was canceled. No new payment will be submitted automatically.");
+      setPaymentNotice("");
+      return;
+    }
+
+    setPaymentNotice("Payment authentication is still pending. Follow the instructions in the secure card form.");
   };
 
   const createEdebitOrder = async () => {
@@ -1793,7 +2048,63 @@ export default function RgvCheckout() {
     );
   }
 
-  if (!hasItems) return <EmptyState />;
+  if (orbitPaymentResult) {
+    const paymentSucceeded = orbitPaymentResult.status === "succeeded";
+
+    return (
+      <main className="rgvx-page rgvx-thanks-page">
+        <div className="rgvx-background-wash" />
+
+        <section className="rgvx-shell rgvx-thanks-shell">
+          <div className="rgvx-topbar">
+            <a href="/shop" className="rgvx-ghost-link">
+              <ArrowLeft size={14} /> Back to shop
+            </a>
+
+            <div className="rgvx-lock-pill rgvx-confirmed-pill">
+              <BadgeCheck size={13} /> Payment submitted
+            </div>
+          </div>
+
+          <section className="rgvx-receipt-thanks-card" aria-live="polite">
+            <div className="rgvx-receipt-thanks-icon">
+              <BadgeCheck size={36} />
+            </div>
+
+            <p>ORDER #{orbitPaymentResult.orderNumber || "PENDING"}</p>
+            <h1>Payment processing</h1>
+            <span>
+              {paymentSucceeded
+                ? "Stripe accepted your payment. ORBIT is securely finalizing your WooCommerce order through its verified webhook."
+                : "Stripe is processing your payment. ORBIT will update your WooCommerce order only after the verified webhook arrives."}
+            </span>
+
+            <div className="rgvx-receipt-thanks-details">
+              <div>
+                <CreditCard size={17} />
+                <span>Payment method</span>
+                <strong>Card via Stripe</strong>
+              </div>
+
+              <div>
+                <ShieldCheck size={17} />
+                <span>Order update</span>
+                <strong>Secure webhook verification</strong>
+              </div>
+            </div>
+
+            <a href="/shop" className="rgvx-receipt-thanks-button">
+              Continue shopping <ChevronRight size={18} />
+            </a>
+          </section>
+        </section>
+
+        <style>{styles}</style>
+      </main>
+    );
+  }
+
+  if (!hasItems && !orbitCardCheckout) return <EmptyState />;
 
   if (receiptSubmitted && manualOrder && isZelleSelected) {
     const orderNumber = manualOrder.order_number || manualOrder.number || manualOrder.id;
@@ -2037,97 +2348,66 @@ export default function RgvCheckout() {
       <div className="rgvx-background-wash" />
 
       <section className="rgvx-shell">
-        <div className="rgvx-topbar">
-          <a href="/shop" className="rgvx-ghost-link">
-            <ArrowLeft size={14} /> Back to shop
+        <header className="rgvx-checkout-masthead">
+          <a href="/shop" className="rgvx-checkout-brand" aria-label="RGVPRIME — back to shop">
+            <img src="/logo.webp" alt="RGVPRIME" width="176" height="48" />
           </a>
 
-          <div className="rgvx-lock-pill">
-            <Lock size={13} /> Secure
+          <span className="rgvx-masthead-title">Secure checkout</span>
+
+          <div className="rgvx-checkout-secure-note">
+            <Lock size={14} /> <span>Encrypted &amp; secure</span>
           </div>
-        </div>
+        </header>
+
+        <nav className="rgvx-checkout-progress" aria-label="Checkout progress">
+          {["Details", "Delivery", "Payment", "Review"].map((step, index) => {
+            const currentIndex = !checkoutForm.email
+              ? 0
+              : !shippingAddressConfirmed
+                ? 1
+                : policyAcknowledged && finalSaleAcknowledged
+                  ? 3
+                  : 2;
+
+            return (
+              <div
+                key={step}
+                className={`${index === currentIndex ? "is-current" : ""} ${index < currentIndex ? "is-complete" : ""}`}
+                aria-current={index === currentIndex ? "step" : undefined}
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{step}</strong>
+              </div>
+            );
+          })}
+        </nav>
 
         <header className="rgvx-clean-header">
           <div>
-            <p>RGVPRIME RESEARCH</p>
-            <h1>Checkout</h1>
+            <p>Private client checkout</p>
+            <h1>Complete your order</h1>
             <span>
-              Review your order, choose a payment method, then complete the final step.
+              A calm, secure checkout for your RGVPRIME order.
             </span>
-          </div>
-
-          <div className="rgvx-header-note">
-            <ShieldCheck size={17} />
-            <span>Research use only</span>
           </div>
         </header>
 
         <div className="rgvx-clean-layout">
           <section className="rgvx-flow">
-            <div className="rgvx-flow-section first">
-              <div className="rgvx-section-heading">
-                <p>Step 3</p>
-                <h2>Choose payment</h2>
-                <span>Choose Card, secure bank payment, or manual payment with Zelle.</span>
-              </div>
-
-              <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
-                {PAYMENT_METHODS.map((method) => {
-                  const Icon = method.icon;
-                  const active = selectedPaymentMethodId === method.id;
-
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      disabled={loading}
-                      className={`rgvx-payment-option ${active ? "active" : ""}`}
-                      onClick={() => {
-                        setSelectedPaymentMethodId(method.id);
-                        setManualOrder(null);
-                        setError("");
-                        setPaymentNotice("");
-                      }}
-                    >
-                      <Icon size={18} />
-
-                      <span>
-                        <strong>{method.title}</strong>
-                        <small>{method.description}</small>
-                      </span>
-
-                      <em>{method.badge}</em>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {requiresDirectDetails && (
               <div className="rgvx-zelle-area">
-                <div className="rgvx-zelle-banner">
-                  <Building2 size={18} />
-                  <div>
-                    <strong>{isEdebitSelected ? "Bank transfer selected" : "Zelle selected"}</strong>
-                    <span>
-                      {isEdebitSelected
-                        ? "Enter the billing and delivery details used for your secure bank payment."
-                        : "Enter contact and delivery details. After receipt upload, Zelle orders can take up to 24 hours to process."}
-                    </span>
-                  </div>
-                </div>
-
                 <div className="rgvx-form-section">
                   <div className="rgvx-block-title">
                     <Mail size={16} />
                     <div>
                       <strong>Contact</strong>
                       <small>
-                        {isEdebitSelected
-                          ? "Email for your order confirmation and secure bank-payment updates."
-                          : "Email for order updates and payment instructions."}
+                        {isCardSelected
+                          ? "For your order confirmation and Stripe receipt."
+                          : isEdebitSelected
+                            ? "For your confirmation and bank-payment updates."
+                            : "For order updates and payment instructions."}
                       </small>
                     </div>
                   </div>
@@ -2158,9 +2438,9 @@ export default function RgvCheckout() {
                   <div className="rgvx-block-title">
                     <MapPin size={16} />
                     <div>
-                      <strong>Delivery</strong>
+                      <strong>Shipping address</strong>
                       <small>
-                        Required for {isEdebitSelected ? "bank transfer" : "Zelle"} orders.
+                        Where should we discreetly deliver your order?
                       </small>
                     </div>
                   </div>
@@ -2204,6 +2484,16 @@ export default function RgvCheckout() {
                         placeholder="Optional"
                         autoComplete="address-line2"
                       />
+                    </Field>
+
+                    <Field label="Country" wide>
+                      <select
+                        value={checkoutForm.country}
+                        onChange={(event) => updateCheckoutField("country", event.target.value)}
+                        autoComplete="country"
+                      >
+                        <option value="US">United States</option>
+                      </select>
                     </Field>
                   </div>
 
@@ -2297,9 +2587,9 @@ export default function RgvCheckout() {
               <div className="rgvx-block-title">
                 <Truck size={16} />
                 <div>
-                  <strong>Shipping method</strong>
+                  <strong>Delivery</strong>
                   <small>
-                    Choose UPS Shipping, USPS Ground, or USPS Priority Mail. Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}.
+                    Choose the delivery speed that works best for you.
                   </small>
                 </div>
               </div>
@@ -2310,7 +2600,7 @@ export default function RgvCheckout() {
                 aria-label="Shipping method"
               >
                 <div className="rgvx-shipping-options-head">
-                  <span>Available methods</span>
+                  <span>Delivery options</span>
                   <strong>
                     {freeShippingUnlocked
                       ? FREE_SHIPPING_METHOD_LABEL
@@ -2355,49 +2645,102 @@ export default function RgvCheckout() {
               </div>
             </div>
 
+            <div className="rgvx-flow-section first rgvx-payment-section">
+              <div className="rgvx-section-heading">
+                <p>Secure payment</p>
+                <h2>Payment</h2>
+                <span>All transactions are encrypted and securely processed.</span>
+              </div>
+              <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method.icon;
+                  const active = selectedPaymentMethodId === method.id;
+                  return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
+                    <Icon size={18} /><span><strong>{method.title}</strong><small>{method.description}</small></span><em>{method.badge}</em>
+                  </button>;
+                })}
+              </div>
+              {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Pay securely using your bank account. You’ll continue to eDebit after placing the order.</p>}
+              {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
+            </div>
+
+            {isCardSelected && stripePaymentContext && (
+              <div className="rgvx-orbit-card-panel">
+                <div className="rgvx-block-title">
+                  <Lock size={16} />
+                  <div>
+                    <strong>Secure card details</strong>
+                    <small>
+                      Eligible wallets appear automatically. Sensitive payment data goes directly to Stripe.
+                    </small>
+                  </div>
+                </div>
+
+                <OrbitCardPayment
+                  ref={orbitCardPaymentRef}
+                  context={stripePaymentContext}
+                  enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
+                  onCreatePayment={createOrbitCardPayment}
+                  onReadyChange={setOrbitCardReady}
+                  onPaymentResult={handleOrbitPaymentResult}
+                />
+              </div>
+            )}
+
+            {isCardSelected && quoteLoading && <p className="rgvx-checkout-state">Updating secure total and payment methods…</p>}
+            {isCardSelected && quoteError && <p className="rgvx-error">{quoteError}</p>}
+
             {error && <p className="rgvx-error">{error}</p>}
             {paymentNotice && !error && <p className="rgvx-success">{paymentNotice}</p>}
 
-            <label className={`rgvx-policy ${!policyAcknowledged && error ? "warning" : ""}`}>
-              <input
-                type="checkbox"
-                checked={policyAcknowledged}
-                onChange={(event) => {
-                  setPolicyAcknowledged(event.target.checked);
-                  if (event.target.checked) setError("");
-                }}
-              />
+            <section className="rgvx-review-confirm" aria-labelledby="rgvx-review-title">
+              <div className="rgvx-section-heading">
+                <p>Final step</p>
+                <h2 id="rgvx-review-title">Review &amp; confirm</h2>
+                <span>Please confirm these terms before placing your order.</span>
+              </div>
 
-              <span>
-                I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
-                laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
-                <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
-                <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
-              </span>
-            </label>
+              <label className={`rgvx-policy ${!policyAcknowledged && error ? "warning" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={policyAcknowledged}
+                  onChange={(event) => {
+                    setPolicyAcknowledged(event.target.checked);
+                    if (event.target.checked) setError("");
+                  }}
+                />
 
-            <label className={`rgvx-policy ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
-              <input
-                type="checkbox"
-                checked={finalSaleAcknowledged}
-                onChange={(event) => {
-                  setFinalSaleAcknowledged(event.target.checked);
-                  if (event.target.checked) setError("");
-                }}
-              />
+                <span>
+                  I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
+                  laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
+                  <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
+                  <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
+                </span>
+              </label>
 
-              <span>
-                I understand and acknowledge that, due to the nature of these products, all sales
-                are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
-                reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
-                <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
-              </span>
-            </label>
+              <label className={`rgvx-policy ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={finalSaleAcknowledged}
+                  onChange={(event) => {
+                    setFinalSaleAcknowledged(event.target.checked);
+                    if (event.target.checked) setError("");
+                  }}
+                />
+
+                <span>
+                  I understand and acknowledge that, due to the nature of these products, all sales
+                  are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
+                  reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
+                  <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
+                </span>
+              </label>
+            </section>
 
             <button
               type="button"
               onClick={handleContinuePayment}
-              disabled={loading}
+              disabled={loading || (isCardSelected && (!stripePaymentContext || !orbitCardReady || quoteLoading))}
               className="rgvx-final-button"
             >
               <span>
@@ -2406,19 +2749,39 @@ export default function RgvCheckout() {
               </span>
               <ChevronRight size={20} />
             </button>
+
+            <div className="rgvx-checkout-assurance" aria-label="Payment security">
+              <Lock size={13} />
+              <span>Encrypted payment</span>
+              <i aria-hidden="true" />
+              <span>{isCardSelected ? "Powered by Stripe" : "Secure checkout"}</span>
+            </div>
           </section>
 
-          <aside className="rgvx-order-summary">
+          <aside className={`rgvx-order-summary ${mobileSummaryOpen ? "is-open" : ""}`}>
+            <button
+              type="button"
+              className="rgvx-mobile-summary-toggle"
+              onClick={() => setMobileSummaryOpen((open) => !open)}
+              aria-expanded={mobileSummaryOpen}
+              aria-controls="rgvx-summary-content"
+            >
+              <span>Order summary</span>
+              <strong>{formatMoney(summaryTotal)}</strong>
+              <ChevronDown size={17} aria-hidden="true" />
+            </button>
+
+            <div id="rgvx-summary-content" className="rgvx-summary-content">
             <div className="rgvx-summary-head">
               <div>
-                <p>Step 1 · Review order</p>
-                <h2>{formatMoney(estimatedDue)}</h2>
+                <p>Your order</p>
+                <h2>Order summary</h2>
               </div>
               <PackageCheck size={18} />
             </div>
 
             <div className="rgvx-items-list">
-              {summaryItems.map((item) => (
+              {displayedSummaryItems.map((item) => (
                   <div
                     key={item.key}
                     className="rgvx-summary-item"
@@ -2462,26 +2825,28 @@ export default function RgvCheckout() {
             <div className="rgvx-totals">
               <div className="rgvx-total-row">
                 <span>Subtotal</span>
-                <strong>{formatMoney(cartTotal)}</strong>
+                <strong>{formatMoney(summarySubtotal)}</strong>
               </div>
 
-              {couponStatus === "valid" && couponDiscount > 0 && (
+              {summaryDiscount > 0 && (
                 <div className="rgvx-total-row good">
                   <span>Coupon {coupon}</span>
-                  <strong>-{formatMoney(couponDiscount)}</strong>
+                  <strong>-{formatMoney(summaryDiscount)}</strong>
                 </div>
               )}
 
               <div className="rgvx-total-row">
                 <span>{shippingLabelForDisplay}</span>
                 <strong className={freeShippingUnlocked ? "free" : ""}>
-                  {freeShippingUnlocked ? FREE_SHIPPING_LABEL : formatMoney(shippingCost)}
+                  {summaryShipping <= 0 ? FREE_SHIPPING_LABEL : formatMoney(summaryShipping)}
                 </strong>
               </div>
 
+              {summaryTax > 0 && <div className="rgvx-total-row"><span>Tax</span><strong>{formatMoney(summaryTax)}</strong></div>}
+
               <div className="rgvx-total-row total">
-                <span>{isZelleSelected ? "Due" : "Estimated total"}</span>
-                <strong>{formatMoney(estimatedDue)}</strong>
+                <span>{isZelleSelected ? "Due now" : "Total USD"}</span>
+                <strong>{formatMoney(summaryTotal)}</strong>
               </div>
 
               {estimatedLoyaltyPoints > 0 && (
@@ -2544,16 +2909,18 @@ export default function RgvCheckout() {
                 )
               )}
 
-              <div className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
-                <div className="rgvx-mini-coupon-header">
+              <details className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
+                <summary className="rgvx-mini-coupon-header">
                   <div className="rgvx-mini-coupon-title">
                     <Tag size={12} />
-                    <span>Coupon</span>
+                    <span>Have a promo code?</span>
                   </div>
 
                   {couponStatus === "valid" && <div className="rgvx-mini-coupon-pill">Applied</div>}
-                </div>
+                  <ChevronDown className="rgvx-mini-coupon-chevron" size={14} aria-hidden="true" />
+                </summary>
 
+                <div className="rgvx-mini-coupon-body">
                 <div className="rgvx-mini-coupon-controls">
                   <div className="rgvx-mini-coupon-code-wrap">
                     <input
@@ -2622,16 +2989,19 @@ export default function RgvCheckout() {
                     {couponMessage}
                   </p>
                 )}
-              </div>
+                </div>
+              </details>
+            </div>
+
+            <div className="rgvx-summary-trust" aria-label="Checkout benefits">
+              <span><ShieldCheck size={15} /> Secure checkout</span>
+              <span><PackageCheck size={15} /> Discreet packaging</span>
+              <span><Lock size={15} /> Encrypted payments</span>
+            </div>
             </div>
           </aside>
         </div>
       </section>
-
-      <div className="rgvx-floating-total-bar" aria-live="polite">
-        <span>{isZelleSelected ? "Due now" : "Estimated total"}</span>
-        <strong>{formatMoney(estimatedDue)}</strong>
-      </div>
 
       <style>{styles}</style>
     </main>
@@ -3328,6 +3698,28 @@ const styles = `
   .rgvx-form-section {
     display: grid;
     gap: 14px;
+  }
+
+  .rgvx-orbit-card-panel {
+    display: grid;
+    gap: 18px;
+    margin-top: 18px;
+    border: 1px solid rgba(248, 113, 113, 0.24);
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at top right, rgba(220, 38, 38, 0.12), transparent 18rem),
+      rgba(5, 5, 5, 0.72);
+    padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .rgvx-orbit-card-panel .rgvx-block-title small {
+    display: block;
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.45;
   }
 
   .rgvx-block-title {
@@ -6154,6 +6546,1378 @@ const styles = `
     .rgvx-shipping-options {
       order: 5;
     }
+  }
+
+  /* RGVPRIME editorial checkout — final visual layer */
+  .rgvx-page {
+    --rgvx-canvas: #0d0c0a;
+    --rgvx-surface: #151411;
+    --rgvx-surface-raised: #1b1916;
+    --rgvx-ivory: #f2eee5;
+    --rgvx-stone: #a49d93;
+    --rgvx-stone-dim: #756f67;
+    --rgvx-line: #2b2925;
+    --rgvx-line-strong: #3a3631;
+    --rgvx-red: #a9443c;
+    --rgvx-red-soft: #c86f66;
+    --rgvx-champagne: #c7ad82;
+    min-height: 100dvh;
+    padding: 0 22px 96px !important;
+    background: var(--rgvx-canvas) !important;
+    color: var(--rgvx-ivory);
+    font-family: Inter, "Helvetica Neue", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .rgvx-background-wash {
+    opacity: 1 !important;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(126, 82, 65, .10), transparent 34rem),
+      radial-gradient(circle at 92% 12%, rgba(161, 133, 91, .055), transparent 32rem) !important;
+    mask-image: none !important;
+  }
+
+  .rgvx-shell {
+    width: min(1340px, 100%) !important;
+  }
+
+  .rgvx-checkout-masthead {
+    display: grid;
+    min-height: 82px;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    border-bottom: 1px solid var(--rgvx-line);
+  }
+
+  .rgvx-checkout-brand {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+  }
+
+  .rgvx-checkout-brand img {
+    width: 160px;
+    height: auto;
+  }
+
+  .rgvx-masthead-title {
+    color: #d8d2c8;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+
+  .rgvx-checkout-secure-note {
+    display: inline-flex;
+    justify-self: end;
+    align-items: center;
+    gap: 8px;
+    color: var(--rgvx-stone);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .rgvx-checkout-secure-note svg {
+    color: var(--rgvx-champagne);
+  }
+
+  .rgvx-checkout-progress {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 32px 0 0;
+  }
+
+  .rgvx-checkout-progress > div {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    border-top: 1px solid var(--rgvx-line);
+    padding: 14px 10px 0 0;
+    color: var(--rgvx-stone-dim);
+    transition: color 180ms ease, border-color 180ms ease;
+  }
+
+  .rgvx-checkout-progress > div::before {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--rgvx-red-soft);
+    content: "";
+    transition: width 220ms ease;
+  }
+
+  .rgvx-checkout-progress > div.is-complete::before,
+  .rgvx-checkout-progress > div.is-current::before {
+    width: 100%;
+  }
+
+  .rgvx-checkout-progress > div.is-complete,
+  .rgvx-checkout-progress > div.is-current {
+    color: #d8d1c6;
+  }
+
+  .rgvx-checkout-progress > div.is-current {
+    color: var(--rgvx-ivory);
+  }
+
+  .rgvx-checkout-progress span {
+    color: inherit;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+  }
+
+  .rgvx-checkout-progress strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .rgvx-clean-header {
+    display: block !important;
+    max-width: 720px;
+    margin: clamp(48px, 6vw, 78px) 0 clamp(40px, 5vw, 62px) !important;
+  }
+
+  .rgvx-clean-header p,
+  .rgvx-section-heading p,
+  .rgvx-summary-head p {
+    color: var(--rgvx-champagne) !important;
+    font-size: 10px !important;
+    font-weight: 650 !important;
+    letter-spacing: .16em !important;
+  }
+
+  .rgvx-clean-header h1 {
+    margin: 12px 0 0 !important;
+    color: var(--rgvx-ivory) !important;
+    font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+    font-size: clamp(42px, 5vw, 68px) !important;
+    font-weight: 400 !important;
+    letter-spacing: -.045em !important;
+    line-height: .98 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-clean-header > div > span {
+    max-width: 520px !important;
+    margin-top: 16px !important;
+    color: var(--rgvx-stone) !important;
+    font-size: 14px !important;
+    font-weight: 450 !important;
+    line-height: 1.65 !important;
+  }
+
+  .rgvx-clean-layout {
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1.62fr) minmax(360px, 1fr) !important;
+    gap: clamp(48px, 6vw, 82px) !important;
+    align-items: start !important;
+  }
+
+  .rgvx-flow {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0 !important;
+  }
+
+  .rgvx-zelle-area {
+    display: grid;
+    gap: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .rgvx-form-section,
+  .rgvx-shipping-section,
+  .rgvx-flow-section.first,
+  .rgvx-review-confirm {
+    display: grid;
+    gap: 22px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 44px 0 !important;
+  }
+
+  .rgvx-zelle-area .rgvx-form-section:first-child {
+    border-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .rgvx-block-title,
+  .rgvx-section-heading {
+    margin: 0 !important;
+  }
+
+  .rgvx-block-title {
+    align-items: flex-start !important;
+    gap: 13px !important;
+  }
+
+  .rgvx-block-title svg {
+    width: 17px;
+    height: 17px;
+    margin-top: 5px !important;
+    color: var(--rgvx-champagne) !important;
+  }
+
+  .rgvx-block-title strong,
+  .rgvx-section-heading h2 {
+    color: var(--rgvx-ivory) !important;
+    font-size: clamp(24px, 2.4vw, 31px) !important;
+    font-weight: 520 !important;
+    letter-spacing: -.035em !important;
+    line-height: 1.1 !important;
+  }
+
+  .rgvx-block-title small,
+  .rgvx-section-heading span,
+  .rgvx-orbit-card-panel .rgvx-block-title small {
+    max-width: 620px;
+    margin-top: 7px !important;
+    color: var(--rgvx-stone) !important;
+    font-size: 12px !important;
+    font-weight: 450 !important;
+    line-height: 1.6 !important;
+  }
+
+  .rgvx-form-grid {
+    gap: 18px 16px !important;
+  }
+
+  .rgvx-form-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .rgvx-form-grid.three {
+    grid-template-columns: 1.35fr 1fr .8fr !important;
+  }
+
+  .rgvx-field {
+    gap: 9px !important;
+  }
+
+  .rgvx-field > span {
+    color: #c7c0b6 !important;
+    font-size: 12px !important;
+    font-weight: 560 !important;
+    letter-spacing: .01em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-field input,
+  .rgvx-field select {
+    width: 100%;
+    min-height: 56px !important;
+    border: 1px solid var(--rgvx-line-strong) !important;
+    border-radius: 13px !important;
+    outline: 0;
+    background: var(--rgvx-surface) !important;
+    padding: 0 16px !important;
+    color: var(--rgvx-ivory) !important;
+    font-size: 15px !important;
+    font-weight: 450 !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .015) inset !important;
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  .rgvx-field input::placeholder {
+    color: #69645d !important;
+  }
+
+  .rgvx-field input:hover,
+  .rgvx-field select:hover {
+    border-color: #514b44 !important;
+  }
+
+  .rgvx-field input:focus,
+  .rgvx-field select:focus {
+    border-color: #a75a52 !important;
+    background: #191714 !important;
+    box-shadow: 0 0 0 3px rgba(169, 68, 60, .12) !important;
+  }
+
+  .rgvx-marketing-inline {
+    align-items: center !important;
+    margin-top: -4px;
+    color: var(--rgvx-stone) !important;
+    font-size: 12px !important;
+    font-weight: 450 !important;
+  }
+
+  .rgvx-address-confirmation {
+    gap: 16px !important;
+    border: 1px solid var(--rgvx-line) !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, .018) !important;
+    padding: 18px !important;
+    transition: border-color 180ms ease, background 180ms ease !important;
+  }
+
+  .rgvx-address-confirmation.confirmed {
+    border-color: rgba(117, 150, 118, .34) !important;
+    background: rgba(94, 122, 95, .05) !important;
+  }
+
+  .rgvx-address-confirmation-heading svg {
+    color: var(--rgvx-stone) !important;
+  }
+
+  .rgvx-address-confirmation.confirmed .rgvx-address-confirmation-heading svg {
+    color: #93ae91 !important;
+  }
+
+  .rgvx-address-confirmation-heading strong,
+  .rgvx-address-preview strong {
+    color: #ddd7cd !important;
+    font-size: 13px !important;
+    font-weight: 620 !important;
+  }
+
+  .rgvx-address-confirmation-heading small,
+  .rgvx-address-preview span {
+    color: var(--rgvx-stone) !important;
+    font-size: 12px !important;
+    font-weight: 450 !important;
+  }
+
+  .rgvx-address-preview {
+    border-radius: 12px !important;
+    background: #11100e !important;
+    padding: 14px !important;
+  }
+
+  .rgvx-address-confirmation-check {
+    color: #c9c2b8 !important;
+    font-size: 12px !important;
+    font-weight: 520 !important;
+  }
+
+  .rgvx-address-confirmation-check input,
+  .rgvx-marketing-inline input,
+  .rgvx-policy input[type="checkbox"] {
+    width: 18px !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    border: 1px solid #5a544c !important;
+    border-radius: 5px !important;
+    background: #171613 !important;
+    box-shadow: none !important;
+    accent-color: var(--rgvx-red) !important;
+  }
+
+  .rgvx-shipping-options,
+  .rgvx-shipping-options.flow {
+    display: grid !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .rgvx-shipping-options-head {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 0 !important;
+    padding: 0 2px 8px !important;
+  }
+
+  .rgvx-shipping-options-head span,
+  .rgvx-shipping-options-head strong {
+    color: var(--rgvx-stone-dim) !important;
+    font-size: 10px !important;
+    font-weight: 550 !important;
+    letter-spacing: .06em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-shipping-option-list {
+    gap: 0 !important;
+  }
+
+  .rgvx-shipping-option {
+    display: grid !important;
+    min-height: 78px !important;
+    grid-template-columns: 18px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    border: 0 !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 13px 14px !important;
+    text-align: left !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background 180ms ease, color 180ms ease !important;
+  }
+
+  .rgvx-shipping-option:last-child {
+    border-bottom: 1px solid var(--rgvx-line) !important;
+  }
+
+  .rgvx-shipping-option::before {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #645e56;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: inset 0 0 0 4px transparent;
+    content: "";
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+
+  .rgvx-shipping-option:hover {
+    background: rgba(255, 255, 255, .018) !important;
+  }
+
+  .rgvx-shipping-option.active {
+    border-color: var(--rgvx-line) !important;
+    border-radius: 13px !important;
+    background: var(--rgvx-surface-raised) !important;
+  }
+
+  .rgvx-shipping-option.active::before {
+    border-color: var(--rgvx-red-soft);
+    background: var(--rgvx-red-soft);
+    box-shadow: inset 0 0 0 4px var(--rgvx-surface-raised);
+  }
+
+  .rgvx-shipping-option-main {
+    display: flex !important;
+    align-items: center;
+    gap: 13px !important;
+  }
+
+  .rgvx-carrier-logo {
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
+    opacity: .82;
+  }
+
+  .rgvx-shipping-option strong {
+    color: #e2ddd4 !important;
+    font-size: 13px !important;
+    font-weight: 620 !important;
+  }
+
+  .rgvx-shipping-option small {
+    margin-top: 3px !important;
+    color: var(--rgvx-stone) !important;
+    font-size: 11px !important;
+    font-weight: 450 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-shipping-option em {
+    color: #ddd7ce !important;
+    font-size: 12px !important;
+    font-weight: 620 !important;
+  }
+
+  .rgvx-payment-switch {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    border: 1px solid var(--rgvx-line) !important;
+    border-radius: 15px !important;
+    background: #12110f !important;
+    padding: 4px !important;
+  }
+
+  .rgvx-payment-option {
+    display: flex !important;
+    min-height: 48px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: transparent !important;
+    padding: 0 12px !important;
+    color: var(--rgvx-stone) !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  .rgvx-payment-option:hover {
+    background: rgba(255, 255, 255, .025) !important;
+    color: #d7d0c6 !important;
+  }
+
+  .rgvx-payment-option.active {
+    background: #26221e !important;
+    color: var(--rgvx-ivory) !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .28) !important;
+  }
+
+  .rgvx-payment-option > svg,
+  .rgvx-payment-option small,
+  .rgvx-payment-option em {
+    display: none !important;
+  }
+
+  .rgvx-payment-option span,
+  .rgvx-payment-option strong {
+    display: block !important;
+  }
+
+  .rgvx-payment-option strong {
+    color: inherit !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-payment-method-note,
+  .rgvx-checkout-state {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 14px 2px 0;
+    color: var(--rgvx-stone);
+    font-size: 12px;
+    font-weight: 450;
+    line-height: 1.55;
+  }
+
+  .rgvx-payment-method-note svg {
+    color: var(--rgvx-champagne);
+  }
+
+  .rgvx-orbit-card-panel {
+    display: grid !important;
+    gap: 26px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 0 44px !important;
+    box-shadow: none !important;
+    animation: rgvx-section-enter 190ms ease both;
+  }
+
+  .rgvx-review-confirm {
+    gap: 18px !important;
+  }
+
+  .rgvx-policy {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    background: transparent !important;
+    padding: 17px 0 0 !important;
+    color: var(--rgvx-stone) !important;
+    font-size: 12px !important;
+    font-weight: 450 !important;
+    line-height: 1.65 !important;
+  }
+
+  .rgvx-policy > span {
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+  }
+
+  .rgvx-policy a {
+    color: #d5c0a1 !important;
+    font-weight: 560 !important;
+    text-decoration-color: rgba(213, 192, 161, .45) !important;
+    text-underline-offset: 3px !important;
+  }
+
+  .rgvx-policy.warning {
+    color: #e5a09a !important;
+  }
+
+  .rgvx-final-button {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    margin: 4px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, .06) !important;
+    border-radius: 14px !important;
+    background: #a23f38 !important;
+    padding: 0 20px !important;
+    color: #fff8f1 !important;
+    text-align: center !important;
+    box-shadow: 0 14px 34px rgba(85, 25, 21, .24) !important;
+    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  .rgvx-final-button:hover:not(:disabled) {
+    background: #b64d45 !important;
+    box-shadow: 0 17px 38px rgba(85, 25, 21, .3) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .rgvx-final-button strong {
+    color: #fffaf5 !important;
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    letter-spacing: .01em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-final-button small {
+    display: none !important;
+  }
+
+  .rgvx-final-button:disabled {
+    opacity: .46 !important;
+  }
+
+  .rgvx-checkout-assurance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 13px;
+    color: var(--rgvx-stone-dim);
+    font-size: 10px;
+    font-weight: 520;
+  }
+
+  .rgvx-checkout-assurance i {
+    width: 1px;
+    height: 11px;
+    background: var(--rgvx-line-strong);
+  }
+
+  .rgvx-error,
+  .rgvx-success {
+    margin: 0 0 24px !important;
+    border: 1px solid rgba(180, 82, 73, .24) !important;
+    border-radius: 12px !important;
+    background: rgba(128, 49, 43, .08) !important;
+    padding: 13px 15px !important;
+    color: #e7aaa4 !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+  }
+
+  .rgvx-success {
+    border-color: rgba(111, 145, 111, .24) !important;
+    background: rgba(80, 113, 81, .07) !important;
+    color: #b6cbb4 !important;
+  }
+
+  .rgvx-order-summary {
+    position: sticky !important;
+    top: 24px !important;
+    display: block !important;
+    align-self: start !important;
+    max-height: calc(100dvh - 48px) !important;
+    overflow: auto !important;
+    border: 1px solid var(--rgvx-line) !important;
+    border-radius: 24px !important;
+    background: var(--rgvx-surface) !important;
+    padding: 30px !important;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, .22) !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #3b3731 transparent !important;
+  }
+
+  .rgvx-mobile-summary-toggle {
+    display: none;
+  }
+
+  .rgvx-summary-content {
+    display: block;
+  }
+
+  .rgvx-summary-head {
+    align-items: flex-start !important;
+    border-bottom: 1px solid var(--rgvx-line) !important;
+    padding: 0 0 22px !important;
+  }
+
+  .rgvx-summary-head h2 {
+    margin: 7px 0 0 !important;
+    color: var(--rgvx-ivory) !important;
+    font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+    font-size: 28px !important;
+    font-weight: 400 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .rgvx-summary-head > svg {
+    color: var(--rgvx-champagne) !important;
+  }
+
+  .rgvx-items-list {
+    display: grid !important;
+    gap: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 8px 0 !important;
+  }
+
+  .rgvx-summary-item {
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 16px 0 !important;
+  }
+
+  .rgvx-item-image {
+    width: 62px !important;
+    height: 68px !important;
+    border: 1px solid #302d28 !important;
+    border-radius: 12px !important;
+    background: #11100e !important;
+  }
+
+  .rgvx-item-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  .rgvx-item-image span {
+    top: -7px !important;
+    right: -7px !important;
+    border: 1px solid #48423b !important;
+    background: #24211d !important;
+    color: #eee8df !important;
+    box-shadow: none !important;
+  }
+
+  .rgvx-summary-item strong {
+    color: #e4ded5 !important;
+    font-size: 13px !important;
+    font-weight: 620 !important;
+  }
+
+  .rgvx-summary-item small {
+    color: var(--rgvx-stone) !important;
+    font-size: 11px !important;
+    font-weight: 450 !important;
+  }
+
+  .rgvx-summary-item em {
+    color: #ddd7ce !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .rgvx-free-progress {
+    display: grid !important;
+    gap: 11px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 18px 0 !important;
+  }
+
+  .rgvx-free-progress span,
+  .rgvx-free-progress strong {
+    color: var(--rgvx-stone) !important;
+    font-size: 10px !important;
+    font-weight: 520 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-free-progress strong {
+    color: #cdbda5 !important;
+  }
+
+  .rgvx-free-progress .progress-track {
+    height: 2px !important;
+    background: #302d28 !important;
+  }
+
+  .rgvx-free-progress .progress-track span {
+    background: linear-gradient(90deg, #8f3c36, #c09f74) !important;
+  }
+
+  .rgvx-totals {
+    display: grid !important;
+    gap: 0 !important;
+    padding: 16px 0 0 !important;
+  }
+
+  .rgvx-total-row {
+    display: flex !important;
+    order: initial !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    padding: 7px 0 !important;
+    color: var(--rgvx-stone) !important;
+    font-size: 12px !important;
+  }
+
+  .rgvx-total-row strong {
+    color: #d8d2c9 !important;
+    font-weight: 600 !important;
+  }
+
+  .rgvx-total-row.good strong,
+  .rgvx-total-row strong.free {
+    color: #a9bf9f !important;
+  }
+
+  .rgvx-total-row.total {
+    margin-top: 13px !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    padding: 20px 0 6px !important;
+  }
+
+  .rgvx-total-row.total span {
+    color: #c8c1b7 !important;
+    font-size: 11px !important;
+    font-weight: 560 !important;
+    letter-spacing: .04em !important;
+  }
+
+  .rgvx-total-row.total strong {
+    color: var(--rgvx-ivory) !important;
+    font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+    font-size: 30px !important;
+    font-weight: 400 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .rgvx-loyalty-earned,
+  .rgvx-loyalty-progress-card {
+    order: initial !important;
+    gap: 10px !important;
+    margin: 18px 0 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 17px 0 0 !important;
+    box-shadow: none !important;
+  }
+
+  .rgvx-loyalty-star {
+    width: 24px !important;
+    height: 24px !important;
+    flex-basis: 24px !important;
+    background: transparent !important;
+    color: var(--rgvx-champagne) !important;
+    font-size: 11px !important;
+  }
+
+  .rgvx-loyalty-earned div > span,
+  .rgvx-loyalty-earned small,
+  .rgvx-loyalty-progress-head div > span,
+  .rgvx-loyalty-progress-copy small {
+    color: var(--rgvx-stone-dim) !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    letter-spacing: .02em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-loyalty-earned strong,
+  .rgvx-loyalty-progress-head strong,
+  .rgvx-loyalty-progress-copy strong {
+    color: #cfc6b9 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .rgvx-loyalty-progress-head b {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: var(--rgvx-champagne) !important;
+    font-size: 11px !important;
+  }
+
+  .rgvx-loyalty-progress-track {
+    height: 2px !important;
+    background: #302d28 !important;
+  }
+
+  .rgvx-loyalty-progress-track .current,
+  .rgvx-loyalty-progress-track .projected {
+    background: var(--rgvx-champagne) !important;
+  }
+
+  .rgvx-mini-coupon {
+    order: initial !important;
+    display: block !important;
+    margin: 18px 0 0 !important;
+    border: 0 !important;
+    border-top: 1px solid var(--rgvx-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .rgvx-mini-coupon-header {
+    display: grid !important;
+    min-height: 46px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 0 0 !important;
+    color: var(--rgvx-stone);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .rgvx-mini-coupon-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .rgvx-mini-coupon-title span {
+    color: #b9b2a8 !important;
+    font-size: 11px !important;
+    font-weight: 540 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-mini-coupon-title svg {
+    color: var(--rgvx-stone-dim) !important;
+  }
+
+  .rgvx-mini-coupon-pill {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: #a9bf9f !important;
+    font-size: 10px !important;
+  }
+
+  .rgvx-mini-coupon-chevron {
+    color: var(--rgvx-stone-dim);
+    transition: transform 180ms ease;
+  }
+
+  .rgvx-mini-coupon[open] .rgvx-mini-coupon-chevron {
+    transform: rotate(180deg);
+  }
+
+  .rgvx-mini-coupon-body {
+    padding: 10px 0 2px;
+    animation: rgvx-section-enter 180ms ease both;
+  }
+
+  .rgvx-mini-coupon-controls {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .rgvx-mini-coupon-code-wrap {
+    border: 1px solid var(--rgvx-line-strong) !important;
+    border-radius: 11px !important;
+    background: #12110f !important;
+  }
+
+  .rgvx-mini-coupon-input {
+    min-height: 44px !important;
+    color: var(--rgvx-ivory) !important;
+    font-size: 12px !important;
+  }
+
+  .rgvx-mini-coupon-action {
+    min-height: 44px !important;
+    border: 1px solid var(--rgvx-line-strong) !important;
+    border-radius: 11px !important;
+    background: #201d19 !important;
+    color: #d7d0c6 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
+
+  .rgvx-summary-trust {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 24px;
+    border-top: 1px solid var(--rgvx-line);
+    padding-top: 20px;
+  }
+
+  .rgvx-summary-trust span {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    color: var(--rgvx-stone-dim);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .rgvx-summary-trust svg {
+    color: #a69070;
+  }
+
+  .rgvx-floating-total-bar {
+    display: none !important;
+  }
+
+  @keyframes rgvx-section-enter {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  :where(.rgvx-page button, .rgvx-page input, .rgvx-page select, .rgvx-page a):focus-visible {
+    outline: 2px solid #bf6b62 !important;
+    outline-offset: 3px !important;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-page {
+      padding-inline: 16px !important;
+      padding-bottom: 120px !important;
+    }
+
+    .rgvx-checkout-masthead {
+      min-height: 72px;
+      grid-template-columns: 1fr auto;
+    }
+
+    .rgvx-checkout-brand img {
+      width: 138px;
+    }
+
+    .rgvx-masthead-title {
+      display: none;
+    }
+
+    .rgvx-checkout-progress {
+      margin-top: 24px;
+    }
+
+    .rgvx-checkout-progress > div {
+      display: grid;
+      gap: 4px;
+      padding-top: 11px;
+    }
+
+    .rgvx-clean-header {
+      margin: 42px 0 36px !important;
+    }
+
+    .rgvx-clean-layout {
+      grid-template-columns: 1fr !important;
+      gap: 30px !important;
+    }
+
+    .rgvx-order-summary {
+      order: 1 !important;
+      position: static !important;
+      max-height: none !important;
+      overflow: hidden !important;
+      border-radius: 18px !important;
+      padding: 0 20px !important;
+      box-shadow: 0 18px 46px rgba(0, 0, 0, .18) !important;
+    }
+
+    .rgvx-mobile-summary-toggle {
+      display: grid;
+      width: 100%;
+      min-height: 66px;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: #d9d3c9;
+      text-align: left;
+    }
+
+    .rgvx-mobile-summary-toggle span {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .rgvx-mobile-summary-toggle strong {
+      color: var(--rgvx-ivory);
+      font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .rgvx-mobile-summary-toggle svg {
+      color: var(--rgvx-stone);
+      transition: transform 180ms ease;
+    }
+
+    .rgvx-order-summary.is-open .rgvx-mobile-summary-toggle svg {
+      transform: rotate(180deg);
+    }
+
+    .rgvx-summary-content {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 220ms ease, opacity 180ms ease, padding 220ms ease;
+    }
+
+    .rgvx-order-summary.is-open .rgvx-summary-content {
+      max-height: 1800px;
+      padding-bottom: 22px;
+      opacity: 1;
+    }
+
+    .rgvx-summary-head {
+      display: none !important;
+    }
+
+    .rgvx-flow {
+      order: 2 !important;
+    }
+
+    .rgvx-zelle-area { order: 1 !important; }
+    .rgvx-shipping-section { order: 2 !important; }
+    .rgvx-payment-section { order: 3 !important; }
+    .rgvx-orbit-card-panel,
+    .rgvx-checkout-state { order: 4 !important; }
+    .rgvx-error,
+    .rgvx-success { order: 5 !important; }
+    .rgvx-review-confirm { order: 6 !important; }
+    .rgvx-final-button { order: 7 !important; }
+    .rgvx-checkout-assurance { order: 8 !important; }
+
+    .rgvx-final-button {
+      position: sticky !important;
+      bottom: max(12px, env(safe-area-inset-bottom)) !important;
+      z-index: 20;
+      box-shadow: 0 10px 0 10px var(--rgvx-canvas), 0 18px 38px rgba(85, 25, 21, .34) !important;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-page {
+      padding-inline: 14px !important;
+    }
+
+    .rgvx-checkout-secure-note span {
+      font-size: 10px;
+    }
+
+    .rgvx-checkout-progress strong {
+      font-size: 10px;
+    }
+
+    .rgvx-clean-header h1 {
+      font-size: clamp(38px, 12vw, 50px) !important;
+    }
+
+    .rgvx-form-section,
+    .rgvx-shipping-section,
+    .rgvx-flow-section.first,
+    .rgvx-review-confirm {
+      padding: 36px 0 !important;
+    }
+
+    .rgvx-form-grid.two,
+    .rgvx-form-grid.three {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-payment-switch {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .rgvx-payment-option {
+      min-height: 46px !important;
+      padding: 0 7px !important;
+    }
+
+    .rgvx-payment-option strong {
+      font-size: 10px !important;
+    }
+
+    .rgvx-shipping-options-head {
+      display: grid !important;
+      gap: 5px;
+    }
+
+    .rgvx-shipping-option {
+      grid-template-columns: 18px minmax(0, 1fr) auto !important;
+      gap: 10px !important;
+      padding-inline: 9px !important;
+    }
+
+    .rgvx-carrier-logo {
+      display: none !important;
+    }
+
+    .rgvx-summary-trust {
+      grid-template-columns: 1fr;
+    }
+
+    .rgvx-summary-trust span {
+      display: flex;
+      align-items: center;
+      justify-items: initial;
+      text-align: left;
+    }
+
+    .rgvx-mini-coupon-controls {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rgvx-page *,
+    .rgvx-page *::before,
+    .rgvx-page *::after {
+      scroll-behavior: auto !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  /* Keep the premium composition anchored to the existing RGVPRIME brand. */
+  .rgvx-page {
+    --rgvx-canvas: #070708;
+    --rgvx-surface: #101011;
+    --rgvx-surface-raised: #181819;
+    --rgvx-ivory: #f5f5f5;
+    --rgvx-stone: #a1a1aa;
+    --rgvx-stone-dim: #71717a;
+    --rgvx-line: rgba(255, 255, 255, .085);
+    --rgvx-line-strong: rgba(255, 255, 255, .16);
+    --rgvx-red: #d82132;
+    --rgvx-red-soft: #ef4350;
+    --rgvx-champagne: #ef4350;
+  }
+
+  .rgvx-background-wash {
+    background:
+      radial-gradient(circle at 5% 0%, rgba(216, 33, 50, .105), transparent 34rem),
+      radial-gradient(circle at 96% 14%, rgba(216, 33, 50, .05), transparent 30rem) !important;
+  }
+
+  .rgvx-clean-header h1,
+  .rgvx-summary-head h2,
+  .rgvx-total-row.total strong,
+  .rgvx-mobile-summary-toggle strong {
+    font-family: Inter, "Helvetica Neue", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  }
+
+  .rgvx-clean-header h1 {
+    font-weight: 760 !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .rgvx-summary-head h2 {
+    font-weight: 680 !important;
+    letter-spacing: -.04em !important;
+  }
+
+  .rgvx-total-row.total strong,
+  .rgvx-mobile-summary-toggle strong {
+    font-weight: 670 !important;
+  }
+
+  .rgvx-field input,
+  .rgvx-field select,
+  .rgvx-address-preview,
+  .rgvx-mini-coupon-code-wrap {
+    background: #0d0d0e !important;
+  }
+
+  .rgvx-field input:focus,
+  .rgvx-field select:focus {
+    border-color: var(--rgvx-red-soft) !important;
+    background: #101011 !important;
+    box-shadow: 0 0 0 3px rgba(216, 33, 50, .12) !important;
+  }
+
+  .rgvx-payment-switch {
+    background: #0b0b0c !important;
+  }
+
+  .rgvx-payment-option.active {
+    background: #232124 !important;
+    box-shadow: inset 0 -2px 0 rgba(239, 67, 80, .72), 0 1px 6px rgba(0, 0, 0, .3) !important;
+  }
+
+  .rgvx-final-button {
+    background: #c91f30 !important;
+    box-shadow: 0 14px 34px rgba(152, 16, 34, .25) !important;
+  }
+
+  .rgvx-final-button:hover:not(:disabled) {
+    background: #df2b3b !important;
+    box-shadow: 0 17px 38px rgba(152, 16, 34, .32) !important;
+  }
+
+  .rgvx-mini-coupon-action {
+    background: #181819 !important;
+    color: #d4d4d8 !important;
+    letter-spacing: .01em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-mini-coupon-input {
+    color: #f4f4f5 !important;
+    font-family: inherit !important;
+    font-weight: 520 !important;
+    letter-spacing: .01em !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-mini-coupon-input::placeholder {
+    color: #62626a !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  .rgvx-mini-coupon-code-wrap:focus-within {
+    border-color: var(--rgvx-red-soft) !important;
+    box-shadow: 0 0 0 3px rgba(216, 33, 50, .12) !important;
+  }
+
+  .rgvx-field input:focus-visible,
+  .rgvx-field select:focus-visible,
+  .rgvx-mini-coupon-input:focus-visible {
+    outline: none !important;
+  }
+
+  :where(.rgvx-page button, .rgvx-page a, .rgvx-page summary):focus-visible {
+    outline: 2px solid var(--rgvx-red-soft) !important;
+    outline-offset: 3px !important;
   }
 
 `;

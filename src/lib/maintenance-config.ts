@@ -16,6 +16,10 @@ export function isMaintenanceModeEnabled() {
   return ENABLED_VALUES.has(value);
 }
 
+export function getMaintenanceBypassToken() {
+  return String(readRuntimeEnv("MAINTENANCE_BYPASS_TOKEN") || "").trim();
+}
+
 export function getMaintenanceDurationHours() {
   const configuredHours = Number(
     readRuntimeEnv("MAINTENANCE_DURATION_HOURS") || "2",
