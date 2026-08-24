@@ -72,9 +72,14 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
   if (tokenError || !confirmationToken) throw new Error(tokenError?.message || "Unable to secure the payment details.");
 
   const checkout = await onCreatePayment(confirmationToken.id);
-  const result = checkout.stripeStatus === "requires_action"
-    ? await stripe.handleNextAction({ clientSecret: checkout.clientSecret })
-    : await stripe.retrievePaymentIntent(checkout.clientSecret);
+  const result = await stripe.confirmPayment({
+    clientSecret: checkout.clientSecret,
+    confirmParams: {
+      confirmation_token: confirmationToken.id,
+      return_url: returnUrl.toString(),
+    },
+    redirect: "if_required",
+  });
   if (result.error) throw new Error(result.error.message || "Payment authentication was not completed.");
   return { paymentIntent: result.paymentIntent, checkout };
 }
