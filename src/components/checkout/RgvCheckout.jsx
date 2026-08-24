@@ -2345,29 +2345,6 @@ export default function RgvCheckout() {
             <span>Research, refined.</span>
           </a>
 
-          <nav className="rgvx-checkout-progress" aria-label="Checkout progress">
-            {["Details", "Delivery", "Payment", "Review"].map((step, index) => {
-              const currentIndex = !checkoutForm.email
-                ? 0
-                : !shippingAddressConfirmed
-                  ? 1
-                  : policyAcknowledged && finalSaleAcknowledged
-                    ? 3
-                    : 2;
-
-              return (
-                <div
-                  key={step}
-                  className={`${index === currentIndex ? "is-current" : ""} ${index < currentIndex ? "is-complete" : ""}`}
-                  aria-current={index === currentIndex ? "step" : undefined}
-                >
-                  <span>{index + 1}</span>
-                  <strong>{step}</strong>
-                </div>
-              );
-            })}
-          </nav>
-
           <div className="rgvx-masthead-actions">
             {estimatedLoyaltyPoints > 0 && (
               <div className="rgvx-points-chip" aria-label={`You will earn ${formatPoints(estimatedLoyaltyPoints)} loyalty points with this order`}>
@@ -9084,6 +9061,53 @@ const styles = `
 
     .rgvx-checkout-progress strong {
       font-size: 8px !important;
+    }
+  }
+
+  /* The checkout does not need a second site navigation. */
+  .rgvx-checkout-masthead {
+    position: relative !important;
+    top: auto !important;
+    display: flex !important;
+    height: 64px !important;
+    min-height: 0 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 18px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .rgvx-checkout-brand img {
+    width: 154px !important;
+  }
+
+  .rgvx-masthead-actions {
+    display: flex !important;
+    margin-left: auto !important;
+  }
+
+  .rgvx-checkout-progress {
+    display: none !important;
+  }
+
+  .rgvx-points-chip {
+    border-color: rgba(239, 67, 80, .24) !important;
+    background: rgba(17, 12, 14, .74) !important;
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-checkout-masthead {
+      display: flex !important;
+      height: 56px !important;
+      padding: 0 !important;
+    }
+
+    .rgvx-checkout-brand img {
+      width: 128px !important;
     }
   }
 
