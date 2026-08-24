@@ -80,8 +80,17 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
     },
     redirect: "if_required",
   });
+
+  if (result.paymentIntent) return { paymentIntent: result.paymentIntent, checkout };
+
+  const latest = await stripe.retrievePaymentIntent(checkout.clientSecret);
+  if (latest.paymentIntent && ["succeeded", "processing"].includes(latest.paymentIntent.status)) {
+    return { paymentIntent: latest.paymentIntent, checkout };
+  }
+
   if (result.error) throw new Error(result.error.message || "Payment authentication was not completed.");
-  return { paymentIntent: result.paymentIntent, checkout };
+  if (latest.error) throw new Error(latest.error.message || "Unable to verify the payment status.");
+  return { paymentIntent: latest.paymentIntent, checkout };
 }
 
 const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, submitting, setSubmitting, submittingRef }, ref) {
