@@ -174,7 +174,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
         paymentMethodOrder: ["apple_pay", "google_pay", "link", "paypal", "amazon_pay", "klarna"],
         buttonHeight: 52,
         buttonTheme: { applePay: "white-outline", googlePay: "black", paypal: "black" },
-        layout: { maxColumns: 3, maxRows: 2, overflow: "never" },
+        layout: { maxColumns: 3, maxRows: 0, overflow: "never" },
       }}
     />
     <div className="rgvx-stripe-divider" aria-hidden="true"><span /><small>or pay with card</small><span /></div>
