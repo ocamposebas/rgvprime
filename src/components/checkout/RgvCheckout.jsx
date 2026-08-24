@@ -2345,7 +2345,28 @@ export default function RgvCheckout() {
             <span>Research, refined.</span>
           </a>
 
-          <span className="rgvx-masthead-title">Secure checkout</span>
+          <nav className="rgvx-checkout-progress" aria-label="Checkout progress">
+            {["Details", "Delivery", "Payment", "Review"].map((step, index) => {
+              const currentIndex = !checkoutForm.email
+                ? 0
+                : !shippingAddressConfirmed
+                  ? 1
+                  : policyAcknowledged && finalSaleAcknowledged
+                    ? 3
+                    : 2;
+
+              return (
+                <div
+                  key={step}
+                  className={`${index === currentIndex ? "is-current" : ""} ${index < currentIndex ? "is-complete" : ""}`}
+                  aria-current={index === currentIndex ? "step" : undefined}
+                >
+                  <span>{index + 1}</span>
+                  <strong>{step}</strong>
+                </div>
+              );
+            })}
+          </nav>
 
           <div className="rgvx-masthead-actions">
             {estimatedLoyaltyPoints > 0 && (
@@ -2363,29 +2384,6 @@ export default function RgvCheckout() {
             </div>
           </div>
         </header>
-
-        <nav className="rgvx-checkout-progress" aria-label="Checkout progress">
-          {["Details", "Delivery", "Payment", "Review"].map((step, index) => {
-            const currentIndex = !checkoutForm.email
-              ? 0
-              : !shippingAddressConfirmed
-                ? 1
-                : policyAcknowledged && finalSaleAcknowledged
-                  ? 3
-                  : 2;
-
-            return (
-              <div
-                key={step}
-                className={`${index === currentIndex ? "is-current" : ""} ${index < currentIndex ? "is-complete" : ""}`}
-                aria-current={index === currentIndex ? "step" : undefined}
-              >
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{step}</strong>
-              </div>
-            );
-          })}
-        </nav>
 
         <header className="rgvx-clean-header">
           <div>
@@ -8959,6 +8957,133 @@ const styles = `
     .rgvx-final-button {
       position: static !important;
       min-height: 49px !important;
+    }
+  }
+
+  /* Integrated checkout navigation. */
+  .rgvx-checkout-masthead {
+    min-height: 62px !important;
+    grid-template-columns: auto minmax(390px, 1fr) auto !important;
+    gap: clamp(18px, 3vw, 40px) !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(239, 67, 80, .22) !important;
+    background: rgba(7, 7, 8, .94) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18) !important;
+  }
+
+  .rgvx-checkout-brand img {
+    width: 142px !important;
+  }
+
+  .rgvx-masthead-actions {
+    grid-column: 3 !important;
+    justify-self: end !important;
+  }
+
+  .rgvx-checkout-progress {
+    width: 100% !important;
+    max-width: 520px !important;
+    justify-self: center !important;
+    align-self: center !important;
+    gap: 3px !important;
+    margin: 0 !important;
+    border: 1px solid rgba(255, 255, 255, .07) !important;
+    border-radius: 11px !important;
+    background: #0c0c0e !important;
+    padding: 3px !important;
+  }
+
+  .rgvx-checkout-progress > div {
+    min-height: 31px !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 8px !important;
+  }
+
+  .rgvx-checkout-progress > div::before {
+    display: none !important;
+  }
+
+  .rgvx-checkout-progress > div.is-current {
+    background: linear-gradient(180deg, rgba(216, 33, 50, .18), rgba(216, 33, 50, .09)) !important;
+    color: #fff !important;
+    box-shadow: inset 0 0 0 1px rgba(239, 67, 80, .24) !important;
+  }
+
+  .rgvx-checkout-progress > div.is-complete {
+    color: #d9a6aa !important;
+  }
+
+  .rgvx-checkout-progress span {
+    display: grid !important;
+    width: 18px !important;
+    height: 18px !important;
+    place-items: center !important;
+    border: 1px solid rgba(255, 255, 255, .11) !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, .025) !important;
+    font-size: 8px !important;
+    line-height: 1 !important;
+  }
+
+  .rgvx-checkout-progress .is-current span {
+    border-color: #d82132 !important;
+    background: #d82132 !important;
+    color: #fff !important;
+  }
+
+  .rgvx-checkout-progress strong {
+    font-size: 9px !important;
+    font-weight: 650 !important;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-checkout-masthead {
+      grid-template-columns: auto minmax(340px, 1fr) auto !important;
+      gap: 12px !important;
+    }
+
+    .rgvx-checkout-progress {
+      max-width: 430px !important;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .rgvx-checkout-masthead {
+      min-height: auto !important;
+      grid-template-columns: 1fr auto !important;
+      gap: 7px 12px !important;
+      padding: 7px 0 9px !important;
+    }
+
+    .rgvx-masthead-actions {
+      grid-column: 2 !important;
+      grid-row: 1 !important;
+    }
+
+    .rgvx-checkout-progress {
+      grid-column: 1 / -1 !important;
+      grid-row: 2 !important;
+      max-width: none !important;
+    }
+
+    .rgvx-checkout-progress > div {
+      min-height: 28px !important;
+      gap: 4px !important;
+      padding-inline: 4px !important;
+    }
+
+    .rgvx-checkout-progress span {
+      width: 16px !important;
+      height: 16px !important;
+      border-radius: 5px !important;
+      font-size: 7px !important;
+    }
+
+    .rgvx-checkout-progress strong {
+      font-size: 8px !important;
     }
   }
 
