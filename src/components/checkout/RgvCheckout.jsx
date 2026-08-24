@@ -1969,6 +1969,17 @@ export default function RgvCheckout() {
     </main>
   );
 
+  const CheckoutLoadingState = () => (
+    <main className="rgvx-page rgvx-checkout-loading-page" aria-busy="true">
+      <div className="rgvx-background-wash" />
+      <section className="rgvx-checkout-loading" role="status" aria-live="polite">
+        <span aria-hidden="true" />
+        <p>Preparing secure checkout…</p>
+      </section>
+      <style>{styles}</style>
+    </main>
+  );
+
   if (edebitReturn) {
     const paymentSucceeded = edebitReturn.payment === "success";
     const paymentCancelled = edebitReturn.payment === "cancelled";
@@ -2094,6 +2105,8 @@ export default function RgvCheckout() {
       </main>
     );
   }
+
+  if (!cart?.hasHydrated && !orbitCardCheckout) return <CheckoutLoadingState />;
 
   if (!hasItems && !orbitCardCheckout) return <EmptyState />;
 
@@ -9115,6 +9128,40 @@ const styles = `
     .rgvx-page {
       padding-top: 122px !important;
     }
+  }
+
+  .rgvx-checkout-loading-page {
+    display: grid !important;
+    min-height: 100dvh !important;
+    place-items: center !important;
+  }
+
+  .rgvx-checkout-loading {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: #9a949c;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .rgvx-checkout-loading > span {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, .12);
+    border-top-color: #e13a48;
+    border-radius: 50%;
+    animation: rgvx-checkout-loading-spin .7s linear infinite;
+  }
+
+  .rgvx-checkout-loading p {
+    margin: 0;
+  }
+
+  @keyframes rgvx-checkout-loading-spin {
+    to { transform: rotate(360deg); }
   }
 
 `;
