@@ -15,20 +15,20 @@ const appearance = {
     colorTextSecondary: "#a1a1aa",
     colorTextPlaceholder: "#71717a",
     fontFamily: 'Inter, "Helvetica Neue", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    fontSizeBase: "15px",
-    borderRadius: "14px",
-    spacingUnit: "5px",
+    fontSizeBase: "14px",
+    borderRadius: "10px",
+    spacingUnit: "4px",
     focusBoxShadow: "0 0 0 3px rgba(216, 33, 50, 0.14)",
     focusOutline: "none",
   },
   rules: {
-    ".Input": { backgroundColor: "#101011", border: "1px solid rgba(255,255,255,.16)", boxShadow: "none", padding: "15px" },
+    ".Input": { backgroundColor: "#0d0d0f", border: "1px solid rgba(255,255,255,.14)", boxShadow: "none", padding: "12px" },
     ".Input:hover": { borderColor: "rgba(255,255,255,.28)" },
     ".Input:focus": { borderColor: "#e13a48", boxShadow: "0 0 0 3px rgba(216,33,50,.12)" },
     ".Input--invalid": { borderColor: "#f16b76", boxShadow: "0 0 0 3px rgba(241,107,118,.1)" },
     ".Label": { color: "#d4d4d8", fontSize: "12px", fontWeight: "600" },
     ".Label--invalid, .Error": { color: "#f48a93" },
-    ".Tab, .AccordionItem": { backgroundColor: "#101011", border: "1px solid rgba(255,255,255,.1)", boxShadow: "none" },
+    ".Tab, .AccordionItem": { backgroundColor: "#0d0d0f", border: "1px solid rgba(255,255,255,.1)", boxShadow: "none" },
     ".Tab:hover": { color: "#f5f5f5", borderColor: "rgba(255,255,255,.22)" },
     ".Tab:focus": { boxShadow: "0 0 0 3px rgba(216,33,50,.12)" },
     ".Tab--selected": { backgroundColor: "#1b1b1d", borderColor: "#c72b39", boxShadow: "none" },
@@ -206,7 +206,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
       options={{
         paymentMethods: { applePay: "always", googlePay: "auto", link: "auto" },
         paymentMethodOrder: ["apple_pay", "google_pay", "link", "paypal", "amazon_pay", "klarna"],
-        buttonHeight: 52,
+        buttonHeight: 46,
         buttonTheme: { applePay: "white-outline", googlePay: "black", paypal: "black" },
         layout: { maxColumns: 3, maxRows: 0, overflow: "never" },
       }}
@@ -266,7 +266,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
     <p className="rgvx-stripe-powered">ORION SENTINEL · SECURE PAYMENT</p>
     {submitting && <div className="rgvx-stripe-processing" role="status" aria-live="polite"><span /> Securing payment and confirming your order...</div>}
     <style>{`
-      .rgvx-stripe-elements{position:relative;display:grid;gap:22px;min-width:0}.rgvx-express-checkout{display:grid;gap:14px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:92px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:12px;font-weight:650;letter-spacing:.01em}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-top:4px}.rgvx-stripe-divider span{height:1px;background:#312e29}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#827b72;font-size:11px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-4px 0 0;text-align:center}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:10px;min-height:46px;border-radius:14px;background:#1f1b18;color:#eee8df;font-size:12px;font-weight:650}.rgvx-stripe-processing span{width:14px;height:14px;border:2px solid rgba(255,255,255,.16);border-top-color:#c66b62;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:18px}.rgvx-stripe-divider{gap:10px}}
+      .rgvx-stripe-elements{position:relative;display:grid;gap:14px;min-width:0}.rgvx-express-checkout{display:grid;gap:10px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:76px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:11px;font-weight:650;letter-spacing:.01em}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;margin-top:1px}.rgvx-stripe-divider span{height:1px;background:#2b2527}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#77717a;font-size:10px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-2px 0 0;text-align:center;letter-spacing:.08em}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;border:1px solid rgba(225,58,72,.18);border-radius:11px;background:#171113;color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-stripe-processing span{width:13px;height:13px;border:2px solid rgba(255,255,255,.16);border-top-color:#e13a48;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:12px}.rgvx-stripe-divider{gap:8px}}
     `}</style>
   </div>;
 });

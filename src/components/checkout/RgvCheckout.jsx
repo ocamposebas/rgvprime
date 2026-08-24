@@ -8546,4 +8546,420 @@ const styles = `
     }
   }
 
+  /* Precision compact layer: tighter rhythm, lighter controls, RGVPRIME red accents. */
+  .rgvx-page {
+    padding: 0 16px 42px !important;
+  }
+
+  .rgvx-shell {
+    width: min(1180px, 100%) !important;
+  }
+
+  .rgvx-checkout-masthead {
+    min-height: 60px !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 16px !important;
+  }
+
+  .rgvx-masthead-actions {
+    grid-column: 2 !important;
+    justify-self: end !important;
+  }
+
+  .rgvx-checkout-brand {
+    display: inline-flex !important;
+    gap: 0 !important;
+    padding: 5px 0 !important;
+  }
+
+  .rgvx-checkout-brand img {
+    width: 152px !important;
+  }
+
+  .rgvx-checkout-brand > span,
+  .rgvx-masthead-title,
+  .rgvx-checkout-secure-note {
+    display: none !important;
+  }
+
+  .rgvx-points-chip {
+    min-height: 36px !important;
+    gap: 7px !important;
+    border-radius: 10px !important;
+    padding: 4px 9px 4px 4px !important;
+    box-shadow: none !important;
+  }
+
+  .rgvx-points-chip > span {
+    width: 27px !important;
+    height: 27px !important;
+    flex-basis: 27px !important;
+    border-radius: 8px !important;
+  }
+
+  .rgvx-points-chip small {
+    font-size: 7px !important;
+  }
+
+  .rgvx-points-chip strong {
+    font-size: 10px !important;
+  }
+
+  .rgvx-checkout-progress {
+    margin-top: 12px !important;
+    gap: 7px !important;
+  }
+
+  .rgvx-checkout-progress > div {
+    gap: 6px !important;
+    padding-top: 8px !important;
+  }
+
+  .rgvx-checkout-progress strong {
+    font-size: 10px !important;
+  }
+
+  .rgvx-clean-header {
+    max-width: 600px !important;
+    margin: 18px 0 20px !important;
+  }
+
+  .rgvx-clean-header p {
+    font-size: 8px !important;
+  }
+
+  .rgvx-clean-header h1 {
+    margin-top: 5px !important;
+    font-size: clamp(31px, 3.4vw, 40px) !important;
+    letter-spacing: -.045em !important;
+    line-height: 1 !important;
+  }
+
+  .rgvx-clean-header > div > span {
+    max-width: 470px !important;
+    margin-top: 7px !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  .rgvx-clean-layout {
+    grid-template-columns: minmax(0, 1.55fr) minmax(330px, .85fr) !important;
+    gap: 26px !important;
+  }
+
+  .rgvx-form-section,
+  .rgvx-shipping-section,
+  .rgvx-flow-section.first,
+  .rgvx-review-confirm {
+    gap: 13px !important;
+    padding: 19px 0 !important;
+  }
+
+  .rgvx-block-title,
+  .rgvx-section-heading {
+    gap: 9px !important;
+  }
+
+  .rgvx-block-title > svg {
+    width: 26px !important;
+    height: 26px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+  }
+
+  .rgvx-block-title strong,
+  .rgvx-section-heading h2 {
+    font-size: 20px !important;
+    font-weight: 650 !important;
+    letter-spacing: -.025em !important;
+  }
+
+  .rgvx-block-title small,
+  .rgvx-section-heading span,
+  .rgvx-orbit-card-panel .rgvx-block-title small {
+    margin-top: 2px !important;
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  .rgvx-form-grid {
+    gap: 10px !important;
+  }
+
+  .rgvx-field {
+    gap: 5px !important;
+  }
+
+  .rgvx-field > span {
+    font-size: 10px !important;
+  }
+
+  .rgvx-field input,
+  .rgvx-field select {
+    min-height: 43px !important;
+    border-radius: 9px !important;
+    padding-inline: 12px !important;
+    font-size: 13px !important;
+  }
+
+  .rgvx-address-confirmation {
+    gap: 10px !important;
+    border-radius: 11px !important;
+    padding: 11px !important;
+  }
+
+  .rgvx-address-preview {
+    padding: 10px !important;
+  }
+
+  .rgvx-shipping-options-head {
+    padding-bottom: 2px !important;
+  }
+
+  .rgvx-shipping-option,
+  .rgvx-shipping-option:last-child {
+    min-height: 54px !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+    padding: 8px 10px !important;
+  }
+
+  .rgvx-carrier-logo {
+    width: 25px !important;
+    height: 25px !important;
+    flex-basis: 25px !important;
+  }
+
+  .rgvx-payment-switch {
+    gap: 3px !important;
+    border-radius: 12px !important;
+    padding: 3px !important;
+  }
+
+  .rgvx-payment-option {
+    min-height: 41px !important;
+    gap: 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 9px !important;
+    background: transparent !important;
+  }
+
+  .rgvx-payment-option:hover {
+    border-color: rgba(239, 67, 80, .17) !important;
+    background: rgba(216, 33, 50, .05) !important;
+    transform: none !important;
+  }
+
+  .rgvx-payment-option.active {
+    border-color: rgba(239, 67, 80, .34) !important;
+    background: linear-gradient(180deg, #241518, #1a1113) !important;
+    box-shadow: inset 0 -2px 0 #d82132 !important;
+  }
+
+  .rgvx-payment-option.active strong {
+    color: #fff !important;
+  }
+
+  .rgvx-payment-option > svg {
+    display: block !important;
+    width: 15px !important;
+    height: 15px !important;
+    flex: 0 0 15px !important;
+    padding: 0 !important;
+    color: #777780 !important;
+  }
+
+  .rgvx-payment-option.active > svg {
+    color: #ff6c79 !important;
+  }
+
+  .rgvx-orbit-card-panel {
+    gap: 13px !important;
+    padding-bottom: 19px !important;
+  }
+
+  .rgvx-review-confirm {
+    gap: 10px !important;
+  }
+
+  .rgvx-policy {
+    gap: 9px !important;
+    padding-top: 11px !important;
+    font-size: 10px !important;
+    line-height: 1.5 !important;
+  }
+
+  .rgvx-final-button {
+    min-height: 50px !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    border: 1px solid rgba(255, 106, 119, .36) !important;
+    border-radius: 11px !important;
+    background: linear-gradient(135deg, #dd283a, #b5162b) !important;
+    padding: 0 16px !important;
+    box-shadow: 0 10px 24px rgba(138, 9, 29, .24) !important;
+  }
+
+  .rgvx-final-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ed3446, #c51d31) !important;
+    box-shadow: 0 12px 28px rgba(138, 9, 29, .31) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .rgvx-final-button::before {
+    display: none !important;
+  }
+
+  .rgvx-final-button > span {
+    display: block !important;
+  }
+
+  .rgvx-final-button strong {
+    font-size: 13px !important;
+  }
+
+  .rgvx-final-button > svg {
+    width: 17px !important;
+    height: 17px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .rgvx-checkout-assurance {
+    margin-top: 8px !important;
+    font-size: 9px !important;
+  }
+
+  .rgvx-order-summary {
+    top: 70px !important;
+    max-height: calc(100dvh - 84px) !important;
+    border-radius: 16px !important;
+    padding: 17px !important;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .26) !important;
+  }
+
+  .rgvx-summary-head {
+    padding-bottom: 11px !important;
+  }
+
+  .rgvx-summary-head h2 {
+    margin-top: 3px !important;
+    font-size: 22px !important;
+  }
+
+  .rgvx-summary-head > svg {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+  }
+
+  .rgvx-summary-item {
+    grid-template-columns: 43px minmax(0, 1fr) auto !important;
+    gap: 9px !important;
+    padding: 9px 0 !important;
+  }
+
+  .rgvx-item-image {
+    width: 42px !important;
+    height: 46px !important;
+    border-radius: 8px !important;
+  }
+
+  .rgvx-free-progress {
+    gap: 7px !important;
+    padding: 11px 0 !important;
+  }
+
+  .rgvx-total-row {
+    padding: 4px 0 !important;
+  }
+
+  .rgvx-total-row.total {
+    margin-top: 6px !important;
+    padding: 12px 0 2px !important;
+  }
+
+  .rgvx-total-row.total strong {
+    font-size: 25px !important;
+  }
+
+  .rgvx-loyalty-earned,
+  .rgvx-loyalty-progress-card {
+    margin-top: 10px !important;
+    border-radius: 12px !important;
+    padding: 11px !important;
+  }
+
+  .rgvx-loyalty-star {
+    width: 29px !important;
+    height: 29px !important;
+    flex-basis: 29px !important;
+    border-radius: 8px !important;
+  }
+
+  .rgvx-mini-coupon {
+    margin-top: 10px !important;
+  }
+
+  .rgvx-summary-trust {
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-page {
+      padding-inline: 13px !important;
+    }
+
+    .rgvx-clean-layout {
+      grid-template-columns: 1fr !important;
+      gap: 14px !important;
+    }
+
+    .rgvx-order-summary {
+      top: auto !important;
+      max-height: none !important;
+      padding: 0 14px !important;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-checkout-brand img {
+      width: 130px !important;
+    }
+
+    .rgvx-clean-header {
+      margin: 14px 0 15px !important;
+    }
+
+    .rgvx-clean-header h1 {
+      font-size: 30px !important;
+    }
+
+    .rgvx-form-section,
+    .rgvx-shipping-section,
+    .rgvx-flow-section.first,
+    .rgvx-review-confirm {
+      padding: 16px 0 !important;
+    }
+
+    .rgvx-form-grid.two,
+    .rgvx-form-grid.three {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-payment-option {
+      min-height: 40px !important;
+    }
+
+    .rgvx-final-button {
+      position: static !important;
+      min-height: 49px !important;
+    }
+  }
+
 `;
