@@ -161,10 +161,15 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   </div>;
 });
 
-function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, setSubmitting, submittingRef }) {
+function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onBlocked, setSubmitting, submittingRef }) {
   const stripe = useStripe();
   const elements = useElements();
   const [expressStatus, setExpressStatus] = useState("loading");
+  const [blockedNotice, setBlockedNotice] = useState("");
+
+  useEffect(() => {
+    if (enabled) setBlockedNotice("");
+  }, [enabled]);
 
   function updateExpressStatus(methods, reportAvailability = false) {
     if (reportAvailability) {
@@ -198,7 +203,23 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
   return <div className={`rgvx-express-checkout is-${expressStatus}`}>
     <p className="rgvx-express-label">Fast payment options</p>
     <ExpressCheckoutElement
-      onClick={(event) => enabled && !submittingRef.current ? event.resolve() : event.reject()}
+      onClick={(event) => {
+        if (submittingRef.current) {
+          setBlockedNotice("Your payment is already being prepared.");
+          event.reject();
+          return;
+        }
+
+        if (enabled) {
+          setBlockedNotice("");
+          event.resolve();
+          return;
+        }
+
+        setBlockedNotice("Finish the required checkout details and agreements to unlock fast payment.");
+        onBlocked?.();
+        event.reject();
+      }}
       onReady={(event) => updateExpressStatus(event.availablePaymentMethods)}
       onAvailablePaymentMethodsChange={(event) => updateExpressStatus(event.paymentMethods, true)}
       onLoadError={() => setExpressStatus("unavailable")}
@@ -211,11 +232,17 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
         layout: { maxColumns: 3, maxRows: 0, overflow: "never" },
       }}
     />
+    {!enabled && !blockedNotice && (
+      <p className="rgvx-express-requirements" role="status">
+        Complete the required checkout details and agreements to enable these buttons.
+      </p>
+    )}
+    {blockedNotice && <p className="rgvx-express-feedback" role="alert">{blockedNotice}</p>}
     <div className="rgvx-stripe-divider" aria-hidden="true"><span /><small>or pay with card</small><span /></div>
   </div>;
 }
 
-const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange }, ref) {
+const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onBlocked }, ref) {
   const stripePromise = useMemo(() => getStripeClient(context.publishableKey, context.connectedAccountId), [context.publishableKey, context.connectedAccountId]);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -246,6 +273,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         enabled={enabled}
         onCreatePayment={onCreatePayment}
         onPaymentResult={onPaymentResult}
+        onBlocked={onBlocked}
         setSubmitting={setSubmitting}
         submittingRef={submittingRef}
       />
@@ -266,7 +294,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
     <p className="rgvx-stripe-powered">ORION SENTINEL · SECURE PAYMENT</p>
     {submitting && <div className="rgvx-stripe-processing" role="status" aria-live="polite"><span /> Securing payment and confirming your order...</div>}
     <style>{`
-      .rgvx-stripe-elements{position:relative;display:grid;gap:14px;min-width:0}.rgvx-express-checkout{display:grid;gap:10px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:76px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:11px;font-weight:650;letter-spacing:.01em}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;margin-top:1px}.rgvx-stripe-divider span{height:1px;background:#2b2527}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#77717a;font-size:10px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-2px 0 0;text-align:center;letter-spacing:.08em}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;border:1px solid rgba(225,58,72,.18);border-radius:11px;background:#171113;color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-stripe-processing span{width:13px;height:13px;border:2px solid rgba(255,255,255,.16);border-top-color:#e13a48;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:12px}.rgvx-stripe-divider{gap:8px}}
+      .rgvx-stripe-elements{position:relative;display:grid;gap:14px;min-width:0}.rgvx-express-checkout{display:grid;gap:10px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:76px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:11px;font-weight:650;letter-spacing:.01em}.rgvx-express-requirements,.rgvx-express-feedback{margin:0;border:1px solid rgba(239,67,80,.2);border-radius:9px;background:rgba(216,33,50,.06);padding:9px 11px;color:#d9a6aa;font-size:10px;font-weight:600;line-height:1.45}.rgvx-express-feedback{border-color:rgba(239,67,80,.35);background:rgba(216,33,50,.1);color:#ffd4d7}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;margin-top:1px}.rgvx-stripe-divider span{height:1px;background:#2b2527}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#77717a;font-size:10px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-2px 0 0;text-align:center;letter-spacing:.08em}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;border:1px solid rgba(225,58,72,.18);border-radius:11px;background:#171113;color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-stripe-processing span{width:13px;height:13px;border:2px solid rgba(255,255,255,.16);border-top-color:#e13a48;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:12px}.rgvx-stripe-divider{gap:8px}}
     `}</style>
   </div>;
 });

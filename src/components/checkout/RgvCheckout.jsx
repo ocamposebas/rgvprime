@@ -2624,58 +2624,11 @@ export default function RgvCheckout() {
               </div>
             </div>
 
-            <div className="rgvx-flow-section first rgvx-payment-section">
-              <div className="rgvx-section-heading">
-                <p>Secure payment</p>
-                <h2>Payment</h2>
-                <span>All transactions are encrypted and securely processed.</span>
-              </div>
-              <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
-                {PAYMENT_METHODS.map((method) => {
-                  const Icon = method.icon;
-                  const active = selectedPaymentMethodId === method.id;
-                  return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
-                    <Icon size={18} /><span><strong>{method.title}</strong><small>{method.description}</small></span><em>{method.badge}</em>
-                  </button>;
-                })}
-              </div>
-              {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
-            </div>
-
-            {isCardSelected && stripePaymentContext && (
-              <div className="rgvx-orbit-card-panel">
-                <div className="rgvx-block-title">
-                  <Lock size={16} />
-                  <div>
-                    <strong>Secure card details</strong>
-                    <small>
-                      Eligible wallets appear automatically. ORION SENTINEL protects this secure checkout experience.
-                    </small>
-                  </div>
-                </div>
-
-                <OrbitCardPayment
-                  ref={orbitCardPaymentRef}
-                  context={stripePaymentContext}
-                  enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
-                  onCreatePayment={createOrbitCardPayment}
-                  onReadyChange={setOrbitCardReady}
-                  onPaymentResult={handleOrbitPaymentResult}
-                />
-              </div>
-            )}
-
-            {isCardSelected && quoteLoading && <p className="rgvx-checkout-state">Updating secure total and payment methods…</p>}
-            {isCardSelected && quoteError && <p className="rgvx-error">{quoteError}</p>}
-
-            {error && <p className="rgvx-error">{error}</p>}
-            {paymentNotice && !error && <p className="rgvx-success">{paymentNotice}</p>}
-
             <section className="rgvx-review-confirm" aria-labelledby="rgvx-review-title">
               <div className="rgvx-section-heading">
-                <p>Final step</p>
+                <p>Before payment</p>
                 <h2 id="rgvx-review-title">Review &amp; confirm</h2>
-                <span>Please confirm these terms before placing your order.</span>
+                <span>Accept the required terms to unlock your payment options.</span>
               </div>
 
               <label className={`rgvx-policy ${!policyAcknowledged && error ? "warning" : ""}`}>
@@ -2714,6 +2667,60 @@ export default function RgvCheckout() {
                 </span>
               </label>
             </section>
+
+            <div className="rgvx-flow-section first rgvx-payment-section">
+              <div className="rgvx-section-heading">
+                <p>Secure payment</p>
+                <h2>Payment</h2>
+                <span>All transactions are encrypted and securely processed.</span>
+              </div>
+              <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method.icon;
+                  const active = selectedPaymentMethodId === method.id;
+                  return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
+                    <Icon size={18} /><span><strong>{method.title}</strong><small>{method.description}</small></span><em>{method.badge}</em>
+                  </button>;
+                })}
+              </div>
+              {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
+            </div>
+
+            {isCardSelected && stripePaymentContext && (
+              <div className="rgvx-orbit-card-panel">
+                <div className="rgvx-block-title">
+                  <Lock size={16} />
+                  <div>
+                    <strong>Secure card details</strong>
+                    <small>
+                      Eligible wallets appear automatically. ORION SENTINEL protects this secure checkout experience.
+                    </small>
+                  </div>
+                </div>
+
+                <OrbitCardPayment
+                  ref={orbitCardPaymentRef}
+                  context={stripePaymentContext}
+                  enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
+                  onCreatePayment={createOrbitCardPayment}
+                  onReadyChange={setOrbitCardReady}
+                  onPaymentResult={handleOrbitPaymentResult}
+                  onBlocked={() => {
+                    setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
+                    const target = !shippingAddressConfirmed
+                      ? document.querySelector(".rgvx-address-confirmation")
+                      : document.querySelector(".rgvx-review-confirm");
+                    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                />
+              </div>
+            )}
+
+            {isCardSelected && quoteLoading && <p className="rgvx-checkout-state">Updating secure total and payment methods…</p>}
+            {isCardSelected && quoteError && <p className="rgvx-error">{quoteError}</p>}
+
+            {error && <p className="rgvx-error">{error}</p>}
+            {paymentNotice && !error && <p className="rgvx-success">{paymentNotice}</p>}
 
             <button
               type="button"
@@ -9109,6 +9116,17 @@ const styles = `
     .rgvx-checkout-brand img {
       width: 128px !important;
     }
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-review-confirm { order: 3 !important; }
+    .rgvx-payment-section { order: 4 !important; }
+    .rgvx-orbit-card-panel,
+    .rgvx-checkout-state { order: 5 !important; }
+    .rgvx-error,
+    .rgvx-success { order: 6 !important; }
+    .rgvx-final-button { order: 7 !important; }
+    .rgvx-checkout-assurance { order: 8 !important; }
   }
 
 `;
