@@ -154,15 +154,6 @@ const PAYMENT_METHODS = [
     icon: CreditCard,
   },
   {
-    id: "edebit",
-    label: "eDebit",
-    eyebrow: "Bank route",
-    title: "eDebit",
-    description: "Secure bank payment",
-    badge: "Bank",
-    icon: Building2,
-  },
-  {
     id: "zelle",
     label: "Zelle",
     eyebrow: "Manual route",
@@ -1142,7 +1133,7 @@ export default function RgvCheckout() {
     : isEdebitSelected
       ? "Your order will be created, then you will securely link your bank."
       : isCardSelected
-        ? "Your card details are encrypted and handled securely by Stripe."
+        ? "Your payment details are encrypted and protected throughout checkout."
         : "Your WooCommerce order total is verified before payment.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
@@ -2075,15 +2066,15 @@ export default function RgvCheckout() {
             <h1>Payment processing</h1>
             <span>
               {paymentSucceeded
-                ? "Stripe accepted your payment. ORBIT is securely finalizing your WooCommerce order through its verified webhook."
-                : "Stripe is processing your payment. ORBIT will update your WooCommerce order only after the verified webhook arrives."}
+                ? "Your payment was accepted. ORBIT is securely finalizing your WooCommerce order through its verified webhook."
+                : "Your payment is processing. ORBIT will update your WooCommerce order only after secure verification is complete."}
             </span>
 
             <div className="rgvx-receipt-thanks-details">
               <div>
                 <CreditCard size={17} />
                 <span>Payment method</span>
-                <strong>Card via Stripe</strong>
+                <strong>Card &amp; Wallets</strong>
               </div>
 
               <div>
@@ -2351,12 +2342,25 @@ export default function RgvCheckout() {
         <header className="rgvx-checkout-masthead">
           <a href="/shop" className="rgvx-checkout-brand" aria-label="RGVPRIME — back to shop">
             <img src="/logo.webp" alt="RGVPRIME" width="176" height="48" />
+            <span>Research, refined.</span>
           </a>
 
           <span className="rgvx-masthead-title">Secure checkout</span>
 
-          <div className="rgvx-checkout-secure-note">
-            <Lock size={14} /> <span>Encrypted &amp; secure</span>
+          <div className="rgvx-masthead-actions">
+            {estimatedLoyaltyPoints > 0 && (
+              <div className="rgvx-points-chip" aria-label={`You will earn ${formatPoints(estimatedLoyaltyPoints)} loyalty points with this order`}>
+                <span aria-hidden="true">★</span>
+                <div>
+                  <small>You&apos;ll earn</small>
+                  <strong>+{formatPoints(estimatedLoyaltyPoints)} points</strong>
+                </div>
+              </div>
+            )}
+
+            <div className="rgvx-checkout-secure-note">
+              <Lock size={14} /> <span>Encrypted &amp; secure</span>
+            </div>
           </div>
         </header>
 
@@ -2404,7 +2408,7 @@ export default function RgvCheckout() {
                       <strong>Contact</strong>
                       <small>
                         {isCardSelected
-                          ? "For your order confirmation and Stripe receipt."
+                          ? "For your order confirmation and secure payment receipt."
                           : isEdebitSelected
                             ? "For your confirmation and bank-payment updates."
                             : "For order updates and payment instructions."}
@@ -2660,7 +2664,6 @@ export default function RgvCheckout() {
                   </button>;
                 })}
               </div>
-              {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Pay securely using your bank account. You’ll continue to eDebit after placing the order.</p>}
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
 
@@ -2671,7 +2674,7 @@ export default function RgvCheckout() {
                   <div>
                     <strong>Secure card details</strong>
                     <small>
-                      Eligible wallets appear automatically. Sensitive payment data goes directly to Stripe.
+                      Eligible wallets appear automatically. ORION SENTINEL protects this secure checkout experience.
                     </small>
                   </div>
                 </div>
@@ -2754,7 +2757,7 @@ export default function RgvCheckout() {
               <Lock size={13} />
               <span>Encrypted payment</span>
               <i aria-hidden="true" />
-              <span>{isCardSelected ? "Powered by Stripe" : "Secure checkout"}</span>
+              <span>{isCardSelected ? "Protected by ORION SENTINEL" : "Secure checkout"}</span>
             </div>
           </section>
 
@@ -7918,6 +7921,629 @@ const styles = `
   :where(.rgvx-page button, .rgvx-page a, .rgvx-page summary):focus-visible {
     outline: 2px solid var(--rgvx-red-soft) !important;
     outline-offset: 3px !important;
+  }
+
+  /* Compact RGVPRIME red edition. */
+  .rgvx-page {
+    padding: 0 20px 72px !important;
+    background:
+      radial-gradient(circle at 7% 3%, rgba(216, 33, 50, .13), transparent 28rem),
+      radial-gradient(circle at 94% 18%, rgba(216, 33, 50, .07), transparent 24rem),
+      #070708 !important;
+  }
+
+  .rgvx-shell {
+    width: min(1420px, 100%) !important;
+  }
+
+  .rgvx-checkout-masthead {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    min-height: 74px;
+    border-bottom: 1px solid rgba(239, 67, 80, .28);
+    background: linear-gradient(180deg, rgba(7, 7, 8, .98), rgba(7, 7, 8, .91));
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .2);
+    backdrop-filter: blur(18px);
+  }
+
+  .rgvx-checkout-brand {
+    display: grid;
+    gap: 1px;
+    padding: 7px 0;
+  }
+
+  .rgvx-checkout-brand img {
+    width: 194px;
+    filter: drop-shadow(0 0 15px rgba(239, 67, 80, .18));
+  }
+
+  .rgvx-checkout-brand > span {
+    padding-left: 3px;
+    color: #8e8e96;
+    font-size: 8px;
+    font-weight: 720;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-masthead-title {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    border: 1px solid rgba(239, 67, 80, .22);
+    border-radius: 999px;
+    background: rgba(216, 33, 50, .055);
+    padding: 0 13px;
+    color: #d7d7dc;
+    font-size: 9px;
+    font-weight: 720;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-masthead-actions {
+    display: flex;
+    justify-self: end;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .rgvx-points-chip {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid rgba(239, 67, 80, .34);
+    border-radius: 14px;
+    background:
+      linear-gradient(135deg, rgba(216, 33, 50, .19), rgba(216, 33, 50, .055)),
+      #111113;
+    padding: 6px 11px 6px 7px;
+    box-shadow: 0 8px 24px rgba(108, 8, 23, .16), inset 0 1px 0 rgba(255, 255, 255, .04);
+  }
+
+  .rgvx-points-chip > span {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    place-items: center;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #ef4350, #a91024);
+    color: #fff;
+    font-size: 12px;
+    box-shadow: 0 6px 16px rgba(216, 33, 50, .24);
+  }
+
+  .rgvx-points-chip div {
+    display: grid;
+    gap: 1px;
+  }
+
+  .rgvx-points-chip small {
+    color: #9c9ca5;
+    font-size: 8px;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-points-chip strong {
+    color: #fff3f4;
+    font-size: 11px;
+    font-weight: 780;
+    white-space: nowrap;
+  }
+
+  .rgvx-checkout-progress {
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .rgvx-checkout-progress > div {
+    padding-top: 10px;
+  }
+
+  .rgvx-clean-header {
+    margin: 30px 0 30px !important;
+  }
+
+  .rgvx-clean-header p,
+  .rgvx-section-heading p,
+  .rgvx-summary-head p {
+    color: var(--rgvx-red-soft) !important;
+  }
+
+  .rgvx-clean-header h1 {
+    margin-top: 8px !important;
+    font-size: clamp(40px, 4.4vw, 54px) !important;
+  }
+
+  .rgvx-clean-header > div > span {
+    margin-top: 11px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  .rgvx-clean-layout {
+    grid-template-columns: minmax(0, 1.7fr) minmax(390px, .92fr) !important;
+    gap: clamp(34px, 4vw, 54px) !important;
+  }
+
+  .rgvx-form-section,
+  .rgvx-shipping-section,
+  .rgvx-flow-section.first,
+  .rgvx-review-confirm {
+    gap: 17px !important;
+    padding: 30px 0 !important;
+  }
+
+  .rgvx-block-title {
+    gap: 11px !important;
+  }
+
+  .rgvx-block-title > svg {
+    width: 32px !important;
+    height: 32px !important;
+    margin-top: 0 !important;
+    border: 1px solid rgba(239, 67, 80, .24);
+    border-radius: 10px;
+    background: rgba(216, 33, 50, .075);
+    padding: 7px;
+    color: var(--rgvx-red-soft) !important;
+  }
+
+  .rgvx-block-title strong,
+  .rgvx-section-heading h2 {
+    font-size: clamp(23px, 2vw, 28px) !important;
+  }
+
+  .rgvx-block-title small,
+  .rgvx-section-heading span,
+  .rgvx-orbit-card-panel .rgvx-block-title small {
+    margin-top: 5px !important;
+    line-height: 1.45 !important;
+  }
+
+  .rgvx-form-grid {
+    gap: 13px 13px !important;
+  }
+
+  .rgvx-field {
+    gap: 7px !important;
+  }
+
+  .rgvx-field input,
+  .rgvx-field select {
+    min-height: 50px !important;
+    border-radius: 12px !important;
+    padding-inline: 14px !important;
+    font-size: 14px !important;
+  }
+
+  .rgvx-address-confirmation {
+    gap: 13px !important;
+    border-color: rgba(239, 67, 80, .13) !important;
+    padding: 15px !important;
+  }
+
+  .rgvx-shipping-options-head {
+    padding-bottom: 5px !important;
+  }
+
+  .rgvx-shipping-option-list {
+    display: grid !important;
+    gap: 7px !important;
+  }
+
+  .rgvx-shipping-option,
+  .rgvx-shipping-option:last-child {
+    min-height: 68px !important;
+    border: 1px solid var(--rgvx-line) !important;
+    border-radius: 14px !important;
+    background: #0c0c0d !important;
+    padding: 10px 12px !important;
+  }
+
+  .rgvx-shipping-option:hover {
+    border-color: rgba(239, 67, 80, .25) !important;
+    background: #121113 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .rgvx-shipping-option.active {
+    border-color: rgba(239, 67, 80, .55) !important;
+    background:
+      linear-gradient(100deg, rgba(216, 33, 50, .14), rgba(216, 33, 50, .025) 48%),
+      #121113 !important;
+    box-shadow: inset 3px 0 0 #e12f40, 0 10px 28px rgba(0, 0, 0, .15) !important;
+  }
+
+  .rgvx-payment-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    border-color: rgba(239, 67, 80, .18) !important;
+    border-radius: 17px !important;
+    padding: 5px !important;
+  }
+
+  .rgvx-payment-option {
+    min-height: 50px !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+  }
+
+  .rgvx-payment-option:hover {
+    border-color: rgba(239, 67, 80, .16) !important;
+    background: rgba(216, 33, 50, .055) !important;
+  }
+
+  .rgvx-payment-option.active {
+    border-color: rgba(255, 105, 117, .38) !important;
+    background: linear-gradient(135deg, #d82132, #a61025) !important;
+    box-shadow: 0 9px 22px rgba(134, 8, 27, .28), inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+  }
+
+  .rgvx-payment-option.active strong {
+    color: #fff !important;
+  }
+
+  .rgvx-orbit-card-panel {
+    gap: 20px !important;
+    padding-bottom: 30px !important;
+  }
+
+  .rgvx-review-confirm {
+    gap: 14px !important;
+  }
+
+  .rgvx-policy {
+    gap: 10px !important;
+    padding-top: 14px !important;
+    line-height: 1.55 !important;
+  }
+
+  .rgvx-final-button {
+    position: relative;
+    min-height: 64px !important;
+    justify-content: space-between !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 116, 127, .42) !important;
+    border-radius: 17px !important;
+    background: linear-gradient(135deg, #ed3042 0%, #c5162d 52%, #961124 100%) !important;
+    padding: 0 11px 0 22px !important;
+    box-shadow: 0 18px 40px rgba(140, 8, 28, .3), inset 0 1px 0 rgba(255, 255, 255, .17) !important;
+  }
+
+  .rgvx-final-button::before {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, .1) 46%, transparent 68%);
+    content: "";
+    transform: translateX(-110%);
+    transition: transform 520ms ease;
+  }
+
+  .rgvx-final-button:hover:not(:disabled)::before {
+    transform: translateX(110%);
+  }
+
+  .rgvx-final-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f43d4f, #d51d33 52%, #a41328) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .rgvx-final-button > span,
+  .rgvx-final-button > svg {
+    position: relative;
+    z-index: 1;
+  }
+
+  .rgvx-final-button > span {
+    display: grid;
+    justify-items: start;
+  }
+
+  .rgvx-final-button > svg {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, .13);
+    padding: 10px;
+  }
+
+  .rgvx-order-summary {
+    top: 88px !important;
+    max-height: calc(100dvh - 106px) !important;
+    border-color: rgba(239, 67, 80, .2) !important;
+    border-radius: 21px !important;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(216, 33, 50, .085), transparent 17rem),
+      #101011 !important;
+    padding: 23px !important;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .025) !important;
+  }
+
+  .rgvx-summary-head {
+    padding-bottom: 16px !important;
+  }
+
+  .rgvx-summary-head h2 {
+    font-size: 26px !important;
+  }
+
+  .rgvx-summary-head > svg {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(239, 67, 80, .25);
+    border-radius: 11px;
+    background: rgba(216, 33, 50, .08);
+    padding: 8px;
+    color: var(--rgvx-red-soft) !important;
+  }
+
+  .rgvx-items-list {
+    padding: 4px 0 !important;
+  }
+
+  .rgvx-summary-item {
+    grid-template-columns: 54px minmax(0, 1fr) auto !important;
+    gap: 12px !important;
+    padding: 12px 0 !important;
+  }
+
+  .rgvx-item-image {
+    width: 52px !important;
+    height: 57px !important;
+    border-color: rgba(239, 67, 80, .15) !important;
+    border-radius: 11px !important;
+  }
+
+  .rgvx-free-progress {
+    gap: 9px !important;
+    padding: 14px 0 !important;
+  }
+
+  .rgvx-free-progress .progress-track {
+    height: 4px !important;
+    border-radius: 999px;
+  }
+
+  .rgvx-free-progress .progress-track span {
+    background: linear-gradient(90deg, #d82132, #ff5361) !important;
+  }
+
+  .rgvx-totals {
+    padding-top: 12px !important;
+  }
+
+  .rgvx-total-row {
+    padding: 6px 0 !important;
+  }
+
+  .rgvx-total-row.total {
+    margin-top: 10px !important;
+    border-color: rgba(239, 67, 80, .18) !important;
+    padding: 16px 0 4px !important;
+  }
+
+  .rgvx-total-row.total strong {
+    font-size: 29px !important;
+    text-shadow: 0 0 24px rgba(239, 67, 80, .12);
+  }
+
+  .rgvx-loyalty-earned,
+  .rgvx-loyalty-progress-card {
+    margin-top: 14px !important;
+    border: 1px solid rgba(239, 67, 80, .35) !important;
+    border-radius: 17px !important;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(239, 67, 80, .19), transparent 54%),
+      linear-gradient(135deg, #181012, #111113 68%) !important;
+    padding: 15px !important;
+    box-shadow: 0 13px 30px rgba(101, 4, 20, .14), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+  }
+
+  .rgvx-loyalty-star {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    border: 1px solid rgba(255, 112, 123, .32);
+    border-radius: 11px;
+    background: linear-gradient(145deg, #ed3042, #a91024) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    box-shadow: 0 7px 18px rgba(216, 33, 50, .22);
+  }
+
+  .rgvx-loyalty-progress-head {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .rgvx-loyalty-earned div > span,
+  .rgvx-loyalty-progress-head div > span {
+    color: #b4a4a7 !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .rgvx-loyalty-earned strong,
+  .rgvx-loyalty-progress-head strong,
+  .rgvx-loyalty-progress-copy strong {
+    color: #fff1f2 !important;
+    font-size: 13px !important;
+    font-weight: 740 !important;
+  }
+
+  .rgvx-loyalty-progress-head b {
+    border: 1px solid rgba(239, 67, 80, .3) !important;
+    border-radius: 999px !important;
+    background: rgba(216, 33, 50, .14) !important;
+    padding: 6px 9px !important;
+    color: #ff9ca5 !important;
+    font-size: 11px !important;
+  }
+
+  .rgvx-loyalty-progress-track {
+    height: 6px !important;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .075) !important;
+  }
+
+  .rgvx-loyalty-progress-track .current {
+    background: #891326 !important;
+  }
+
+  .rgvx-loyalty-progress-track .projected {
+    background: linear-gradient(90deg, #d82132, #ff5361) !important;
+  }
+
+  .rgvx-mini-coupon {
+    margin-top: 14px !important;
+  }
+
+  .rgvx-mini-coupon-action {
+    border-color: rgba(239, 67, 80, .25) !important;
+    background: linear-gradient(180deg, #211719, #171416) !important;
+  }
+
+  .rgvx-mini-coupon-action:hover:not(:disabled) {
+    border-color: rgba(239, 67, 80, .48) !important;
+    background: rgba(216, 33, 50, .13) !important;
+    color: #fff !important;
+    transform: translateY(-1px);
+  }
+
+  .rgvx-summary-trust {
+    margin-top: 18px;
+    border-color: rgba(239, 67, 80, .13);
+    padding-top: 16px;
+  }
+
+  .rgvx-summary-trust svg {
+    color: var(--rgvx-red-soft);
+  }
+
+  :where(.rgvx-shipping-option, .rgvx-payment-option, .rgvx-mini-coupon-action, .rgvx-mobile-summary-toggle) {
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-page {
+      padding-inline: 15px !important;
+    }
+
+    .rgvx-checkout-masthead {
+      min-height: 68px;
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .rgvx-masthead-title {
+      display: none !important;
+    }
+
+    .rgvx-checkout-brand img {
+      width: 148px;
+    }
+
+    .rgvx-checkout-brand > span,
+    .rgvx-checkout-secure-note {
+      display: none;
+    }
+
+    .rgvx-masthead-actions {
+      gap: 0;
+    }
+
+    .rgvx-clean-header {
+      margin: 26px 0 24px !important;
+    }
+
+    .rgvx-clean-layout {
+      grid-template-columns: 1fr !important;
+      gap: 22px !important;
+    }
+
+    .rgvx-order-summary {
+      border-color: rgba(239, 67, 80, .2) !important;
+      padding: 0 18px !important;
+    }
+
+    .rgvx-mobile-summary-toggle {
+      min-height: 60px;
+    }
+
+    .rgvx-order-summary.is-open .rgvx-summary-content {
+      padding-bottom: 18px;
+    }
+
+    .rgvx-final-button {
+      position: static !important;
+      bottom: auto !important;
+      box-shadow: 0 18px 38px rgba(120, 6, 26, .32) !important;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-checkout-progress {
+      gap: 5px;
+      margin-top: 14px;
+    }
+
+    .rgvx-clean-header h1 {
+      font-size: clamp(36px, 11vw, 46px) !important;
+    }
+
+    .rgvx-form-section,
+    .rgvx-shipping-section,
+    .rgvx-flow-section.first,
+    .rgvx-review-confirm {
+      padding: 27px 0 !important;
+    }
+
+    .rgvx-points-chip {
+      min-height: 40px;
+      border-radius: 12px;
+      padding: 5px 8px 5px 5px;
+    }
+
+    .rgvx-points-chip > span {
+      width: 28px;
+      height: 28px;
+      flex-basis: 28px;
+      border-radius: 9px;
+    }
+
+    .rgvx-points-chip small {
+      display: none;
+    }
+
+    .rgvx-points-chip strong {
+      font-size: 10px;
+    }
+
+    .rgvx-payment-switch {
+      gap: 4px !important;
+    }
+
+    .rgvx-payment-option {
+      min-height: 47px !important;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .rgvx-checkout-brand img {
+      width: 126px;
+    }
+
+    .rgvx-points-chip strong {
+      font-size: 9px;
+    }
   }
 
 `;

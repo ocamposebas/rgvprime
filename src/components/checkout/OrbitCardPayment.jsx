@@ -48,6 +48,19 @@ function hasExpressMethods(methods) {
   return Boolean(methods) && Object.values(methods).some((value) => typeof value === "boolean" ? value : Boolean(value?.available));
 }
 
+function getExpressAvailability(methods) {
+  const isAvailable = (method) => {
+    const value = methods?.[method];
+    return typeof value === "boolean" ? value : Boolean(value?.available);
+  };
+
+  return {
+    applePayAvailable: isAvailable("applePay"),
+    googlePayAvailable: isAvailable("googlePay"),
+    linkAvailable: isAvailable("link"),
+  };
+}
+
 async function completePayment({ stripe, elements, context, onCreatePayment }) {
   const submitted = await elements.submit();
   if (submitted.error) throw new Error(submitted.error.message || "Check your payment details and try again.");
@@ -153,7 +166,11 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
   const elements = useElements();
   const [expressStatus, setExpressStatus] = useState("loading");
 
-  function updateExpressStatus(methods) {
+  function updateExpressStatus(methods, reportAvailability = false) {
+    if (reportAvailability) {
+      console.info("ORION_EXPRESS_PAYMENT_METHODS", getExpressAvailability(methods));
+    }
+
     setExpressStatus(hasExpressMethods(methods) ? "available" : "unavailable");
   }
 
@@ -183,11 +200,11 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
     <ExpressCheckoutElement
       onClick={(event) => enabled && !submittingRef.current ? event.resolve() : event.reject()}
       onReady={(event) => updateExpressStatus(event.availablePaymentMethods)}
-      onAvailablePaymentMethodsChange={(event) => updateExpressStatus(event.paymentMethods)}
+      onAvailablePaymentMethodsChange={(event) => updateExpressStatus(event.paymentMethods, true)}
       onLoadError={() => setExpressStatus("unavailable")}
       onConfirm={(event) => void confirmExpress(event)}
       options={{
-        paymentMethods: { applePay: "auto", googlePay: "auto", link: "auto" },
+        paymentMethods: { applePay: "always", googlePay: "auto", link: "auto" },
         paymentMethodOrder: ["apple_pay", "google_pay", "link", "paypal", "amazon_pay", "klarna"],
         buttonHeight: 52,
         buttonTheme: { applePay: "white-outline", googlePay: "black", paypal: "black" },
@@ -246,7 +263,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         submittingRef={submittingRef}
       />
     </Elements>
-    <p className="rgvx-stripe-powered">Securely processed by Stripe</p>
+    <p className="rgvx-stripe-powered">ORION SENTINEL · SECURE PAYMENT</p>
     {submitting && <div className="rgvx-stripe-processing" role="status" aria-live="polite"><span /> Securing payment and confirming your order...</div>}
     <style>{`
       .rgvx-stripe-elements{position:relative;display:grid;gap:22px;min-width:0}.rgvx-express-checkout{display:grid;gap:14px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:92px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:12px;font-weight:650;letter-spacing:.01em}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-top:4px}.rgvx-stripe-divider span{height:1px;background:#312e29}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#827b72;font-size:11px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-4px 0 0;text-align:center}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:10px;min-height:46px;border-radius:14px;background:#1f1b18;color:#eee8df;font-size:12px;font-weight:650}.rgvx-stripe-processing span{width:14px;height:14px;border:2px solid rgba(255,255,255,.16);border-top-color:#c66b62;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:18px}.rgvx-stripe-divider{gap:10px}}
