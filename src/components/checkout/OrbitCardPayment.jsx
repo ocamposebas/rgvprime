@@ -72,6 +72,9 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
   if (tokenError || !confirmationToken) throw new Error(tokenError?.message || "Unable to secure the payment details.");
 
   const checkout = await onCreatePayment(confirmationToken.id);
+  if (!checkout?.clientSecret) {
+    throw new Error("ORBIT could not prepare the secure card payment. Please try again.");
+  }
   const result = await stripe.confirmPayment({
     clientSecret: checkout.clientSecret,
     confirmParams: {
@@ -208,7 +211,6 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         appearance,
         locale: "en",
         loader: "auto",
-        paymentMethodTypes: ["card"],
       },
   [context.clientSecret, context.currency, context.isReturn, context.totalMinor]);
   const expressOptions = useMemo(() => ({
