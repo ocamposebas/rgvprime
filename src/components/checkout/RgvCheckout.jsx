@@ -2339,29 +2339,6 @@ export default function RgvCheckout() {
       <div className="rgvx-background-wash" />
 
       <section className="rgvx-shell">
-        <header className="rgvx-checkout-masthead">
-          <a href="/shop" className="rgvx-checkout-brand" aria-label="RGVPRIME — back to shop">
-            <img src="/logo.webp" alt="RGVPRIME" width="176" height="48" />
-            <span>Research, refined.</span>
-          </a>
-
-          <div className="rgvx-masthead-actions">
-            {estimatedLoyaltyPoints > 0 && (
-              <div className="rgvx-points-chip" aria-label={`You will earn ${formatPoints(estimatedLoyaltyPoints)} loyalty points with this order`}>
-                <span aria-hidden="true">★</span>
-                <div>
-                  <small>You&apos;ll earn</small>
-                  <strong>+{formatPoints(estimatedLoyaltyPoints)} points</strong>
-                </div>
-              </div>
-            )}
-
-            <div className="rgvx-checkout-secure-note">
-              <Lock size={14} /> <span>Encrypted &amp; secure</span>
-            </div>
-          </div>
-        </header>
-
         <header className="rgvx-clean-header">
           <div>
             <p>Private client checkout</p>
@@ -9127,6 +9104,17 @@ const styles = `
     .rgvx-success { order: 6 !important; }
     .rgvx-final-button { order: 7 !important; }
     .rgvx-checkout-assurance { order: 8 !important; }
+  }
+
+  /* The checkout uses the same fixed navigation as the rest of RGVPRIME. */
+  .rgvx-page {
+    padding-top: 134px !important;
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-page {
+      padding-top: 122px !important;
+    }
   }
 
 `;
