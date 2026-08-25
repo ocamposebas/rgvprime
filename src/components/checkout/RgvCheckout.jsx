@@ -7,11 +7,13 @@ import {
   ChevronRight,
   CreditCard,
   FileUp,
+  Gift,
   Lock,
   Mail,
   MapPin,
   PackageCheck,
   ShieldCheck,
+  Sparkles,
   Tag,
   Truck,
   X,
@@ -976,7 +978,6 @@ export default function RgvCheckout() {
   );
   const projectedLoyaltyPoints =
     currentLoyaltyPoints + estimatedLoyaltyPoints;
-  const pointsMissingNow = Math.max(0, loyaltyGoal - currentLoyaltyPoints);
   const pointsMissingAfterOrder = Math.max(
     0,
     loyaltyGoal - projectedLoyaltyPoints
@@ -2360,7 +2361,96 @@ export default function RgvCheckout() {
               A calm, secure checkout for your RGVPRIME order.
             </span>
           </div>
+
+          <div className="rgvx-header-confidence" aria-label="Secure checkout status">
+            <ShieldCheck size={17} />
+            <span>Private &amp; encrypted</span>
+            <strong>{displayedSummaryItems.length} {displayedSummaryItems.length === 1 ? "item" : "items"} ready</strong>
+          </div>
         </header>
+
+        <section className="rgvx-benefit-dashboard" aria-label="Shipping and loyalty progress">
+          <article className={`rgvx-benefit-card shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
+            <div className="rgvx-benefit-head">
+              <span className="rgvx-benefit-icon" aria-hidden="true"><Truck size={19} /></span>
+              <div>
+                <small>Shipping milestone</small>
+                <strong>{freeShippingUnlocked ? "Free shipping unlocked" : `${formatMoney(amountUntilFreeShipping)} to free shipping`}</strong>
+              </div>
+              <em>{freeShippingUnlocked ? "Unlocked" : `${progressWidth}%`}</em>
+            </div>
+
+            <p>
+              {freeShippingUnlocked
+                ? "You made it — eligible delivery options are now free."
+                : `Add ${formatMoney(amountUntilFreeShipping)} more to reach the ${formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} reward.`}
+            </p>
+
+            <div
+              className="rgvx-benefit-track"
+              role="progressbar"
+              aria-label="Free shipping progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={progressWidth}
+            >
+              <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
+              <i aria-hidden="true"><PackageCheck size={12} /></i>
+            </div>
+
+            <footer>
+              <span>{formatMoney(cartTotal)} in your cart</span>
+              <strong>{formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} goal</strong>
+            </footer>
+          </article>
+
+          <article className={`rgvx-benefit-card loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
+            <div className="rgvx-benefit-head">
+              <span className="rgvx-benefit-icon" aria-hidden="true"><Gift size={19} /></span>
+              <div>
+                <small>Loyalty rewards</small>
+                <strong>
+                  {sessionCustomer
+                    ? `${formatPoints(projectedLoyaltyPoints)} points after checkout`
+                    : `Earn ${formatPoints(estimatedLoyaltyPoints)} points today`}
+                </strong>
+              </div>
+              <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
+            </div>
+
+            <p>
+              {pointsMissingAfterOrder === 0
+                ? `This order puts you at your ${formatPoints(loyaltyGoal)}-point reward.`
+                : sessionCustomer
+                  ? `Only ${formatPoints(pointsMissingAfterOrder)} points will remain after this order.`
+                  : "Every completed order moves you closer to your next member reward."}
+            </p>
+
+            <div
+              className="rgvx-benefit-track"
+              role="progressbar"
+              aria-label="Loyalty reward progress after this order"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={Math.round(projectedLoyaltyProgress)}
+            >
+              <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
+              <span
+                className="loyalty-projected"
+                style={{
+                  left: `${currentLoyaltyProgress}%`,
+                  width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
+                }}
+              />
+              <i aria-hidden="true"><Sparkles size={12} /></i>
+            </div>
+
+            <footer>
+              <span>{sessionCustomer ? `${formatPoints(currentLoyaltyPoints)} points now` : "Points added after completion"}</span>
+              <strong>{formatPoints(loyaltyGoal)} reward</strong>
+            </footer>
+          </article>
+        </section>
 
         <div className="rgvx-clean-layout">
           <section className="rgvx-flow">
@@ -2783,20 +2873,6 @@ export default function RgvCheckout() {
                 ))}
             </div>
 
-            <div className="rgvx-free-progress">
-              <div>
-                <span>Free shipping starts at {formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)}</span>
-                <strong>
-                  {freeShippingUnlocked
-                    ? FREE_SHIPPING_LABEL
-                    : `${formatMoney(amountUntilFreeShipping)} away`}
-                </strong>
-              </div>
-              <div className="progress-track">
-                <span style={{ width: `${progressWidth}%` }} />
-              </div>
-            </div>
-
             <div className="rgvx-totals">
               <div className="rgvx-total-row">
                 <span>Subtotal</span>
@@ -2823,66 +2899,6 @@ export default function RgvCheckout() {
                 <span>{isZelleSelected ? "Due now" : "Total USD"}</span>
                 <strong>{formatMoney(summaryTotal)}</strong>
               </div>
-
-              {estimatedLoyaltyPoints > 0 && (
-                sessionCustomer ? (
-                  <div className="rgvx-loyalty-progress-card" aria-live="polite">
-                    <div className="rgvx-loyalty-progress-head">
-                      <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
-                      <div>
-                        <span>Your reward progress</span>
-                        <strong>
-                          {formatPoints(currentLoyaltyPoints)} current points
-                        </strong>
-                      </div>
-                      <b>+{formatPoints(estimatedLoyaltyPoints)}</b>
-                    </div>
-
-                    <div className="rgvx-loyalty-progress-track">
-                      <span
-                        className="current"
-                        style={{ width: `${currentLoyaltyProgress}%` }}
-                      />
-                      <span
-                        className="projected"
-                        style={{
-                          left: `${currentLoyaltyProgress}%`,
-                          width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="rgvx-loyalty-progress-copy">
-                      {pointsMissingNow === 0 ? (
-                        <strong>Your {formatPoints(loyaltyGoal)}-point reward is already unlocked.</strong>
-                      ) : pointsMissingAfterOrder === 0 ? (
-                        <strong>
-                          This order unlocks your {formatPoints(loyaltyGoal)}-point reward.
-                        </strong>
-                      ) : (
-                        <>
-                          <span>
-                            You need {formatPoints(pointsMissingNow)} more points today.
-                          </span>
-                          <strong>
-                            After this order, only {formatPoints(pointsMissingAfterOrder)} remain.
-                          </strong>
-                        </>
-                      )}
-                      <small>Order points are added after completion.</small>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rgvx-loyalty-earned" aria-live="polite">
-                    <span className="rgvx-loyalty-star" aria-hidden="true">★</span>
-                    <div>
-                      <span>You’ll earn</span>
-                      <strong>{formatPoints(estimatedLoyaltyPoints)} Loyalty Points</strong>
-                      <small>Sign in to track progress toward your reward.</small>
-                    </div>
-                  </div>
-                )
-              )}
 
               <details className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
                 <summary className="rgvx-mini-coupon-header">
@@ -9162,6 +9178,387 @@ const styles = `
 
   @keyframes rgvx-checkout-loading-spin {
     to { transform: rotate(360deg); }
+  }
+
+  /* Checkout clarity pass: rewards first, then details, then payment. */
+  .rgvx-clean-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    margin-bottom: 18px !important;
+  }
+
+  .rgvx-header-confidence {
+    display: grid;
+    grid-template-columns: 38px auto;
+    align-items: center;
+    gap: 2px 10px;
+    min-width: 210px;
+    width: auto !important;
+    justify-self: end;
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-radius: 15px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .018));
+    padding: 11px 13px;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .045);
+  }
+
+  .rgvx-header-confidence svg {
+    grid-row: 1 / 3;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: rgba(16, 185, 129, .1);
+    padding: 10px;
+    color: #6ee7b7;
+  }
+
+  .rgvx-header-confidence span {
+    color: rgba(255, 255, 255, .42);
+    font-size: 8px;
+    font-weight: 850;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-header-confidence strong {
+    color: rgba(255, 255, 255, .9);
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .rgvx-benefit-dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .rgvx-benefit-card {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    gap: 11px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(18, 18, 20, .96), rgba(8, 8, 10, .98));
+    padding: 17px 18px 15px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .22), inset 0 1px rgba(255, 255, 255, .04);
+    isolation: isolate;
+  }
+
+  .rgvx-benefit-card::before {
+    position: absolute;
+    z-index: -1;
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    content: "";
+    filter: blur(2px);
+    opacity: .5;
+    pointer-events: none;
+    transform: translate(38%, -55%);
+    inset: 0 0 auto auto;
+  }
+
+  .rgvx-benefit-card.shipping::before {
+    background: radial-gradient(circle, rgba(16, 185, 129, .2), transparent 68%);
+  }
+
+  .rgvx-benefit-card.loyalty::before {
+    background: radial-gradient(circle, rgba(245, 158, 11, .2), transparent 68%);
+  }
+
+  .rgvx-benefit-card.shipping.is-unlocked {
+    border-color: rgba(52, 211, 153, .34);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, .23), inset 0 0 30px rgba(16, 185, 129, .045);
+  }
+
+  .rgvx-benefit-card.loyalty.is-unlocked {
+    border-color: rgba(251, 191, 36, .34);
+  }
+
+  .rgvx-benefit-head {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rgvx-benefit-icon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+  }
+
+  .rgvx-benefit-card.shipping .rgvx-benefit-icon {
+    background: rgba(16, 185, 129, .1);
+    color: #6ee7b7;
+  }
+
+  .rgvx-benefit-card.loyalty .rgvx-benefit-icon {
+    background: rgba(245, 158, 11, .11);
+    color: #fcd34d;
+  }
+
+  .rgvx-benefit-head > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .rgvx-benefit-head small {
+    color: rgba(255, 255, 255, .4);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-benefit-head strong {
+    overflow: hidden;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: -.015em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rgvx-benefit-head em {
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .045);
+    padding: 6px 9px;
+    color: rgba(255, 255, 255, .82);
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .rgvx-benefit-card.shipping .rgvx-benefit-head em {
+    border-color: rgba(52, 211, 153, .18);
+    background: rgba(16, 185, 129, .08);
+    color: #a7f3d0;
+  }
+
+  .rgvx-benefit-card.loyalty .rgvx-benefit-head em {
+    border-color: rgba(251, 191, 36, .2);
+    background: rgba(245, 158, 11, .08);
+    color: #fde68a;
+  }
+
+  .rgvx-benefit-card > p {
+    min-height: 29px;
+    margin: 0;
+    color: rgba(255, 255, 255, .48);
+    font-size: 10px;
+    font-weight: 650;
+    line-height: 1.45;
+  }
+
+  .rgvx-benefit-track {
+    position: relative;
+    height: 11px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .055);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .055);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, .35);
+  }
+
+  .rgvx-benefit-track > span {
+    position: absolute;
+    inset-block: 0;
+    display: block;
+    min-width: 3px;
+    transition: width 420ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .rgvx-benefit-track .shipping-fill {
+    left: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #059669, #34d399 72%, #a7f3d0);
+    box-shadow: 0 0 16px rgba(52, 211, 153, .34);
+  }
+
+  .rgvx-benefit-track .loyalty-current {
+    left: 0;
+    z-index: 1;
+    background: linear-gradient(90deg, #b45309, #f59e0b);
+  }
+
+  .rgvx-benefit-track .loyalty-projected {
+    z-index: 2;
+    background: repeating-linear-gradient(135deg, #fcd34d 0, #fcd34d 6px, #d97706 6px, #d97706 11px);
+    box-shadow: 0 0 14px rgba(245, 158, 11, .3);
+  }
+
+  .rgvx-benefit-track > i {
+    position: absolute;
+    z-index: 4;
+    inset: 50% 1px auto auto;
+    display: grid;
+    width: 17px;
+    height: 17px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 50%;
+    background: #171719;
+    color: rgba(255, 255, 255, .72);
+    transform: translateY(-50%);
+  }
+
+  .rgvx-benefit-card.shipping .rgvx-benefit-track > i { color: #6ee7b7; }
+  .rgvx-benefit-card.loyalty .rgvx-benefit-track > i { color: #fcd34d; }
+
+  .rgvx-benefit-card footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: rgba(255, 255, 255, .34);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-benefit-card footer strong {
+    color: rgba(255, 255, 255, .62);
+    font-size: inherit;
+    font-weight: 900;
+  }
+
+  .rgvx-clean-layout {
+    grid-template-columns: minmax(0, 1fr) 372px !important;
+    gap: 22px !important;
+  }
+
+  .rgvx-flow {
+    border: 1px solid rgba(255, 255, 255, .085);
+    border-radius: 24px;
+    background: linear-gradient(155deg, rgba(16, 16, 18, .92), rgba(8, 8, 10, .96));
+    padding: 26px;
+    box-shadow: 0 22px 55px rgba(0, 0, 0, .2), inset 0 1px rgba(255, 255, 255, .035);
+  }
+
+  .rgvx-zelle-area {
+    margin-top: 0 !important;
+    border-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .rgvx-order-summary {
+    top: 92px !important;
+    border: 1px solid rgba(255, 255, 255, .1) !important;
+    border-radius: 22px !important;
+    background: linear-gradient(155deg, rgba(17, 17, 19, .97), rgba(7, 7, 9, .985)) !important;
+    padding: 19px !important;
+    box-shadow: 0 22px 55px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .04) !important;
+  }
+
+  .rgvx-summary-head {
+    border-bottom-color: rgba(255, 255, 255, .075) !important;
+  }
+
+  .rgvx-total-row.total {
+    border-top-color: rgba(239, 67, 80, .2) !important;
+  }
+
+  .rgvx-review-confirm {
+    border: 1px solid rgba(255, 255, 255, .075) !important;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .018);
+    padding: 18px !important;
+  }
+
+  @media (max-width: 980px) {
+    .rgvx-clean-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rgvx-flow {
+      border-radius: 22px;
+      padding: 22px;
+    }
+
+    .rgvx-order-summary {
+      top: auto !important;
+      border-radius: 20px !important;
+      padding: 0 16px !important;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .rgvx-clean-header {
+      display: block !important;
+      grid-template-columns: none !important;
+    }
+
+    .rgvx-header-confidence {
+      display: none;
+    }
+
+    .rgvx-benefit-dashboard {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .rgvx-benefit-card {
+      border-radius: 17px;
+      padding: 14px 15px 13px;
+    }
+
+    .rgvx-benefit-card > p {
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-flow {
+      border-radius: 19px;
+      padding: 15px;
+    }
+
+    .rgvx-benefit-head {
+      grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .rgvx-benefit-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+
+    .rgvx-benefit-head strong {
+      font-size: 12px;
+    }
+
+    .rgvx-benefit-head em {
+      padding: 5px 7px;
+      font-size: 8px;
+    }
+
+    .rgvx-benefit-card footer {
+      font-size: 7px;
+    }
+
+    .rgvx-review-confirm {
+      border-radius: 15px;
+      padding: 15px !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rgvx-benefit-track > span { transition: none; }
   }
 
 `;
