@@ -277,9 +277,9 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
       onConfirm={(event) => void confirmExpress(event)}
       options={{
         paymentMethods: { applePay: "always", googlePay: "auto", link: "auto" },
-        paymentMethodOrder: ["apple_pay", "google_pay", "link", "paypal", "amazon_pay", "klarna"],
+        paymentMethodOrder: ["apple_pay", "google_pay", "link"],
         buttonHeight: 46,
-        buttonTheme: { applePay: "white-outline", googlePay: "black", paypal: "black" },
+        buttonTheme: { applePay: "white-outline", googlePay: "black" },
         layout: { maxColumns: 3, maxRows: 0, overflow: "never" },
       }}
     />
@@ -319,7 +319,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
     mode: "payment",
     amount: context.totalMinor,
     currency: context.currency.toLowerCase(),
-    paymentMethodTypes: ["card", "link", "paypal", "amazon_pay", "klarna"],
+    paymentMethodTypes: ["card", "link"],
     appearance,
     locale: "en",
     loader: "auto",
