@@ -13,7 +13,6 @@ import {
   MapPin,
   PackageCheck,
   ShieldCheck,
-  Sparkles,
   Tag,
   Truck,
   X,
@@ -2362,94 +2361,77 @@ export default function RgvCheckout() {
             </span>
           </div>
 
-          <div className="rgvx-header-confidence" aria-label="Secure checkout status">
-            <ShieldCheck size={17} />
-            <span>Private &amp; encrypted</span>
-            <strong>{displayedSummaryItems.length} {displayedSummaryItems.length === 1 ? "item" : "items"} ready</strong>
-          </div>
         </header>
 
-        <section className="rgvx-benefit-dashboard" aria-label="Shipping and loyalty progress">
-          <article className={`rgvx-benefit-card shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
-            <div className="rgvx-benefit-head">
-              <span className="rgvx-benefit-icon" aria-hidden="true"><Truck size={19} /></span>
-              <div>
-                <small>Shipping milestone</small>
-                <strong>{freeShippingUnlocked ? "Free shipping unlocked" : `${formatMoney(amountUntilFreeShipping)} to free shipping`}</strong>
+        <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
+          <div className="rgvx-reward-rail-title">
+            <span>Your order benefits</span>
+            <small>Progress updates automatically</small>
+          </div>
+
+          <div className="rgvx-reward-rail-grid">
+            <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
+              <div className="rgvx-reward-line-head">
+                <span className="rgvx-reward-cta"><Truck size={16} /> Free shipping</span>
+                <div>
+                  <small>Shipping goal</small>
+                  <strong>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</strong>
+                </div>
+                <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
               </div>
-              <em>{freeShippingUnlocked ? "Unlocked" : `${progressWidth}%`}</em>
-            </div>
 
-            <p>
-              {freeShippingUnlocked
-                ? "You made it — eligible delivery options are now free."
-                : `Add ${formatMoney(amountUntilFreeShipping)} more to reach the ${formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} reward.`}
-            </p>
-
-            <div
-              className="rgvx-benefit-track"
-              role="progressbar"
-              aria-label="Free shipping progress"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow={progressWidth}
-            >
-              <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
-              <i aria-hidden="true"><PackageCheck size={12} /></i>
-            </div>
-
-            <footer>
-              <span>{formatMoney(cartTotal)} in your cart</span>
-              <strong>{formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} goal</strong>
-            </footer>
-          </article>
-
-          <article className={`rgvx-benefit-card loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
-            <div className="rgvx-benefit-head">
-              <span className="rgvx-benefit-icon" aria-hidden="true"><Gift size={19} /></span>
-              <div>
-                <small>Loyalty rewards</small>
-                <strong>
-                  {sessionCustomer
-                    ? `${formatPoints(projectedLoyaltyPoints)} points after checkout`
-                    : `Earn ${formatPoints(estimatedLoyaltyPoints)} points today`}
-                </strong>
+              <div
+                className="rgvx-reward-track"
+                role="progressbar"
+                aria-label="Free shipping progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={progressWidth}
+              >
+                <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
               </div>
-              <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
+
+              <footer><span>{formatMoney(cartTotal)} cart</span><strong>{formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} goal</strong></footer>
             </div>
 
-            <p>
-              {pointsMissingAfterOrder === 0
-                ? `This order puts you at your ${formatPoints(loyaltyGoal)}-point reward.`
-                : sessionCustomer
-                  ? `Only ${formatPoints(pointsMissingAfterOrder)} points will remain after this order.`
-                  : "Every completed order moves you closer to your next member reward."}
-            </p>
+            <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
+              <div className="rgvx-reward-line-head">
+                <span className="rgvx-reward-cta"><Gift size={16} /> Loyalty points</span>
+                <div>
+                  <small>After checkout</small>
+                  <strong>
+                    {sessionCustomer
+                      ? `${formatPoints(projectedLoyaltyPoints)} total points`
+                      : `Earn ${formatPoints(estimatedLoyaltyPoints)} points`}
+                  </strong>
+                </div>
+                <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
+              </div>
 
-            <div
-              className="rgvx-benefit-track"
-              role="progressbar"
-              aria-label="Loyalty reward progress after this order"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow={Math.round(projectedLoyaltyProgress)}
-            >
-              <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
-              <span
-                className="loyalty-projected"
-                style={{
-                  left: `${currentLoyaltyProgress}%`,
-                  width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
-                }}
-              />
-              <i aria-hidden="true"><Sparkles size={12} /></i>
+              <div
+                className="rgvx-reward-track"
+                role="progressbar"
+                aria-label="Loyalty reward progress after this order"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={Math.round(projectedLoyaltyProgress)}
+              >
+                <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
+                <span
+                  className="loyalty-projected"
+                  style={{
+                    left: `${currentLoyaltyProgress}%`,
+                    width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
+                  }}
+                />
+              </div>
+
+              <footer>
+                <span>{sessionCustomer ? `${formatPoints(currentLoyaltyPoints)} now` : "Added after completion"}</span>
+                <strong>{formatPoints(loyaltyGoal)} reward</strong>
+              </footer>
             </div>
-
-            <footer>
-              <span>{sessionCustomer ? `${formatPoints(currentLoyaltyPoints)} points now` : "Points added after completion"}</span>
-              <strong>{formatPoints(loyaltyGoal)} reward</strong>
-            </footer>
-          </article>
+          </div>
         </section>
 
         <div className="rgvx-clean-layout">
@@ -9559,6 +9541,270 @@ const styles = `
 
   @media (prefers-reduced-motion: reduce) {
     .rgvx-benefit-track > span { transition: none; }
+  }
+
+  /* Open rewards rail inspired by the home hero CTAs. */
+  .rgvx-reward-rail {
+    margin: 0 0 28px;
+    border-top: 1px solid rgba(255, 255, 255, .085);
+    border-bottom: 1px solid rgba(255, 255, 255, .085);
+    padding: 15px 0 17px;
+  }
+
+  .rgvx-reward-rail-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .rgvx-reward-rail-title span {
+    color: #f5f5f5;
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-reward-rail-title small {
+    color: rgba(255, 255, 255, .32);
+    font-size: 8px;
+    font-weight: 750;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-reward-rail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rgvx-reward-line {
+    display: grid;
+    min-width: 0;
+    gap: 9px;
+    padding-right: 26px;
+  }
+
+  .rgvx-reward-line + .rgvx-reward-line {
+    border-left: 1px solid rgba(255, 255, 255, .085);
+    padding-right: 0;
+    padding-left: 26px;
+  }
+
+  .rgvx-reward-line-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .rgvx-reward-cta {
+    position: relative;
+    display: inline-flex;
+    min-height: 39px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    padding: 0 15px;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: .12em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .rgvx-reward-cta::before {
+    position: absolute;
+    inset: 0 18px auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+    content: "";
+  }
+
+  .rgvx-reward-line.shipping .rgvx-reward-cta {
+    border: 1px solid rgba(248, 113, 113, .25);
+    background: linear-gradient(90deg, #b91c1c, #dc2626, #b91c1c);
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(220, 38, 38, .2);
+  }
+
+  .rgvx-reward-line.loyalty .rgvx-reward-cta {
+    border: 1px solid rgba(255, 255, 255, .13);
+    background: rgba(255, 255, 255, .045);
+    color: rgba(255, 255, 255, .88);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+  }
+
+  .rgvx-reward-line.loyalty .rgvx-reward-cta svg {
+    color: #ef4444;
+  }
+
+  .rgvx-reward-line-head > div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .rgvx-reward-line-head small {
+    color: rgba(255, 255, 255, .34);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-reward-line-head strong {
+    overflow: hidden;
+    color: rgba(255, 255, 255, .92);
+    font-size: 11px;
+    font-weight: 850;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rgvx-reward-line-head em {
+    color: #f87171;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .rgvx-reward-track {
+    position: relative;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .075);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4);
+  }
+
+  .rgvx-reward-track > span {
+    position: absolute;
+    inset-block: 0;
+    display: block;
+    min-width: 2px;
+    transition: width 360ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .rgvx-reward-track .shipping-fill {
+    left: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #991b1b, #ef4444 72%, #fca5a5);
+    box-shadow: 0 0 12px rgba(239, 68, 68, .25);
+  }
+
+  .rgvx-reward-track .loyalty-current {
+    left: 0;
+    z-index: 1;
+    background: #991b1b;
+  }
+
+  .rgvx-reward-track .loyalty-projected {
+    z-index: 2;
+    background: repeating-linear-gradient(135deg, #ef4444 0, #ef4444 5px, #fca5a5 5px, #fca5a5 9px);
+  }
+
+  .rgvx-reward-line footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: rgba(255, 255, 255, .28);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .rgvx-reward-line footer strong {
+    color: rgba(255, 255, 255, .48);
+    font-size: inherit;
+    font-weight: 900;
+  }
+
+  .rgvx-flow {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .rgvx-review-confirm {
+    margin-top: 22px !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, .09) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 22px 0 0 !important;
+  }
+
+  .rgvx-clean-layout {
+    gap: 34px !important;
+  }
+
+  @media (max-width: 760px) {
+    .rgvx-reward-rail {
+      margin-bottom: 20px;
+      padding-block: 13px 15px;
+    }
+
+    .rgvx-reward-rail-title {
+      margin-bottom: 12px;
+    }
+
+    .rgvx-reward-rail-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .rgvx-reward-line {
+      padding-right: 0;
+    }
+
+    .rgvx-reward-line + .rgvx-reward-line {
+      border-top: 1px solid rgba(255, 255, 255, .075);
+      border-left: 0;
+      padding-top: 14px;
+      padding-left: 0;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .rgvx-reward-rail-title small {
+      display: none;
+    }
+
+    .rgvx-reward-line-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 10px;
+    }
+
+    .rgvx-reward-cta {
+      justify-self: start;
+      min-height: 36px;
+      padding-inline: 13px;
+    }
+
+    .rgvx-reward-line-head > div {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .rgvx-reward-line-head em {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rgvx-reward-track > span { transition: none; }
   }
 
 `;
