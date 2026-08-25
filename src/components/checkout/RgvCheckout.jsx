@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Building2,
+  Check,
   ChevronDown,
   ChevronRight,
   CreditCard,
@@ -2693,39 +2694,51 @@ export default function RgvCheckout() {
                 <span>Accept the required terms to unlock your payment options.</span>
               </div>
 
-              <label className={`rgvx-policy ${!policyAcknowledged && error ? "warning" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={policyAcknowledged}
-                  onChange={(event) => {
-                    setPolicyAcknowledged(event.target.checked);
-                    if (event.target.checked) setError("");
-                  }}
-                />
+              <label className={`rgvx-policy ${policyAcknowledged ? "is-checked" : ""} ${!policyAcknowledged && error ? "warning" : ""}`}>
+                <span className="rgvx-policy-control">
+                  <input
+                    type="checkbox"
+                    checked={policyAcknowledged}
+                    onChange={(event) => {
+                      setPolicyAcknowledged(event.target.checked);
+                      if (event.target.checked) setError("");
+                    }}
+                  />
+                  <Check size={15} aria-hidden="true" />
+                </span>
 
-                <span>
-                  I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
-                  laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
-                  <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
-                  <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
+                <span className="rgvx-policy-copy">
+                  <strong>Age &amp; research-use confirmation</strong>
+                  <span>
+                    I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
+                    laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
+                    <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
+                    <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
+                  </span>
                 </span>
               </label>
 
-              <label className={`rgvx-policy ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={finalSaleAcknowledged}
-                  onChange={(event) => {
-                    setFinalSaleAcknowledged(event.target.checked);
-                    if (event.target.checked) setError("");
-                  }}
-                />
+              <label className={`rgvx-policy ${finalSaleAcknowledged ? "is-checked" : ""} ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
+                <span className="rgvx-policy-control">
+                  <input
+                    type="checkbox"
+                    checked={finalSaleAcknowledged}
+                    onChange={(event) => {
+                      setFinalSaleAcknowledged(event.target.checked);
+                      if (event.target.checked) setError("");
+                    }}
+                  />
+                  <Check size={15} aria-hidden="true" />
+                </span>
 
-                <span>
-                  I understand and acknowledge that, due to the nature of these products, all sales
-                  are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
-                  reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
-                  <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
+                <span className="rgvx-policy-copy">
+                  <strong>Final-sale acknowledgement</strong>
+                  <span>
+                    I understand and acknowledge that, due to the nature of these products, all sales
+                    are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
+                    reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
+                    <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
+                  </span>
                 </span>
               </label>
             </section>
@@ -9803,8 +9816,289 @@ const styles = `
     }
   }
 
+  /* Spacious confirmation and home-inspired payment actions. */
+  .rgvx-review-confirm {
+    display: grid !important;
+    gap: 0 !important;
+    margin-top: 42px !important;
+    padding: 44px 0 48px !important;
+  }
+
+  .rgvx-review-confirm .rgvx-section-heading {
+    margin-bottom: 25px !important;
+  }
+
+  .rgvx-review-confirm .rgvx-section-heading h2,
+  .rgvx-payment-section .rgvx-section-heading h2 {
+    font-size: clamp(27px, 2.7vw, 34px) !important;
+    font-weight: 700 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .rgvx-review-confirm .rgvx-section-heading span,
+  .rgvx-payment-section .rgvx-section-heading span {
+    margin-top: 7px !important;
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  .rgvx-review-confirm > .rgvx-policy {
+    display: grid !important;
+    min-height: 96px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    align-items: flex-start !important;
+    gap: 18px !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, .09) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 21px 2px !important;
+    color: rgba(255, 255, 255, .58) !important;
+    cursor: pointer;
+    transition: color 180ms ease, background 180ms ease !important;
+  }
+
+  .rgvx-review-confirm > .rgvx-policy:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, .09) !important;
+  }
+
+  .rgvx-review-confirm > .rgvx-policy:hover {
+    background: linear-gradient(90deg, rgba(216, 33, 50, .045), transparent 72%) !important;
+    color: rgba(255, 255, 255, .72) !important;
+  }
+
+  .rgvx-policy-control {
+    position: relative;
+    display: grid !important;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    margin-top: 2px;
+  }
+
+  .rgvx-policy-control input[type="checkbox"] {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    appearance: none !important;
+    border: 1px solid rgba(255, 255, 255, .24) !important;
+    border-radius: 50% !important;
+    outline: 0 !important;
+    background: rgba(255, 255, 255, .025) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  .rgvx-policy-control input[type="checkbox"]:focus-visible {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, .18) !important;
+  }
+
+  .rgvx-policy-control svg {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(.65);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .rgvx-policy.is-checked .rgvx-policy-control input[type="checkbox"] {
+    border-color: #ef4454 !important;
+    background: linear-gradient(135deg, #ef3e50, #a91027) !important;
+    box-shadow: 0 8px 20px rgba(170, 16, 39, .24), inset 0 1px 0 rgba(255, 255, 255, .2) !important;
+  }
+
+  .rgvx-policy.is-checked .rgvx-policy-control svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .rgvx-policy-copy {
+    display: grid !important;
+    gap: 7px !important;
+    color: inherit !important;
+  }
+
+  .rgvx-policy-copy > strong {
+    color: rgba(255, 255, 255, .92) !important;
+    font-size: 14px !important;
+    font-weight: 750 !important;
+    letter-spacing: -.01em !important;
+    line-height: 1.3 !important;
+  }
+
+  .rgvx-policy-copy > span {
+    max-width: 780px;
+    color: inherit !important;
+    font-size: 12px !important;
+    font-weight: 450 !important;
+    line-height: 1.7 !important;
+  }
+
+  .rgvx-policy-copy a {
+    color: #f0d2ab !important;
+    font-weight: 650 !important;
+  }
+
+  .rgvx-payment-section {
+    display: grid !important;
+    gap: 25px !important;
+    border-top: 1px solid rgba(255, 255, 255, .09) !important;
+    padding: 46px 0 48px !important;
+  }
+
+  .rgvx-payment-switch {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option {
+    position: relative;
+    display: grid !important;
+    min-height: 68px !important;
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    gap: 12px !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .13) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, .045) !important;
+    padding: 0 24px !important;
+    color: rgba(255, 255, 255, .84) !important;
+    text-align: left !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055) !important;
+    transform: none !important;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option::before {
+    position: absolute;
+    inset: 0 34px auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
+    content: "";
+    opacity: .55;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option:hover:not(:disabled) {
+    border-color: rgba(248, 113, 113, .32) !important;
+    background: rgba(239, 68, 68, .07) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 30px rgba(0, 0, 0, .2) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option.active {
+    border-color: rgba(248, 113, 113, .36) !important;
+    background: linear-gradient(90deg, #ae1229, #dc263a 52%, #ae1229) !important;
+    color: #fff !important;
+    box-shadow: 0 16px 36px rgba(174, 18, 41, .27), inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option > svg {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px !important;
+    padding: 0 !important;
+    color: #ef6673 !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option.active > svg {
+    color: #fff !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option span {
+    display: grid !important;
+    min-width: 0;
+    gap: 3px !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option strong {
+    color: inherit !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    letter-spacing: .08em !important;
+    line-height: 1.15 !important;
+    text-transform: uppercase !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option small {
+    display: block !important;
+    overflow: hidden;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, .52) !important;
+    font-size: 9.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option.active small {
+    color: rgba(255, 255, 255, .76) !important;
+  }
+
+  .rgvx-payment-switch .rgvx-payment-option em {
+    display: none !important;
+  }
+
+  @media (max-width: 620px) {
+    .rgvx-review-confirm {
+      margin-top: 28px !important;
+      padding: 34px 0 38px !important;
+    }
+
+    .rgvx-review-confirm .rgvx-section-heading {
+      margin-bottom: 21px !important;
+    }
+
+    .rgvx-review-confirm > .rgvx-policy {
+      min-height: 0 !important;
+      gap: 14px !important;
+      padding: 19px 0 !important;
+    }
+
+    .rgvx-policy-copy > strong {
+      font-size: 13px !important;
+    }
+
+    .rgvx-policy-copy > span {
+      font-size: 11px !important;
+      line-height: 1.65 !important;
+    }
+
+    .rgvx-payment-section {
+      gap: 21px !important;
+      padding: 36px 0 38px !important;
+    }
+
+    .rgvx-payment-switch {
+      grid-template-columns: 1fr !important;
+      gap: 11px !important;
+    }
+
+    .rgvx-payment-switch .rgvx-payment-option {
+      min-height: 64px !important;
+      border-radius: 18px !important;
+      padding-inline: 21px !important;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .rgvx-reward-track > span { transition: none; }
+    .rgvx-reward-track > span,
+    .rgvx-payment-option,
+    .rgvx-policy-control svg { transition: none; }
   }
 
 `;
