@@ -3,6 +3,9 @@ import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStrip
 import { loadStripe } from "@stripe/stripe-js";
 
 const stripeClients = new Map();
+const PAYMENT_METHOD_CONFIGURATION_ID = String(
+  import.meta.env.PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID || "pmc_1U73G7Il4GfQ7wyOLVk9cYHV",
+).trim();
 const appearance = {
   theme: "night",
   inputs: "spaced",
@@ -319,7 +322,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
     mode: "payment",
     amount: context.totalMinor,
     currency: context.currency.toLowerCase(),
-    paymentMethodTypes: ["card", "link"],
+    paymentMethodConfiguration: PAYMENT_METHOD_CONFIGURATION_ID,
     appearance,
     locale: "en",
     loader: "auto",
