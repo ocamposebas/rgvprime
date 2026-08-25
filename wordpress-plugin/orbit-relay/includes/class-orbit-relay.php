@@ -28,6 +28,7 @@ final class ORBIT_Relay {
     }
 
     public function init(): void {
+        ORBIT_Relay_Coupon_Guard::init();
         ORBIT_Relay_Card_Checkout::init();
         ORBIT_Relay_REST::init();
         ORBIT_Relay_Admin::init();
