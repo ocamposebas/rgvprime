@@ -117,7 +117,11 @@ function withSecurityHeaders(response: Response, requestUrl: URL) {
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), payment=(self)",
+    // Stripe's Express Checkout Element renders wallet buttons in a
+    // cross-origin iframe. The iframe's `allow="payment *"` attribute can
+    // narrow this permission, but it cannot override a `payment=(self)`
+    // response policy from the top-level checkout page.
+    "camera=(), microphone=(), geolocation=(), payment=*",
   );
 
   if (requestUrl.protocol === "https:") {
