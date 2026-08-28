@@ -12,7 +12,6 @@ import {
   Lock,
   Mail,
   MapPin,
-  PackageCheck,
   ShieldCheck,
   Tag,
   Truck,
@@ -31,6 +30,7 @@ import {
 } from "../../lib/loyaltyProgram";
 import { getMeOnce } from "../../lib/accountSession";
 import OrbitCardPayment from "./OrbitCardPayment";
+import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -51,7 +51,7 @@ const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 const FREE_SHIPPING_MINIMUM = 200;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
 const FREE_SHIPPING_LABEL = "Free Shipping";
-const FREE_SHIPPING_METHOD_LABEL = "Free Shipping (Order's Over $200)";
+const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
 
 const SHIPPING_METHODS = [
   {
@@ -1065,9 +1065,6 @@ export default function RgvCheckout() {
   );
   const manualShipping = formatAddressBlock(
     manualOrder?.shipping || manualOrder?.billing || normalizeCheckoutFormForOrder(checkoutForm)
-  );
-  const checkoutAddressPreview = formatAddressBlock(
-    normalizeCheckoutFormForOrder(checkoutForm)
   );
   const normalizedCardAddress = normalizeCheckoutFormForOrder(checkoutForm);
   const cardPaymentEnabled = Boolean(
@@ -2355,30 +2352,25 @@ export default function RgvCheckout() {
       <section className="rgvx-shell">
         <header className="rgvx-clean-header">
           <div>
-            <p>Private client checkout</p>
-            <h1>Complete your order</h1>
+            <p>Checkout</p>
+            <h1>Review and pay</h1>
             <span>
-              A calm, secure checkout for your RGVPRIME order.
+              Confirm your delivery details and choose a payment method.
             </span>
           </div>
 
         </header>
 
         <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
-          <div className="rgvx-reward-rail-title">
-            <span>Your order benefits</span>
-            <small>Progress updates automatically</small>
-          </div>
-
           <div className="rgvx-reward-rail-grid">
             <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
               <div className="rgvx-reward-line-head">
-                <span className="rgvx-reward-cta"><Truck size={16} /> Free shipping</span>
+                <span className="rgvx-reward-icon"><Truck size={17} /></span>
                 <div>
-                  <small>Shipping goal</small>
-                  <strong>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</strong>
+                  <strong>Free shipping</strong>
+                  <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</small>
                 </div>
-                <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
+                <em>{freeShippingUnlocked ? "Unlocked" : `${progressWidth}%`}</em>
               </div>
 
               <div
@@ -2397,14 +2389,18 @@ export default function RgvCheckout() {
 
             <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
               <div className="rgvx-reward-line-head">
-                <span className="rgvx-reward-cta"><Gift size={16} /> Loyalty points</span>
+                <span className="rgvx-reward-icon"><Gift size={17} /></span>
                 <div>
-                  <small>After checkout</small>
                   <strong>
                     {sessionCustomer
-                      ? `${formatPoints(projectedLoyaltyPoints)} total points`
-                      : `Earn ${formatPoints(estimatedLoyaltyPoints)} points`}
+                      ? "Loyalty points"
+                      : "Earn loyalty points"}
                   </strong>
+                  <small>
+                    {sessionCustomer
+                      ? `${formatPoints(projectedLoyaltyPoints)} after this order`
+                      : `${formatPoints(estimatedLoyaltyPoints)} added after checkout`}
+                  </small>
                 </div>
                 <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
               </div>
@@ -2446,7 +2442,7 @@ export default function RgvCheckout() {
                       <strong>Contact</strong>
                       <small>
                         {isCardSelected
-                          ? "For your order confirmation and secure payment receipt."
+                          ? "We will send your receipt and order updates here."
                           : isEdebitSelected
                             ? "For your confirmation and bank-payment updates."
                             : "For order updates and payment instructions."}
@@ -2482,7 +2478,7 @@ export default function RgvCheckout() {
                     <div>
                       <strong>Shipping address</strong>
                       <small>
-                        Where should we discreetly deliver your order?
+                        Enter the address where you want your order delivered.
                       </small>
                     </div>
                   </div>
@@ -2588,26 +2584,6 @@ export default function RgvCheckout() {
                   </div>
 
                   <div className={`rgvx-address-confirmation ${shippingAddressConfirmed ? "confirmed" : ""}`}>
-                    <div className="rgvx-address-confirmation-heading">
-                      <ShieldCheck size={17} />
-                      <div>
-                        <strong>Confirm shipping address</strong>
-                        <small>Review these details carefully before creating your order.</small>
-                      </div>
-                    </div>
-
-                    <div className="rgvx-address-preview">
-                      <strong>
-                        {checkoutAddressPreview.fullName || "Name not entered"}
-                      </strong>
-                      {checkoutAddressPreview.lines.map((line) => (
-                        <span key={line}>{line}</span>
-                      ))}
-                      {checkoutAddressPreview.phone && (
-                        <span>{checkoutAddressPreview.phone}</span>
-                      )}
-                    </div>
-
                     <label className="rgvx-address-confirmation-check">
                       <input
                         type="checkbox"
@@ -2617,7 +2593,10 @@ export default function RgvCheckout() {
                           if (event.target.checked) setError("");
                         }}
                       />
-                      <span>I confirm this shipping address is complete and correct.</span>
+                      <span>
+                        <strong>Address verified</strong>
+                        <small>I confirm that the shipping information above is complete and correct.</small>
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -2631,7 +2610,7 @@ export default function RgvCheckout() {
                 <div>
                   <strong>Delivery</strong>
                   <small>
-                    Choose the delivery speed that works best for you.
+                    Select a shipping method.
                   </small>
                 </div>
               </div>
@@ -2646,7 +2625,7 @@ export default function RgvCheckout() {
                   <strong>
                     {freeShippingUnlocked
                       ? FREE_SHIPPING_METHOD_LABEL
-                      : `${FREE_SHIPPING_METHOD_LABEL} — Only ${formatMoney(amountUntilFreeShipping)} more`}
+                      : `${formatMoney(amountUntilFreeShipping)} away from free shipping`}
                   </strong>
                 </div>
 
@@ -2689,9 +2668,9 @@ export default function RgvCheckout() {
 
             <section className="rgvx-review-confirm" aria-labelledby="rgvx-review-title">
               <div className="rgvx-section-heading">
-                <p>Before payment</p>
-                <h2 id="rgvx-review-title">Review &amp; confirm</h2>
-                <span>Accept the required terms to unlock your payment options.</span>
+                <p>Required</p>
+                <h2 id="rgvx-review-title">Confirm your order</h2>
+                <span>Please accept both policies before completing payment.</span>
               </div>
 
               <label className={`rgvx-policy ${policyAcknowledged ? "is-checked" : ""} ${!policyAcknowledged && error ? "warning" : ""}`}>
@@ -2745,9 +2724,9 @@ export default function RgvCheckout() {
 
             <div className="rgvx-flow-section first rgvx-payment-section">
               <div className="rgvx-section-heading">
-                <p>Secure payment</p>
-                <h2>Payment</h2>
-                <span>All transactions are encrypted and securely processed.</span>
+                <p>Payment</p>
+                <h2>How would you like to pay?</h2>
+                <span>Card, eligible wallets, or manual Zelle payment.</span>
               </div>
               <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
                 {PAYMENT_METHODS.map((method) => {
@@ -2768,7 +2747,7 @@ export default function RgvCheckout() {
                   <div>
                     <strong>Secure card details</strong>
                     <small>
-                      Eligible wallets appear automatically. ORION SENTINEL protects this secure checkout experience.
+                      Eligible wallets appear automatically. Payment details are encrypted.
                     </small>
                   </div>
                 </div>
@@ -2812,9 +2791,7 @@ export default function RgvCheckout() {
 
             <div className="rgvx-checkout-assurance" aria-label="Payment security">
               <Lock size={13} />
-              <span>Encrypted payment</span>
-              <i aria-hidden="true" />
-              <span>{isCardSelected ? "Protected by ORION SENTINEL" : "Secure checkout"}</span>
+              <span>Secure, encrypted checkout</span>
             </div>
           </section>
 
@@ -2833,11 +2810,7 @@ export default function RgvCheckout() {
 
             <div id="rgvx-summary-content" className="rgvx-summary-content">
             <div className="rgvx-summary-head">
-              <div>
-                <p>Your order</p>
-                <h2>Order summary</h2>
-              </div>
-              <PackageCheck size={18} />
+              <h2>Order summary</h2>
             </div>
 
             <div className="rgvx-items-list">
@@ -2899,7 +2872,7 @@ export default function RgvCheckout() {
                 <summary className="rgvx-mini-coupon-header">
                   <div className="rgvx-mini-coupon-title">
                     <Tag size={12} />
-                    <span>Have a promo code?</span>
+                    <span>Discount code</span>
                   </div>
 
                   {couponStatus === "valid" && <div className="rgvx-mini-coupon-pill">Applied</div>}
@@ -2980,16 +2953,14 @@ export default function RgvCheckout() {
             </div>
 
             <div className="rgvx-summary-trust" aria-label="Checkout benefits">
-              <span><ShieldCheck size={15} /> Secure checkout</span>
-              <span><PackageCheck size={15} /> Discreet packaging</span>
-              <span><Lock size={15} /> Encrypted payments</span>
+              <span><Lock size={14} /> Secure payment and discreet packaging</span>
             </div>
             </div>
           </aside>
         </div>
       </section>
 
-      <style>{styles}</style>
+      <style>{cleanCheckoutStyles}</style>
     </main>
   );
 }
