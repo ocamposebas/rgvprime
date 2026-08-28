@@ -8,6 +8,7 @@ import { isProductAvailable } from "../../lib/inventory";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const PRODUCTS_PER_PAGE = 12;
+const variationRequestCache = new Map();
 
 const statusFilters = [
   { label: "All", value: "all" },
@@ -236,6 +237,47 @@ function formatPrice(price) {
   return `$${number.toFixed(2).replace(".00", "")}`;
 }
 
+function getDiscountDetails(item) {
+  const regularPrice = Number(item?.regular_price);
+  const explicitSalePrice = Number(item?.sale_price);
+  const currentPrice = Number(item?.price);
+  const salePrice =
+    Number.isFinite(explicitSalePrice) && explicitSalePrice > 0
+      ? explicitSalePrice
+      : currentPrice;
+
+  if (
+    !Number.isFinite(regularPrice) ||
+    regularPrice <= 0 ||
+    !Number.isFinite(salePrice) ||
+    salePrice <= 0 ||
+    salePrice >= regularPrice
+  ) {
+    return null;
+  }
+
+  return {
+    regularPrice,
+    salePrice,
+    percentage: Math.max(
+      1,
+      Math.round(((regularPrice - salePrice) / regularPrice) * 100),
+    ),
+  };
+}
+
+function getProductDiscountSummary(product, variations = []) {
+  const discounts = [product, ...variations]
+    .map(getDiscountDetails)
+    .filter(Boolean);
+
+  if (!discounts.length) return null;
+
+  return discounts.reduce((bestDiscount, discount) =>
+    discount.percentage > bestDiscount.percentage ? discount : bestDiscount,
+  );
+}
+
 function getPriceLabel(product) {
   const formattedPrice = formatPrice(product.price);
 
@@ -418,13 +460,46 @@ function getVariationsFromApiPayload(payload) {
   const productPayload =
     payload?.product || payload?.data?.product || payload?.item || payload;
 
-  const variations =
-    getProductVariations(productPayload) ||
-    payload?.variations ||
-    payload?.data?.variations ||
-    [];
+  const productVariations = getProductVariations(productPayload);
+  const variations = productVariations.length
+    ? productVariations
+    : payload?.variations || payload?.data?.variations || [];
 
   return Array.isArray(variations) ? variations : [];
+}
+
+async function requestProductVariations(product) {
+  const embeddedVariations = getProductVariations(product);
+
+  if (embeddedVariations.length) return embeddedVariations;
+
+  const cacheKey = String(product?.id || product?.slug || "").trim();
+
+  if (cacheKey && variationRequestCache.has(cacheKey)) {
+    return variationRequestCache.get(cacheKey);
+  }
+
+  const request = fetch(
+    `/api/products?slug=${encodeURIComponent(product.slug)}&refresh=1`,
+    { cache: "no-store" },
+  )
+    .then(async (response) => {
+      const data = await response.json();
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || "Could not load product options.");
+      }
+
+      return getVariationsFromApiPayload(data);
+    })
+    .catch((error) => {
+      if (cacheKey) variationRequestCache.delete(cacheKey);
+      throw error;
+    });
+
+  if (cacheKey) variationRequestCache.set(cacheKey, request);
+
+  return request;
 }
 
 function getVariationLabel(product, variation, index = 0) {
@@ -766,6 +841,7 @@ function ProductCard({ product, priority = false }) {
 
   const isVariableProduct = product.type === "variable";
   const canAddToCart = !isVariableProduct && isProductAvailable(product);
+  const discountSummary = getProductDiscountSummary(product, variations);
 
   const selectedVariation = useMemo(() => {
     if (!variations.length) return null;
@@ -812,6 +888,12 @@ function ProductCard({ product, priority = false }) {
   }, [optionsOpen, isVariableProduct]);
 
   useEffect(() => {
+    if (!isVariableProduct) return;
+
+    loadVariations();
+  }, [product.id, isVariableProduct]);
+
+  useEffect(() => {
     if (!optionsOpen || !isVariableProduct || typeof document === "undefined") {
       return undefined;
     }
@@ -840,21 +922,7 @@ function ProductCard({ product, priority = false }) {
 
     try {
       setVariationStatus("loading");
-
-      const response = await fetch(
-        `/api/products?slug=${encodeURIComponent(product.slug)}&refresh=1`,
-        {
-          cache: "no-store",
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || data?.success === false) {
-        throw new Error(data?.message || "Could not load product options.");
-      }
-
-      const nextVariations = getVariationsFromApiPayload(data);
+      const nextVariations = await requestProductVariations(product);
       const firstAvailableVariation = nextVariations.find(isVariationAvailable);
 
       setVariations(nextVariations);
@@ -1065,6 +1133,7 @@ function ProductCard({ product, priority = false }) {
                         const optionPrice = formatPrice(
                           getVariationPrice(variation, product),
                         );
+                        const optionDiscount = getDiscountDetails(variation);
                         const available = isVariationAvailable(variation);
                         const active = variationKey === selectedVariationKey;
 
@@ -1087,8 +1156,15 @@ function ProductCard({ product, priority = false }) {
                                   {displayParts.strength}
                                 </span>
 
-                                <span className="max-w-[72px] shrink-0 break-words text-right text-[12px] font-black leading-[1.05] text-white [overflow-wrap:anywhere]">
-                                  {optionPrice || "View"}
+                                <span className="flex max-w-[78px] shrink-0 flex-col items-end text-right leading-none">
+                                  <span className="break-words text-[12px] font-black text-white [overflow-wrap:anywhere]">
+                                    {optionPrice || "View"}
+                                  </span>
+                                  {optionDiscount && (
+                                    <span className="mt-1 text-[9px] font-bold text-white/55 line-through decoration-white/45">
+                                      {formatPrice(optionDiscount.regularPrice)}
+                                    </span>
+                                  )}
                                 </span>
                               </span>
 
@@ -1098,14 +1174,27 @@ function ProductCard({ product, priority = false }) {
                                 </span>
                               )}
 
-                              <span className="mt-2 flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
-                                <span
-                                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                                    available ? "bg-white" : "bg-red-300"
-                                  }`}
-                                />
-                                <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                                  {getVariationStockLabel(variation)}
+                              <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                                {optionDiscount && (
+                                  <span
+                                    className={`rounded-full px-1.5 py-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] ${
+                                      active
+                                        ? "bg-white text-red-700"
+                                        : "bg-red-500/15 text-red-300"
+                                    }`}
+                                  >
+                                    {optionDiscount.percentage}% OFF
+                                  </span>
+                                )}
+                                <span className="flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
+                                  <span
+                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                      available ? "bg-white" : "bg-red-300"
+                                    }`}
+                                  />
+                                  <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                                    {getVariationStockLabel(variation)}
+                                  </span>
                                 </span>
                               </span>
                             </span>
@@ -1148,14 +1237,23 @@ function ProductCard({ product, priority = false }) {
 
           <ProductImage src={image} alt={imageAlt} priority={priority} />
 
-          <span
-            className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
-          >
+          <div className="absolute left-2 top-2 flex max-w-[calc(100%-54px)] flex-col items-start gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
             <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
-            />
-            {stockBadge.label}
-          </span>
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
+              />
+              {stockBadge.label}
+            </span>
+
+            {discountSummary && (
+              <span className="inline-flex items-center rounded-full border border-red-300/30 bg-red-600 px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(220,38,38,0.28)] backdrop-blur sm:px-2.5 sm:text-[10px]">
+                {isVariableProduct ? "Up to " : ""}
+                {discountSummary.percentage}% OFF
+              </span>
+            )}
+          </div>
 
           <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white/75 backdrop-blur transition duration-300 group-hover:bg-red-600 group-hover:text-white sm:right-4 sm:top-4 sm:h-9 sm:w-9">
             <EyeIcon />
