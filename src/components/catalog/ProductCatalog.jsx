@@ -1237,23 +1237,22 @@ function ProductCard({ product, priority = false }) {
 
           <ProductImage src={image} alt={imageAlt} priority={priority} />
 
-          <div className="absolute left-2 top-2 flex max-w-[calc(100%-54px)] flex-col items-start gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
+          <span
+            className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
+          >
             <span
-              className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
-            >
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
-              />
-              {stockBadge.label}
-            </span>
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
+            />
+            {stockBadge.label}
+          </span>
 
-            {discountSummary && (
-              <span className="inline-flex items-center rounded-full border border-red-300/30 bg-red-600 px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-white shadow-[0_8px_24px_rgba(220,38,38,0.28)] backdrop-blur sm:px-2.5 sm:text-[10px]">
-                {isVariableProduct ? "Up to " : ""}
-                {discountSummary.percentage}% OFF
-              </span>
-            )}
-          </div>
+          {discountSummary && (
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/75 px-2 py-1.5 text-[8px] font-bold tracking-[0.02em] text-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md sm:bottom-4 sm:left-4 sm:gap-2 sm:px-2.5 sm:py-2 sm:text-[10px]">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]" />
+              Save {isVariableProduct ? "up to " : ""}
+              {discountSummary.percentage}%
+            </span>
+          )}
 
           <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white/75 backdrop-blur transition duration-300 group-hover:bg-red-600 group-hover:text-white sm:right-4 sm:top-4 sm:h-9 sm:w-9">
             <EyeIcon />

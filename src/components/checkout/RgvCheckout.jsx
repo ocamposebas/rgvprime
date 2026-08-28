@@ -92,20 +92,19 @@ function CarrierLogo({ carrier }) {
   if (carrier === "UPS") {
     return (
       <span className="rgvx-carrier-logo ups" aria-label="UPS">
-        <svg viewBox="0 0 32 38" aria-hidden="true">
-          <path d="M4 2h24v17c0 9-5 14-12 17C9 33 4 28 4 19V2Z" />
-          <text x="16" y="23" textAnchor="middle">UPS</text>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M11.668 14.544l-.028-5.226c.138-.055.387-.111.608-.111.995 0 1.41.774 1.41 2.682 0 1.853-.47 2.765-1.438 2.765-.22 0-.441-.055-.552-.11zM3.124 7.438c4.203-3.843 9.29-4.866 14.018-4.866 1.3 0 2.544.083 3.76.194h-.028v11.253c0 2.184-.774 3.926-2.295 5.171-1.355 1.134-5.447 2.959-6.581 3.456-1.161-.525-5.253-2.378-6.581-3.456-1.493-1.244-2.295-3.014-2.295-5.171V7.438zm12.664 2.599c.028.912.276 1.576 1.687 2.406.747.442 1.051.747 1.051 1.272 0 .581-.387.94-1.023.94-.553 0-1.189-.304-1.631-.691v1.576c.553.304 1.217.525 1.88.525 1.687 0 2.433-1.189 2.461-2.267.028-.995-.249-1.742-1.659-2.571-.608-.387-1.134-.636-1.106-1.244 0-.581.525-.802.995-.802.581 0 1.161.332 1.521.691V8.378c-.304-.221-.94-.581-1.88-.553-1.135.028-2.296.829-2.296 2.212zm-5.834 9.484h1.714l-.028-3.594c.166.028.415.083.774.083 1.908 0 2.986-1.687 2.986-4.175 0-2.461-1.106-4.009-3.152-4.009-.94 0-1.687.221-2.295.608v11.087zm-5.945-6.166c0 1.797.829 2.71 2.516 2.71 1.051 0 1.908-.249 2.571-.691V7.991H7.41v6.387c-.194.138-.47.221-.802.221-.774 0-.885-.719-.885-1.189V7.991H4.009v5.364zM22.12 2.295v11.723c0 2.516-.94 4.645-2.765 6.111-1.549 1.3-6.332 3.429-7.355 3.871-1.023-.442-5.806-2.571-7.355-3.843-1.797-1.465-2.765-3.594-2.765-6.111V2.295C4.756.747 8.074 0 12 0s7.244.747 10.12 2.295z" />
         </svg>
+        <span className="rgvx-carrier-wordmark" aria-hidden="true">UPS</span>
       </span>
     );
   }
 
   return (
     <span className="rgvx-carrier-logo usps" aria-label="USPS">
-      <img
-        src="/WhatsApp%20Image%202026-07-28%20at%204.24.24%20PM.jpeg"
-        alt=""
-      />
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3.145 4.577 0 19.423h20.855L24 4.577H3.145zm-.157 3.806h9.436c.157 0 5.064 0 5.159.975H9.09l1.321 4.026c1.51-.723 5.222-2.233 7.455-2.328.944-.031 1.321.126 1.132.252-.126.063-1.038.189-1.761.377-1.258.315-1.321.315-2.642.755-1.478.503-2.705 1.069-4.53 1.919L.723 18.983l2.265-10.6zm16.483 1.698c-.535-.094-2.768.063-3.334.063-.126 0-.472.031-.472-.063 0-.063.126-.063.377-.094s1.006-.157 1.258-.283c.063-.063.22-.157.315-.252.031-.063.063-.094.157-.094h1.164c.755 0 1.195.094 1.132.723-.031.315-.472 1.132-.629 1.384-.063.094-.189.189-.157 0 .126-.503.597-1.321.189-1.384zm.88 8.902H2.076s17.363-6.794 17.552-6.92c0 0 1.541-2.076.629-2.925-.283-.283-.692-.283-2.265-.283 0 0-.063-.598-2.485-1.164-.283-.063-11.858-2.517-11.858-2.517h19.628l-2.926 13.809z" />
+      </svg>
     </span>
   );
 }
@@ -880,7 +879,7 @@ export default function RgvCheckout() {
   const [receiptMessage, setReceiptMessage] = useState("");
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const [memoCopied, setMemoCopied] = useState(false);
-  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(true);
   const [sessionCustomer, setSessionCustomer] = useState(null);
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
@@ -2603,7 +2602,6 @@ export default function RgvCheckout() {
 
                 <div className="rgvx-header-proof" aria-label="Checkout benefits">
                   <span><ShieldCheck size={15} /> Protected payment</span>
-                  <span><Truck size={15} /> Fast delivery</span>
                   <span><Gift size={15} /> Loyalty rewards</span>
                 </div>
               </div>

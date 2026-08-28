@@ -1570,6 +1570,78 @@
   }
 }
 
+/* Consistent carrier marks on every delivery option. */
+.rgvx-carrier-logo {
+  position: relative;
+  display: inline-flex;
+  width: 58px;
+  height: 38px;
+  flex: 0 0 58px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rgvx-carrier-logo svg {
+  display: block;
+  width: 27px;
+  height: 27px;
+  fill: currentColor;
+}
+
+.rgvx-carrier-logo.ups {
+  gap: 4px;
+  background: linear-gradient(145deg, #3b2117, #24120d);
+  color: #ffb81c;
+}
+
+.rgvx-carrier-logo.ups svg {
+  width: 21px;
+  height: 24px;
+}
+
+.rgvx-carrier-wordmark {
+  color: #ffcf4a;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.rgvx-carrier-logo.usps {
+  background: linear-gradient(145deg, #333366, #20204d);
+  color: #fff;
+}
+
+.rgvx-carrier-logo.usps::after {
+  position: absolute;
+  right: 7px;
+  bottom: 5px;
+  left: 7px;
+  height: 2px;
+  border-radius: 999px;
+  background: #e71921;
+  content: "";
+}
+
+.rgvx-carrier-logo.usps svg {
+  width: 37px;
+  height: 29px;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 420px) {
+  .rgvx-carrier-logo {
+    width: 50px;
+    height: 34px;
+    flex-basis: 50px;
+  }
+}
+
 /* Goal progress: subtle motion communicates that both rewards are advancing. */
 .rgvx-totals > .rgvx-reward-rail {
   margin-top: 4px;
