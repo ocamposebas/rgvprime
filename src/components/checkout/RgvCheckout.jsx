@@ -1,4 +1,4 @@
-  import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -52,6 +52,8 @@ const FREE_SHIPPING_MINIMUM = 200;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
 const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
+const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
+const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 
 const SHIPPING_METHODS = [
   {
@@ -681,6 +683,18 @@ function isRecoverableOrbitQuoteFailure(response, data) {
   );
 }
 
+function isStaleStripeSessionError(message) {
+  const normalized = String(message || "").toLowerCase();
+
+  return (
+    normalized.includes("payment_method_types") ||
+    normalized.includes("automatic payment methods") ||
+    normalized.includes("automatic_payment_methods") ||
+    normalized.includes("client_secret") ||
+    (normalized.includes("paymentintent") && normalized.includes("expired"))
+  );
+}
+
 const ORBIT_CARD_RETURN_STORAGE_KEY = "rgv_orbit_card_return";
 
 function getInitialOrbitCardReturn() {
@@ -838,6 +852,7 @@ export default function RgvCheckout() {
   const [orbitCardCheckout, setOrbitCardCheckout] = useState(() => getInitialOrbitCardReturn());
   const [checkoutQuote, setCheckoutQuote] = useState(null);
   const [quoteRefreshVersion, setQuoteRefreshVersion] = useState(0);
+  const [paymentSessionVersion, setPaymentSessionVersion] = useState(0);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState("");
   const [orbitCardReady, setOrbitCardReady] = useState(false);
@@ -874,6 +889,31 @@ export default function RgvCheckout() {
   const orbitCardPaymentRef = useRef(null);
   const checkoutAttemptIdRef = useRef(createCheckoutAttemptId());
   const quoteRequestIdRef = useRef(0);
+  const lastPaymentActivityRef = useRef(Date.now());
+
+  const markPaymentActivity = useCallback(() => {
+    lastPaymentActivityRef.current = Date.now();
+  }, []);
+
+  const renewOrbitPaymentSession = useCallback((notice = "We refreshed your secure payment session. Your checkout details were preserved.") => {
+    if (orbitCardSubmittingRef.current || loading || orbitCardCheckout?.isReturn) return false;
+
+    checkoutAttemptIdRef.current = createCheckoutAttemptId();
+    lastPaymentActivityRef.current = Date.now();
+    setOrbitCardCheckout(null);
+    setOrbitPaymentResult(null);
+    setOrbitCardReady(false);
+    setPaymentSessionVersion((version) => version + 1);
+    setQuoteRefreshVersion((version) => version + 1);
+    setError("");
+    setPaymentNotice(notice);
+
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(ORBIT_CARD_RETURN_STORAGE_KEY);
+    }
+
+    return true;
+  }, [loading, orbitCardCheckout?.isReturn]);
 
   async function loadSessionCustomer() {
     if (!sessionCustomerPromiseRef.current) {
@@ -1120,6 +1160,7 @@ export default function RgvCheckout() {
       const address = normalizeCheckoutFormForOrder(checkoutForm);
       const response = await fetch(getOrbitCardQuoteEndpoint(), {
         method: "POST",
+        cache: "no-store",
         credentials: "include",
         signal,
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -1191,6 +1232,39 @@ export default function RgvCheckout() {
     document.addEventListener("visibilitychange", refreshAfterReturning);
     return () => document.removeEventListener("visibilitychange", refreshAfterReturning);
   }, [checkoutQuote, orbitCardCheckout?.isReturn]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasItems || !isCardSelected || orbitCardCheckout?.isReturn) {
+      return undefined;
+    }
+
+    const recordActivity = () => markPaymentActivity();
+    const refreshIfIdle = () => {
+      if (
+        document.visibilityState !== "visible" ||
+        orbitCardSubmittingRef.current ||
+        loading ||
+        Date.now() - lastPaymentActivityRef.current < PAYMENT_SESSION_IDLE_MS
+      ) {
+        return;
+      }
+
+      renewOrbitPaymentSession();
+    };
+
+    const activityEvents = ["pointerdown", "keydown", "input", "touchstart"];
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, recordActivity, { passive: true });
+    });
+    document.addEventListener("visibilitychange", refreshIfIdle);
+    const interval = window.setInterval(refreshIfIdle, PAYMENT_SESSION_CHECK_MS);
+
+    return () => {
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, recordActivity));
+      document.removeEventListener("visibilitychange", refreshIfIdle);
+      window.clearInterval(interval);
+    };
+  }, [hasItems, isCardSelected, loading, markPaymentActivity, orbitCardCheckout?.isReturn, renewOrbitPaymentSession]);
 
   const authoritativeDue = checkoutQuote ? checkoutQuote.totalMinor / 100 : estimatedDue;
 
@@ -1527,6 +1601,7 @@ export default function RgvCheckout() {
       const submitCardCheckout = async (quote) => {
         const response = await fetch(getOrbitCardCheckoutEndpoint(), {
           method: "POST",
+          cache: "no-store",
           credentials: "include",
           signal: controller.signal,
           headers: {
@@ -1681,6 +1756,11 @@ export default function RgvCheckout() {
 
   const handleOrbitPaymentResult = (result = {}) => {
     if (result.error) {
+      if (isStaleStripeSessionError(result.error)) {
+        renewOrbitPaymentSession("Your secure payment session was updated. Please review the card details and try again.");
+        return;
+      }
+
       setError(result.error);
       setPaymentNotice("");
       return;
@@ -2808,12 +2888,14 @@ export default function RgvCheckout() {
                 </div>
 
                 <OrbitCardPayment
+                  key={`orbit-card-${paymentSessionVersion}`}
                   ref={orbitCardPaymentRef}
                   context={stripePaymentContext}
                   enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
                   onCreatePayment={createOrbitCardPayment}
                   onReadyChange={setOrbitCardReady}
                   onPaymentResult={handleOrbitPaymentResult}
+                  onInteraction={markPaymentActivity}
                   onBlocked={() => {
                     setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
                     const target = !shippingAddressConfirmed

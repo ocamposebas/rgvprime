@@ -51,6 +51,8 @@ function withNoCache(response: Response) {
   );
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
+  headers.set("CDN-Cache-Control", "no-store");
+  headers.set("Surrogate-Control", "no-store");
 
   return new Response(response.body, {
     status: response.status,
@@ -78,6 +80,8 @@ function asMaintenanceResponse(response: Response) {
   headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
+  headers.set("CDN-Cache-Control", "no-store");
+  headers.set("Surrogate-Control", "no-store");
   headers.set("Retry-After", String(getMaintenanceRetryAfterSeconds()));
   headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
 
@@ -216,7 +220,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return secure(context.redirect("/", 302));
     }
 
-    return secure(await next());
+    const response = await next();
+    const isCheckoutDocument = pathname === "/checkout" || pathname === "/checkout/";
+
+    return secure(isCheckoutDocument ? withNoCache(response) : response);
   }
 
   if (pathname === "/launch" || pathname === "/launch/") {

@@ -4,7 +4,7 @@ import { loadStripe } from "@stripe/stripe-js";
 
 const stripeClients = new Map();
 const PAYMENT_METHOD_CONFIGURATION_ID = String(
-  import.meta.env.PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID || "pmc_1U73G7Il4GfQ7wyOLVk9cYHV",
+  import.meta.env.PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID || "pmc_1U7P6YIzxwHmpViLCT1NYh9y",
 ).trim();
 const appearance = {
   theme: "night",
@@ -148,7 +148,7 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
   return { paymentIntent: latest.paymentIntent, checkout };
 }
 
-const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, submitting, setSubmitting, submittingRef }, ref) {
+const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onInteraction, submitting, setSubmitting, submittingRef }, ref) {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentReady, setPaymentReady] = useState(false);
@@ -182,6 +182,7 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   return <div className="rgvx-payment-element-inline">
     <PaymentElement
       onReady={() => setPaymentReady(true)}
+      onChange={() => onInteraction?.()}
       onLoadError={() => onReadyChange(false)}
       options={{
         paymentMethodOrder: ["card"],
@@ -200,7 +201,7 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   </div>;
 });
 
-function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onBlocked, setSubmitting, submittingRef }) {
+function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onBlocked, onInteraction, setSubmitting, submittingRef }) {
   const stripe = useStripe();
   const elements = useElements();
   const [expressStatus, setExpressStatus] = useState("loading");
@@ -255,6 +256,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
     <p className="rgvx-express-label">Fast payment options</p>
     <ExpressCheckoutElement
       onClick={(event) => {
+        onInteraction?.();
         if (submittingRef.current) {
           setBlockedNotice("Your payment is already being prepared.");
           event.reject();
@@ -302,7 +304,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
   </div>;
 }
 
-const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onBlocked }, ref) {
+const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onBlocked, onInteraction }, ref) {
   const stripePromise = useMemo(() => getStripeClient(context.publishableKey, context.connectedAccountId), [context.publishableKey, context.connectedAccountId]);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -312,7 +314,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         mode: "payment",
         amount: context.totalMinor,
         currency: context.currency.toLowerCase(),
-        paymentMethodTypes: ["card"],
+        paymentMethodConfiguration: PAYMENT_METHOD_CONFIGURATION_ID,
         appearance,
         locale: "en",
         loader: "auto",
@@ -336,6 +338,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         onCreatePayment={onCreatePayment}
         onPaymentResult={onPaymentResult}
         onBlocked={onBlocked}
+        onInteraction={onInteraction}
         setSubmitting={setSubmitting}
         submittingRef={submittingRef}
       />
@@ -348,6 +351,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         onCreatePayment={onCreatePayment}
         onPaymentResult={onPaymentResult}
         onReadyChange={onReadyChange}
+        onInteraction={onInteraction}
         submitting={submitting}
         setSubmitting={setSubmitting}
         submittingRef={submittingRef}
