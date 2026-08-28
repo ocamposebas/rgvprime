@@ -2763,7 +2763,7 @@ export default function RgvCheckout() {
             </div>
 
             <ComplianceConfirm
-              placement="mobile"
+              placement="flow"
               policyAcknowledged={policyAcknowledged}
               finalSaleAcknowledged={finalSaleAcknowledged}
               hasError={Boolean(error)}
@@ -2818,11 +2818,7 @@ export default function RgvCheckout() {
                     setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
                     const target = !shippingAddressConfirmed
                       ? document.querySelector(".rgvx-address-confirmation")
-                      : document.querySelector(
-                          window.matchMedia("(min-width: 961px)").matches
-                            ? ".rgvx-review-confirm-desktop"
-                            : ".rgvx-review-confirm-mobile",
-                        );
+                      : document.querySelector(".rgvx-review-confirm-flow");
                     target?.scrollIntoView({ behavior: "smooth", block: "center" });
                   }}
                 />
@@ -3076,20 +3072,6 @@ export default function RgvCheckout() {
               <span><Lock size={14} /> Secure payment and discreet packaging</span>
             </div>
 
-            <ComplianceConfirm
-              placement="desktop"
-              policyAcknowledged={policyAcknowledged}
-              finalSaleAcknowledged={finalSaleAcknowledged}
-              hasError={Boolean(error)}
-              onPolicyChange={(checked) => {
-                setPolicyAcknowledged(checked);
-                if (checked) setError("");
-              }}
-              onFinalSaleChange={(checked) => {
-                setFinalSaleAcknowledged(checked);
-                if (checked) setError("");
-              }}
-            />
             </div>
           </aside>
         </div>
