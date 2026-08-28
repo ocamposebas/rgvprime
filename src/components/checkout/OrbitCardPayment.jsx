@@ -125,7 +125,7 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
 
   const checkout = await onCreatePayment(confirmationToken.id);
   if (!checkout?.clientSecret) {
-    throw new Error("ORBIT could not prepare the secure card payment. Please try again.");
+    throw new Error("The secure payment service could not prepare your payment. Please try again.");
   }
   const result = await stripe.confirmPayment({
     clientSecret: checkout.clientSecret,

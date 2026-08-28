@@ -664,6 +664,23 @@ function createCheckoutAttemptId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 }
 
+function isOrbitQuoteFresh(quote, bufferSeconds = 30) {
+  return Boolean(
+    quote?.quoteId &&
+      Number(quote?.quoteExpiresAt || 0) > Math.floor(Date.now() / 1000) + bufferSeconds
+  );
+}
+
+function isRecoverableOrbitQuoteFailure(response, data) {
+  const message = String(data?.message || data?.error || "").toLowerCase();
+
+  return Boolean(
+    data?.quoteChanged ||
+      (response?.status === 400 && message.includes("secure checkout session")) ||
+      (response?.status === 409 && message.includes("order total changed"))
+  );
+}
+
 const ORBIT_CARD_RETURN_STORAGE_KEY = "rgv_orbit_card_return";
 
 function getInitialOrbitCardReturn() {
@@ -754,6 +771,7 @@ export default function RgvCheckout() {
   const [edebitReturn] = useState(() => getInitialEdebitReturn());
   const [orbitCardCheckout, setOrbitCardCheckout] = useState(() => getInitialOrbitCardReturn());
   const [checkoutQuote, setCheckoutQuote] = useState(null);
+  const [quoteRefreshVersion, setQuoteRefreshVersion] = useState(0);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState("");
   const [orbitCardReady, setOrbitCardReady] = useState(false);
@@ -789,6 +807,7 @@ export default function RgvCheckout() {
   const orbitCardSubmittingRef = useRef(false);
   const orbitCardPaymentRef = useRef(null);
   const checkoutAttemptIdRef = useRef(createCheckoutAttemptId());
+  const quoteRequestIdRef = useRef(0);
 
   async function loadSessionCustomer() {
     if (!sessionCustomerPromiseRef.current) {
@@ -1019,37 +1038,93 @@ export default function RgvCheckout() {
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
   const estimatedDue = Math.max(discountedCartTotal + shippingCost, 0);
 
+  const refreshCheckoutQuote = async ({ signal } = {}) => {
+    const items = buildCheckoutItems(cartItems);
+
+    if (!items.length || items.some((item) => !item.product_id)) {
+      throw new Error("One or more products are no longer available.");
+    }
+
+    const requestId = quoteRequestIdRef.current + 1;
+    quoteRequestIdRef.current = requestId;
+    setQuoteLoading(true);
+    setQuoteError("");
+
+    try {
+      const address = normalizeCheckoutFormForOrder(checkoutForm);
+      const response = await fetch(getOrbitCardQuoteEndpoint(), {
+        method: "POST",
+        credentials: "include",
+        signal,
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          items,
+          billing: address,
+          shipping: address,
+          couponCode: coupon,
+          shippingMethod: selectedShippingMethodId,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (
+        !response.ok ||
+        data?.success === false ||
+        !/^orb_quote_[a-f0-9]{32}$/.test(String(data?.quoteId || ""))
+      ) {
+        throw new Error("We could not refresh the secure order total.");
+      }
+
+      if (requestId === quoteRequestIdRef.current) setCheckoutQuote(data);
+      return data;
+    } catch (cause) {
+      if (cause?.name !== "AbortError" && requestId === quoteRequestIdRef.current) {
+        setCheckoutQuote(null);
+        setQuoteError("Secure checkout totals are temporarily unavailable. Please try again.");
+      }
+      throw cause;
+    } finally {
+      if (requestId === quoteRequestIdRef.current) setQuoteLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!hasItems || !isCardSelected || orbitCardCheckout?.isReturn) return undefined;
-    const items = buildCheckoutItems(cartItems);
-    if (!items.length || items.some((item) => !item.product_id)) return undefined;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
-        setQuoteLoading(true);
-        setQuoteError("");
-        const address = normalizeCheckoutFormForOrder(checkoutForm);
-        const response = await fetch(getOrbitCardQuoteEndpoint(), {
-          method: "POST", credentials: "include", signal: controller.signal,
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ items, billing: address, shipping: address, couponCode: coupon, shippingMethod: selectedShippingMethodId }),
-        });
-        const data = await response.json().catch(() => null);
-        if (!response.ok || data?.success === false || !/^orb_quote_[a-f0-9]{32}$/.test(String(data?.quoteId || ""))) {
-          throw new Error("We could not refresh the secure order total.");
-        }
-        setCheckoutQuote(data);
+        await refreshCheckoutQuote({ signal: controller.signal });
       } catch (cause) {
-        if (cause?.name !== "AbortError") {
-          setCheckoutQuote(null);
-          setQuoteError("Secure checkout totals are temporarily unavailable. Please try again.");
-        }
-      } finally {
-        if (!controller.signal.aborted) setQuoteLoading(false);
+        if (cause?.name === "AbortError") return;
       }
     }, 450);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [cartItems, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, selectedShippingMethodId]);
+  }, [cartItems, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, quoteRefreshVersion, selectedShippingMethodId]);
+
+  useEffect(() => {
+    if (!checkoutQuote?.quoteExpiresAt || orbitCardCheckout?.isReturn) return undefined;
+
+    const refreshAt = Number(checkoutQuote.quoteExpiresAt) * 1000 - 45000;
+    const timer = window.setTimeout(
+      () => setQuoteRefreshVersion((version) => version + 1),
+      Math.max(1000, refreshAt - Date.now()),
+    );
+
+    return () => window.clearTimeout(timer);
+  }, [checkoutQuote?.quoteExpiresAt, orbitCardCheckout?.isReturn]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || orbitCardCheckout?.isReturn) return undefined;
+
+    const refreshAfterReturning = () => {
+      if (document.visibilityState === "visible" && !isOrbitQuoteFresh(checkoutQuote, 45)) {
+        setQuoteRefreshVersion((version) => version + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", refreshAfterReturning);
+    return () => document.removeEventListener("visibilitychange", refreshAfterReturning);
+  }, [checkoutQuote, orbitCardCheckout?.isReturn]);
 
   const authoritativeDue = checkoutQuote ? checkoutQuote.totalMinor / 100 : estimatedDue;
 
@@ -1362,11 +1437,6 @@ export default function RgvCheckout() {
       throw new Error("One or more products are no longer available.");
     }
 
-    if (!checkoutQuote || checkoutQuote.quoteExpiresAt <= Math.floor(Date.now() / 1000)) {
-      setError("The secure order total is still updating. Please wait a moment.");
-      throw new Error("The secure order total is still updating. Please wait a moment.");
-    }
-
     const billing = { ...normalizedForm };
     const shipping = { ...normalizedForm };
     const controller = new AbortController();
@@ -1378,46 +1448,71 @@ export default function RgvCheckout() {
       setError("");
       setPaymentNotice("Creating your pending WooCommerce order and securing the card payment...");
 
+      let activeQuote = checkoutQuote;
+
+      if (!isOrbitQuoteFresh(activeQuote, 20)) {
+        setPaymentNotice("Refreshing your secure order total...");
+        activeQuote = await refreshCheckoutQuote({ signal: controller.signal });
+      }
+
       localStorage.setItem("rgv_checkout_email", billing.email);
       localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
 
-      const response = await fetch(getOrbitCardCheckoutEndpoint(), {
-        method: "POST",
-        credentials: "include",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          billing,
-          shipping,
-          items: checkoutItems,
-          couponCode: coupon,
-          shippingMethod: selectedShippingMethod?.id,
-          source: "rgv_custom_checkout_orbit_card",
-          ageConfirmed: true,
-          researchUseAcknowledged: true,
-          termsAccepted: true,
-          refundPolicyAccepted: true,
-          finalSalePolicyAccepted: true,
-          researchUsePolicyAccepted: true,
-          policyAcknowledgedAt: new Date().toISOString(),
-          confirmationTokenId,
-          checkoutAttemptId: checkoutAttemptIdRef.current,
-          quoteId: checkoutQuote.quoteId,
-          quoteExpiresAt: checkoutQuote.quoteExpiresAt,
-        }),
-      });
+      const submitCardCheckout = async (quote) => {
+        const response = await fetch(getOrbitCardCheckoutEndpoint(), {
+          method: "POST",
+          credentials: "include",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            billing,
+            shipping,
+            items: checkoutItems,
+            couponCode: coupon,
+            shippingMethod: selectedShippingMethod?.id,
+            source: "rgv_custom_checkout_orbit_card",
+            ageConfirmed: true,
+            researchUseAcknowledged: true,
+            termsAccepted: true,
+            refundPolicyAccepted: true,
+            finalSalePolicyAccepted: true,
+            researchUsePolicyAccepted: true,
+            policyAcknowledgedAt: new Date().toISOString(),
+            confirmationTokenId,
+            checkoutAttemptId: checkoutAttemptIdRef.current,
+            quoteId: quote.quoteId,
+            quoteExpiresAt: quote.quoteExpiresAt,
+          }),
+        });
+        const responseText = await response.text();
 
-      const responseText = await response.text();
-      const data = safeJsonParse(responseText, {});
+        return { response, data: safeJsonParse(responseText, {}) };
+      };
+
+      let { response, data } = await submitCardCheckout(activeQuote);
+
+      if (isRecoverableOrbitQuoteFailure(response, data)) {
+        setPaymentNotice("Your checkout was refreshed. Finishing payment...");
+        checkoutAttemptIdRef.current = createCheckoutAttemptId();
+        activeQuote = await refreshCheckoutQuote({ signal: controller.signal });
+        ({ response, data } = await submitCardCheckout(activeQuote));
+      }
+
+      if ([502, 503, 504].includes(response.status)) {
+        setPaymentNotice("The payment service took longer than expected. Retrying safely...");
+        await new Promise((resolve) => window.setTimeout(resolve, 350));
+        ({ response, data } = await submitCardCheckout(activeQuote));
+      }
 
       if (!response.ok || data?.success === false) {
+        const serviceMessage = String(data?.message || data?.error || "");
         throw new Error(
-          data?.message ||
-            data?.error ||
-            "Unable to prepare secure card payment. Please try again.",
+          /orbit/i.test(serviceMessage)
+            ? "The secure payment service could not prepare your payment. Please try again."
+            : serviceMessage || "Unable to prepare secure card payment. Please try again.",
         );
       }
 
@@ -1490,7 +1585,7 @@ export default function RgvCheckout() {
   const continueToCardCheckout = async () => {
     if (!validateBaseCheckout()) return;
     if (!validateDirectPaymentForm("card payment")) return;
-    if (!checkoutQuote || quoteLoading) {
+    if (!checkoutQuote && quoteLoading) {
       setError("The secure order total is still updating. Please wait a moment.");
       return;
     }
@@ -2361,76 +2456,6 @@ export default function RgvCheckout() {
 
         </header>
 
-        <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
-          <div className="rgvx-reward-rail-grid">
-            <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
-              <div className="rgvx-reward-line-head">
-                <span className="rgvx-reward-icon"><Truck size={17} /></span>
-                <div>
-                  <strong>Free shipping</strong>
-                  <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</small>
-                </div>
-                <em>{freeShippingUnlocked ? "Unlocked" : `${progressWidth}%`}</em>
-              </div>
-
-              <div
-                className="rgvx-reward-track"
-                role="progressbar"
-                aria-label="Free shipping progress"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow={progressWidth}
-              >
-                <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
-              </div>
-
-              <footer><span>{formatMoney(cartTotal)} cart</span><strong>{formatMoney(FREE_SHIPPING_DISPLAY_MINIMUM)} goal</strong></footer>
-            </div>
-
-            <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
-              <div className="rgvx-reward-line-head">
-                <span className="rgvx-reward-icon"><Gift size={17} /></span>
-                <div>
-                  <strong>
-                    {sessionCustomer
-                      ? "Loyalty points"
-                      : "Earn loyalty points"}
-                  </strong>
-                  <small>
-                    {sessionCustomer
-                      ? `${formatPoints(projectedLoyaltyPoints)} after this order`
-                      : `${formatPoints(estimatedLoyaltyPoints)} added after checkout`}
-                  </small>
-                </div>
-                <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
-              </div>
-
-              <div
-                className="rgvx-reward-track"
-                role="progressbar"
-                aria-label="Loyalty reward progress after this order"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow={Math.round(projectedLoyaltyProgress)}
-              >
-                <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
-                <span
-                  className="loyalty-projected"
-                  style={{
-                    left: `${currentLoyaltyProgress}%`,
-                    width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
-                  }}
-                />
-              </div>
-
-              <footer>
-                <span>{sessionCustomer ? `${formatPoints(currentLoyaltyPoints)} now` : "Added after completion"}</span>
-                <strong>{formatPoints(loyaltyGoal)} reward</strong>
-              </footer>
-            </div>
-          </div>
-        </section>
-
         <div className="rgvx-clean-layout">
           <section className="rgvx-flow">
             {requiresDirectDetails && (
@@ -2812,6 +2837,65 @@ export default function RgvCheckout() {
             <div className="rgvx-summary-head">
               <h2>Order summary</h2>
             </div>
+
+            <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
+              <div className="rgvx-reward-rail-grid">
+                <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
+                  <div className="rgvx-reward-line-head">
+                    <span className="rgvx-reward-icon"><Truck size={16} /></span>
+                    <div>
+                      <strong>Free shipping</strong>
+                      <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</small>
+                    </div>
+                    <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
+                  </div>
+
+                  <div
+                    className="rgvx-reward-track"
+                    role="progressbar"
+                    aria-label="Free shipping progress"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow={progressWidth}
+                  >
+                    <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
+                  </div>
+                </div>
+
+                <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
+                  <div className="rgvx-reward-line-head">
+                    <span className="rgvx-reward-icon"><Gift size={16} /></span>
+                    <div>
+                      <strong>{sessionCustomer ? "Loyalty points" : "Earn loyalty points"}</strong>
+                      <small>
+                        {sessionCustomer
+                          ? `${formatPoints(projectedLoyaltyPoints)} after this order`
+                          : `${formatPoints(estimatedLoyaltyPoints)} added after checkout`}
+                      </small>
+                    </div>
+                    <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
+                  </div>
+
+                  <div
+                    className="rgvx-reward-track"
+                    role="progressbar"
+                    aria-label="Loyalty reward progress after this order"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow={Math.round(projectedLoyaltyProgress)}
+                  >
+                    <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
+                    <span
+                      className="loyalty-projected"
+                      style={{
+                        left: `${currentLoyaltyProgress}%`,
+                        width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <div className="rgvx-items-list">
               {displayedSummaryItems.map((item) => (

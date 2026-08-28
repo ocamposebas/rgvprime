@@ -71,46 +71,49 @@
   line-height: 1.55;
 }
 
-/* Two useful facts, not two promotional cards. */
+/* Progress belongs to the order summary, as one integrated red status strip. */
 .rgvx-reward-rail {
-  margin-bottom: 42px;
-  border-block: 1px solid var(--checkout-border-soft);
-  padding: 18px 0;
+  margin: 18px -24px 0;
+  border-block: 1px solid #4b2028;
+  background: #171013;
+  box-shadow: inset 3px 0 0 var(--checkout-red);
+  padding: 16px 24px;
 }
 
 .rgvx-reward-rail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .rgvx-reward-line {
   display: grid;
   min-width: 0;
-  gap: 10px;
-  padding-right: 30px;
+  gap: 9px;
+  padding-bottom: 14px;
 }
 
 .rgvx-reward-line + .rgvx-reward-line {
-  border-left: 1px solid var(--checkout-border-soft);
-  padding-right: 0;
-  padding-left: 30px;
+  border-top: 1px solid #392025;
+  padding-top: 14px;
+  padding-bottom: 0;
 }
 
 .rgvx-reward-line-head {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .rgvx-reward-icon {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   place-items: center;
-  border: 1px solid var(--checkout-border);
+  border: 1px solid #632833;
   border-radius: 50%;
-  color: #c7c7cc;
+  background: #251317;
+  color: #ff6473;
 }
 
 .rgvx-reward-line-head > div {
@@ -121,7 +124,7 @@
 
 .rgvx-reward-line-head strong {
   overflow: hidden;
-  color: #e9e9eb;
+  color: #f8edef;
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -130,13 +133,13 @@
 
 .rgvx-reward-line-head small,
 .rgvx-reward-line footer {
-  color: var(--checkout-dim);
+  color: #a98c91;
   font-size: 10px;
   font-weight: 500;
 }
 
 .rgvx-reward-line-head em {
-  color: #bdbdc2;
+  color: #ff6b79;
   font-size: 11px;
   font-style: normal;
   font-weight: 650;
@@ -147,7 +150,7 @@
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: #242429;
+  background: #351b20;
 }
 
 .rgvx-reward-track > span {
@@ -164,7 +167,7 @@
 }
 
 .rgvx-reward-track .loyalty-projected {
-  background: #e56b77;
+  background: #ff7784;
 }
 
 .rgvx-reward-line footer {
@@ -1072,6 +1075,11 @@
     padding-bottom: 18px;
   }
 
+  .rgvx-reward-rail {
+    margin-inline: -18px;
+    padding-inline: 18px;
+  }
+
   .rgvx-order-summary.is-open .rgvx-summary-content {
     display: block;
   }
@@ -1104,22 +1112,21 @@
   }
 
   .rgvx-reward-rail {
-    margin-bottom: 26px;
-    padding: 0;
+    margin-top: 18px;
   }
 
   .rgvx-reward-rail-grid {
     grid-template-columns: 1fr;
   }
 
-  .rgvx-reward-line,
-  .rgvx-reward-line + .rgvx-reward-line {
-    border: 0;
-    padding: 14px 0;
+  .rgvx-reward-line {
+    padding-bottom: 14px;
   }
 
   .rgvx-reward-line + .rgvx-reward-line {
-    border-top: 1px solid var(--checkout-border-soft);
+    border-top: 1px solid #392025;
+    padding-top: 14px;
+    padding-bottom: 0;
   }
 
   .rgvx-reward-line footer {
