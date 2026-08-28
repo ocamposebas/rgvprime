@@ -584,21 +584,6 @@ function getInitialCheckoutForm() {
   return savedEmail ? { ...blankForm, email: savedEmail } : blankForm;
 }
 
-function getInitialCouponCode() {
-  if (typeof window === "undefined") return "";
-
-  const url = new URL(window.location.href);
-
-  return normalizeCoupon(
-    url.searchParams.get("coupon") ||
-      url.searchParams.get("coupon_code") ||
-      url.searchParams.get("discount_code") ||
-      url.searchParams.get("ref") ||
-      localStorage.getItem("rgv_checkout_coupon") ||
-      ""
-  );
-}
-
 function normalizeCheckoutFormForOrder(form = {}) {
   return {
     first_name: String(form.firstName || "").trim(),
@@ -860,7 +845,7 @@ export default function RgvCheckout() {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
-  const [couponInput, setCouponInput] = useState(() => getInitialCouponCode());
+  const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
   const [couponStatus, setCouponStatus] = useState("idle");
@@ -960,10 +945,7 @@ export default function RgvCheckout() {
     if (typeof window === "undefined") return;
 
     clearForeignCartCache();
-
-    if (couponInput) {
-      localStorage.setItem("rgv_checkout_coupon", couponInput);
-    }
+    localStorage.removeItem("rgv_checkout_coupon");
   }, []);
 
   useEffect(() => {
@@ -1408,10 +1390,6 @@ export default function RgvCheckout() {
       setCouponValidation(data);
       setCouponStatus("valid");
       setCouponMessage(getCouponUiMessage("valid", true));
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("rgv_checkout_coupon", finalCode);
-      }
     } catch (err) {
       setCoupon("");
       setCouponValidation(null);
@@ -1560,8 +1538,9 @@ export default function RgvCheckout() {
     if (!validateBaseCheckout()) return;
 
     if (couponInput && couponInput !== coupon) {
-      setError("Apply or clear the coupon code before continuing.");
-      return;
+      const couponError = "Apply or clear the coupon code before continuing.";
+      setError(couponError);
+      throw new Error(couponError);
     }
 
     if (!(await validateCheckoutInventory())) return;
