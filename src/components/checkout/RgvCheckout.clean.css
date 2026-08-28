@@ -1356,8 +1356,8 @@
   --split-paper-muted: #766a6d;
   --split-ink: #24191c;
   --split-line: #e3dadd;
-  --split-wine: #2a0d14;
-  --split-wine-deep: #15070b;
+  --split-wine: #09090b;
+  --split-wine-deep: #020203;
   min-height: calc(100vh - 72px);
   overflow: visible;
   background:
@@ -1387,10 +1387,10 @@
   grid-template-columns: minmax(360px, 0.88fr) minmax(560px, 1.12fr);
   align-items: stretch;
   gap: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(81, 42, 51, 0.12);
   border-radius: 28px;
-  background: var(--split-paper);
+  background: linear-gradient(90deg, #050506 0 44%, var(--split-paper) 44% 100%);
   box-shadow: 0 34px 90px rgba(48, 24, 30, 0.18);
 }
 
@@ -1399,7 +1399,7 @@
   grid-row: 1;
   overflow: visible;
   border: 0;
-  border-radius: 0;
+  border-radius: 0 28px 28px 0;
   background: var(--split-paper);
   padding: 0 clamp(34px, 4vw, 58px) 42px;
   color: var(--split-ink);
@@ -1698,22 +1698,37 @@
 }
 
 .rgvx-order-summary {
-  position: relative;
-  top: auto;
+  position: sticky;
+  top: 88px;
   grid-column: 1;
   grid-row: 1;
-  height: 100%;
+  align-self: start;
+  height: auto;
+  max-height: calc(100vh - 106px);
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 0;
-  border-radius: 0;
+  border-radius: 28px 0 0 28px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 34%),
-    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.18), transparent 34rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.018), transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.24), transparent 30rem),
+    radial-gradient(circle at 100% 65%, rgba(127, 29, 29, 0.16), transparent 26rem),
     linear-gradient(150deg, var(--split-wine), var(--split-wine-deep));
   padding: 50px 40px;
   color: #fff;
   box-shadow: none;
+  scrollbar-color: rgba(239, 68, 68, 0.52) transparent;
+  scrollbar-width: thin;
+}
+
+.rgvx-order-summary::-webkit-scrollbar {
+  width: 5px;
+}
+
+.rgvx-order-summary::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.46);
 }
 
 .rgvx-order-summary::after {
@@ -1746,7 +1761,8 @@
 .rgvx-reward-rail {
   margin: 20px -40px 0;
   border-color: rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.055);
+  background:
+    linear-gradient(90deg, rgba(220, 38, 38, 0.13), rgba(255, 255, 255, 0.035));
   padding: 19px 40px;
   box-shadow: none;
 }
@@ -1822,6 +1838,10 @@
   color: rgba(255, 255, 255, 0.68);
 }
 
+.rgvx-mini-coupon-header {
+  cursor: default;
+}
+
 .rgvx-mini-coupon-input {
   border-color: rgba(255, 255, 255, 0.15);
   background: rgba(0, 0, 0, 0.18);
@@ -1843,6 +1863,60 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+.rgvx-review-confirm-mobile {
+  display: none;
+}
+
+.rgvx-review-confirm-desktop {
+  display: grid;
+  margin-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  border-bottom: 0;
+  padding: 24px 0 0;
+}
+
+.rgvx-review-confirm-desktop .rgvx-section-heading {
+  margin-bottom: 12px;
+}
+
+.rgvx-review-confirm-desktop .rgvx-section-heading p {
+  color: #ff5369;
+}
+
+.rgvx-review-confirm-desktop .rgvx-section-heading h2 {
+  color: #fff;
+  font-size: 18px;
+}
+
+.rgvx-review-confirm-desktop .rgvx-section-heading > span {
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.rgvx-review-confirm-desktop .rgvx-policy {
+  border-color: rgba(255, 255, 255, 0.10);
+  padding: 16px 0;
+}
+
+.rgvx-review-confirm-desktop .rgvx-policy-control input {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rgvx-review-confirm-desktop .rgvx-policy-copy > strong {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.rgvx-review-confirm-desktop .rgvx-policy-copy > span {
+  color: rgba(255, 255, 255, 0.50);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.rgvx-review-confirm-desktop .rgvx-policy a {
+  color: #ff9aaa;
+  text-decoration-color: rgba(255, 154, 170, 0.42);
+}
+
 @media (max-width: 960px) {
   .rgvx-page {
     min-height: calc(100vh - 62px);
@@ -1851,7 +1925,9 @@
 
   .rgvx-clean-layout {
     grid-template-columns: 1fr;
+    overflow: hidden;
     border-radius: 22px;
+    background: var(--split-paper);
   }
 
   .rgvx-order-summary {
@@ -1860,6 +1936,9 @@
     grid-row: 1;
     order: initial;
     height: auto;
+    max-height: none;
+    overflow: hidden;
+    border-radius: 0;
     padding: 0 24px;
   }
 
@@ -1892,11 +1971,20 @@
   .rgvx-flow {
     grid-column: 1;
     grid-row: 2;
+    border-radius: 0;
     padding: 0 32px 36px;
   }
 
   .rgvx-flow > .rgvx-clean-header:first-child {
     padding-top: 40px;
+  }
+
+  .rgvx-review-confirm-desktop {
+    display: none;
+  }
+
+  .rgvx-review-confirm-mobile {
+    display: grid;
   }
 }
 

@@ -765,6 +765,72 @@ function Field({ label, children, wide = false }) {
   );
 }
 
+function ComplianceConfirm({
+  placement,
+  policyAcknowledged,
+  finalSaleAcknowledged,
+  hasError,
+  onPolicyChange,
+  onFinalSaleChange,
+}) {
+  const titleId = `rgvx-review-title-${placement}`;
+
+  return (
+    <section
+      className={`rgvx-review-confirm rgvx-review-confirm-${placement}`}
+      aria-labelledby={titleId}
+    >
+      <div className="rgvx-section-heading">
+        <p>Required</p>
+        <h2 id={titleId}>Confirm your order</h2>
+        <span>Please accept both policies before completing payment.</span>
+      </div>
+
+      <label className={`rgvx-policy ${policyAcknowledged ? "is-checked" : ""} ${!policyAcknowledged && hasError ? "warning" : ""}`}>
+        <span className="rgvx-policy-control">
+          <input
+            type="checkbox"
+            checked={policyAcknowledged}
+            onChange={(event) => onPolicyChange(event.target.checked)}
+          />
+          <Check size={15} aria-hidden="true" />
+        </span>
+
+        <span className="rgvx-policy-copy">
+          <strong>Age &amp; research-use confirmation</strong>
+          <span>
+            I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
+            laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
+            <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
+            <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
+          </span>
+        </span>
+      </label>
+
+      <label className={`rgvx-policy ${finalSaleAcknowledged ? "is-checked" : ""} ${!finalSaleAcknowledged && hasError ? "warning" : ""}`}>
+        <span className="rgvx-policy-control">
+          <input
+            type="checkbox"
+            checked={finalSaleAcknowledged}
+            onChange={(event) => onFinalSaleChange(event.target.checked)}
+          />
+          <Check size={15} aria-hidden="true" />
+        </span>
+
+        <span className="rgvx-policy-copy">
+          <strong>Final-sale acknowledgement</strong>
+          <span>
+            I understand and acknowledge that, due to the nature of these products, all sales
+            are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
+            reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
+            <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
+          </span>
+        </span>
+      </label>
+    </section>
+  );
+}
+
 export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
@@ -2696,61 +2762,20 @@ export default function RgvCheckout() {
               </div>
             </div>
 
-            <section className="rgvx-review-confirm" aria-labelledby="rgvx-review-title">
-              <div className="rgvx-section-heading">
-                <p>Required</p>
-                <h2 id="rgvx-review-title">Confirm your order</h2>
-                <span>Please accept both policies before completing payment.</span>
-              </div>
-
-              <label className={`rgvx-policy ${policyAcknowledged ? "is-checked" : ""} ${!policyAcknowledged && error ? "warning" : ""}`}>
-                <span className="rgvx-policy-control">
-                  <input
-                    type="checkbox"
-                    checked={policyAcknowledged}
-                    onChange={(event) => {
-                      setPolicyAcknowledged(event.target.checked);
-                      if (event.target.checked) setError("");
-                    }}
-                  />
-                  <Check size={15} aria-hidden="true" />
-                </span>
-
-                <span className="rgvx-policy-copy">
-                  <strong>Age &amp; research-use confirmation</strong>
-                  <span>
-                    I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
-                    laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
-                    <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
-                    <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
-                  </span>
-                </span>
-              </label>
-
-              <label className={`rgvx-policy ${finalSaleAcknowledged ? "is-checked" : ""} ${!finalSaleAcknowledged && error ? "warning" : ""}`}>
-                <span className="rgvx-policy-control">
-                  <input
-                    type="checkbox"
-                    checked={finalSaleAcknowledged}
-                    onChange={(event) => {
-                      setFinalSaleAcknowledged(event.target.checked);
-                      if (event.target.checked) setError("");
-                    }}
-                  />
-                  <Check size={15} aria-hidden="true" />
-                </span>
-
-                <span className="rgvx-policy-copy">
-                  <strong>Final-sale acknowledgement</strong>
-                  <span>
-                    I understand and acknowledge that, due to the nature of these products, all sales
-                    are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
-                    reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
-                    <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
-                  </span>
-                </span>
-              </label>
-            </section>
+            <ComplianceConfirm
+              placement="mobile"
+              policyAcknowledged={policyAcknowledged}
+              finalSaleAcknowledged={finalSaleAcknowledged}
+              hasError={Boolean(error)}
+              onPolicyChange={(checked) => {
+                setPolicyAcknowledged(checked);
+                if (checked) setError("");
+              }}
+              onFinalSaleChange={(checked) => {
+                setFinalSaleAcknowledged(checked);
+                if (checked) setError("");
+              }}
+            />
 
             <div className="rgvx-flow-section first rgvx-payment-section">
               <div className="rgvx-section-heading">
@@ -2793,7 +2818,11 @@ export default function RgvCheckout() {
                     setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
                     const target = !shippingAddressConfirmed
                       ? document.querySelector(".rgvx-address-confirmation")
-                      : document.querySelector(".rgvx-review-confirm");
+                      : document.querySelector(
+                          window.matchMedia("(min-width: 961px)").matches
+                            ? ".rgvx-review-confirm-desktop"
+                            : ".rgvx-review-confirm-mobile",
+                        );
                     target?.scrollIntoView({ behavior: "smooth", block: "center" });
                   }}
                 />
@@ -2957,16 +2986,18 @@ export default function RgvCheckout() {
                 <strong>{formatMoney(summaryTotal)}</strong>
               </div>
 
-              <details className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}>
-                <summary className="rgvx-mini-coupon-header">
+              <section
+                className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}
+                aria-label="Discount code"
+              >
+                <div className="rgvx-mini-coupon-header">
                   <div className="rgvx-mini-coupon-title">
                     <Tag size={12} />
                     <span>Discount code</span>
                   </div>
 
                   {couponStatus === "valid" && <div className="rgvx-mini-coupon-pill">Applied</div>}
-                  <ChevronDown className="rgvx-mini-coupon-chevron" size={14} aria-hidden="true" />
-                </summary>
+                </div>
 
                 <div className="rgvx-mini-coupon-body">
                 <div className="rgvx-mini-coupon-controls">
@@ -3038,12 +3069,27 @@ export default function RgvCheckout() {
                   </p>
                 )}
                 </div>
-              </details>
+              </section>
             </div>
 
             <div className="rgvx-summary-trust" aria-label="Checkout benefits">
               <span><Lock size={14} /> Secure payment and discreet packaging</span>
             </div>
+
+            <ComplianceConfirm
+              placement="desktop"
+              policyAcknowledged={policyAcknowledged}
+              finalSaleAcknowledged={finalSaleAcknowledged}
+              hasError={Boolean(error)}
+              onPolicyChange={(checked) => {
+                setPolicyAcknowledged(checked);
+                if (checked) setError("");
+              }}
+              onFinalSaleChange={(checked) => {
+                setFinalSaleAcknowledged(checked);
+                if (checked) setError("");
+              }}
+            />
             </div>
           </aside>
         </div>
