@@ -2868,65 +2868,6 @@ export default function RgvCheckout() {
               <h2>Order summary</h2>
             </div>
 
-            <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
-              <div className="rgvx-reward-rail-grid">
-                <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
-                  <div className="rgvx-reward-line-head">
-                    <span className="rgvx-reward-icon"><Truck size={16} /></span>
-                    <div>
-                      <strong>Free shipping</strong>
-                      <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} away`}</small>
-                    </div>
-                    <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
-                  </div>
-
-                  <div
-                    className="rgvx-reward-track"
-                    role="progressbar"
-                    aria-label="Free shipping progress"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    aria-valuenow={progressWidth}
-                  >
-                    <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
-                  </div>
-                </div>
-
-                <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
-                  <div className="rgvx-reward-line-head">
-                    <span className="rgvx-reward-icon"><Gift size={16} /></span>
-                    <div>
-                      <strong>{sessionCustomer ? "Loyalty points" : "Earn loyalty points"}</strong>
-                      <small>
-                        {sessionCustomer
-                          ? `${formatPoints(projectedLoyaltyPoints)} after this order`
-                          : `${formatPoints(estimatedLoyaltyPoints)} added after checkout`}
-                      </small>
-                    </div>
-                    <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
-                  </div>
-
-                  <div
-                    className="rgvx-reward-track"
-                    role="progressbar"
-                    aria-label="Loyalty reward progress after this order"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    aria-valuenow={Math.round(projectedLoyaltyProgress)}
-                  >
-                    <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
-                    <span
-                      className="loyalty-projected"
-                      style={{
-                        left: `${currentLoyaltyProgress}%`,
-                        width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <div className="rgvx-items-list">
               {displayedSummaryItems.map((item) => (
                   <div
@@ -2981,6 +2922,65 @@ export default function RgvCheckout() {
                 <span>{isZelleSelected ? "Due now" : "Total USD"}</span>
                 <strong>{formatMoney(summaryTotal)}</strong>
               </div>
+
+              <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
+                <div className="rgvx-reward-rail-grid">
+                  <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
+                    <div className="rgvx-reward-line-head">
+                      <span className="rgvx-reward-icon"><Truck size={16} /></span>
+                      <div>
+                        <strong>Free shipping</strong>
+                        <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} to unlock`}</small>
+                      </div>
+                      <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
+                    </div>
+
+                    <div
+                      className="rgvx-reward-track"
+                      role="progressbar"
+                      aria-label="Free shipping progress"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow={progressWidth}
+                    >
+                      <span className="shipping-fill" style={{ width: `${progressWidth}%` }} />
+                    </div>
+                  </div>
+
+                  <div className={`rgvx-reward-line loyalty ${pointsMissingAfterOrder === 0 ? "is-unlocked" : ""}`}>
+                    <div className="rgvx-reward-line-head">
+                      <span className="rgvx-reward-icon"><Gift size={16} /></span>
+                      <div>
+                        <strong>{sessionCustomer ? "Loyalty points" : "Earn loyalty points"}</strong>
+                        <small>
+                          {sessionCustomer
+                            ? `${formatPoints(projectedLoyaltyPoints)} after this order`
+                            : `${formatPoints(estimatedLoyaltyPoints)} added after checkout`}
+                        </small>
+                      </div>
+                      <em>+{formatPoints(estimatedLoyaltyPoints)}</em>
+                    </div>
+
+                    <div
+                      className="rgvx-reward-track"
+                      role="progressbar"
+                      aria-label="Loyalty reward progress after this order"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow={Math.round(projectedLoyaltyProgress)}
+                    >
+                      <span className="loyalty-current" style={{ width: `${currentLoyaltyProgress}%` }} />
+                      <span
+                        className="loyalty-projected"
+                        style={{
+                          left: `${currentLoyaltyProgress}%`,
+                          width: `${Math.max(0, projectedLoyaltyProgress - currentLoyaltyProgress)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
 
               <section
                 className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}

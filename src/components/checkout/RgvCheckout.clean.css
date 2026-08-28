@@ -1570,6 +1570,74 @@
   }
 }
 
+/* Goal progress: subtle motion communicates that both rewards are advancing. */
+.rgvx-totals > .rgvx-reward-rail {
+  margin-top: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 10px 0 14px;
+}
+
+.rgvx-reward-line {
+  border-radius: 10px;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.rgvx-reward-line:hover {
+  background: rgba(220, 38, 38, 0.045);
+  transform: translateX(2px);
+}
+
+.rgvx-reward-track {
+  height: 5px;
+}
+
+.rgvx-reward-track > span {
+  overflow: hidden;
+  background: linear-gradient(90deg, #9f172c 0%, #ef3d53 48%, #ff7181 68%, #b91c34 100%);
+  background-size: 220% 100%;
+  box-shadow: 0 0 13px rgba(239, 61, 83, 0.30);
+  transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1), left 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rgvx-goal-flow 2.4s linear infinite;
+}
+
+.rgvx-reward-track > span::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.74);
+  border-radius: 999px;
+  background: #ef3d53;
+  box-shadow: 0 0 0 3px rgba(239, 61, 83, 0.16), 0 0 14px rgba(239, 61, 83, 0.66);
+  content: "";
+  transform: translate(35%, -50%);
+  animation: rgvx-goal-tip 1.45s ease-in-out infinite;
+}
+
+.rgvx-reward-icon svg {
+  animation: rgvx-goal-icon 2.8s ease-in-out infinite;
+}
+
+.rgvx-reward-line.loyalty .rgvx-reward-icon svg {
+  animation-delay: 0.4s;
+}
+
+@keyframes rgvx-goal-flow {
+  from { background-position: 180% 0; }
+  to { background-position: -40% 0; }
+}
+
+@keyframes rgvx-goal-tip {
+  0%, 100% { opacity: 0.72; transform: translate(35%, -50%) scale(0.82); }
+  50% { opacity: 1; transform: translate(35%, -50%) scale(1); }
+}
+
+@keyframes rgvx-goal-icon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rgvx-page *,
   .rgvx-page *::before,
