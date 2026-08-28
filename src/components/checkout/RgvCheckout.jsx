@@ -2445,25 +2445,24 @@ export default function RgvCheckout() {
       <div className="rgvx-background-wash" />
 
       <section className="rgvx-shell">
-        <header className="rgvx-clean-header">
-          <div>
-            <p>Secure checkout</p>
-            <h1>Complete your order</h1>
-            <span>
-              Review your details, choose how to pay, and you&apos;re all set.
-            </span>
-
-            <div className="rgvx-header-proof" aria-label="Checkout benefits">
-              <span><ShieldCheck size={15} /> Protected payment</span>
-              <span><Truck size={15} /> Fast delivery</span>
-              <span><Gift size={15} /> Loyalty rewards</span>
-            </div>
-          </div>
-
-        </header>
-
         <div className="rgvx-clean-layout">
           <section className="rgvx-flow">
+            <header className="rgvx-clean-header">
+              <div>
+                <p>Secure checkout</p>
+                <h1>Complete your order</h1>
+                <span>
+                  Review your details, choose how to pay, and you&apos;re all set.
+                </span>
+
+                <div className="rgvx-header-proof" aria-label="Checkout benefits">
+                  <span><ShieldCheck size={15} /> Protected payment</span>
+                  <span><Truck size={15} /> Fast delivery</span>
+                  <span><Gift size={15} /> Loyalty rewards</span>
+                </div>
+              </div>
+            </header>
+
             {requiresDirectDetails && (
               <div className="rgvx-zelle-area">
                 <div className="rgvx-form-section">
