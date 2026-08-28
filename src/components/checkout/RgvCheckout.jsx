@@ -2447,11 +2447,17 @@ export default function RgvCheckout() {
       <section className="rgvx-shell">
         <header className="rgvx-clean-header">
           <div>
-            <p>Checkout</p>
-            <h1>Review and pay</h1>
+            <p>Secure checkout</p>
+            <h1>Complete your order</h1>
             <span>
-              Confirm your delivery details and choose a payment method.
+              Review your details, choose how to pay, and you&apos;re all set.
             </span>
+
+            <div className="rgvx-header-proof" aria-label="Checkout benefits">
+              <span><ShieldCheck size={15} /> Protected payment</span>
+              <span><Truck size={15} /> Fast delivery</span>
+              <span><Gift size={15} /> Loyalty rewards</span>
+            </div>
           </div>
 
         </header>

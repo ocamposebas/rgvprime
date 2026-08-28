@@ -2,9 +2,13 @@
   position: sticky;
   z-index: 120;
   top: 0;
-  border-bottom: 1px solid #242429;
-  background: rgba(8, 8, 10, 0.96);
-  backdrop-filter: blur(16px);
+  border-top: 2px solid #dc263d;
+  border-bottom: 1px solid rgba(248, 113, 113, 0.15);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.12), transparent 34%),
+    rgba(5, 2, 3, 0.92);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(20px);
 }
 
 .rgvx-checkout-nav-inner {
@@ -34,7 +38,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #99999f;
+  color: #b7a8ac;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 12px;
   font-weight: 600;
@@ -46,16 +50,23 @@
 }
 
 .rgvx-checkout-nav-secure svg {
-  color: #df2c3f;
+  color: #f04459;
+  filter: drop-shadow(0 4px 9px rgba(220, 38, 38, 0.34));
 }
 
 .rgvx-checkout-back {
   justify-self: end;
-  color: #d4d4d7;
-  transition: color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 9px 13px;
+  color: #e8dde0;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
 .rgvx-checkout-back:hover {
+  border-color: rgba(248, 113, 113, 0.28);
+  background: rgba(220, 38, 38, 0.09);
   color: #fff;
 }
 
