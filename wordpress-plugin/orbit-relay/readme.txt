@@ -3,7 +3,7 @@ Contributors: orbit
 Tags: woocommerce, integration, hmac, order synchronization
 Requires at least: 6.5
 Requires PHP: 8.1
-Stable tag: 1.3.3
+Stable tag: 1.4.0
 License: Proprietary
 
 Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.

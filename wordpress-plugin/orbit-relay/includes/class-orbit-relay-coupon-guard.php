@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class ORBIT_Relay_Coupon_Guard {
     private const DEFAULT_SINGLE_USE_CODES = array( 'WELCOME10' );
+    private const CLAIM_TTL = 1800;
 
     public static function init(): void {
         add_filter(
@@ -64,6 +65,49 @@ final class ORBIT_Relay_Coupon_Guard {
                 sprintf( 'Coupon %s is now limited to one use per customer.', $code ),
                 array( 'coupon_id' => $coupon_id )
             );
+        }
+    }
+
+    public static function claim_card_checkout( string $code, string $email, int $order_id ) {
+        $coupon = new WC_Coupon( $code );
+        if ( ! self::is_protected_coupon( $coupon ) ) {
+            return true;
+        }
+
+        $email = strtolower( sanitize_email( $email ) );
+        if ( ! $email || ! is_email( $email ) ) {
+            return new WP_Error( 'welcome_coupon_email_required', 'A valid email is required for this one-use coupon.' );
+        }
+
+        $option_name = '_orbit_coupon_claim_' . substr( hash( 'sha256', self::normalize_code( $code ) . '|' . $email ), 0, 40 );
+        $existing = get_option( $option_name, null );
+        if ( is_array( $existing ) && (int) ( $existing['expires_at'] ?? 0 ) <= time() ) {
+            delete_option( $option_name );
+            $existing = null;
+        }
+        if ( is_array( $existing ) ) {
+            if ( (int) ( $existing['order_id'] ?? 0 ) === $order_id ) {
+                return $option_name;
+            }
+            return new WP_Error( 'welcome_coupon_checkout_in_progress', 'WELCOME10 is already being used in another checkout. Finish that checkout or wait before trying again.' );
+        }
+
+        $claimed = add_option(
+            $option_name,
+            array( 'order_id' => $order_id, 'expires_at' => time() + self::CLAIM_TTL ),
+            '',
+            'no'
+        );
+        return $claimed ? $option_name : new WP_Error( 'welcome_coupon_checkout_in_progress', 'WELCOME10 is already being used in another checkout.' );
+    }
+
+    public static function release_card_checkout_claim( string $option_name, int $order_id ): void {
+        if ( ! preg_match( '/^_orbit_coupon_claim_[a-f0-9]{40}$/', $option_name ) ) {
+            return;
+        }
+        $existing = get_option( $option_name, null );
+        if ( is_array( $existing ) && (int) ( $existing['order_id'] ?? 0 ) === $order_id ) {
+            delete_option( $option_name );
         }
     }
 

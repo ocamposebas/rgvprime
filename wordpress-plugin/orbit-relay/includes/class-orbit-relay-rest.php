@@ -87,7 +87,9 @@ final class ORBIT_Relay_REST {
         }
 
         ORBIT_Relay_Logger::log( 'ORBIT_ORDER_READ', 'Order payment summary retrieved.', array( 'order_id' => $order_id ) );
-        return new WP_REST_Response( $summary, 200 );
+        $response = new WP_REST_Response( $summary, 200 );
+        $response->header( 'Cache-Control', 'no-store, private' );
+        return $response;
     }
 
     public static function payment( WP_REST_Request $request ) {
@@ -127,7 +129,9 @@ final class ORBIT_Relay_REST {
             return $result;
         }
 
-        return new WP_REST_Response( $result, 200 );
+        $response = new WP_REST_Response( $result, 200 );
+        $response->header( 'Cache-Control', 'no-store, private' );
+        return $response;
     }
 
     /**

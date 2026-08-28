@@ -3,10 +3,11 @@
 defined( 'ABSPATH' ) || exit;
 
 final class ORBIT_Relay_Card_Checkout {
+    private static string $request_id = '';
     private const REQUEST_LOCK_TTL = 180;
     private const REQUEST_RESULT_TTL = 600;
     private const RATE_LIMIT_WINDOW = 600;
-    private const RATE_LIMIT_MAX_REQUESTS = 10;
+    private const RATE_LIMIT_MAX_REQUESTS = 30;
     private const MAX_ORDER_ITEMS = 50;
     private const MAX_ITEM_QUANTITY = 100;
     private const FREE_SHIPPING_MINIMUM = 200.0;
@@ -27,6 +28,10 @@ final class ORBIT_Relay_Card_Checkout {
 
     public static function init(): void {
         add_filter( 'rest_pre_serve_request', array( __CLASS__, 'send_cors_headers' ), 10, 4 );
+    }
+
+    private static function start_request(): void {
+        self::$request_id = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : bin2hex( random_bytes( 16 ) );
     }
 
     public static function authorize( WP_REST_Request $request ) {
@@ -78,6 +83,7 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     public static function quote( WP_REST_Request $request ) {
+        self::start_request();
         if ( ! headers_sent() ) {
             nocache_headers();
         }
@@ -132,6 +138,7 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     public static function handle( WP_REST_Request $request ) {
+        self::start_request();
         if ( ! headers_sent() ) {
             nocache_headers();
         }
@@ -161,7 +168,12 @@ final class ORBIT_Relay_Card_Checkout {
         $validation = self::validate_order_payload( $items, $billing, $shipping );
 
         if ( is_wp_error( $validation ) ) {
-            return self::response( false, $validation->get_error_message(), 400 );
+            return self::response( false, $validation->get_error_message(), 400, array( 'errorCode' => $validation->get_error_code() ) );
+        }
+
+        $compliance = self::validate_compliance( $data );
+        if ( is_wp_error( $compliance ) ) {
+            return self::response( false, $compliance->get_error_message(), 400, array( 'errorCode' => $compliance->get_error_code() ) );
         }
 
         $confirmation_token_id = sanitize_text_field( (string) ( $data['confirmationTokenId'] ?? '' ) );
@@ -185,7 +197,17 @@ final class ORBIT_Relay_Card_Checkout {
                 return self::response( false, 'Your order total changed. Review the updated checkout before paying.', 409, array( 'quoteChanged' => true ) );
             }
         } catch ( Throwable $error ) {
-            return self::response( false, 'Unable to revalidate the current checkout total.', 400 );
+            ORBIT_Relay_Logger::log(
+                'ORBIT_CARD_REVALIDATION_EXCEPTION',
+                '',
+                array(
+                    'request_id'       => self::$request_id,
+                    'exception_class'  => get_class( $error ),
+                    'exception_message'=> self::safe_exception_message( $error ),
+                ),
+                'error'
+            );
+            return self::response( false, 'Unable to revalidate the current checkout total.', 400, array( 'errorCode' => 'quote_revalidation_failed' ) );
         }
 
         $request_key = self::build_request_key( $data, $items, $billing, $shipping );
@@ -205,12 +227,22 @@ final class ORBIT_Relay_Card_Checkout {
                     array( 'processing' => true )
                 );
             }
+
+            $stored_key = (string) $order->get_meta( '_orbit_card_checkout_request_key', true );
+            $stored_total_minor = ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_total(), strtoupper( (string) $order->get_currency() ) );
+            if ( ! hash_equals( $request_key, $stored_key ) || $order->is_paid() || ! $order->needs_payment() || $stored_total_minor !== (int) $current_quote['totalMinor'] ) {
+                return self::response( false, 'The previous payment session no longer matches this checkout. Refresh and try again.', 409, array( 'errorCode' => 'stale_checkout_order' ) );
+            }
         }
 
         try {
             if ( ! $order ) {
                 $order = wc_create_order();
                 $order = self::populate_pending_order( $order, $data, $items, $billing, $shipping, $request_key );
+                $prepared_total_minor = ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_total(), strtoupper( (string) $order->get_currency() ) );
+                if ( $prepared_total_minor !== (int) $current_quote['totalMinor'] ) {
+                    throw new RuntimeException( 'The persisted order total did not match the signed checkout quote.' );
+                }
                 self::complete_request( $option_name, $order->get_id() );
             }
         } catch ( Throwable $error ) {
@@ -219,13 +251,17 @@ final class ORBIT_Relay_Card_Checkout {
             }
 
             if ( $order instanceof WC_Order && $order->get_id() ) {
+                ORBIT_Relay_Coupon_Guard::release_card_checkout_claim(
+                    (string) $order->get_meta( '_orbit_coupon_claim_option', true ),
+                    $order->get_id()
+                );
                 $order->update_status( 'failed', 'ORBIT card checkout preparation failed before payment.' );
             }
 
             ORBIT_Relay_Logger::log(
                 'ORBIT_CARD_CHECKOUT_ERROR',
                 $error->getMessage(),
-                array( 'order_id' => $order instanceof WC_Order ? $order->get_id() : 0 ),
+                array( 'order_id' => $order instanceof WC_Order ? $order->get_id() : 0, 'request_id' => self::$request_id ),
                 'error'
             );
 
@@ -233,12 +269,12 @@ final class ORBIT_Relay_Card_Checkout {
         }
 
         try {
-            return self::prepare_orbit_payment( $order, $confirmation_token_id );
+            return self::prepare_orbit_payment( $order );
         } catch ( Throwable $error ) {
             ORBIT_Relay_Logger::log(
                 'ORBIT_CARD_PAYMENT_PREPARE_ERROR',
                 $error->getMessage(),
-                array( 'order_id' => $order->get_id() ),
+                array( 'order_id' => $order->get_id(), 'request_id' => self::$request_id ),
                 'error'
             );
             return self::response( false, 'ORBIT card payment is temporarily unavailable. Please try again.', 503 );
@@ -252,8 +288,15 @@ final class ORBIT_Relay_Card_Checkout {
         $order->set_payment_method_title( 'Card via ORBIT / Stripe' );
         $order->set_created_via( 'orbit_relay_card_checkout' );
         $order->update_meta_data( '_orbit_payment_source', 'rgv_custom_checkout_orbit_card' );
-        $order->update_meta_data( '_orbit_policy_acknowledged_at', sanitize_text_field( $data['policyAcknowledgedAt'] ?? current_time( 'mysql' ) ) );
+        $order->update_meta_data( '_orbit_policy_acknowledged_at', current_time( 'mysql', true ) );
+        $order->update_meta_data( '_orbit_policy_version', 'rgv-checkout-compliance-v1' );
+        $order->update_meta_data( '_orbit_age_confirmed', 'yes' );
+        $order->update_meta_data( '_orbit_research_use_acknowledged', 'yes' );
+        $order->update_meta_data( '_orbit_terms_accepted', 'yes' );
+        $order->update_meta_data( '_orbit_refund_policy_accepted', 'yes' );
+        $order->update_meta_data( '_orbit_final_sale_policy_accepted', 'yes' );
         $order->update_meta_data( '_orbit_card_checkout_request_key', $request_key );
+        $order->update_meta_data( '_orbit_checkout_quote_id', sanitize_text_field( (string) ( $data['quoteId'] ?? '' ) ) );
 
         if ( is_user_logged_in() ) {
             $order->set_customer_id( get_current_user_id() );
@@ -272,6 +315,13 @@ final class ORBIT_Relay_Card_Checkout {
         $coupon_free_shipping = false;
 
         if ( $coupon_code ) {
+            $coupon_claim = ORBIT_Relay_Coupon_Guard::claim_card_checkout( $coupon_code, (string) $order->get_billing_email(), $order->get_id() );
+            if ( is_wp_error( $coupon_claim ) ) {
+                throw new RuntimeException( $coupon_claim->get_error_message() );
+            }
+            if ( is_string( $coupon_claim ) ) {
+                $order->update_meta_data( '_orbit_coupon_claim_option', $coupon_claim );
+            }
             $coupon_result = $order->apply_coupon( $coupon_code );
             if ( is_wp_error( $coupon_result ) ) {
                 throw new RuntimeException( $coupon_result->get_error_message() );
@@ -311,7 +361,7 @@ final class ORBIT_Relay_Card_Checkout {
         return $order;
     }
 
-    private static function prepare_orbit_payment( WC_Order $order, string $confirmation_token_id = '' ): WP_REST_Response {
+    private static function prepare_orbit_payment( WC_Order $order ): WP_REST_Response {
         $api_url = ORBIT_Relay::api_url();
         $merchant_id = ORBIT_Relay::merchant_id();
         $signing_secret = ORBIT_Relay::signing_secret();
@@ -333,6 +383,9 @@ final class ORBIT_Relay_Card_Checkout {
             'v'          => 1,
             'merchantId' => $merchant_id,
             'wooOrderId' => $order->get_id(),
+            'quoteId'    => (string) $order->get_meta( '_orbit_checkout_quote_id', true ),
+            'amountMinor'=> ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_total(), strtoupper( (string) $order->get_currency() ) ),
+            'currency'   => strtoupper( (string) $order->get_currency() ),
             'exp'        => time() + 600,
             'nonce'      => self::base64url_encode( random_bytes( 24 ) ),
         );
@@ -348,16 +401,24 @@ final class ORBIT_Relay_Card_Checkout {
                     'Content-Type' => 'application/json',
                     'Accept'       => 'application/json',
                 ),
-                'body'        => wp_json_encode( array_filter( array(
-                    'checkoutToken'      => $checkout_token,
-                    'confirmationTokenId' => $confirmation_token_id,
-                ) ) ),
+                'body'        => wp_json_encode( array( 'checkoutToken' => $checkout_token ) ),
                 'data_format' => 'body',
             )
         );
 
         if ( is_wp_error( $response ) ) {
-            return self::response( false, 'ORBIT card payment is temporarily unavailable. Please try again.', 503 );
+            ORBIT_Relay_Logger::log(
+                'ORBIT_CARD_CHECKOUT_TRANSPORT_ERROR',
+                'WordPress could not reach ORBIT /api/payments/checkout.',
+                array(
+                    'request_id'       => self::$request_id,
+                    'woo_order_id'     => $order->get_id(),
+                    'wp_error_code'    => sanitize_key( (string) $response->get_error_code() ),
+                    'wp_error_message' => self::safe_upstream_log_field( $response->get_error_message() ),
+                ),
+                'error'
+            );
+            return self::response( false, 'The payment service could not be reached. Please try again.', 503, array( 'errorCode' => 'orbit_transport_error' ) );
         }
 
         $status = (int) wp_remote_retrieve_response_code( $response );
@@ -371,6 +432,7 @@ final class ORBIT_Relay_Card_Checkout {
             $context = array(
                 'http_status'  => $status,
                 'woo_order_id' => $order->get_id(),
+                'request_id'   => self::$request_id,
             );
             $error_value = is_scalar( $error_data['error'] ?? null ) ? $error_data['error'] : null;
             $code_value = $error_data['code'] ?? $nested_error['code'] ?? null;
@@ -390,13 +452,27 @@ final class ORBIT_Relay_Card_Checkout {
             );
         }
 
+        if ( $status >= 200 && $status < 300 && ! is_array( $body ) ) {
+            ORBIT_Relay_Logger::log(
+                'ORBIT_CARD_CHECKOUT_INVALID_JSON',
+                'ORBIT returned a non-JSON success response.',
+                array( 'http_status' => $status, 'woo_order_id' => $order->get_id(), 'request_id' => self::$request_id ),
+                'error'
+            );
+        }
+
         if ( $status < 200 || $status >= 300 || ! is_array( $body ) ) {
+            $upstream_message = is_array( $body ) ? sanitize_text_field( (string) ( $body['message'] ?? $body['error'] ?? '' ) ) : '';
             return self::response(
                 false,
-                409 === $status
-                    ? 'Stripe card payments are not ready for this merchant.'
-                    : 'ORBIT could not prepare the secure card payment. Please try again.',
-                409 === $status ? 409 : 502
+                $upstream_message ?: ( 409 === $status
+                    ? 'This payment session is no longer valid. Refresh checkout and try again.'
+                    : 'ORBIT could not prepare the secure card payment. Please try again.' ),
+                in_array( $status, array( 400, 409, 422, 429, 503 ), true ) ? $status : 502,
+                array(
+                    'errorCode' => sanitize_key( (string) ( is_array( $body ) ? ( $body['code'] ?? 'orbit_upstream_error' ) : 'orbit_invalid_response' ) ),
+                    'requestId' => sanitize_text_field( (string) ( is_array( $body ) ? ( $body['requestId'] ?? self::$request_id ) : self::$request_id ) ),
+                )
             );
         }
 
@@ -404,13 +480,16 @@ final class ORBIT_Relay_Card_Checkout {
         $client_secret = sanitize_text_field( (string) ( $body['clientSecret'] ?? '' ) );
         $connected_account_id = sanitize_text_field( (string) ( $body['connectedAccountId'] ?? '' ) );
         $publishable_key = sanitize_text_field( (string) ( $body['publishableKey'] ?? '' ) );
+        $payment_method_configuration_id = sanitize_text_field( (string) ( $body['paymentMethodConfigurationId'] ?? '' ) );
 
         if (
             ! preg_match( '/^orb_tx_[A-Za-z0-9_-]+$/', $transaction_id ) ||
             ! preg_match( '/^pi_[A-Za-z0-9_]+_secret_[A-Za-z0-9_]+$/', $client_secret ) ||
             ! preg_match( '/^acct_[A-Za-z0-9]+$/', $connected_account_id ) ||
-            ! preg_match( '/^pk_(test|live)_[A-Za-z0-9]+$/', $publishable_key )
+            ! preg_match( '/^pk_(test|live)_[A-Za-z0-9]+$/', $publishable_key ) ||
+            ! preg_match( '/^pmc_[A-Za-z0-9]+$/', $payment_method_configuration_id )
         ) {
+            ORBIT_Relay_Logger::log( 'ORBIT_CARD_CHECKOUT_INVALID_CONFIGURATION', '', array( 'woo_order_id' => $order->get_id(), 'request_id' => self::$request_id ), 'error' );
             return self::response( false, 'ORBIT returned an invalid card payment configuration.', 502 );
         }
 
@@ -437,6 +516,7 @@ final class ORBIT_Relay_Card_Checkout {
                 'clientSecret'       => $client_secret,
                 'connectedAccountId' => $connected_account_id,
                 'publishableKey'     => $publishable_key,
+                'paymentMethodConfigurationId' => $payment_method_configuration_id,
                 'orderId'            => $order->get_id(),
                 'orderNumber'        => $order->get_order_number(),
                 'total'              => (string) $order->get_total(),
@@ -470,6 +550,25 @@ final class ORBIT_Relay_Card_Checkout {
         $email = sanitize_email( $billing['email'] ?? $shipping['email'] ?? '' );
         if ( ! $email || ! is_email( $email ) ) {
             return new WP_Error( 'orbit_card_invalid_email', 'A valid email is required.' );
+        }
+
+        return true;
+    }
+
+    private static function validate_compliance( array $data ) {
+        $required = array(
+            'ageConfirmed',
+            'researchUseAcknowledged',
+            'termsAccepted',
+            'refundPolicyAccepted',
+            'finalSalePolicyAccepted',
+            'researchUsePolicyAccepted',
+        );
+
+        foreach ( $required as $field ) {
+            if ( true !== ( $data[ $field ] ?? null ) ) {
+                return new WP_Error( 'orbit_compliance_required', 'All required age, research-use, terms, and final-sale acknowledgements must be accepted.' );
+            }
         }
 
         return true;
@@ -604,6 +703,8 @@ final class ORBIT_Relay_Card_Checkout {
             'shipping' => self::shipping_method( $data, (float) $order->get_shipping_total() <= 0 )['id'],
             'total' => (string) $order->get_total(),
             'currency' => $currency,
+            'billing' => self::clean_address( isset( $data['billing'] ) && is_array( $data['billing'] ) ? $data['billing'] : array() ),
+            'shippingAddress' => self::clean_address( isset( $data['shipping'] ) && is_array( $data['shipping'] ) ? $data['shipping'] : array() ),
             'expiresAt' => $expires_at,
         );
         return array(
@@ -669,11 +770,13 @@ final class ORBIT_Relay_Card_Checkout {
         $body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
         $account = sanitize_text_field( (string) ( $body['connectedAccountId'] ?? '' ) );
         $key = sanitize_text_field( (string) ( $body['publishableKey'] ?? '' ) );
+        $payment_method_configuration_id = sanitize_text_field( (string) ( $body['paymentMethodConfigurationId'] ?? '' ) );
         $has_connected_account = '' !== $account;
         $connected_account_format_valid = 1 === preg_match( '/^acct_[A-Za-z0-9]+$/', $account );
         $has_publishable_key = '' !== $key;
         $publishable_key_format_valid = 1 === preg_match( '/^pk_(test|live)_[A-Za-z0-9]+$/', $key );
-        if ( ! $connected_account_format_valid || ! $publishable_key_format_valid ) {
+        $payment_method_configuration_format_valid = 1 === preg_match( '/^pmc_[A-Za-z0-9]+$/', $payment_method_configuration_id );
+        if ( ! $connected_account_format_valid || ! $publishable_key_format_valid || ! $payment_method_configuration_format_valid ) {
             ORBIT_Relay_Logger::log(
                 'ORBIT_CHECKOUT_CONFIG_INVALID_RESPONSE',
                 '',
@@ -682,13 +785,18 @@ final class ORBIT_Relay_Card_Checkout {
                     'connected_account_format_valid' => $connected_account_format_valid,
                     'has_publishable_key'             => $has_publishable_key,
                     'publishable_key_format_valid'    => $publishable_key_format_valid,
+                    'payment_method_configuration_format_valid' => $payment_method_configuration_format_valid,
                 ),
                 'error'
             );
 
             return new WP_Error( 'orbit_config_invalid', 'Secure card payment is temporarily unavailable.' );
         }
-        return array( 'connectedAccountId' => $account, 'publishableKey' => $key );
+        return array(
+            'connectedAccountId' => $account,
+            'publishableKey' => $key,
+            'paymentMethodConfigurationId' => $payment_method_configuration_id,
+        );
     }
 
     private static function product_from_item( array $item ) {
@@ -872,17 +980,39 @@ final class ORBIT_Relay_Card_Checkout {
             'sha256',
             wp_json_encode(
                 array(
-                    'email'    => strtolower( sanitize_email( $billing['email'] ?? $shipping['email'] ?? '' ) ),
-                    'phone'    => preg_replace( '/\D+/', '', (string) ( $billing['phone'] ?? $shipping['phone'] ?? '' ) ),
-                    'address'  => sanitize_text_field( (string) ( $shipping['address_1'] ?? $billing['address_1'] ?? '' ) ),
-                    'postcode' => sanitize_text_field( (string) ( $shipping['postcode'] ?? $billing['postcode'] ?? '' ) ),
+                    'billing'  => self::clean_address( $billing ),
+                    'shippingAddress' => self::clean_address( $shipping ),
                     'coupon'   => self::clean_coupon( $data['couponCode'] ?? $data['coupon'] ?? '' ),
                     'shipping' => sanitize_key( (string) $method ),
                     'items'    => $normalized_items,
                     'attempt'  => sanitize_text_field( (string) ( $data['checkoutAttemptId'] ?? '' ) ),
+                    'quoteId'  => sanitize_text_field( (string) ( $data['quoteId'] ?? '' ) ),
+                    'quoteExpiresAt' => absint( $data['quoteExpiresAt'] ?? 0 ),
                 )
             )
         );
+    }
+
+    public static function cleanup_expired_request_locks(): void {
+        global $wpdb;
+
+        foreach ( array( '_orbit_card_req_', '_orbit_coupon_claim_' ) as $prefix ) {
+            $pattern = $wpdb->esc_like( $prefix ) . '%';
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 500",
+                    $pattern
+                ),
+                ARRAY_A
+            );
+
+            foreach ( is_array( $rows ) ? $rows : array() as $row ) {
+                $state = maybe_unserialize( $row['option_value'] ?? '' );
+                if ( is_array( $state ) && (int) ( $state['expires_at'] ?? 0 ) > 0 && (int) $state['expires_at'] <= time() ) {
+                    delete_option( (string) $row['option_name'] );
+                }
+            }
+        }
     }
 
     private static function claim_request( string $option_name ): array {
@@ -957,7 +1087,11 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     private static function client_ip(): string {
-        foreach ( array( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '', $_SERVER['REMOTE_ADDR'] ?? '' ) as $candidate ) {
+        $candidates = array( $_SERVER['REMOTE_ADDR'] ?? '' );
+        if ( true === apply_filters( 'orbit_relay_trust_cf_connecting_ip', false ) ) {
+            array_unshift( $candidates, $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' );
+        }
+        foreach ( $candidates as $candidate ) {
             $candidate = trim( sanitize_text_field( wp_unslash( (string) $candidate ) ) );
             if ( $candidate && filter_var( $candidate, FILTER_VALIDATE_IP ) ) {
                 return $candidate;
@@ -1003,7 +1137,7 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     private static function response( bool $success, string $message, int $status, array $data = array() ): WP_REST_Response {
-        $payload = array_merge( array( 'success' => $success ), $data );
+        $payload = array_merge( array( 'success' => $success, 'requestId' => self::$request_id ), $data );
         if ( '' !== $message ) {
             $payload['message'] = $message;
         }
@@ -1011,6 +1145,7 @@ final class ORBIT_Relay_Card_Checkout {
         $response = new WP_REST_Response( $payload, $status );
         $response->header( 'Cache-Control', 'no-store, private' );
         $response->header( 'Referrer-Policy', 'no-referrer' );
+        $response->header( 'X-ORBIT-Request-ID', self::$request_id );
         return $response;
     }
 }

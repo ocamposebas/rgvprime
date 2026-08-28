@@ -3,9 +3,6 @@ import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStrip
 import { loadStripe } from "@stripe/stripe-js";
 
 const stripeClients = new Map();
-const PAYMENT_METHOD_CONFIGURATION_ID = String(
-  import.meta.env.PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION_ID || "pmc_1U7P6YIzxwHmpViLCT1NYh9y",
-).trim();
 const appearance = {
   theme: "night",
   inputs: "spaced",
@@ -100,7 +97,8 @@ function getWalletBrowserDiagnostics() {
   };
 }
 
-async function completePayment({ stripe, elements, context, onCreatePayment }) {
+async function completePayment({ stripe, elements, context, onCreatePayment, onPreflight }) {
+  if (!context.isReturn) await onPreflight?.({ quoteId: context.quoteId, totalMinor: context.totalMinor });
   const submitted = await elements.submit();
   if (submitted.error) throw new Error(submitted.error.message || "Check your payment details and try again.");
 
@@ -148,7 +146,7 @@ async function completePayment({ stripe, elements, context, onCreatePayment }) {
   return { paymentIntent: latest.paymentIntent, checkout };
 }
 
-const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onInteraction, submitting, setSubmitting, submittingRef }, ref) {
+const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, onCreatePayment, onPreflight, onPaymentResult, onReadyChange, onInteraction, submitting, setSubmitting, submittingRef }, ref) {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentReady, setPaymentReady] = useState(false);
@@ -159,7 +157,9 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   useEffect(() => {
     if (!context.isReturn || !stripe || returnCheckedRef.current) return;
     returnCheckedRef.current = true;
-    stripe.retrievePaymentIntent(context.clientSecret).then(({ paymentIntent, error }) => onPaymentResult(error ? { error: error.message } : { paymentIntent, checkout: context }));
+    stripe.retrievePaymentIntent(context.clientSecret)
+      .then(({ paymentIntent, error }) => onPaymentResult(error ? { error: error.message } : { paymentIntent, checkout: context }))
+      .catch(() => onPaymentResult({ error: "Unable to recover the previous payment status. Refresh checkout and try again." }));
   }, [context, onPaymentResult, stripe]);
 
   const runPayment = useCallback(async () => {
@@ -168,14 +168,14 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
     submittingRef.current = true;
     setSubmitting(true);
     try {
-      return await completePayment({ stripe, elements, context, onCreatePayment });
+      return await completePayment({ stripe, elements, context, onCreatePayment, onPreflight });
     } catch (cause) {
       return { error: cause?.message || "Your payment could not be completed." };
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [context, elements, enabled, onCreatePayment, paymentReady, setSubmitting, stripe, submittingRef]);
+  }, [context, elements, enabled, onCreatePayment, onPreflight, paymentReady, setSubmitting, stripe, submittingRef]);
 
   useImperativeHandle(ref, () => ({ confirm: () => runPayment() }), [runPayment]);
 
@@ -183,7 +183,10 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
     <PaymentElement
       onReady={() => setPaymentReady(true)}
       onChange={() => onInteraction?.()}
-      onLoadError={() => onReadyChange(false)}
+      onLoadError={(event) => {
+        onReadyChange(false);
+        onPaymentResult({ error: event?.error?.message || "Stripe card fields could not load. Refresh and try again." });
+      }}
       options={{
         paymentMethodOrder: ["card"],
         layout: { type: "accordion", defaultCollapsed: false, radios: "never", spacedAccordionItems: false },
@@ -201,7 +204,7 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   </div>;
 });
 
-function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult, onBlocked, onInteraction, setSubmitting, submittingRef }) {
+function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, onPaymentResult, onBlocked, onInteraction, setSubmitting, submittingRef }) {
   const stripe = useStripe();
   const elements = useElements();
   const [expressStatus, setExpressStatus] = useState("loading");
@@ -234,7 +237,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
     submittingRef.current = true;
     setSubmitting(true);
     try {
-      onPaymentResult(await completePayment({ stripe, elements, context, onCreatePayment }));
+      onPaymentResult(await completePayment({ stripe, elements, context, onCreatePayment, onPreflight }));
     } catch (cause) {
       const error = cause?.message || "Your payment could not be completed.";
       event.paymentFailed({ reason: "fail", message: error });
@@ -255,7 +258,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
   return <div className={`rgvx-express-checkout is-${expressStatus}${walletDebug ? " is-debug" : ""}`}>
     <p className="rgvx-express-label">Fast payment options</p>
     <ExpressCheckoutElement
-      onClick={(event) => {
+      onClick={async (event) => {
         onInteraction?.();
         if (submittingRef.current) {
           setBlockedNotice("Your payment is already being prepared.");
@@ -264,8 +267,16 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
         }
 
         if (enabled) {
-          setBlockedNotice("");
-          event.resolve();
+          try {
+            await onPreflight?.({ quoteId: context.quoteId, totalMinor: context.totalMinor });
+            setBlockedNotice("");
+            event.resolve();
+          } catch (cause) {
+            const message = cause?.message || "Your checkout changed. Review it and tap the wallet again.";
+            setBlockedNotice(message);
+            onPaymentResult({ error: message });
+            event.reject();
+          }
           return;
         }
 
@@ -304,7 +315,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPaymentResult
   </div>;
 }
 
-const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPaymentResult, onReadyChange, onBlocked, onInteraction }, ref) {
+const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled, onCreatePayment, onPreflight, onPaymentResult, onReadyChange, onBlocked, onInteraction }, ref) {
   const stripePromise = useMemo(() => getStripeClient(context.publishableKey, context.connectedAccountId), [context.publishableKey, context.connectedAccountId]);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -314,21 +325,21 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         mode: "payment",
         amount: context.totalMinor,
         currency: context.currency.toLowerCase(),
-        paymentMethodConfiguration: PAYMENT_METHOD_CONFIGURATION_ID,
+        paymentMethodConfiguration: context.paymentMethodConfigurationId,
         appearance,
         locale: "en",
         loader: "auto",
       },
-  [context.clientSecret, context.currency, context.isReturn, context.totalMinor]);
+  [context.clientSecret, context.currency, context.isReturn, context.paymentMethodConfigurationId, context.totalMinor]);
   const expressOptions = useMemo(() => ({
     mode: "payment",
     amount: context.totalMinor,
     currency: context.currency.toLowerCase(),
-    paymentMethodConfiguration: PAYMENT_METHOD_CONFIGURATION_ID,
+    paymentMethodConfiguration: context.paymentMethodConfigurationId,
     appearance,
     locale: "en",
     loader: "auto",
-  }), [context.currency, context.totalMinor]);
+  }), [context.currency, context.paymentMethodConfigurationId, context.totalMinor]);
 
   return <div className={`rgvx-stripe-elements ${submitting ? "is-submitting" : ""}`}>
     {!context.isReturn && <Elements stripe={stripePromise} options={expressOptions}>
@@ -336,6 +347,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         context={context}
         enabled={enabled}
         onCreatePayment={onCreatePayment}
+        onPreflight={onPreflight}
         onPaymentResult={onPaymentResult}
         onBlocked={onBlocked}
         onInteraction={onInteraction}
@@ -349,6 +361,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
         context={context}
         enabled={enabled}
         onCreatePayment={onCreatePayment}
+        onPreflight={onPreflight}
         onPaymentResult={onPaymentResult}
         onReadyChange={onReadyChange}
         onInteraction={onInteraction}

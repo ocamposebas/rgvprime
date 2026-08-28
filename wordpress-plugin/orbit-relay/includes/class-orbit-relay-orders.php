@@ -75,6 +75,22 @@ final class ORBIT_Relay_Orders {
         $existing           = (string) $order->get_meta( '_orbit_transaction_id', true );
         $existing_reference = (string) $order->get_meta( '_orbit_payment_reference', true );
 
+        if ( $is_production ) {
+            $valid_source = 'orbit_card' === $order->get_payment_method()
+                && 'orbit_relay_card_checkout' === $order->get_created_via()
+                && 'rgv_custom_checkout_orbit_card' === (string) $order->get_meta( '_orbit_payment_source', true );
+
+            if ( ! $valid_source ) {
+                return new WP_Error( 'orbit_order_source_invalid', 'Order was not prepared by the ORBIT card checkout.', array( 'status' => 409 ) );
+            }
+            if ( '' === $existing || ! hash_equals( $existing, $transaction_id ) ) {
+                return new WP_Error( 'orbit_transaction_not_prepared', 'Order is not bound to this prepared ORBIT transaction.', array( 'status' => 409 ) );
+            }
+            if ( ! str_starts_with( $payment_reference, 'pi_' ) ) {
+                return new WP_Error( 'orbit_payment_reference_required', 'A verified Stripe PaymentIntent reference is required.', array( 'status' => 400 ) );
+            }
+        }
+
         if ( '' !== $existing && ! hash_equals( $existing, $transaction_id ) ) {
             return new WP_Error(
                 'orbit_conflicting_payment',

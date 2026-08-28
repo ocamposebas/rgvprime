@@ -54,6 +54,8 @@ const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
+const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PAYMENT_RETURN_TTL_MS = 60 * 60 * 1000;
 
 const SHIPPING_METHODS = [
   {
@@ -559,29 +561,38 @@ function getBlankCheckoutForm() {
 function getInitialCheckoutForm() {
   const blankForm = getBlankCheckoutForm();
   if (typeof window === "undefined") return blankForm;
-
-  const savedEmail = normalizeEmail(
-    localStorage.getItem("rgv_checkout_email") ||
-      localStorage.getItem("phaseone_checkout_email") ||
-      localStorage.getItem("customer_email") ||
-      ""
-  );
-
-  const savedShipping = safeJsonParse(
-    localStorage.getItem("rgv_checkout_shipping") ||
-      localStorage.getItem("phaseone_checkout_shipping"),
-    null
-  );
-
-  if (savedShipping && typeof savedShipping === "object") {
-    return {
-      ...blankForm,
-      ...savedShipping,
-      email: normalizeEmail(savedShipping.email || savedEmail),
-    };
+  try {
+    const saved = safeJsonParse(localStorage.getItem("rgv_checkout_details_v2"), null);
+    if (
+      saved?.version === 2 &&
+      Number(saved.savedAt) > Date.now() - CHECKOUT_DETAILS_TTL_MS &&
+      saved.form && typeof saved.form === "object"
+    ) {
+      return { ...blankForm, ...saved.form, email: normalizeEmail(saved.form.email || saved.email) };
+    }
+    localStorage.removeItem("rgv_checkout_details_v2");
+    localStorage.removeItem("rgv_checkout_email");
+    localStorage.removeItem("rgv_checkout_shipping");
+  } catch {
+    // Storage can be blocked in privacy modes; checkout remains fully usable.
   }
+  return blankForm;
+}
 
-  return savedEmail ? { ...blankForm, email: savedEmail } : blankForm;
+function persistCheckoutDetails(form, email) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("rgv_checkout_details_v2", JSON.stringify({
+      version: 2,
+      savedAt: Date.now(),
+      email: normalizeEmail(email || form?.email),
+      form: { ...form, email: normalizeEmail(email || form?.email) },
+    }));
+    localStorage.removeItem("rgv_checkout_email");
+    localStorage.removeItem("rgv_checkout_shipping");
+  } catch {
+    // Payment must not fail because browser storage is unavailable.
+  }
 }
 
 function normalizeCheckoutFormForOrder(form = {}) {
@@ -691,12 +702,18 @@ function getInitialOrbitCardReturn() {
     return null;
   }
 
-  const stored = safeJsonParse(sessionStorage.getItem(ORBIT_CARD_RETURN_STORAGE_KEY), null);
+  let stored = null;
+  try {
+    stored = safeJsonParse(sessionStorage.getItem(ORBIT_CARD_RETURN_STORAGE_KEY), null);
+  } catch {
+    return null;
+  }
 
   if (
     !stored ||
     !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(stored.publishableKey || "")) ||
-    !/^acct_[A-Za-z0-9]+$/.test(String(stored.connectedAccountId || ""))
+    !/^acct_[A-Za-z0-9]+$/.test(String(stored.connectedAccountId || "")) ||
+    Number(stored.savedAt || 0) < Date.now() - PAYMENT_RETURN_TTL_MS
   ) {
     return null;
   }
@@ -874,6 +891,7 @@ export default function RgvCheckout() {
   const checkoutAttemptIdRef = useRef(createCheckoutAttemptId());
   const quoteRequestIdRef = useRef(0);
   const lastPaymentActivityRef = useRef(Date.now());
+  const couponEmailRef = useRef(normalizeEmail(checkoutForm.email));
 
   const markPaymentActivity = useCallback(() => {
     lastPaymentActivityRef.current = Date.now();
@@ -913,33 +931,34 @@ export default function RgvCheckout() {
     if (!user?.email) return null;
 
     setSessionCustomer(user);
-    setCheckoutForm((current) => ({
-      ...current,
-      email: current.email || normalizeEmail(user.email),
-      firstName: current.firstName || user.first_name || "",
-      lastName: current.lastName || user.last_name || "",
-      phone: current.phone || user.billing_phone || "",
-      address1: current.address1 || user.billing_address_1 || "",
-      address2: current.address2 || user.billing_address_2 || "",
-      city: current.city || user.billing_city || "",
-      state: current.state || user.billing_state || "",
-      postcode: current.postcode || user.billing_postcode || "",
-      country: current.country || user.billing_country || "US",
-    }));
+    setCheckoutForm((current) => {
+      const userEmail = normalizeEmail(user.email);
+      const belongsToCurrentUser = !current.email || normalizeEmail(current.email) === userEmail;
+      const base = belongsToCurrentUser ? current : getBlankCheckoutForm();
+      return {
+        ...base,
+        email: userEmail,
+        firstName: base.firstName || user.first_name || "",
+        lastName: base.lastName || user.last_name || "",
+        phone: base.phone || user.billing_phone || "",
+        address1: base.address1 || user.billing_address_1 || "",
+        address2: base.address2 || user.billing_address_2 || "",
+        city: base.city || user.billing_city || "",
+        state: base.state || user.billing_state || "",
+        postcode: base.postcode || user.billing_postcode || "",
+        country: base.country || user.billing_country || "US",
+      };
+    });
 
     return user;
   }
 
   const providerCartItems = useMemo(() => {
     const sources = [cart?.cartItems, cart?.items];
-    const validSource = sources.find(
-      (source) => Array.isArray(source) && source.length > 0
-    );
+    const validSource = sources.find((source) => Array.isArray(source));
 
     return Array.isArray(validSource) ? validSource : [];
   }, [cart?.cartItems, cart?.items]);
-
-  const hasProviderCartItems = providerCartItems.length > 0;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -998,7 +1017,7 @@ export default function RgvCheckout() {
     );
   }, [orbitCardCheckout?.isReturn]);
 
-  const cartItems = hasProviderCartItems ? providerCartItems : localCartItems;
+  const cartItems = cart?.hasHydrated ? providerCartItems : localCartItems;
 
   useEffect(() => {
     const email = normalizeEmail(checkoutForm.email);
@@ -1158,9 +1177,13 @@ export default function RgvCheckout() {
       if (
         !response.ok ||
         data?.success === false ||
-        !/^orb_quote_[a-f0-9]{32}$/.test(String(data?.quoteId || ""))
+        !/^orb_quote_[a-f0-9]{32}$/.test(String(data?.quoteId || "")) ||
+        !/^acct_[A-Za-z0-9]+$/.test(String(data?.connectedAccountId || "")) ||
+        !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(data?.publishableKey || "")) ||
+        !/^pmc_[A-Za-z0-9]+$/.test(String(data?.paymentMethodConfigurationId || "")) ||
+        !Number.isSafeInteger(Number(data?.totalMinor)) || Number(data?.totalMinor) <= 0
       ) {
-        throw new Error("We could not refresh the secure order total.");
+        throw new Error(String(data?.message || "We could not refresh the secure order total."));
       }
 
       if (requestId === quoteRequestIdRef.current) setCheckoutQuote(data);
@@ -1178,6 +1201,8 @@ export default function RgvCheckout() {
 
   useEffect(() => {
     if (!hasItems || !isCardSelected || orbitCardCheckout?.isReturn) return undefined;
+    setCheckoutQuote(null);
+    setOrbitCardReady(false);
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
@@ -1187,7 +1212,7 @@ export default function RgvCheckout() {
       }
     }, 450);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [cartItems, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, quoteRefreshVersion, selectedShippingMethodId]);
+  }, [cartItems, checkoutForm.email, checkoutForm.firstName, checkoutForm.lastName, checkoutForm.phone, checkoutForm.address1, checkoutForm.address2, checkoutForm.city, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, quoteRefreshVersion, selectedShippingMethodId]);
 
   useEffect(() => {
     if (!checkoutQuote?.quoteExpiresAt || orbitCardCheckout?.isReturn) return undefined;
@@ -1264,7 +1289,7 @@ export default function RgvCheckout() {
   );
   const normalizedCardAddress = normalizeCheckoutFormForOrder(checkoutForm);
   const cardPaymentEnabled = Boolean(
-    checkoutQuote && !quoteLoading && !loading && policyAcknowledged && finalSaleAcknowledged &&
+    checkoutQuote && isOrbitQuoteFresh(checkoutQuote, 20) && !quoteLoading && !loading && policyAcknowledged && finalSaleAcknowledged &&
     shippingAddressConfirmed && isValidEmail(normalizedCardAddress.email) &&
     normalizedCardAddress.first_name && normalizedCardAddress.last_name && normalizedCardAddress.address_1 &&
     normalizedCardAddress.city && normalizedCardAddress.state && normalizedCardAddress.postcode && normalizedCardAddress.phone
@@ -1272,6 +1297,8 @@ export default function RgvCheckout() {
   const stripePaymentContext = orbitCardCheckout?.isReturn ? orbitCardCheckout : checkoutQuote ? {
     publishableKey: checkoutQuote.publishableKey,
     connectedAccountId: checkoutQuote.connectedAccountId,
+    paymentMethodConfigurationId: checkoutQuote.paymentMethodConfigurationId,
+    quoteId: checkoutQuote.quoteId,
     totalMinor: checkoutQuote.totalMinor,
     currency: checkoutQuote.currency,
     customerEmail: normalizedCardAddress.email,
@@ -1370,6 +1397,13 @@ export default function RgvCheckout() {
       return;
     }
 
+    if (!isValidEmail(normalizeEmail(checkoutForm.email))) {
+      setCouponStatus("invalid");
+      setCouponMessage("Enter your email first so we can verify this one-use coupon.");
+      setError("Enter a valid email before applying a coupon.");
+      return;
+    }
+
     try {
       setCouponLoading(true);
       setCouponStatus("validating");
@@ -1417,6 +1451,17 @@ export default function RgvCheckout() {
     }
   };
 
+  useEffect(() => {
+    const email = normalizeEmail(checkoutForm.email);
+    if (email === couponEmailRef.current) return;
+    couponEmailRef.current = email;
+    if (!coupon) return;
+    setCoupon("");
+    setCouponValidation(null);
+    setCouponStatus("idle");
+    setCouponMessage("Email changed. Apply the coupon again so we can verify its one-use limit.");
+  }, [checkoutForm.email, coupon]);
+
   const copyZelleMemo = async () => {
     try {
       await navigator.clipboard?.writeText(zelleMemoCode);
@@ -1436,34 +1481,40 @@ export default function RgvCheckout() {
     setPaymentNotice("");
   };
 
-  const validateBaseCheckout = () => {
-    if (!hasItems) {
-      setError("Your cart is empty.");
+  const validateBaseCheckout = ({ throwOnFailure = false } = {}) => {
+    const fail = (message) => {
+      setError(message);
+      if (throwOnFailure) throw new Error(message);
       return false;
+    };
+    if (!hasItems) {
+      return fail("Your cart is empty.");
     }
 
     if (!policyAcknowledged) {
-      setError("Please confirm the age, research-use, and policy acknowledgement.");
-      return false;
+      return fail("Please confirm the age, research-use, and policy acknowledgement.");
     }
 
     if (!finalSaleAcknowledged) {
-      setError("Please acknowledge and accept the All Sales Final Policy before continuing.");
-      return false;
+      return fail("Please acknowledge and accept the All Sales Final Policy before continuing.");
     }
 
     if (requiresDirectDetails && !shippingAddressConfirmed) {
-      setError("Please review and confirm your shipping address before continuing.");
-      return false;
+      return fail("Please review and confirm your shipping address before continuing.");
     }
 
     return true;
   };
 
-  const validateCheckoutInventory = async () => {
-    if (typeof cart?.validateStock !== "function") {
-      setError("Inventory could not be verified. Please refresh and try again.");
+  const validateCheckoutInventory = async ({ throwOnFailure = false } = {}) => {
+    const fail = (message) => {
+      setPaymentNotice("");
+      setError(message);
+      if (throwOnFailure) throw new Error(message);
       return false;
+    };
+    if (typeof cart?.validateStock !== "function") {
+      return fail("Inventory could not be verified. Please refresh and try again.");
     }
 
     setError("");
@@ -1472,9 +1523,7 @@ export default function RgvCheckout() {
     const validation = await cart.validateStock(cartItems, { reconcile: true });
 
     if (!validation?.success) {
-      setPaymentNotice("");
-      setError(validation?.message || "Inventory could not be verified. Please try again.");
-      return false;
+      return fail(validation?.message || "Inventory could not be verified. Please try again.");
     }
 
     if (!validation.valid) {
@@ -1484,25 +1533,27 @@ export default function RgvCheckout() {
         .filter(Boolean)
         .join(", ");
 
-      setPaymentNotice("");
-      setError(
+      return fail(
         unavailableNames
           ? `Sold-out products were removed from your cart: ${unavailableNames}. Review the cart before continuing.`
           : "Some quantities were adjusted to current stock. Review the cart before continuing.",
       );
-      return false;
     }
 
     setPaymentNotice("");
     return true;
   };
 
-  const validateDirectPaymentForm = (paymentLabel) => {
+  const validateDirectPaymentForm = (paymentLabel, { throwOnFailure = false } = {}) => {
+    const fail = (message) => {
+      setError(message);
+      if (throwOnFailure) throw new Error(message);
+      return null;
+    };
     const normalizedForm = normalizeCheckoutFormForOrder(checkoutForm);
 
     if (!isValidEmail(normalizedForm.email)) {
-      setError(`Enter a valid email before continuing with ${paymentLabel}.`);
-      return null;
+      return fail(`Enter a valid email before continuing with ${paymentLabel}.`);
     }
 
     const requiredFields = [
@@ -1518,24 +1569,43 @@ export default function RgvCheckout() {
     const missingField = requiredFields.find(([key]) => !normalizedForm[key]);
 
     if (missingField) {
-      setError(`${missingField[1]} is required before continuing with ${paymentLabel}.`);
-      return null;
+      return fail(`${missingField[1]} is required before continuing with ${paymentLabel}.`);
     }
 
     const phoneDigits = normalizedForm.phone.replace(/\D/g, "");
 
     if (phoneDigits.length < 10 || phoneDigits.length > 15) {
-      setError("Enter a valid phone number with 10 to 15 digits.");
-      return null;
+      return fail("Enter a valid phone number with 10 to 15 digits.");
     }
 
     return normalizedForm;
   };
 
-  const createOrbitCardPayment = async (confirmationTokenId) => {
-    if (orbitCardSubmittingRef.current || loading) return;
+  const preflightOrbitPayment = async ({ quoteId, totalMinor } = {}) => {
+    validateBaseCheckout({ throwOnFailure: true });
+    if (couponInput && couponInput !== coupon) {
+      throw new Error("Apply or clear the coupon code before continuing.");
+    }
+    await validateCheckoutInventory({ throwOnFailure: true });
+    validateDirectPaymentForm("card payment", { throwOnFailure: true });
 
-    if (!validateBaseCheckout()) return;
+    let activeQuote = checkoutQuote;
+    if (!isOrbitQuoteFresh(activeQuote, 30)) {
+      activeQuote = await refreshCheckoutQuote();
+    }
+    if (
+      String(activeQuote?.quoteId || "") !== String(quoteId || "") ||
+      Number(activeQuote?.totalMinor) !== Number(totalMinor)
+    ) {
+      throw new Error("Your total was refreshed. Review it and tap the payment option again.");
+    }
+    return activeQuote;
+  };
+
+  const createOrbitCardPayment = async (confirmationTokenId) => {
+    if (orbitCardSubmittingRef.current || loading) throw new Error("Your payment is already being prepared.");
+
+    validateBaseCheckout({ throwOnFailure: true });
 
     if (couponInput && couponInput !== coupon) {
       const couponError = "Apply or clear the coupon code before continuing.";
@@ -1543,10 +1613,9 @@ export default function RgvCheckout() {
       throw new Error(couponError);
     }
 
-    if (!(await validateCheckoutInventory())) return;
+    await validateCheckoutInventory({ throwOnFailure: true });
 
-    const normalizedForm = validateDirectPaymentForm("card payment");
-    if (!normalizedForm) return;
+    const normalizedForm = validateDirectPaymentForm("card payment", { throwOnFailure: true });
 
     const checkoutItems = buildCheckoutItems(cartItems);
 
@@ -1573,8 +1642,7 @@ export default function RgvCheckout() {
         activeQuote = await refreshCheckoutQuote({ signal: controller.signal });
       }
 
-      localStorage.setItem("rgv_checkout_email", billing.email);
-      localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
+      persistCheckoutDetails(checkoutForm, billing.email);
 
       const submitCardCheckout = async (quote) => {
         const response = await fetch(getOrbitCardCheckoutEndpoint(), {
@@ -1628,18 +1696,19 @@ export default function RgvCheckout() {
 
       if (!response.ok || data?.success === false) {
         const serviceMessage = String(data?.message || data?.error || "");
-        throw new Error(
-          /orbit/i.test(serviceMessage)
-            ? "The secure payment service could not prepare your payment. Please try again."
-            : serviceMessage || "Unable to prepare secure card payment. Please try again.",
-        );
+        const reference = String(data?.requestId || response.headers.get("x-orbit-request-id") || "").slice(0, 64);
+        throw new Error(`${serviceMessage || "Unable to prepare secure card payment. Please try again."}${reference ? ` (Reference: ${reference})` : ""}`);
       }
 
       if (
         !/^orb_tx_[A-Za-z0-9_-]+$/.test(String(data?.orbitTransactionId || "")) ||
         !/^pi_[A-Za-z0-9_]+_secret_[A-Za-z0-9_]+$/.test(String(data?.clientSecret || "")) ||
         !/^acct_[A-Za-z0-9]+$/.test(String(data?.connectedAccountId || "")) ||
-        !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(data?.publishableKey || ""))
+        !/^pk_(?:test|live)_[A-Za-z0-9]+$/.test(String(data?.publishableKey || "")) ||
+        !/^pmc_[A-Za-z0-9]+$/.test(String(data?.paymentMethodConfigurationId || "")) ||
+        data.connectedAccountId !== activeQuote.connectedAccountId ||
+        data.publishableKey !== activeQuote.publishableKey ||
+        data.paymentMethodConfigurationId !== activeQuote.paymentMethodConfigurationId
       ) {
         throw new Error("Secure card payment returned an invalid configuration.");
       }
@@ -1649,6 +1718,7 @@ export default function RgvCheckout() {
         clientSecret: data.clientSecret,
         connectedAccountId: data.connectedAccountId,
         publishableKey: data.publishableKey,
+        paymentMethodConfigurationId: data.paymentMethodConfigurationId,
         orderId: data.orderId,
         orderNumber: data.orderNumber || data.orderId,
         currency: String(data.currency || "USD").toUpperCase(),
@@ -1673,6 +1743,7 @@ export default function RgvCheckout() {
           orbitTransactionId: checkout.orbitTransactionId,
           connectedAccountId: checkout.connectedAccountId,
           publishableKey: checkout.publishableKey,
+          paymentMethodConfigurationId: checkout.paymentMethodConfigurationId,
           orderId: checkout.orderId,
           orderNumber: checkout.orderNumber,
           currency: checkout.currency,
@@ -1681,6 +1752,7 @@ export default function RgvCheckout() {
           customerName: checkout.customerName,
           customerPhone: checkout.customerPhone,
           billingAddress: checkout.billingAddress,
+          savedAt: Date.now(),
         }),
       );
 
@@ -1813,8 +1885,7 @@ export default function RgvCheckout() {
       setError("");
       setPaymentNotice("Creating your order and opening secure bank payment...");
 
-      localStorage.setItem("rgv_checkout_email", finalBilling.email);
-      localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
+      persistCheckoutDetails(checkoutForm, finalBilling.email);
 
       const response = await fetch(getEdebitOrderEndpoint(), {
         method: "POST",
@@ -1974,8 +2045,7 @@ export default function RgvCheckout() {
       setPaymentNotice("Creating your Zelle order...");
 
       if (typeof window !== "undefined") {
-        localStorage.setItem("rgv_checkout_email", finalBilling.email);
-        localStorage.setItem("rgv_checkout_shipping", JSON.stringify(checkoutForm));
+        persistCheckoutDetails(checkoutForm, finalBilling.email);
       }
 
       // Keep a free-shipping value explicit for PHP. The string "0.00"
@@ -2870,6 +2940,7 @@ export default function RgvCheckout() {
                   context={stripePaymentContext}
                   enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
                   onCreatePayment={createOrbitCardPayment}
+                  onPreflight={preflightOrbitPayment}
                   onReadyChange={setOrbitCardReady}
                   onPaymentResult={handleOrbitPaymentResult}
                   onInteraction={markPaymentActivity}

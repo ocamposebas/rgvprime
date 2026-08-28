@@ -21,6 +21,9 @@ final class ORBIT_Relay {
         add_option( 'orbit_relay_enabled', '0', '', false );
         add_option( 'orbit_relay_allow_test_payment_completion', '0', '', false );
         add_option( 'orbit_relay_version', ORBIT_RELAY_VERSION, '', false );
+        if ( ! wp_next_scheduled( 'orbit_relay_cleanup_checkout_locks' ) ) {
+            wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'orbit_relay_cleanup_checkout_locks' );
+        }
     }
 
     public static function generate_secret(): string {
@@ -28,6 +31,7 @@ final class ORBIT_Relay {
     }
 
     public function init(): void {
+        add_action( 'orbit_relay_cleanup_checkout_locks', array( 'ORBIT_Relay_Card_Checkout', 'cleanup_expired_request_locks' ) );
         ORBIT_Relay_Coupon_Guard::init();
         ORBIT_Relay_Card_Checkout::init();
         ORBIT_Relay_REST::init();
