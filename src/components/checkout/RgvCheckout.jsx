@@ -682,6 +682,7 @@ function isStaleStripeSessionError(message) {
   const normalized = String(message || "").toLowerCase();
 
   return (
+    (normalized.includes("confirmation token") && normalized.includes("mounted element")) ||
     normalized.includes("payment_method_types") ||
     normalized.includes("automatic payment methods") ||
     normalized.includes("automatic_payment_methods") ||

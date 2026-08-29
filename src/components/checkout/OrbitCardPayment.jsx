@@ -97,10 +97,16 @@ function getWalletBrowserDiagnostics() {
   };
 }
 
-async function completePayment({ stripe, elements, context, onCreatePayment, onPreflight }) {
+async function completePayment({ stripe, elements, context, onCreatePayment, onPreflight, isElementsCurrent }) {
   if (!context.isReturn) await onPreflight?.({ quoteId: context.quoteId, totalMinor: context.totalMinor });
+  if (!isElementsCurrent?.()) {
+    throw new Error("Your secure payment form was refreshed. Please review the payment details and try again.");
+  }
   const submitted = await elements.submit();
   if (submitted.error) throw new Error(submitted.error.message || "Check your payment details and try again.");
+  if (!isElementsCurrent?.()) {
+    throw new Error("Your secure payment form was refreshed. Please review the payment details and try again.");
+  }
 
   const returnUrl = new URL("/checkout", window.location.origin);
   returnUrl.searchParams.set("orbit_card_return", "1");
@@ -151,6 +157,11 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
   const elements = useElements();
   const [paymentReady, setPaymentReady] = useState(false);
   const returnCheckedRef = useRef(false);
+  const mountedRef = useRef(true);
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
+
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => onReadyChange(Boolean(stripe && elements && paymentReady && !submitting)), [stripe, elements, paymentReady, submitting, onReadyChange]);
 
@@ -168,7 +179,14 @@ const CardPaymentForm = forwardRef(function CardPaymentForm({ context, enabled, 
     submittingRef.current = true;
     setSubmitting(true);
     try {
-      return await completePayment({ stripe, elements, context, onCreatePayment, onPreflight });
+      return await completePayment({
+        stripe,
+        elements,
+        context,
+        onCreatePayment,
+        onPreflight,
+        isElementsCurrent: () => mountedRef.current && elementsRef.current === elements,
+      });
     } catch (cause) {
       return { error: cause?.message || "Your payment could not be completed." };
     } finally {
@@ -211,7 +229,12 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
   const [blockedNotice, setBlockedNotice] = useState("");
   const [availableMethods, setAvailableMethods] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const mountedRef = useRef(true);
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
   const walletDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("wallet_debug");
+
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
     if (enabled) setBlockedNotice("");
@@ -237,7 +260,14 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
     submittingRef.current = true;
     setSubmitting(true);
     try {
-      onPaymentResult(await completePayment({ stripe, elements, context, onCreatePayment, onPreflight }));
+      onPaymentResult(await completePayment({
+        stripe,
+        elements,
+        context,
+        onCreatePayment,
+        onPreflight,
+        isElementsCurrent: () => mountedRef.current && elementsRef.current === elements,
+      }));
     } catch (cause) {
       const error = cause?.message || "Your payment could not be completed.";
       event.paymentFailed({ reason: "fail", message: error });

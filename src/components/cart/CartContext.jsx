@@ -497,7 +497,11 @@ export function CartProvider({ children }) {
         (item) => item.available && item.valid === false,
       );
 
-      if (reconcile) {
+      // A successful stock check must not rewrite an unchanged cart. The checkout
+      // treats cart identity changes as pricing changes and deliberately remounts
+      // Stripe Elements; doing that between Elements.submit() and
+      // createConfirmationToken() leaves Stripe with no mounted payment element.
+      if (reconcile && (unavailable.length > 0 || reduced.length > 0)) {
         setItems((storedItems) =>
           storedItems.flatMap((item) => {
             const validation = validationById.get(String(item.id));
