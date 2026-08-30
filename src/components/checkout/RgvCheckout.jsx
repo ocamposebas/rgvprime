@@ -52,6 +52,8 @@ const FREE_SHIPPING_MINIMUM = 200;
 const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
 const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
+const ORDER_PROCESSING_FEE_RATE = 0.03;
+const PRIORITY_PROCESSING_FEE_RATE = 0.05;
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -65,6 +67,15 @@ const SHIPPING_METHODS = [
     description: "Estimated 3-5 Business days after processing",
     price: 15,
     carrier: "UPS",
+  },
+  {
+    id: "ups_expedited",
+    title: "UPS Shipping",
+    label: "UPS Shipping",
+    description: "Estimated 2-4 Business days after processing",
+    price: 45,
+    carrier: "UPS",
+    freeShippingEligible: false,
   },
   {
     id: "usps_ground_advantage",
@@ -209,6 +220,7 @@ const US_STATES = [
   ["OK", "Oklahoma"],
   ["OR", "Oregon"],
   ["PA", "Pennsylvania"],
+  ["PR", "Puerto Rico"],
   ["RI", "Rhode Island"],
   ["SC", "South Carolina"],
   ["SD", "South Dakota"],
@@ -579,6 +591,10 @@ function getInitialCheckoutForm() {
   return blankForm;
 }
 
+function calculatePercentageFee(amount, rate) {
+  return Math.round((Math.max(Number(amount) || 0, 0) * rate + Number.EPSILON) * 100) / 100;
+}
+
 function persistCheckoutDetails(form, email) {
   if (typeof window === "undefined") return;
   try {
@@ -863,6 +879,7 @@ export default function RgvCheckout() {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
+  const [priorityProcessing, setPriorityProcessing] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
@@ -1128,10 +1145,11 @@ export default function RgvCheckout() {
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
-  const isFreeShippingUnlocked = () =>
+  const freeShippingBenefitUnlocked =
     freeShippingQualifiedBySubtotal ||
-    (couponStatus === "valid" &&
-      Boolean(couponValidation?.free_shipping));
+    (couponStatus === "valid" && Boolean(couponValidation?.free_shipping));
+  const isFreeShippingUnlocked = (shippingMethod = selectedShippingMethod) =>
+    freeShippingBenefitUnlocked && shippingMethod?.freeShippingEligible !== false;
   const freeShippingUnlocked = isFreeShippingUnlocked();
   const shippingLabelForDisplay = getShippingOrderLabel(
     selectedShippingMethod,
@@ -1143,7 +1161,18 @@ export default function RgvCheckout() {
   );
   const selectedShippingBaseCost = toMoneyNumber(selectedShippingMethod?.price, 0);
   const shippingCost = freeShippingUnlocked ? 0 : selectedShippingBaseCost;
-  const estimatedDue = Math.max(discountedCartTotal + shippingCost, 0);
+  const processingFeeBase = Math.max(discountedCartTotal + shippingCost, 0);
+  const estimatedProcessingFee = calculatePercentageFee(
+    processingFeeBase,
+    ORDER_PROCESSING_FEE_RATE
+  );
+  const estimatedPriorityProcessingFee = priorityProcessing
+    ? calculatePercentageFee(processingFeeBase, PRIORITY_PROCESSING_FEE_RATE)
+    : 0;
+  const estimatedDue = Math.max(
+    processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee,
+    0
+  );
 
   const refreshCheckoutQuote = async ({ signal } = {}) => {
     const items = buildCheckoutItems(cartItems);
@@ -1171,6 +1200,7 @@ export default function RgvCheckout() {
           shipping: address,
           couponCode: coupon,
           shippingMethod: selectedShippingMethodId,
+          priorityProcessing,
         }),
       });
       const data = await response.json().catch(() => null);
@@ -1213,7 +1243,7 @@ export default function RgvCheckout() {
       }
     }, 450);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [cartItems, checkoutForm.email, checkoutForm.firstName, checkoutForm.lastName, checkoutForm.phone, checkoutForm.address1, checkoutForm.address2, checkoutForm.city, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, quoteRefreshVersion, selectedShippingMethodId]);
+  }, [cartItems, checkoutForm.email, checkoutForm.firstName, checkoutForm.lastName, checkoutForm.phone, checkoutForm.address1, checkoutForm.address2, checkoutForm.city, checkoutForm.country, checkoutForm.postcode, checkoutForm.state, coupon, hasItems, isCardSelected, orbitCardCheckout?.isReturn, priorityProcessing, quoteRefreshVersion, selectedShippingMethodId]);
 
   useEffect(() => {
     if (!checkoutQuote?.quoteExpiresAt || orbitCardCheckout?.isReturn) return undefined;
@@ -1319,6 +1349,12 @@ export default function RgvCheckout() {
   const summaryDiscount = isCardSelected && checkoutQuote ? checkoutQuote.discountMinor / 100 : couponDiscount;
   const summaryShipping = isCardSelected && checkoutQuote ? checkoutQuote.shippingMinor / 100 : shippingCost;
   const summaryTax = isCardSelected && checkoutQuote ? checkoutQuote.taxMinor / 100 : 0;
+  const summaryProcessingFee = isCardSelected && checkoutQuote
+    ? Number(checkoutQuote.processingFeeMinor || 0) / 100
+    : estimatedProcessingFee;
+  const summaryPriorityProcessingFee = isCardSelected && checkoutQuote
+    ? Number(checkoutQuote.priorityProcessingFeeMinor || 0) / 100
+    : estimatedPriorityProcessingFee;
   const summaryTotal = isCardSelected ? authoritativeDue : estimatedDue;
   const displayedSummaryItems = isCardSelected && checkoutQuote?.items?.length === summaryItems.length
     ? summaryItems.map((item, index) => ({
@@ -1329,7 +1365,7 @@ export default function RgvCheckout() {
       }))
     : summaryItems;
 
-  const progressWidth = freeShippingUnlocked
+  const progressWidth = freeShippingBenefitUnlocked
     ? 100
     : Math.min(
         100,
@@ -1661,6 +1697,7 @@ export default function RgvCheckout() {
             items: checkoutItems,
             couponCode: coupon,
             shippingMethod: selectedShippingMethod?.id,
+            priorityProcessing,
             source: "rgv_custom_checkout_orbit_card",
             ageConfirmed: true,
             researchUseAcknowledged: true,
@@ -2082,6 +2119,8 @@ export default function RgvCheckout() {
           coupon_discount: couponDiscount,
           couponValidation,
           coupon_validation: couponValidation,
+          priorityProcessing,
+          priority_processing: priorityProcessing,
           subtotal: cartTotal,
           cartSubtotal: cartTotal,
           cart_subtotal: cartTotal,
@@ -2751,10 +2790,15 @@ export default function RgvCheckout() {
                     <Field label="Country" wide>
                       <select
                         value={checkoutForm.country}
-                        onChange={(event) => updateCheckoutField("country", event.target.value)}
+                        onChange={(event) => {
+                          const country = event.target.value;
+                          updateCheckoutField("country", country);
+                          if (country === "PR") updateCheckoutField("state", "PR");
+                        }}
                         autoComplete="country"
                       >
                         <option value="US">United States</option>
+                        <option value="PR">Puerto Rico</option>
                       </select>
                     </Field>
                   </div>
@@ -2849,6 +2893,8 @@ export default function RgvCheckout() {
                   <strong>
                     {freeShippingUnlocked
                       ? FREE_SHIPPING_METHOD_LABEL
+                      : freeShippingBenefitUnlocked
+                        ? "Free shipping available on eligible methods"
                       : `${formatMoney(amountUntilFreeShipping)} away from free shipping`}
                   </strong>
                 </div>
@@ -2856,6 +2902,7 @@ export default function RgvCheckout() {
                 <div className="rgvx-shipping-option-list">
                   {SHIPPING_METHODS.map((method) => {
                     const active = selectedShippingMethodId === method.id;
+                    const methodHasFreeShipping = isFreeShippingUnlocked(method);
 
                     return (
                       <button
@@ -2874,19 +2921,64 @@ export default function RgvCheckout() {
                           <div>
                             <strong>{method.title}</strong>
                             <small>{method.description}</small>
-                            {freeShippingUnlocked && (
+                            {methodHasFreeShipping && (
                               <small className="rgvx-shipping-free-note">
                                 {FREE_SHIPPING_LABEL}
+                              </small>
+                            )}
+                            {method.freeShippingEligible === false && (
+                              <small className="rgvx-shipping-exclusion-note">
+                                Does not apply for free shipping
                               </small>
                             )}
                           </div>
                         </div>
 
-                        <em>{freeShippingUnlocked ? FREE_SHIPPING_LABEL : formatMoney(method.price)}</em>
+                        <em>{methodHasFreeShipping ? FREE_SHIPPING_LABEL : formatMoney(method.price)}</em>
                       </button>
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            <div className="rgvx-form-section rgvx-processing-section">
+              <div className="rgvx-block-title">
+                <ShieldCheck size={16} />
+                <div>
+                  <strong>Order processing</strong>
+                  <small>Choose the handling speed that works for you.</small>
+                </div>
+              </div>
+
+              <div className="rgvx-processing-options">
+                <div className="rgvx-processing-option is-required">
+                  <span className="rgvx-processing-check"><Check size={15} /></span>
+                  <span>
+                    <strong>Service &amp; Processing</strong>
+                    <small>Required for every order</small>
+                  </span>
+                  <em>3%</em>
+                </div>
+
+                <label className={`rgvx-processing-option is-optional ${priorityProcessing ? "active" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={priorityProcessing}
+                    disabled={loading || Boolean(orbitCardCheckout)}
+                    onChange={(event) => {
+                      setPriorityProcessing(event.target.checked);
+                      setError("");
+                      setPaymentNotice("");
+                    }}
+                  />
+                  <span className="rgvx-processing-check"><Check size={15} /></span>
+                  <span>
+                    <strong>Priority Processing</strong>
+                    <small>Order enters processing within 3 hours. Delivery time is separate.</small>
+                  </span>
+                  <em>+5%</em>
+                </label>
               </div>
             </div>
 
@@ -3047,6 +3139,18 @@ export default function RgvCheckout() {
                 </strong>
               </div>
 
+              <div className="rgvx-total-row">
+                <span>Service &amp; Processing (3%)</span>
+                <strong>{formatMoney(summaryProcessingFee)}</strong>
+              </div>
+
+              {summaryPriorityProcessingFee > 0 && (
+                <div className="rgvx-total-row">
+                  <span>Priority Processing (5%)</span>
+                  <strong>{formatMoney(summaryPriorityProcessingFee)}</strong>
+                </div>
+              )}
+
               {summaryTax > 0 && <div className="rgvx-total-row"><span>Tax</span><strong>{formatMoney(summaryTax)}</strong></div>}
 
               <div className="rgvx-total-row total">
@@ -3056,14 +3160,14 @@ export default function RgvCheckout() {
 
               <section className="rgvx-reward-rail" aria-label="Shipping and loyalty progress">
                 <div className="rgvx-reward-rail-grid">
-                  <div className={`rgvx-reward-line shipping ${freeShippingUnlocked ? "is-unlocked" : ""}`}>
+                  <div className={`rgvx-reward-line shipping ${freeShippingBenefitUnlocked ? "is-unlocked" : ""}`}>
                     <div className="rgvx-reward-line-head">
                       <span className="rgvx-reward-icon"><Truck size={16} /></span>
                       <div>
                         <strong>Free shipping</strong>
-                        <small>{freeShippingUnlocked ? "Unlocked for this order" : `${formatMoney(amountUntilFreeShipping)} to unlock`}</small>
+                        <small>{freeShippingBenefitUnlocked ? "Available on eligible methods" : `${formatMoney(amountUntilFreeShipping)} to unlock`}</small>
                       </div>
-                      <em>{freeShippingUnlocked ? "Ready" : `${progressWidth}%`}</em>
+                      <em>{freeShippingBenefitUnlocked ? "Ready" : `${progressWidth}%`}</em>
                     </div>
 
                     <div

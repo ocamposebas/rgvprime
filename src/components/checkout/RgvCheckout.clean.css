@@ -1570,6 +1570,115 @@
   }
 }
 
+/* Processing fees */
+.rgvx-processing-options {
+  display: grid;
+  gap: 10px;
+}
+
+.rgvx-shipping-exclusion-note {
+  color: #f0a0aa !important;
+  font-weight: 750 !important;
+}
+
+.rgvx-processing-option {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  border: 1px solid #302d32;
+  border-radius: 13px;
+  background: #101014;
+  padding: 12px 14px;
+  color: #f8f5f6;
+}
+
+.rgvx-processing-option > span:not(.rgvx-processing-check) {
+  display: grid;
+  gap: 3px;
+}
+
+.rgvx-processing-option strong {
+  color: #f8f5f6;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.rgvx-processing-option small {
+  color: #979095;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.rgvx-processing-option em {
+  color: #f8f5f6;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.rgvx-processing-check {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #51484d;
+  border-radius: 9px;
+  color: transparent;
+}
+
+.rgvx-processing-option.is-required .rgvx-processing-check,
+.rgvx-processing-option.active .rgvx-processing-check {
+  border-color: #d7354a;
+  background: #d7354a;
+  color: #fff;
+}
+
+.rgvx-processing-option.is-required {
+  border-color: rgba(215, 53, 74, 0.34);
+  background: rgba(215, 53, 74, 0.07);
+}
+
+.rgvx-processing-option.is-optional {
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.rgvx-processing-option.is-optional:hover,
+.rgvx-processing-option.is-optional.active {
+  border-color: #d7354a;
+  background: #1b0f13;
+}
+
+.rgvx-processing-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rgvx-processing-option:has(input:focus-visible) {
+  outline: 2px solid #ef596a;
+  outline-offset: 2px;
+}
+
+.rgvx-processing-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 520px) {
+  .rgvx-processing-option {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-inline: 12px;
+  }
+}
+
 /* Consistent carrier marks on every delivery option. */
 .rgvx-carrier-logo {
   position: relative;

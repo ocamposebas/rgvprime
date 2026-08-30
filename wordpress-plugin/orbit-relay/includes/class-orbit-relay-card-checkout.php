@@ -11,10 +11,19 @@ final class ORBIT_Relay_Card_Checkout {
     private const MAX_ORDER_ITEMS = 50;
     private const MAX_ITEM_QUANTITY = 100;
     private const FREE_SHIPPING_MINIMUM = 200.0;
+    private const ORDER_PROCESSING_FEE_RATE = 0.03;
+    private const PRIORITY_PROCESSING_FEE_RATE = 0.05;
+    private const ORDER_PROCESSING_FEE_NAME = 'Service & Processing';
+    private const PRIORITY_PROCESSING_FEE_NAME = 'Priority Processing (within 3 hours)';
     private const SHIPPING_RATES = array(
         'ups_2_day_air' => array(
             'title' => 'UPS Shipping',
             'cost'  => 15.0,
+        ),
+        'ups_expedited' => array(
+            'title' => 'UPS Shipping',
+            'cost'  => 45.0,
+            'free_shipping_eligible' => false,
         ),
         'usps_ground_advantage' => array(
             'title' => 'USPS Ground',
@@ -346,6 +355,7 @@ final class ORBIT_Relay_Card_Checkout {
         $shipping_item->set_total( $shipping_method['cost'] );
         $order->add_item( $shipping_item );
         $order->calculate_totals();
+        self::add_processing_fees( $order, $data );
 
         if ( (float) $order->get_total() <= 0 ) {
             throw new RuntimeException( 'This order does not require a card payment.' );
@@ -674,8 +684,9 @@ final class ORBIT_Relay_Card_Checkout {
         $shipping_item->set_total( $shipping_method['cost'] );
         $order->add_item( $shipping_item );
         $order->calculate_totals();
+        self::add_processing_fees( $order, $data );
         if ( $order->get_id() ) throw new RuntimeException( 'Checkout quote unexpectedly persisted an order.' );
-        foreach ( $order->get_items( array( 'line_item', 'coupon', 'shipping', 'tax' ) ) as $order_item ) {
+        foreach ( $order->get_items( array( 'line_item', 'coupon', 'shipping', 'fee', 'tax' ) ) as $order_item ) {
             if ( $order_item->get_id() ) throw new RuntimeException( 'Checkout quote unexpectedly persisted an order item.' );
         }
         if ( (float) $order->get_total() <= 0 ) throw new RuntimeException( 'This order does not require payment.' );
@@ -701,12 +712,14 @@ final class ORBIT_Relay_Card_Checkout {
             ), $items ),
             'coupon' => self::clean_coupon( $data['couponCode'] ?? $data['coupon'] ?? '' ),
             'shipping' => self::shipping_method( $data, (float) $order->get_shipping_total() <= 0 )['id'],
+            'priorityProcessing' => self::priority_processing_requested( $data ),
             'total' => (string) $order->get_total(),
             'currency' => $currency,
             'billing' => self::clean_address( isset( $data['billing'] ) && is_array( $data['billing'] ) ? $data['billing'] : array() ),
             'shippingAddress' => self::clean_address( isset( $data['shipping'] ) && is_array( $data['shipping'] ) ? $data['shipping'] : array() ),
             'expiresAt' => $expires_at,
         );
+        $processing_fees = self::processing_fee_amounts( $order );
         return array(
             'quoteId' => 'orb_quote_' . substr( hash_hmac( 'sha256', wp_json_encode( $identity ), ORBIT_Relay::signing_secret() ), 0, 32 ),
             'quoteExpiresAt' => $expires_at,
@@ -714,10 +727,66 @@ final class ORBIT_Relay_Card_Checkout {
             'subtotalMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_subtotal(), $currency ),
             'discountMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_discount_total(), $currency ),
             'shippingMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_shipping_total(), $currency ),
+            'processingFeeMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $processing_fees['standard'], $currency ),
+            'priorityProcessingFeeMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $processing_fees['priority'], $currency ),
+            'priorityProcessing' => self::priority_processing_requested( $data ),
             'taxMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_total_tax(), $currency ),
             'totalMinor' => ORBIT_Relay_Orders::decimal_to_minor( (string) $order->get_total(), $currency ),
             'items' => $summary_items,
         );
+    }
+
+    private static function add_processing_fees( WC_Order $order, array $data ): void {
+        $fee_base = max( 0.0, (float) $order->get_total() );
+        if ( $fee_base <= 0 ) {
+            return;
+        }
+
+        $standard_rate = max( 0.0, (float) apply_filters( 'orbit_relay_order_processing_fee_rate', self::ORDER_PROCESSING_FEE_RATE ) );
+        $priority_rate = max( 0.0, (float) apply_filters( 'orbit_relay_priority_processing_fee_rate', self::PRIORITY_PROCESSING_FEE_RATE ) );
+        $priority_requested = self::priority_processing_requested( $data );
+
+        self::add_processing_fee_item( $order, self::ORDER_PROCESSING_FEE_NAME, $fee_base * $standard_rate );
+        if ( $priority_requested ) {
+            self::add_processing_fee_item( $order, self::PRIORITY_PROCESSING_FEE_NAME, $fee_base * $priority_rate );
+        }
+
+        $order->update_meta_data( '_rgv_priority_processing', $priority_requested ? 'yes' : 'no' );
+        if ( $priority_requested && $order->get_id() ) {
+            $order->add_order_note( 'Priority processing requested: order should enter processing within 3 hours.' );
+        }
+        $order->calculate_totals();
+    }
+
+    private static function add_processing_fee_item( WC_Order $order, string $name, float $amount ): void {
+        $amount = (float) wc_format_decimal( $amount, wc_get_price_decimals() );
+        if ( $amount <= 0 ) {
+            return;
+        }
+
+        $fee = new WC_Order_Item_Fee();
+        $fee->set_name( $name );
+        $fee->set_amount( $amount );
+        $fee->set_total( $amount );
+        $fee->set_tax_status( 'none' );
+        $order->add_item( $fee );
+    }
+
+    private static function processing_fee_amounts( WC_Order $order ): array {
+        $amounts = array( 'standard' => 0.0, 'priority' => 0.0 );
+        foreach ( $order->get_items( 'fee' ) as $fee ) {
+            if ( self::ORDER_PROCESSING_FEE_NAME === $fee->get_name() ) {
+                $amounts['standard'] += (float) $fee->get_total();
+            } elseif ( self::PRIORITY_PROCESSING_FEE_NAME === $fee->get_name() ) {
+                $amounts['priority'] += (float) $fee->get_total();
+            }
+        }
+        return $amounts;
+    }
+
+    private static function priority_processing_requested( array $data ): bool {
+        $value = $data['priorityProcessing'] ?? $data['priority_processing'] ?? false;
+        return (bool) filter_var( $value, FILTER_VALIDATE_BOOLEAN );
     }
 
     private static function orbit_checkout_configuration() {
@@ -909,14 +978,6 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     private static function shipping_method( array $data, bool $is_free ): array {
-        if ( $is_free ) {
-            return array(
-                'id'    => 'free_shipping',
-                'title' => 'Free Shipping',
-                'cost'  => 0.0,
-            );
-        }
-
         $rates = apply_filters( 'orbit_relay_card_shipping_rates', self::SHIPPING_RATES );
         $rates = is_array( $rates ) ? $rates : self::SHIPPING_RATES;
         $method = $data['shippingMethod'] ?? $data['shipping_method'] ?? '';
@@ -932,6 +993,14 @@ final class ORBIT_Relay_Card_Checkout {
         $rate = isset( $rates[ $method_id ] ) && is_array( $rates[ $method_id ] )
             ? $rates[ $method_id ]
             : self::SHIPPING_RATES['usps_ground_advantage'];
+
+        if ( $is_free && false !== ( $rate['free_shipping_eligible'] ?? true ) ) {
+            return array(
+                'id'    => 'free_shipping',
+                'title' => 'Free Shipping',
+                'cost'  => 0.0,
+            );
+        }
 
         return array(
             'id'    => $method_id,
@@ -984,6 +1053,7 @@ final class ORBIT_Relay_Card_Checkout {
                     'shippingAddress' => self::clean_address( $shipping ),
                     'coupon'   => self::clean_coupon( $data['couponCode'] ?? $data['coupon'] ?? '' ),
                     'shipping' => sanitize_key( (string) $method ),
+                    'priorityProcessing' => self::priority_processing_requested( $data ),
                     'items'    => $normalized_items,
                     'attempt'  => sanitize_text_field( (string) ( $data['checkoutAttemptId'] ?? '' ) ),
                     'quoteId'  => sanitize_text_field( (string) ( $data['quoteId'] ?? '' ) ),

@@ -4,16 +4,15 @@ Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\orbit-relay'))
-$outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'orbit-relay-for-woocommerce-1.4.3.zip'))
+$pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-zelle-checkout'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $workspace 'rgv-zelle-checkout-1.3.7.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
-    throw "ORBIT Relay source directory was not found: $pluginRoot"
+    throw "Zelle checkout source directory was not found: $pluginRoot"
 }
 
-if ([IO.Path]::GetDirectoryName($outputPath) -ne $outputDirectory) {
-    throw 'ZIP output path escaped wordpress-plugin.'
+if ([IO.Path]::GetDirectoryName($outputPath) -ne $workspace) {
+    throw 'ZIP output path escaped the workspace.'
 }
 
 $fileStream = [IO.File]::Open($outputPath, [IO.FileMode]::Create)
@@ -27,7 +26,7 @@ try {
     Get-ChildItem -LiteralPath $pluginRoot -Recurse -File | ForEach-Object {
         $relativePath = $_.FullName.Substring($pluginRoot.Length).TrimStart([char[]]@('\', '/')).Replace('\', '/')
         $entry = $archive.CreateEntry(
-            "orbit-relay/$relativePath",
+            "rgv-zelle-checkout/$relativePath",
             [IO.Compression.CompressionLevel]::Optimal
         )
         $entryStream = $entry.Open()

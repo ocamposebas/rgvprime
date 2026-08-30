@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.4
+ * Version: 1.3.7
  * Author: RGVPRIME LLC
  */
 
@@ -26,10 +26,19 @@ final class RGV_Zelle_Checkout {
   const MAX_ORDER_ITEMS = 50;
   const MAX_ITEM_QUANTITY = 100;
   const FREE_SHIPPING_MINIMUM = 200.0;
+  const ORDER_PROCESSING_FEE_RATE = 0.03;
+  const PRIORITY_PROCESSING_FEE_RATE = 0.05;
+  const ORDER_PROCESSING_FEE_NAME = 'Service & Processing';
+  const PRIORITY_PROCESSING_FEE_NAME = 'Priority Processing (within 3 hours)';
   const SHIPPING_RATES = [
     'ups_2_day_air' => [
       'title' => 'UPS Shipping',
       'cost' => 15.0,
+    ],
+    'ups_expedited' => [
+      'title' => 'UPS Shipping',
+      'cost' => 45.0,
+      'free_shipping_eligible' => false,
     ],
     'usps_ground_advantage' => [
       'title' => 'USPS Ground',
@@ -380,6 +389,7 @@ final class RGV_Zelle_Checkout {
       'address' => sanitize_text_field((string) ($shipping['address_1'] ?? $billing['address_1'] ?? '')),
       'postcode' => sanitize_text_field((string) ($shipping['postcode'] ?? $billing['postcode'] ?? '')),
       'coupon' => $this->clean_coupon($data['coupon'] ?? $data['couponCode'] ?? ''),
+      'priority_processing' => $this->priority_processing_requested($data),
       'items' => $normalized_items,
     ];
 
@@ -600,6 +610,7 @@ final class RGV_Zelle_Checkout {
       $order->add_item($shipping_item);
 
       $order->calculate_totals();
+      $this->add_processing_fees($order, $data);
       $order->save();
 
       $payment_reference = 'RGV-' . preg_replace('/[^0-9]/', '', (string) $order->get_order_number());
@@ -891,15 +902,55 @@ final class RGV_Zelle_Checkout {
     return preg_replace('/[^A-Z0-9\-_]/', '', $coupon);
   }
 
-  private function get_shipping_method_details($data, $is_free_shipping) {
-    if ($is_free_shipping) {
-      return [
-        'id' => 'free_shipping',
-        'title' => "Free Shipping (Order's Over $200)",
-        'cost' => 0.0,
-      ];
+  private function add_processing_fees(WC_Order $order, $data) {
+    $fee_base = max(0.0, (float) $order->get_total());
+
+    if ($fee_base <= 0) {
+      return;
     }
 
+    $standard_rate = max(0.0, (float) apply_filters(
+      'rgv_zelle_order_processing_fee_rate',
+      self::ORDER_PROCESSING_FEE_RATE
+    ));
+    $priority_rate = max(0.0, (float) apply_filters(
+      'rgv_zelle_priority_processing_fee_rate',
+      self::PRIORITY_PROCESSING_FEE_RATE
+    ));
+    $priority_requested = $this->priority_processing_requested($data);
+
+    $this->add_processing_fee_item($order, self::ORDER_PROCESSING_FEE_NAME, $fee_base * $standard_rate);
+
+    if ($priority_requested) {
+      $this->add_processing_fee_item($order, self::PRIORITY_PROCESSING_FEE_NAME, $fee_base * $priority_rate);
+      $order->add_order_note('Priority processing requested: order should enter processing within 3 hours.');
+    }
+
+    $order->update_meta_data('_rgv_priority_processing', $priority_requested ? 'yes' : 'no');
+    $order->calculate_totals();
+  }
+
+  private function add_processing_fee_item(WC_Order $order, $name, $amount) {
+    $amount = (float) wc_format_decimal($amount, wc_get_price_decimals());
+
+    if ($amount <= 0) {
+      return;
+    }
+
+    $fee = new WC_Order_Item_Fee();
+    $fee->set_name($name);
+    $fee->set_amount($amount);
+    $fee->set_total($amount);
+    $fee->set_tax_status('none');
+    $order->add_item($fee);
+  }
+
+  private function priority_processing_requested($data) {
+    $value = $data['priorityProcessing'] ?? $data['priority_processing'] ?? false;
+    return (bool) filter_var($value, FILTER_VALIDATE_BOOLEAN);
+  }
+
+  private function get_shipping_method_details($data, $is_free_shipping) {
     $shipping_methods = apply_filters('rgv_zelle_shipping_rates', self::SHIPPING_RATES);
 
     if (!is_array($shipping_methods)) {
@@ -919,16 +970,34 @@ final class RGV_Zelle_Checkout {
     $method_id = sanitize_key((string) $method_value);
 
     if (isset($shipping_methods[$method_id]) && is_array($shipping_methods[$method_id])) {
+      $shipping_method = $shipping_methods[$method_id];
+
+      if ($is_free_shipping && false !== ($shipping_method['free_shipping_eligible'] ?? true)) {
+        return [
+          'id' => 'free_shipping',
+          'title' => "Free Shipping (Order's Over $200)",
+          'cost' => 0.0,
+        ];
+      }
+
       return [
         'id' => $method_id,
-        'title' => sanitize_text_field((string) ($shipping_methods[$method_id]['title'] ?? 'Shipping')),
-        'cost' => max(0, (float) ($shipping_methods[$method_id]['cost'] ?? 0)),
+        'title' => sanitize_text_field((string) ($shipping_method['title'] ?? 'Shipping')),
+        'cost' => max(0, (float) ($shipping_method['cost'] ?? 0)),
       ];
     }
 
     $fallback = isset($shipping_methods['usps_ground_advantage']) && is_array($shipping_methods['usps_ground_advantage'])
       ? $shipping_methods['usps_ground_advantage']
       : self::SHIPPING_RATES['usps_ground_advantage'];
+
+    if ($is_free_shipping && false !== ($fallback['free_shipping_eligible'] ?? true)) {
+      return [
+        'id' => 'free_shipping',
+        'title' => "Free Shipping (Order's Over $200)",
+        'cost' => 0.0,
+      ];
+    }
 
     return [
       'id' => 'usps_ground_advantage',
