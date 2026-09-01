@@ -647,7 +647,7 @@ function buildPaymentReference(order = {}) {
 }
 
 function getManualOrderEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/manual-zelle-order`;
+  return "/api/checkout/zelle-order";
 }
 
 function getPaymentProofEndpoint() {
@@ -659,15 +659,15 @@ function getCouponValidateEndpoint() {
 }
 
 function getEdebitOrderEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/rgvprime/v1/create-edebit-order`;
+  return "/api/checkout/edebit-order";
 }
 
 function getOrbitCardCheckoutEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/orbit/v1/card-checkout`;
+  return "/api/checkout/card-order";
 }
 
 function getOrbitCardQuoteEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/orbit/v1/card-quote`;
+  return "/api/checkout/card-quote";
 }
 
 function createCheckoutAttemptId() {
@@ -799,11 +799,11 @@ function Field({ label, children, wide = false }) {
 
 function ComplianceConfirm({
   placement,
-  policyAcknowledged,
-  finalSaleAcknowledged,
+  researchUseAcknowledged,
+  termsAccepted,
   hasError,
-  onPolicyChange,
-  onFinalSaleChange,
+  onResearchUseChange,
+  onTermsChange,
 }) {
   const titleId = `rgvx-review-title-${placement}`;
 
@@ -815,46 +815,46 @@ function ComplianceConfirm({
       <div className="rgvx-section-heading">
         <p>Required</p>
         <h2 id={titleId}>Confirm your order</h2>
-        <span>Please accept both policies before completing payment.</span>
+        <span>Each confirmation is required and starts unchecked.</span>
       </div>
 
-      <label className={`rgvx-policy ${policyAcknowledged ? "is-checked" : ""} ${!policyAcknowledged && hasError ? "warning" : ""}`}>
+      <label className={`rgvx-policy ${researchUseAcknowledged ? "is-checked" : ""} ${!researchUseAcknowledged && hasError ? "warning" : ""}`}>
         <span className="rgvx-policy-control">
           <input
             type="checkbox"
-            checked={policyAcknowledged}
-            onChange={(event) => onPolicyChange(event.target.checked)}
+            checked={researchUseAcknowledged}
+            onChange={(event) => onResearchUseChange(event.target.checked)}
           />
           <Check size={15} aria-hidden="true" />
         </span>
 
         <span className="rgvx-policy-copy">
-          <strong>Age &amp; research-use confirmation</strong>
+          <strong>21+ and Research Use Only certification</strong>
           <span>
-            I confirm I am 21 or older, I am acquiring these compounds for in-vitro research or
-            laboratory use only, and I agree to the <a href={POLICY_LINKS.terms}>Terms & Conditions</a>,{" "}
-            <a href={POLICY_LINKS.refund}>Refund Policy</a>, and{" "}
+            I certify that I am 21 years of age or older and that all products in this order are
+            being purchased exclusively for qualified laboratory and in-vitro research. They are
+            not for human or animal use, administration, consumption, diagnostic, therapeutic,
+            cosmetic or clinical application. I accept the{" "}
             <a href={POLICY_LINKS.researchUse}>Research Use Only policy</a>.
           </span>
         </span>
       </label>
 
-      <label className={`rgvx-policy ${finalSaleAcknowledged ? "is-checked" : ""} ${!finalSaleAcknowledged && hasError ? "warning" : ""}`}>
+      <label className={`rgvx-policy ${termsAccepted ? "is-checked" : ""} ${!termsAccepted && hasError ? "warning" : ""}`}>
         <span className="rgvx-policy-control">
           <input
             type="checkbox"
-            checked={finalSaleAcknowledged}
-            onChange={(event) => onFinalSaleChange(event.target.checked)}
+            checked={termsAccepted}
+            onChange={(event) => onTermsChange(event.target.checked)}
           />
           <Check size={15} aria-hidden="true" />
         </span>
 
         <span className="rgvx-policy-copy">
-          <strong>Final-sale acknowledgement</strong>
+          <strong>Terms &amp; Conditions</strong>
           <span>
-            I understand and acknowledge that, due to the nature of these products, all sales
-            are final. RGVPRIME LLC does not offer returns, exchanges, refunds, or
-            reimbursements of any kind. By proceeding with my purchase, I expressly accept the{" "}
+            I separately read and accept the <a href={POLICY_LINKS.terms}>Terms &amp; Conditions</a>
+            {" "}and the{" "}
             <a href={POLICY_LINKS.refund}>All Sales Final Policy</a>.
           </span>
         </span>
@@ -888,8 +888,8 @@ export default function RgvCheckout() {
   const [couponValidation, setCouponValidation] = useState(null);
   const [checkoutForm, setCheckoutForm] = useState(() => getInitialCheckoutForm());
   const [shippingAddressConfirmed, setShippingAddressConfirmed] = useState(false);
-  const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
-  const [finalSaleAcknowledged, setFinalSaleAcknowledged] = useState(false);
+  const [researchUseAcknowledged, setResearchUseAcknowledged] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
@@ -1320,7 +1320,7 @@ export default function RgvCheckout() {
   );
   const normalizedCardAddress = normalizeCheckoutFormForOrder(checkoutForm);
   const cardPaymentEnabled = Boolean(
-    checkoutQuote && isOrbitQuoteFresh(checkoutQuote, 20) && !quoteLoading && !loading && policyAcknowledged && finalSaleAcknowledged &&
+    checkoutQuote && isOrbitQuoteFresh(checkoutQuote, 20) && !quoteLoading && !loading && researchUseAcknowledged && termsAccepted &&
     shippingAddressConfirmed && isValidEmail(normalizedCardAddress.email) &&
     normalizedCardAddress.first_name && normalizedCardAddress.last_name && normalizedCardAddress.address_1 &&
     normalizedCardAddress.city && normalizedCardAddress.state && normalizedCardAddress.postcode && normalizedCardAddress.phone
@@ -1528,12 +1528,12 @@ export default function RgvCheckout() {
       return fail("Your cart is empty.");
     }
 
-    if (!policyAcknowledged) {
-      return fail("Please confirm the age, research-use, and policy acknowledgement.");
+    if (!researchUseAcknowledged) {
+      return fail("Please complete the 21+ and Research Use Only certification.");
     }
 
-    if (!finalSaleAcknowledged) {
-      return fail("Please acknowledge and accept the All Sales Final Policy before continuing.");
+    if (!termsAccepted) {
+      return fail("Please separately accept the Terms & Conditions.");
     }
 
     if (requiresDirectDetails && !shippingAddressConfirmed) {
@@ -1699,11 +1699,11 @@ export default function RgvCheckout() {
             shippingMethod: selectedShippingMethod?.id,
             priorityProcessing,
             source: "rgv_custom_checkout_orbit_card",
-            ageConfirmed: true,
-            researchUseAcknowledged: true,
-            termsAccepted: true,
-            refundPolicyAccepted: true,
-            finalSalePolicyAccepted: true,
+            ageConfirmed: researchUseAcknowledged,
+            researchUseAcknowledged,
+            termsAccepted,
+            refundPolicyAccepted: termsAccepted,
+            finalSalePolicyAccepted: termsAccepted,
             researchUsePolicyAccepted: true,
             policyAcknowledgedAt: new Date().toISOString(),
             confirmationTokenId,
@@ -1971,11 +1971,11 @@ export default function RgvCheckout() {
           couponValidation,
           coupon_validation: couponValidation,
           source: "rgvprime_custom_checkout_edebit",
-          ageConfirmed: true,
-          researchUseAcknowledged: true,
-          termsAccepted: true,
-          refundPolicyAccepted: true,
-          finalSalePolicyAccepted: true,
+          ageConfirmed: researchUseAcknowledged,
+          researchUseAcknowledged,
+          termsAccepted,
+          refundPolicyAccepted: termsAccepted,
+          finalSalePolicyAccepted: termsAccepted,
           researchUsePolicyAccepted: true,
           policyAcknowledgedAt: new Date().toISOString(),
         }),
@@ -2161,11 +2161,11 @@ export default function RgvCheckout() {
           standardShippingCost: selectedShippingBaseCost,
           standard_shipping_cost: selectedShippingBaseCost,
           source: "rgv_custom_checkout_zelle",
-          ageConfirmed: true,
-          researchUseAcknowledged: true,
-          termsAccepted: true,
-          refundPolicyAccepted: true,
-          finalSalePolicyAccepted: true,
+          ageConfirmed: researchUseAcknowledged,
+          researchUseAcknowledged,
+          termsAccepted,
+          refundPolicyAccepted: termsAccepted,
+          finalSalePolicyAccepted: termsAccepted,
           researchUsePolicyAccepted: true,
           policyAcknowledgedAt: new Date().toISOString(),
         }),
@@ -2974,8 +2974,8 @@ export default function RgvCheckout() {
                   />
                   <span className="rgvx-processing-check"><Check size={15} /></span>
                   <span>
-                    <strong>Priority Processing</strong>
-                    <small>Order enters processing within 3 hours. Delivery time is separate.</small>
+                    <strong>⚡ SKIP THE LINE — RUSH PROCESSING (+5%)</strong>
+                    <small>This speeds up processing only. Carrier delivery times are not guaranteed.</small>
                   </span>
                   <em>+5%</em>
                 </label>
@@ -2984,15 +2984,15 @@ export default function RgvCheckout() {
 
             <ComplianceConfirm
               placement="flow"
-              policyAcknowledged={policyAcknowledged}
-              finalSaleAcknowledged={finalSaleAcknowledged}
+              researchUseAcknowledged={researchUseAcknowledged}
+              termsAccepted={termsAccepted}
               hasError={Boolean(error)}
-              onPolicyChange={(checked) => {
-                setPolicyAcknowledged(checked);
+              onResearchUseChange={(checked) => {
+                setResearchUseAcknowledged(checked);
                 if (checked) setError("");
               }}
-              onFinalSaleChange={(checked) => {
-                setFinalSaleAcknowledged(checked);
+              onTermsChange={(checked) => {
+                setTermsAccepted(checked);
                 if (checked) setError("");
               }}
             />
@@ -3146,7 +3146,7 @@ export default function RgvCheckout() {
 
               {summaryPriorityProcessingFee > 0 && (
                 <div className="rgvx-total-row">
-                  <span>Priority Processing (5%)</span>
+                  <span>⚡ Rush Processing (+5%)</span>
                   <strong>{formatMoney(summaryPriorityProcessingFee)}</strong>
                 </div>
               )}

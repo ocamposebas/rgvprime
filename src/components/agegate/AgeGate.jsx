@@ -13,26 +13,6 @@ import {
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
 const PUBLIC_PATHS = ["/policies"];
-const ACCESS_STORAGE_KEY = "rgv_member_access_until_v1";
-const ACCESS_DURATION = 30 * 24 * 60 * 60 * 1000;
-
-function hasRememberedAccess() {
-  if (typeof window === "undefined") return false;
-
-  try {
-    return Number(window.localStorage.getItem(ACCESS_STORAGE_KEY) || 0) > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-function rememberAccess() {
-  try {
-    window.localStorage.setItem(ACCESS_STORAGE_KEY, String(Date.now() + ACCESS_DURATION));
-  } catch {
-    // The account cookie still keeps the authenticated session when storage is unavailable.
-  }
-}
 
 function isPublicPath() {
   if (typeof window === "undefined") return false;
@@ -137,7 +117,9 @@ export default function AgeGate() {
   const [password, setPassword] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetParams, setResetParams] = useState({ key: "", login: "" });
-  const [accessConfirmed, setAccessConfirmed] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [researchUseAcknowledged, setResearchUseAcknowledged] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -159,6 +141,10 @@ export default function AgeGate() {
     const key = params.get("key") || "";
     const resetLogin = params.get("login") || "";
 
+    if (params.get("next") === "/checkout") {
+      setNotice("Please sign in to continue to checkout. Your cart is still saved.");
+    }
+
     if (nextMode === "reset" && key && resetLogin) {
       setResetParams({ key, login: resetLogin });
       setMode("reset");
@@ -169,26 +155,27 @@ export default function AgeGate() {
     let active = true;
 
     async function verifySession() {
-      if (nextMode !== "reset" && hasRememberedAccess()) {
-        if (active) setStatus("authenticated");
-        return;
-      }
-
-      const result = await getMeOnce({ force: true });
-      const authenticated = Boolean(result?.ok && result?.data?.success && result?.data?.user);
-
-      if (authenticated) rememberAccess();
+      const [result, complianceResponse] = await Promise.all([
+        getMeOnce({ force: true }),
+        fetch("/api/compliance/session", { credentials: "same-origin", cache: "no-store" }).catch(() => null),
+      ]);
+      const compliance = await complianceResponse?.json().catch(() => null);
+      const authenticated = Boolean(
+        result?.ok && result?.data?.success && result?.data?.user &&
+        complianceResponse?.ok && compliance?.approved === true,
+      );
 
       if (active) {
-        setStatus(
-          authenticated || hasRememberedAccess() ? "authenticated" : "locked",
-        );
+        setStatus(authenticated ? "authenticated" : "locked");
       }
     }
 
     function keepSiteOpenAfterLogout() {
       resetMeCache();
-      setStatus(hasRememberedAccess() ? "authenticated" : "locked");
+      setAgeConfirmed(false);
+      setResearchUseAcknowledged(false);
+      setTermsAccepted(false);
+      setStatus("locked");
     }
 
     function handleStorage(event) {
@@ -204,12 +191,14 @@ export default function AgeGate() {
     verifySession();
     window.addEventListener("rgv-account-login", verifySession);
     window.addEventListener("rgv-account-logout", keepSiteOpenAfterLogout);
+    window.addEventListener("rgv-compliance-required", keepSiteOpenAfterLogout);
     window.addEventListener("storage", handleStorage);
 
     return () => {
       active = false;
       window.removeEventListener("rgv-account-login", verifySession);
       window.removeEventListener("rgv-account-logout", keepSiteOpenAfterLogout);
+      window.removeEventListener("rgv-compliance-required", keepSiteOpenAfterLogout);
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
@@ -275,7 +264,6 @@ export default function AgeGate() {
 
   function openAuthenticatedSession(data) {
     resetMeCache();
-    rememberAccess();
 
     try {
       window.localStorage.setItem("rgv-account-event", `login:${Date.now()}`);
@@ -325,20 +313,26 @@ export default function AgeGate() {
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (!accessConfirmed) {
-      setError("Please confirm the age and research-use requirements to continue.");
+    if (!ageConfirmed || !researchUseAcknowledged || !termsAccepted) {
+      setError("Please complete all three required confirmations to continue.");
       return;
     }
 
-    const data = await submit("/api/account/login", { login, password });
+    const data = await submit("/api/account/login", {
+      login,
+      password,
+      ageConfirmed,
+      researchUseAcknowledged,
+      termsAccepted,
+    });
     if (data?.success) openAuthenticatedSession(data);
   }
 
   async function handleRegister(event) {
     event.preventDefault();
 
-    if (!accessConfirmed) {
-      setError("Please confirm the age and research-use requirements to continue.");
+    if (!ageConfirmed || !researchUseAcknowledged || !termsAccepted) {
+      setError("Please complete all three required confirmations to continue.");
       return;
     }
 
@@ -352,6 +346,9 @@ export default function AgeGate() {
       password,
       first_name: firstName,
       last_name: lastName,
+      ageConfirmed,
+      researchUseAcknowledged,
+      termsAccepted,
     });
 
     if (!data?.success) return;
@@ -550,8 +547,15 @@ export default function AgeGate() {
                     </button>
                   </div>
 
-                  <AccessConfirmation checked={accessConfirmed} onChange={setAccessConfirmed} />
-                  <SubmitButton loading={loading} disabled={!accessConfirmed}>
+                  <AccessConfirmation
+                    ageConfirmed={ageConfirmed}
+                    researchUseAcknowledged={researchUseAcknowledged}
+                    termsAccepted={termsAccepted}
+                    onAgeChange={setAgeConfirmed}
+                    onResearchUseChange={setResearchUseAcknowledged}
+                    onTermsChange={setTermsAccepted}
+                  />
+                  <SubmitButton loading={loading} disabled={!ageConfirmed || !researchUseAcknowledged || !termsAccepted}>
                     Sign in & enter
                   </SubmitButton>
                 </form>
@@ -611,8 +615,15 @@ export default function AgeGate() {
                     </span>
                   </label>
 
-                  <AccessConfirmation checked={accessConfirmed} onChange={setAccessConfirmed} />
-                  <SubmitButton loading={loading} disabled={!accessConfirmed || !strongPassword}>
+                  <AccessConfirmation
+                    ageConfirmed={ageConfirmed}
+                    researchUseAcknowledged={researchUseAcknowledged}
+                    termsAccepted={termsAccepted}
+                    onAgeChange={setAgeConfirmed}
+                    onResearchUseChange={setResearchUseAcknowledged}
+                    onTermsChange={setTermsAccepted}
+                  />
+                  <SubmitButton loading={loading} disabled={!ageConfirmed || !researchUseAcknowledged || !termsAccepted || !strongPassword}>
                     Create account & enter
                   </SubmitButton>
                 </form>
@@ -669,27 +680,40 @@ export default function AgeGate() {
   );
 }
 
-function AccessConfirmation({ checked, onChange }) {
+function AccessConfirmation({
+  ageConfirmed,
+  researchUseAcknowledged,
+  termsAccepted,
+  onAgeChange,
+  onResearchUseChange,
+  onTermsChange,
+}) {
   return (
-    <div className="rounded-xl border border-red-500/18 bg-red-500/[0.055] p-3 sm:rounded-2xl">
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
-        />
-        <span className="text-[11px] leading-[1.5] text-white/57 sm:text-xs">
-          I confirm that I am <strong className="text-white">21 or older</strong> and understand that products and information are intended strictly for <strong className="text-white">research use only</strong>.
-        </span>
-      </label>
-      <p className="mt-2 pl-7 text-[9px] leading-4 text-white/31">
-        By continuing, you agree to our{" "}
-        <a href="/policies#terms" target="_blank" rel="noreferrer" className="text-white/58 underline decoration-white/25 underline-offset-2 hover:text-white">Terms & Conditions</a>
-        {" "}and{" "}
-        <a href="/policies#privacy" target="_blank" rel="noreferrer" className="text-white/58 underline decoration-white/25 underline-offset-2 hover:text-white">Privacy Policy</a>.
-      </p>
+    <div className="grid gap-2 rounded-xl border border-red-500/18 bg-red-500/[0.055] p-3 sm:rounded-2xl">
+      <RequiredConfirmation checked={ageConfirmed} onChange={onAgeChange}>
+        I certify that I am <strong className="text-white">21 years of age or older</strong>. Users under 21 may not access or order from this site.
+      </RequiredConfirmation>
+      <RequiredConfirmation checked={researchUseAcknowledged} onChange={onResearchUseChange}>
+        I accept the <a href="/policies#research-use" target="_blank" rel="noreferrer" className="text-white underline decoration-white/25 underline-offset-2">Research Use Only policy</a>. Products are not for human or animal use.
+      </RequiredConfirmation>
+      <RequiredConfirmation checked={termsAccepted} onChange={onTermsChange}>
+        I separately accept the <a href="/policies#terms" target="_blank" rel="noreferrer" className="text-white underline decoration-white/25 underline-offset-2">Terms &amp; Conditions</a>.
+      </RequiredConfirmation>
     </div>
+  );
+}
+
+function RequiredConfirmation({ checked, onChange, children }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/8 bg-black/15 p-2.5">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+      />
+      <span className="text-[11px] leading-[1.5] text-white/57 sm:text-xs">{children}</span>
+    </label>
   );
 }
 

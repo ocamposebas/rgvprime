@@ -4,6 +4,7 @@ import {
   json,
   portalRequest,
 } from "../../../lib/portalApi";
+import { COMPLIANCE_COOKIE, clearComplianceSession } from "../../../lib/complianceSession";
 
 export const prerender = false;
 
@@ -57,7 +58,10 @@ function clearPortalSession(cookies, url, response) {
 
   for (const path of COOKIE_PATHS) {
     response.headers.append("Set-Cookie", expiredCookie(PORTAL_COOKIE, path));
+    response.headers.append("Set-Cookie", expiredCookie(COMPLIANCE_COOKIE, path));
   }
+
+  clearComplianceSession(cookies, url);
 }
 
 async function logout({ cookies, url, redirect = false }) {

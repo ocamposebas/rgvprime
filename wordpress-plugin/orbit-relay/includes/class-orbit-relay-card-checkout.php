@@ -37,6 +37,7 @@ final class ORBIT_Relay_Card_Checkout {
 
     public static function init(): void {
         add_filter( 'rest_pre_serve_request', array( __CLASS__, 'send_cors_headers' ), 10, 4 );
+        add_filter( 'woocommerce_payment_complete_order_status', array( __CLASS__, 'hold_flagged_order_after_payment' ), 20, 3 );
     }
 
     private static function start_request(): void {
@@ -112,6 +113,10 @@ final class ORBIT_Relay_Card_Checkout {
         $items = isset( $data['items'] ) && is_array( $data['items'] ) ? $data['items'] : array();
         $billing = isset( $data['billing'] ) && is_array( $data['billing'] ) ? $data['billing'] : array();
         $shipping = isset( $data['shipping'] ) && is_array( $data['shipping'] ) ? $data['shipping'] : $billing;
+        $compliance = self::validate_compliance( $request, $data, false );
+        if ( is_wp_error( $compliance ) ) {
+            return self::response( false, $compliance->get_error_message(), (int) ( $compliance->get_error_data()['status'] ?? 401 ) );
+        }
         $validation = self::validate_items( $items );
         if ( is_wp_error( $validation ) ) {
             return self::response( false, $validation->get_error_message(), 400 );
@@ -180,7 +185,7 @@ final class ORBIT_Relay_Card_Checkout {
             return self::response( false, $validation->get_error_message(), 400, array( 'errorCode' => $validation->get_error_code() ) );
         }
 
-        $compliance = self::validate_compliance( $data );
+        $compliance = self::validate_compliance( $request, $data, true );
         if ( is_wp_error( $compliance ) ) {
             return self::response( false, $compliance->get_error_message(), 400, array( 'errorCode' => $compliance->get_error_code() ) );
         }
@@ -306,6 +311,7 @@ final class ORBIT_Relay_Card_Checkout {
         $order->update_meta_data( '_orbit_final_sale_policy_accepted', 'yes' );
         $order->update_meta_data( '_orbit_card_checkout_request_key', $request_key );
         $order->update_meta_data( '_orbit_checkout_quote_id', sanitize_text_field( (string) ( $data['quoteId'] ?? '' ) ) );
+        self::store_compliance_evidence( $order, $data );
 
         if ( is_user_logged_in() ) {
             $order->set_customer_id( get_current_user_id() );
@@ -362,6 +368,9 @@ final class ORBIT_Relay_Card_Checkout {
         }
 
         $order->set_status( 'pending' );
+        self::flag_possible_misuse( $order, $items, $billing, $shipping, $data );
+        $order->save();
+        $order->update_meta_data( '_rgv_compliance_order_id', $order->get_id() );
         $order->save();
 
         if ( function_exists( 'wc_reserve_stock_for_order' ) ) {
@@ -565,23 +574,115 @@ final class ORBIT_Relay_Card_Checkout {
         return true;
     }
 
-    private static function validate_compliance( array $data ) {
-        $required = array(
-            'ageConfirmed',
-            'researchUseAcknowledged',
-            'termsAccepted',
-            'refundPolicyAccepted',
-            'finalSalePolicyAccepted',
-            'researchUsePolicyAccepted',
+    private static function compliance_secret(): string {
+        $candidates = array(
+            defined( 'RGV_COMPLIANCE_SIGNING_SECRET' ) ? RGV_COMPLIANCE_SIGNING_SECRET : '',
+            defined( 'RGV_PORTAL_API_SECRET' ) ? RGV_PORTAL_API_SECRET : '',
+            getenv( 'COMPLIANCE_SIGNING_SECRET' ),
+            getenv( 'PORTAL_API_SECRET' ),
+            get_option( 'rgv_compliance_signing_secret', '' ),
+            get_option( 'rgv_portal_api_secret', '' ),
+            get_option( 'rgv_portal_secret', '' ),
         );
 
-        foreach ( $required as $field ) {
-            if ( true !== ( $data[ $field ] ?? null ) ) {
-                return new WP_Error( 'orbit_compliance_required', 'All required age, research-use, terms, and final-sale acknowledgements must be accepted.' );
+        foreach ( $candidates as $candidate ) {
+            $candidate = trim( (string) $candidate );
+            if ( '' !== $candidate ) return $candidate;
+        }
+        return '';
+    }
+
+    private static function validate_compliance( WP_REST_Request $request, array $data, bool $final ) {
+        $secret = self::compliance_secret();
+        $provided = (string) $request->get_header( 'x-rgv-compliance-secret' );
+        if ( '' === $secret || '' === $provided || ! hash_equals( $secret, $provided ) ) {
+            return new WP_Error( 'orbit_compliance_session_required', 'This order must be submitted through the secure storefront checkout.', array( 'status' => 401 ) );
+        }
+
+        // Quotes do not create an order. Final acknowledgements are enforced
+        // only when the customer actually submits payment.
+        if ( ! $final ) return true;
+
+        $acceptance = isset( $data['complianceAcceptance'] ) && is_array( $data['complianceAcceptance'] )
+            ? $data['complianceAcceptance']
+            : array();
+        foreach ( array( 'ageConfirmed', 'researchUseAcknowledged', 'termsAccepted' ) as $field ) {
+            $value = $final ? ( $data[ $field ] ?? null ) : ( $acceptance[ $field ] ?? null );
+            if ( true !== $value ) {
+                return new WP_Error( 'orbit_compliance_required', 'The 21+, Research Use Only, and Terms confirmations are required.', array( 'status' => 400 ) );
             }
         }
 
+        if ( $final ) {
+            foreach ( array( 'refundPolicyAccepted', 'finalSalePolicyAccepted', 'researchUsePolicyAccepted' ) as $field ) {
+                if ( true !== ( $data[ $field ] ?? null ) ) {
+                    return new WP_Error( 'orbit_compliance_required', 'All final checkout acknowledgements must be accepted.', array( 'status' => 400 ) );
+                }
+            }
+        }
+
+        $email = sanitize_email( $acceptance['userEmail'] ?? $acceptance['email'] ?? '' );
+        $initial_at = sanitize_text_field( (string) ( $acceptance['acceptedAt'] ?? '' ) );
+        $final_at = sanitize_text_field( (string) ( $acceptance['finalAcceptedAt'] ?? '' ) );
+        if (
+            'rgv-ruo-terms-2026-08-31-v1' !== sanitize_text_field( (string) ( $acceptance['policyVersion'] ?? '' ) ) ||
+            'checkout-certification-2026-08-31-v1' !== sanitize_text_field( (string) ( $acceptance['textVersion'] ?? '' ) ) ||
+            ! $email || ! is_email( $email ) || ! $initial_at || ! strtotime( $initial_at ) ||
+            ( $final && ( ! $final_at || ! strtotime( $final_at ) || abs( time() - strtotime( $final_at ) ) > 600 ) )
+        ) {
+            return new WP_Error( 'orbit_compliance_evidence_invalid', 'Compliance acceptance evidence is invalid or expired.', array( 'status' => 400 ) );
+        }
+
         return true;
+    }
+
+    private static function store_compliance_evidence( WC_Order $order, array $data ): void {
+        $acceptance = is_array( $data['complianceAcceptance'] ?? null ) ? $data['complianceAcceptance'] : array();
+        $user_id = absint( $acceptance['userId'] ?? 0 );
+        $order->update_meta_data( '_rgv_compliance_policy_version', sanitize_text_field( (string) ( $acceptance['policyVersion'] ?? '' ) ) );
+        $order->update_meta_data( '_rgv_compliance_text_version', sanitize_text_field( (string) ( $acceptance['textVersion'] ?? '' ) ) );
+        $order->update_meta_data( '_rgv_compliance_initial_accepted_at_utc', gmdate( 'c', strtotime( (string) ( $acceptance['acceptedAt'] ?? 'now' ) ) ) );
+        $order->update_meta_data( '_rgv_compliance_final_accepted_at_utc', gmdate( 'c', strtotime( (string) ( $acceptance['finalAcceptedAt'] ?? 'now' ) ) ) );
+        $order->update_meta_data( '_rgv_compliance_user_id', $user_id );
+        $order->update_meta_data( '_rgv_compliance_user_email', sanitize_email( $acceptance['userEmail'] ?? $acceptance['email'] ?? '' ) );
+        $order->update_meta_data( '_rgv_compliance_ip', sanitize_text_field( (string) ( $acceptance['requestIp'] ?? $acceptance['ip'] ?? 'unknown' ) ) );
+        $order->update_meta_data( '_rgv_age_21_certified', 'yes' );
+        $order->update_meta_data( '_rgv_research_use_only_accepted', 'yes' );
+        $order->update_meta_data( '_rgv_terms_accepted', 'yes' );
+        if ( $user_id > 0 ) $order->set_customer_id( $user_id );
+    }
+
+    private static function flag_possible_misuse( WC_Order $order, array $items, array $billing, array $shipping, array $data ): void {
+        $signals = array();
+        $total_quantity = 0;
+        foreach ( $items as $item ) {
+            $quantity = max( 0, absint( $item['quantity'] ?? 0 ) );
+            $total_quantity += $quantity;
+            if ( $quantity >= 5 ) $signals[] = 'five_or_more_of_one_item';
+        }
+        if ( $total_quantity >= 10 ) $signals[] = 'high_total_unit_count';
+
+        $acceptance = is_array( $data['complianceAcceptance'] ?? null ) ? $data['complianceAcceptance'] : array();
+        if ( strtolower( sanitize_email( $billing['email'] ?? '' ) ) !== strtolower( sanitize_email( $acceptance['userEmail'] ?? $acceptance['email'] ?? '' ) ) ) {
+            $signals[] = 'account_and_billing_email_mismatch';
+        }
+        if ( ! empty( $billing['postcode'] ) && ! empty( $shipping['postcode'] ) && sanitize_text_field( $billing['postcode'] ) !== sanitize_text_field( $shipping['postcode'] ) ) {
+            $signals[] = 'billing_and_shipping_zip_mismatch';
+        }
+
+        $signals = array_values( array_unique( $signals ) );
+        if ( ! $signals ) return;
+        $order->update_meta_data( '_rgv_manual_misuse_review_required', 'yes' );
+        $order->update_meta_data( '_rgv_manual_misuse_review_signals', implode( ',', $signals ) );
+        $order->add_order_note( 'Manual misuse review required before fulfillment. Signals: ' . implode( ', ', $signals ) . '. Cancel the order if the review cannot establish qualified research use.' );
+        $order->set_status( 'on-hold' );
+    }
+
+    public static function hold_flagged_order_after_payment( string $status, int $order_id, $order ): string {
+        $order = $order instanceof WC_Order ? $order : wc_get_order( $order_id );
+        return $order instanceof WC_Order && 'yes' === (string) $order->get_meta( '_rgv_manual_misuse_review_required', true )
+            ? 'on-hold'
+            : $status;
     }
 
     private static function validate_items( array $items ) {

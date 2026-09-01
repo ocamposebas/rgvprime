@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\orbit-relay'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'orbit-relay-for-woocommerce-1.4.3.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'orbit-relay-for-woocommerce-1.4.4.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "ORBIT Relay source directory was not found: $pluginRoot"

@@ -9,6 +9,7 @@ import {
   getMaintenanceRetryAfterSeconds,
   isMaintenanceModeEnabled,
 } from "./lib/maintenance-config";
+import { requireApprovedSession } from "./lib/complianceSession";
 
 const MAINTENANCE_ACCESS_PARAM = "maintenance_access";
 const MAINTENANCE_ACCESS_COOKIE = "rgv_maintenance_access";
@@ -220,8 +221,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return secure(context.redirect("/", 302));
     }
 
-    const response = await next();
     const isCheckoutDocument = pathname === "/checkout" || pathname === "/checkout/";
+
+    if (isCheckoutDocument) {
+      const approved = await requireApprovedSession({ cookies: context.cookies });
+      if (!approved) {
+        return secure(withNoCache(context.redirect("/?mode=login&next=%2Fcheckout", 303)));
+      }
+    }
+
+    const response = await next();
 
     return secure(isCheckoutDocument ? withNoCache(response) : response);
   }

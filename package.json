@@ -9,7 +9,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test:compliance": "node scripts/verify-compliance-controls.mjs",
+    "test:rush": "node scripts/verify-rush-processing-plugin.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.3",

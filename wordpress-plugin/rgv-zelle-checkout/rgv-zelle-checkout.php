@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.7
+ * Version: 1.3.8
  * Author: RGVPRIME LLC
  */
 
@@ -460,6 +460,113 @@ final class RGV_Zelle_Checkout {
     return null;
   }
 
+  private function compliance_secret() {
+    $candidates = [
+      defined('RGV_COMPLIANCE_SIGNING_SECRET') ? RGV_COMPLIANCE_SIGNING_SECRET : '',
+      defined('RGV_PORTAL_API_SECRET') ? RGV_PORTAL_API_SECRET : '',
+      getenv('COMPLIANCE_SIGNING_SECRET'),
+      getenv('PORTAL_API_SECRET'),
+      get_option('rgv_compliance_signing_secret', ''),
+      get_option('rgv_portal_api_secret', ''),
+      get_option('rgv_portal_secret', ''),
+    ];
+
+    foreach ($candidates as $candidate) {
+      $candidate = trim((string) $candidate);
+      if ($candidate !== '') return $candidate;
+    }
+
+    return '';
+  }
+
+  private function validate_compliance_acceptance(WP_REST_Request $request, array $data) {
+    $secret = $this->compliance_secret();
+    $provided = (string) $request->get_header('x-rgv-compliance-secret');
+
+    if ($secret === '' || $provided === '' || !hash_equals($secret, $provided)) {
+      return new WP_Error('rgv_compliance_session_required', 'This order must be submitted through the secure storefront checkout.', ['status' => 401]);
+    }
+
+    foreach (['ageConfirmed', 'researchUseAcknowledged', 'termsAccepted'] as $field) {
+      if (($data[$field] ?? null) !== true) {
+        return new WP_Error('rgv_compliance_required', 'The 21+, Research Use Only, and Terms confirmations are required.', ['status' => 400]);
+      }
+    }
+
+    $acceptance = isset($data['complianceAcceptance']) && is_array($data['complianceAcceptance'])
+      ? $data['complianceAcceptance']
+      : [];
+    $email = sanitize_email($acceptance['userEmail'] ?? $acceptance['email'] ?? '');
+    $initial_at = sanitize_text_field((string) ($acceptance['acceptedAt'] ?? ''));
+    $final_at = sanitize_text_field((string) ($acceptance['finalAcceptedAt'] ?? ''));
+    $policy_version = sanitize_text_field((string) ($acceptance['policyVersion'] ?? ''));
+    $text_version = sanitize_text_field((string) ($acceptance['textVersion'] ?? ''));
+
+    if (
+      $policy_version !== 'rgv-ruo-terms-2026-08-31-v1' ||
+      $text_version !== 'checkout-certification-2026-08-31-v1' ||
+      !$email || !is_email($email) ||
+      !$initial_at || !strtotime($initial_at) ||
+      !$final_at || !strtotime($final_at) ||
+      abs(time() - strtotime($final_at)) > 600
+    ) {
+      return new WP_Error('rgv_compliance_evidence_invalid', 'Compliance acceptance evidence is invalid or expired.', ['status' => 400]);
+    }
+
+    return [
+      'policy_version' => $policy_version,
+      'text_version' => $text_version,
+      'accepted_at' => gmdate('c', strtotime($initial_at)),
+      'final_accepted_at' => gmdate('c', strtotime($final_at)),
+      'user_id' => absint($acceptance['userId'] ?? 0),
+      'user_email' => $email,
+      'ip' => sanitize_text_field((string) ($acceptance['requestIp'] ?? $acceptance['ip'] ?? 'unknown')),
+    ];
+  }
+
+  private function store_compliance_evidence(WC_Order $order, array $acceptance) {
+    $order->update_meta_data('_rgv_compliance_policy_version', $acceptance['policy_version']);
+    $order->update_meta_data('_rgv_compliance_text_version', $acceptance['text_version']);
+    $order->update_meta_data('_rgv_compliance_initial_accepted_at_utc', $acceptance['accepted_at']);
+    $order->update_meta_data('_rgv_compliance_final_accepted_at_utc', $acceptance['final_accepted_at']);
+    $order->update_meta_data('_rgv_compliance_user_id', $acceptance['user_id']);
+    $order->update_meta_data('_rgv_compliance_user_email', $acceptance['user_email']);
+    $order->update_meta_data('_rgv_compliance_ip', $acceptance['ip']);
+    $order->update_meta_data('_rgv_age_21_certified', 'yes');
+    $order->update_meta_data('_rgv_research_use_only_accepted', 'yes');
+    $order->update_meta_data('_rgv_terms_accepted', 'yes');
+
+    if ($acceptance['user_id'] > 0) $order->set_customer_id($acceptance['user_id']);
+  }
+
+  private function flag_possible_misuse(WC_Order $order, array $items, array $billing, array $shipping, array $acceptance) {
+    $signals = [];
+    $total_quantity = 0;
+
+    foreach ($items as $item) {
+      $quantity = max(0, absint($item['quantity'] ?? 0));
+      $total_quantity += $quantity;
+      if ($quantity >= 5) $signals[] = 'five_or_more_of_one_item';
+    }
+
+    if ($total_quantity >= 10) $signals[] = 'high_total_unit_count';
+    if (strtolower(sanitize_email($billing['email'] ?? '')) !== strtolower($acceptance['user_email'])) {
+      $signals[] = 'account_and_billing_email_mismatch';
+    }
+    if (
+      !empty($billing['postcode']) && !empty($shipping['postcode']) &&
+      sanitize_text_field($billing['postcode']) !== sanitize_text_field($shipping['postcode'])
+    ) $signals[] = 'billing_and_shipping_zip_mismatch';
+
+    $signals = array_values(array_unique($signals));
+    if (!$signals) return;
+
+    $order->update_meta_data('_rgv_manual_misuse_review_required', 'yes');
+    $order->update_meta_data('_rgv_manual_misuse_review_signals', implode(',', $signals));
+    $order->add_order_note('Manual misuse review required before fulfillment. Signals: ' . implode(', ', $signals) . '. Cancel the order if the review cannot establish qualified research use.');
+    $order->set_status('on-hold');
+  }
+
   private function complete_checkout_request($option_name, $order_id) {
     update_option($option_name, [
       'status' => 'completed',
@@ -518,6 +625,14 @@ final class RGV_Zelle_Checkout {
       $data = [];
     }
 
+    $compliance = $this->validate_compliance_acceptance($request, $data);
+    if (is_wp_error($compliance)) {
+      return new WP_REST_Response([
+        'success' => false,
+        'message' => $compliance->get_error_message(),
+      ], (int) ($compliance->get_error_data()['status'] ?? 400));
+    }
+
     $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : [];
     $billing = isset($data['billing']) && is_array($data['billing']) ? $data['billing'] : [];
     $shipping = isset($data['shipping']) && is_array($data['shipping']) ? $data['shipping'] : $billing;
@@ -570,6 +685,7 @@ final class RGV_Zelle_Checkout {
       $order->update_meta_data('_rgv_payment_source', 'rgv_custom_checkout_zelle');
       $order->update_meta_data('_rgv_policy_acknowledged_at', sanitize_text_field($data['policyAcknowledgedAt'] ?? current_time('mysql')));
       $order->update_meta_data('_rgv_checkout_request_key', $request_key);
+      $this->store_compliance_evidence($order, $compliance);
 
       $subtotal = 0;
 
@@ -611,9 +727,11 @@ final class RGV_Zelle_Checkout {
 
       $order->calculate_totals();
       $this->add_processing_fees($order, $data);
+      $this->flag_possible_misuse($order, $items, $billing, $shipping, $compliance);
       $order->save();
 
       $payment_reference = 'RGV-' . preg_replace('/[^0-9]/', '', (string) $order->get_order_number());
+      $order->update_meta_data('_rgv_compliance_order_id', $order->get_id());
       $order->update_meta_data('_rgv_zelle_payment_reference', $payment_reference);
       $order->update_meta_data('_rgv_background_finalization_pending', 'yes');
       $order->save();

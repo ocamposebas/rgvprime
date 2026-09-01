@@ -9,6 +9,10 @@ import {
   isRequestBodyTooLarge,
   requestSecurityResponse,
 } from "../../../lib/requestSecurity";
+import {
+  hasRequiredAcknowledgements,
+  issueComplianceSession,
+} from "../../../lib/complianceSession";
 
 export async function POST({ request, cookies, url }) {
   if (isRequestBodyTooLarge(request, 16 * 1024)) {
@@ -31,6 +35,9 @@ export async function POST({ request, cookies, url }) {
 
   try {
     const body = await request.json();
+    if (!hasRequiredAcknowledgements(body)) {
+      return json({ success: false, message: "Confirm that you are 21+, accept the Research Use Only policy, and accept the Terms." }, 400);
+    }
     const data = await portalRequest("login", {
       body: {
         login: body.login,
@@ -39,11 +46,13 @@ export async function POST({ request, cookies, url }) {
     });
 
     cookies.set(PORTAL_COOKIE, data.token, getCookieOptions(url));
+    const compliance = issueComplianceSession({ user: data.user, request, cookies, url });
 
     return json({
       success: true,
       user: data.user,
       orders: data.orders || [],
+      compliance: { approved: true, policyVersion: compliance.policyVersion },
     });
   } catch (error) {
     return json(

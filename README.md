@@ -1,5 +1,15 @@
 # Astro Starter Kit: Basics
 
+## Checkout compliance deployment
+
+The storefront and WooCommerce plugins now require the same private compliance
+secret. By default the Node app uses `PORTAL_API_SECRET` and WordPress must expose
+the matching value as `RGV_PORTAL_API_SECRET`. To use a separate secret, set
+`COMPLIANCE_SIGNING_SECRET` in the Node deployment and define the identical value
+as `RGV_COMPLIANCE_SIGNING_SECRET` in `wp-config.php`. Never use a `PUBLIC_`
+prefix. Deploy the updated RGV Zelle Checkout and ORBIT Relay plugins together
+with the storefront; otherwise checkout fails closed.
+
 ## Maintenance mode
 
 The storefront includes a maintenance screen for VPS cleanup and code reviews.

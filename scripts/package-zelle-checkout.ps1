@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-zelle-checkout'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $workspace 'rgv-zelle-checkout-1.3.7.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $workspace 'rgv-zelle-checkout-1.3.8.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "Zelle checkout source directory was not found: $pluginRoot"
