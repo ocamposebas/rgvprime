@@ -1,3 +1,5 @@
+import { correctVerifiedCoaIdentities } from "../../lib/coaMetadata.js";
+
 export const prerender = false;
 
 const CACHE_CONTROL = "public, max-age=30, s-maxage=300, stale-while-revalidate=600";
@@ -67,7 +69,7 @@ export async function GET({ request }) {
       );
     }
 
-    return json(payload, 200);
+    return json(correctVerifiedCoaIdentities(payload), 200);
   } catch (error) {
     return json(
       {
@@ -83,4 +85,3 @@ export async function GET({ request }) {
     clearTimeout(timeout);
   }
 }
-

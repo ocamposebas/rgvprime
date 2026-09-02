@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   buildProductOffers,
   getPermanentProductRedirect,
@@ -14,6 +15,12 @@ const SITE_URL = "https://rgvprimellc.com";
 const baseUrl = String(process.env.SEO_BASE_URL || "").replace(/\/$/, "");
 
 function assertHelperBehavior() {
+  const checkoutTemplate = readFileSync(
+    new URL("../src/pages/checkout.astro", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(checkoutTemplate, /noindex=\{true\}/);
   assert.equal(getPublicProductSlug("ll-375-5mg"), "ll-37-5mg");
   assert.equal(getWooProductSlug("ll-37-5mg"), "ll-375-5mg");
   assert.equal(getPublicProductSlug("ss-31-10mg"), "ss-31");
@@ -287,6 +294,14 @@ async function assertIntegration() {
   const robotsText = await robots.text();
   assert.equal(robots.status, 200);
   assert.doesNotMatch(robotsText, /Disallow:\s*\/account/i);
+  assert.doesNotMatch(robotsText, /Disallow:\s*\/checkout/i);
+
+  const checkout = await fetchManual("/checkout");
+  assert.equal(checkout.status, 303);
+  assert.equal(
+    checkout.headers.get("x-robots-tag"),
+    "noindex, follow, noarchive",
+  );
 
   const sitemap = await fetchManual("/sitemap.xml");
   const sitemapText = await sitemap.text();

@@ -319,13 +319,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (isCheckoutDocument) {
       const approved = await requireApprovedSession({ cookies: context.cookies });
       if (!approved) {
-        return secure(withNoCache(context.redirect("/?mode=login&next=%2Fcheckout", 303)));
+        return secure(
+          withNoindexFollow(
+            withNoCache(context.redirect("/?mode=login&next=%2Fcheckout", 303)),
+          ),
+        );
       }
     }
 
     let response = await next();
 
-    if (normalizeCanonicalPath(pathname) === "/account") {
+    if (
+      normalizeCanonicalPath(pathname) === "/account" ||
+      isCheckoutDocument
+    ) {
       response = withNoindexFollow(response);
     }
 
