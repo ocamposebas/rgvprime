@@ -1,3 +1,5 @@
+import { PERMANENT_PRODUCT_REDIRECTS } from "../lib/seo";
+
 export const prerender = false;
 
 const SITE_URL = "https://rgvprimellc.com";
@@ -17,22 +19,27 @@ const STATIC_PAGES = [
 // whenever it is reachable.
 const ACTIVE_PRODUCT_SLUGS = [
   "5amino-1mq-50mg",
+  "acetic-acid-3ml",
   "adamax-10mg",
   "ahk-cu-100mg",
   "aod-9604",
   "ara-290-10mg",
   "bpc-157-10mg",
   "bpc-tb",
+  "cartalax-20mg",
   "cjc-ipa-no-dac-10mg",
   "detoxione-1200mg",
   "dsip-10mg",
+  "e-recon-water-30ml",
   "epithalon-10mg",
   "ghk-cu",
+  "ghk-cu-cap",
   "ghkkpv-60mg",
   "glow-70mg",
   "guthione-1200mg",
   "hosp-recon-water",
   "igf1-lr3-1mg",
+  "ipamorelin-10mg",
   "kisspeptin-10mg",
   "klow-80mg",
   "korean-gluta-1200mg",
@@ -40,33 +47,28 @@ const ACTIVE_PRODUCT_SLUGS = [
   "l-carnitine-600mg",
   "lemon-bottle-10ml",
   "lipo-c-b12-10ml",
-  "ll-375-5mg",
+  "ll-37-5mg",
   "mots-c",
+  "mt1-10mg",
   "mt2-10mg",
   "nad-500mg",
   "pt-141-10mg",
   "raw-ghk-1g",
   "recon-water",
   "rg-cag",
+  "rg-pump-10ml",
   "rg-rt",
   "rg-tesa",
   "rg-tz",
   "rgv-lipo-b",
   "selank-10mg",
   "semax-10mg",
+  "semaxselank-20mg",
   "snap8-10mg",
-  "ss-31-10mg",
+  "ss-31",
 ];
 
-const RETIRED_PRODUCT_SLUGS = new Set([
-  "cagrilintide-5mg",
-  "tesamorelin-10mg",
-  "fat-blaster-10ml",
-  "hospira-bac-30ml",
-  "bac-water",
-  "pl-rt",
-  "rgv-tesa",
-]);
+const RETIRED_PRODUCT_SLUGS = new Set(PERMANENT_PRODUCT_REDIRECTS.keys());
 
 function escapeXml(value = "") {
   return String(value)

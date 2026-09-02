@@ -2,6 +2,11 @@
 import "../styles/global.css";
 
 import Agegate from "../components/agegate/AgeGate";
+import {
+  normalizeCanonicalPath,
+  SITE_NAME,
+  SITE_URL,
+} from "../lib/seo";
 
 interface Props {
   title?: string;
@@ -10,11 +15,13 @@ interface Props {
   imageAlt?: string;
   noindex?: boolean;
   canonical?: string;
+  errorPage?: boolean;
+  ogType?: "website" | "product";
 }
 
-const siteName = "RGVPRIME LLC";
-const brandName = "RGVPRIME LLC";
-const siteUrl = "https://rgvprimellc.com";
+const siteName = SITE_NAME;
+const brandName = SITE_NAME;
+const siteUrl = SITE_URL;
 
 // Configure this public variable in Coolify/Vercel and rebuild the site.
 // It is the public Omnisend Brand ID, never a private API key.
@@ -29,9 +36,11 @@ const {
   imageAlt = "RGVPRIME LLC laboratory research products",
   noindex = false,
   canonical,
+  errorPage = false,
+  ogType = "website",
 } = Astro.props;
 
-const currentPath = Astro.url.pathname;
+const currentPath = normalizeCanonicalPath(Astro.url.pathname);
 
 const canonicalUrl = canonical
   ? new URL(canonical, siteUrl).toString()
@@ -67,7 +76,7 @@ const organizationSchema = {
     contentUrl: logoUrl,
     caption: brandName,
   },
-  image: ogImageUrl,
+  image: logoUrl,
 };
 
 const websiteSchema = {
@@ -125,22 +134,27 @@ const webpageSchema = {
 
     <meta name="description" content={description} />
 
-    <link rel="canonical" href={canonicalUrl} />
-
-    <link rel="alternate" hreflang="en-US" href={canonicalUrl} />
-    <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+    {
+      !errorPage && (
+        <>
+          <link rel="canonical" href={canonicalUrl} />
+          <link rel="alternate" hreflang="en-US" href={canonicalUrl} />
+          <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+        </>
+      )
+    }
 
     {
       noindex ? (
         <>
           <meta
             name="robots"
-            content="noindex, nofollow, noarchive"
+            content="noindex, follow, noarchive"
           />
 
           <meta
             name="googlebot"
-            content="noindex, nofollow, noarchive"
+            content="noindex, follow, noarchive"
           />
         </>
       ) : (
@@ -173,8 +187,7 @@ const webpageSchema = {
 
     <link
       rel="apple-touch-icon"
-      href="/apple-touch-icon.png"
-      sizes="180x180"
+      href="/logo.webp"
     />
 
     <meta name="theme-color" content="#050505" />
@@ -205,22 +218,28 @@ const webpageSchema = {
       })();
     </script>
 
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:site_name" content={siteName} />
-    <meta property="og:title" content={fullTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:image" content={ogImageUrl} />
-    <meta property="og:image:secure_url" content={ogImageUrl} />
-    <meta property="og:image:type" content={ogImageType} />
-    <meta property="og:image:alt" content={imageAlt} />
+    {
+      !errorPage && (
+        <>
+          <meta property="og:type" content={ogType} />
+          <meta property="og:locale" content="en_US" />
+          <meta property="og:site_name" content={siteName} />
+          <meta property="og:title" content={fullTitle} />
+          <meta property="og:description" content={description} />
+          <meta property="og:url" content={canonicalUrl} />
+          <meta property="og:image" content={ogImageUrl} />
+          <meta property="og:image:secure_url" content={ogImageUrl} />
+          <meta property="og:image:type" content={ogImageType} />
+          <meta property="og:image:alt" content={imageAlt} />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={fullTitle} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImageUrl} />
-    <meta name="twitter:image:alt" content={imageAlt} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={fullTitle} />
+          <meta name="twitter:description" content={description} />
+          <meta name="twitter:image" content={ogImageUrl} />
+          <meta name="twitter:image:alt" content={imageAlt} />
+        </>
+      )
+    }
 
     <link
       rel="preload"
@@ -243,10 +262,14 @@ const webpageSchema = {
       set:html={JSON.stringify(websiteSchema)}
     />
 
-    <script
-      type="application/ld+json"
-      set:html={JSON.stringify(webpageSchema)}
-    />
+    {
+      !errorPage && (
+        <script
+          type="application/ld+json"
+          set:html={JSON.stringify(webpageSchema)}
+        />
+      )
+    }
 
     <script is:inline define:vars={{ omnisendBrandId }}>
       window.__RGV_OMNISEND_ENABLED__ = Boolean(omnisendBrandId);

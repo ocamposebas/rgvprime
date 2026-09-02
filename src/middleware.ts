@@ -10,9 +10,15 @@ import {
   isMaintenanceModeEnabled,
 } from "./lib/maintenance-config";
 import { requireApprovedSession } from "./lib/complianceSession";
+import {
+  getPermanentProductRedirect,
+  normalizeCanonicalPath,
+} from "./lib/seo";
 
 const MAINTENANCE_ACCESS_PARAM = "maintenance_access";
 const MAINTENANCE_ACCESS_COOKIE = "rgv_maintenance_access";
+const CANONICAL_HOST = "rgvprimellc.com";
+const PRODUCTION_HOSTS = new Set([CANONICAL_HOST, `www.${CANONICAL_HOST}`]);
 
 const publicPrefixes = [
   "/_astro/",
@@ -60,6 +66,86 @@ function withNoCache(response: Response) {
     statusText: response.statusText,
     headers,
   });
+}
+
+function withNoindexFollow(response: Response) {
+  const headers = new Headers(response.headers);
+
+  headers.set("X-Robots-Tag", "noindex, follow, noarchive");
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function getRequestHostname(context) {
+  const forwardedHost = context.request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    ?.trim();
+  const requestHost = forwardedHost || context.request.headers.get("host");
+
+  try {
+    return new URL(`https://${requestHost || context.url.host}`).hostname.toLowerCase();
+  } catch {
+    return context.url.hostname.toLowerCase();
+  }
+}
+
+function getRequestProtocol(context) {
+  const forwardedProtocol = context.request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    ?.toLowerCase();
+
+  return forwardedProtocol ? `${forwardedProtocol}:` : context.url.protocol;
+}
+
+function getPermanentDocumentRedirect(context) {
+  if (context.request.method !== "GET" && context.request.method !== "HEAD") {
+    return null;
+  }
+
+  const pathname = context.url.pathname;
+  const lowerPathname = pathname.toLowerCase();
+
+  if (lowerPathname.startsWith("/api/") || isPublicAsset(pathname)) {
+    return null;
+  }
+
+  const requestHostname = getRequestHostname(context);
+
+  if (!PRODUCTION_HOSTS.has(requestHostname)) {
+    return null;
+  }
+
+  const normalizedPath = normalizeCanonicalPath(pathname);
+  const productMatch = normalizedPath.match(/^\/product\/([^/]+)$/);
+  const productRedirect = productMatch
+    ? getPermanentProductRedirect(productMatch[1])
+    : null;
+  const targetPath = productRedirect || normalizedPath;
+  const requestProtocol = getRequestProtocol(context);
+  const needsRedirect =
+    requestProtocol !== "https:" ||
+    requestHostname !== CANONICAL_HOST ||
+    pathname !== targetPath;
+
+  if (!needsRedirect) return null;
+
+  const targetUrl = new URL(context.url);
+  targetUrl.protocol = "https:";
+  targetUrl.hostname = CANONICAL_HOST;
+  targetUrl.port = "";
+  targetUrl.pathname = targetPath;
+
+  return {
+    location: targetUrl.toString(),
+    status: productRedirect ? 301 : 308,
+  };
 }
 
 function maintenanceTokenDigest(value: string) {
@@ -148,6 +234,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const method = context.request.method;
   const secure = (response: Response) =>
     withSecurityHeaders(response, context.url);
+  const permanentRedirect = getPermanentDocumentRedirect(context);
+
+  if (permanentRedirect) {
+    return secure(
+      context.redirect(permanentRedirect.location, permanentRedirect.status),
+    );
+  }
 
   if (isMaintenanceModeEnabled()) {
     const configuredBypassToken = getMaintenanceBypassToken();
@@ -230,7 +323,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
     }
 
-    const response = await next();
+    let response = await next();
+
+    if (normalizeCanonicalPath(pathname) === "/account") {
+      response = withNoindexFollow(response);
+    }
 
     return secure(isCheckoutDocument ? withNoCache(response) : response);
   }

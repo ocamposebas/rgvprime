@@ -3,23 +3,17 @@ import {
   checkRateLimit,
   requestSecurityResponse,
 } from "../../lib/requestSecurity";
+import {
+  getProductImageAlt,
+  getPublicProductSlug,
+  getWooProductSlug,
+} from "../../lib/seo";
 
 export const prerender = false;
 
 const FALLBACK_IMAGE = "/logo.webp";
 const DEFAULT_CATALOG_LIMIT = 70;
 const MAX_CATALOG_LIMIT = 100;
-
-const PUBLIC_PRODUCT_SLUGS = new Map([
-  ["rgv-tesa", "rg-tesa"],
-]);
-
-const WOO_PRODUCT_SLUGS = new Map(
-  Array.from(PUBLIC_PRODUCT_SLUGS, ([wooSlug, publicSlug]) => [
-    publicSlug,
-    wooSlug,
-  ]),
-);
 
 const PRODUCTS_WITHOUT_COA = new Set([
   "ahk-cu-100mg",
@@ -181,16 +175,6 @@ function mapCategory(category) {
   };
 }
 
-function getPublicProductSlug(slug = "") {
-  const cleanSlug = String(slug || "").trim();
-  return PUBLIC_PRODUCT_SLUGS.get(cleanSlug) || cleanSlug;
-}
-
-function getWooProductSlug(slug = "") {
-  const cleanSlug = String(slug || "").trim();
-  return WOO_PRODUCT_SLUGS.get(cleanSlug) || cleanSlug;
-}
-
 function removeUnverifiedPurityClaims(value, slug = "") {
   if (!PRODUCTS_WITHOUT_COA.has(String(slug || "").trim())) {
     return value;
@@ -225,6 +209,8 @@ function mapTaxonomyItem(item) {
 }
 
 function mapProductForCatalog(product) {
+  const imageAlt = getProductImageAlt(product);
+
   return {
     id: product.id,
     name: product.name,
@@ -243,12 +229,10 @@ function mapProductForCatalog(product) {
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
-    image_alt:
-      product?.images?.[0]?.alt ||
-      product?.images?.[0]?.name ||
-      product.name ||
-      "Product image",
-    images: Array.isArray(product.images) ? product.images : [],
+    image_alt: imageAlt,
+    images: Array.isArray(product.images)
+      ? product.images.map((image) => ({ ...image, alt: imageAlt }))
+      : [],
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
     manage_stock: product.manage_stock,
@@ -266,6 +250,8 @@ function mapProductForCatalog(product) {
 }
 
 function mapProductForDetail(product) {
+  const imageAlt = getProductImageAlt(product);
+
   return {
     id: product.id,
     name: product.name,
@@ -288,12 +274,10 @@ function mapProductForDetail(product) {
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
-    image_alt:
-      product?.images?.[0]?.alt ||
-      product?.images?.[0]?.name ||
-      product.name ||
-      "Product image",
-    images: Array.isArray(product.images) ? product.images : [],
+    image_alt: imageAlt,
+    images: Array.isArray(product.images)
+      ? product.images.map((image) => ({ ...image, alt: imageAlt }))
+      : [],
     attributes: Array.isArray(product.attributes) ? product.attributes : [],
     variations: Array.isArray(product.variations) ? product.variations : [],
     stock_status: product.stock_status,

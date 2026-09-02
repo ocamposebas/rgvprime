@@ -900,7 +900,7 @@ function ComplementProductCard({ product }) {
 
         <img
           src={image}
-          alt={product.name}
+          alt={product.image_alt || `${product.name} laboratory research product`}
           loading="lazy"
           className={`relative h-full w-full object-contain drop-shadow-[0_22px_45px_rgba(0,0,0,0.55)] transition duration-500 group-hover:scale-[1.08] ${
             isSoldOut ? "opacity-55 grayscale-[0.25]" : "opacity-100"
@@ -1441,7 +1441,11 @@ export default function ProductDetails({ slug }) {
                     <motion.img
                       key={image}
                       src={image}
-                      alt={product.name}
+                      alt={
+                        displayProduct.image_alt ||
+                        product.image_alt ||
+                        `${product.name} laboratory research product`
+                      }
                       initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.975 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 1.015 }}

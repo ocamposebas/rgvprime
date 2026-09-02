@@ -11,6 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test:compliance": "node scripts/verify-compliance-controls.mjs",
+    "test:seo": "node scripts/verify-seo.mjs",
+    "test:storefront": "node scripts/verify-storefront-regression.mjs",
     "test:rush": "node scripts/verify-rush-processing-plugin.mjs"
   },
   "dependencies": {
