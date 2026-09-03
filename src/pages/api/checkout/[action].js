@@ -21,6 +21,14 @@ const ROUTES = {
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
 };
 
+function containsPuertoRicoAddress(body = {}) {
+  return [body?.billing, body?.shipping].some((address) => {
+    const country = String(address?.country || "").trim().toUpperCase();
+    const state = String(address?.state || "").trim().toUpperCase();
+    return country === "PR" || state === "PR";
+  });
+}
+
 function storefrontOrigin(request) {
   const configured = String(import.meta.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
   return configured || new URL(request.url).origin;
@@ -41,6 +49,10 @@ export async function POST(context) {
 
   let body;
   try { body = await context.request.json(); } catch { return json({ success: false, message: "Invalid checkout request." }, 400); }
+
+  if (containsPuertoRicoAddress(body)) {
+    return json({ success: false, message: "Shipping to Puerto Rico is not available." }, 400);
+  }
 
   const isQuote = context.params.action === "card-quote";
   if (!isQuote && !hasRequiredAcknowledgements(body)) {

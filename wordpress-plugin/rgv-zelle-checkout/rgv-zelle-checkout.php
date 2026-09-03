@@ -890,6 +890,15 @@ final class RGV_Zelle_Checkout {
       return new WP_Error('rgv_too_many_items', 'Too many cart items were received.');
     }
 
+    foreach ([$billing, $shipping] as $address) {
+      $country = strtoupper(sanitize_text_field($address['country'] ?? ''));
+      $state = strtoupper(sanitize_text_field($address['state'] ?? ''));
+
+      if ($country === 'PR' || $state === 'PR') {
+        return new WP_Error('rgv_unsupported_destination', 'Shipping to Puerto Rico is not available.');
+      }
+    }
+
     $required = [
       'first_name' => 'First name',
       'last_name' => 'Last name',

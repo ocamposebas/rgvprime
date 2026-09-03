@@ -37,6 +37,10 @@ assert(checkout.includes(exactCertification), "final checkout certification text
 assert(checkout.includes("researchUseAcknowledged={researchUseAcknowledged}"), "RUO checkbox must be present at final checkout");
 assert(checkout.includes("termsAccepted={termsAccepted}"), "Terms checkbox must be separate at final checkout");
 assert(checkout.includes("/api/checkout/card-order") && checkout.includes("/api/checkout/zelle-order"), "orders must use protected server routes");
+assert(!checkout.includes('<option value="PR">'), "Puerto Rico must not be selectable as a checkout country");
+assert(!checkout.includes('["PR", "Puerto Rico"]'), "Puerto Rico must not be selectable as a checkout state");
+assert(proxy.includes('country === "PR" || state === "PR"'), "the checkout proxy must reject Puerto Rico addresses");
+assert(zelle.includes("$country === 'PR' || $state === 'PR'"), "Zelle checkout must reject Puerto Rico addresses");
 
 for (const backend of [zelle, orbit]) {
   assert(backend.includes("x-rgv-compliance-secret"), "WordPress must reject calls outside the protected storefront proxy");

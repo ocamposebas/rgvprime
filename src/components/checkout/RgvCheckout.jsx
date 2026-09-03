@@ -220,7 +220,6 @@ const US_STATES = [
   ["OK", "Oklahoma"],
   ["OR", "Oregon"],
   ["PA", "Pennsylvania"],
-  ["PR", "Puerto Rico"],
   ["RI", "Rhode Island"],
   ["SC", "South Carolina"],
   ["SD", "South Dakota"],
@@ -580,7 +579,13 @@ function getInitialCheckoutForm() {
       Number(saved.savedAt) > Date.now() - CHECKOUT_DETAILS_TTL_MS &&
       saved.form && typeof saved.form === "object"
     ) {
-      return { ...blankForm, ...saved.form, email: normalizeEmail(saved.form.email || saved.email) };
+      return {
+        ...blankForm,
+        ...saved.form,
+        email: normalizeEmail(saved.form.email || saved.email),
+        country: "US",
+        state: String(saved.form.state || "").trim().toUpperCase() === "PR" ? "" : saved.form.state,
+      };
     }
     localStorage.removeItem("rgv_checkout_details_v2");
     localStorage.removeItem("rgv_checkout_email");
@@ -602,7 +607,12 @@ function persistCheckoutDetails(form, email) {
       version: 2,
       savedAt: Date.now(),
       email: normalizeEmail(email || form?.email),
-      form: { ...form, email: normalizeEmail(email || form?.email) },
+      form: {
+        ...form,
+        email: normalizeEmail(email || form?.email),
+        country: "US",
+        state: String(form?.state || "").trim().toUpperCase() === "PR" ? "" : form?.state,
+      },
     }));
     localStorage.removeItem("rgv_checkout_email");
     localStorage.removeItem("rgv_checkout_shipping");
@@ -612,6 +622,8 @@ function persistCheckoutDetails(form, email) {
 }
 
 function normalizeCheckoutFormForOrder(form = {}) {
+  const state = String(form.state || "").trim().toUpperCase();
+
   return {
     first_name: String(form.firstName || "").trim(),
     last_name: String(form.lastName || "").trim(),
@@ -620,9 +632,9 @@ function normalizeCheckoutFormForOrder(form = {}) {
     address_1: String(form.address1 || "").trim(),
     address_2: String(form.address2 || "").trim(),
     city: String(form.city || "").trim(),
-    state: String(form.state || "").trim(),
+    state: state === "PR" ? "" : state,
     postcode: String(form.postcode || "").trim(),
-    country: String(form.country || "US").trim().toUpperCase(),
+    country: "US",
   };
 }
 
@@ -962,9 +974,11 @@ export default function RgvCheckout() {
         address1: base.address1 || user.billing_address_1 || "",
         address2: base.address2 || user.billing_address_2 || "",
         city: base.city || user.billing_city || "",
-        state: base.state || user.billing_state || "",
+        state: String(base.state || user.billing_state || "").trim().toUpperCase() === "PR"
+          ? ""
+          : base.state || user.billing_state || "",
         postcode: base.postcode || user.billing_postcode || "",
-        country: base.country || user.billing_country || "US",
+        country: "US",
       };
     });
 
@@ -2790,15 +2804,10 @@ export default function RgvCheckout() {
                     <Field label="Country" wide>
                       <select
                         value={checkoutForm.country}
-                        onChange={(event) => {
-                          const country = event.target.value;
-                          updateCheckoutField("country", country);
-                          if (country === "PR") updateCheckoutField("state", "PR");
-                        }}
+                        onChange={(event) => updateCheckoutField("country", event.target.value)}
                         autoComplete="country"
                       >
                         <option value="US">United States</option>
-                        <option value="PR">Puerto Rico</option>
                       </select>
                     </Field>
                   </div>
