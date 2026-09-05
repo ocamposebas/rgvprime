@@ -161,6 +161,7 @@ const ACCEPTED_RECEIPT_TYPES = [
 ];
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
+const WOMPI_CARD_CHECKOUT_VISIBLE = false;
 
 const PAYMENT_METHODS = [
   ...(LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE ? [{
@@ -172,7 +173,7 @@ const PAYMENT_METHODS = [
     badge: "Secure",
     icon: CreditCard,
   }] : []),
-  {
+  ...(WOMPI_CARD_CHECKOUT_VISIBLE ? [{
     id: "orbit_secure",
     label: "Card",
     eyebrow: "Secure card route",
@@ -180,7 +181,7 @@ const PAYMENT_METHODS = [
     description: "Visa · Mastercard · American Express",
     badge: "ORBIT",
     icon: CreditCard,
-  },
+  }] : []),
   {
     id: "edebit",
     label: "eDebit",
@@ -939,7 +940,7 @@ export default function RgvCheckout() {
   const [orbitPaymentResult, setOrbitPaymentResult] = useState(null);
   const [orbitSecureCardReady, setOrbitSecureCardReady] = useState(false);
   const [orbitSecurePaymentResult, setOrbitSecurePaymentResult] = useState(null);
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("orbit_secure");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("edebit");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
@@ -3264,7 +3265,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>Pay by ORBIT card, secure eDebit, or manual Zelle.</span>
+                <span>Pay by secure eDebit or manual Zelle.</span>
               </div>
               <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
                 {PAYMENT_METHODS.map((method) => {
