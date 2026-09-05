@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 
 function base64Url(bytes) {
   let binary = "";
@@ -92,14 +92,6 @@ function validateExpiry(value) {
   return { month: match[1], year: match[2] };
 }
 
-function formatCop(value) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(Math.max(0, Number(value) || 0));
-}
-
 const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   { enabled, totalUsd, onCreatePayment, onReadyChange, onInteraction },
   ref,
@@ -139,11 +131,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   useEffect(() => {
     onReadyChange?.(Boolean(config && !configError && !submitting));
   }, [config, configError, onReadyChange, submitting]);
-
-  const estimatedCop = useMemo(
-    () => Math.round((Number(totalUsd) || 0) * (Number(config?.copPerUsd) || 0)),
-    [config?.copPerUsd, totalUsd],
-  );
 
   async function confirm() {
     if (submitting) return { ignored: true };
@@ -258,12 +245,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
         </label>
       </div>
 
-      {config && estimatedCop > 0 && (
-        <p className="rgvx-orbit-secure-card__conversion">
-          ORBIT processes this card in COP: approximately <strong>{formatCop(estimatedCop)}</strong> at the {config.exchangeRateSource?.startsWith("superfinanciera") ? "current official TRM" : "configured checkout rate"}.
-        </p>
-      )}
-
       {config?.contracts && (
         <div className="rgvx-orbit-secure-card__agreements">
           <label><input type="checkbox" checked={acceptance} onChange={(event) => { setAcceptance(event.target.checked); setFieldError(""); }} /> <span>I accept ORBIT&apos;s <a href={config.contracts.acceptanceUrl} target="_blank" rel="noreferrer">end-user terms</a>.</span></label>
@@ -284,5 +265,3 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
 });
 
 export default OrbitSecureCardPayment;
-
-
