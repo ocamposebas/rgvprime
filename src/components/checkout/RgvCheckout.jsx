@@ -159,8 +159,10 @@ const ACCEPTED_RECEIPT_TYPES = [
   "application/pdf",
 ];
 
+const ORBIT_CARD_CHECKOUT_VISIBLE = false;
+
 const PAYMENT_METHODS = [
-  {
+  ...(ORBIT_CARD_CHECKOUT_VISIBLE ? [{
     id: "card",
     label: "Card & Wallets",
     eyebrow: "Fast route",
@@ -168,6 +170,15 @@ const PAYMENT_METHODS = [
     description: "Apple Pay · Google Pay · Cards",
     badge: "Secure",
     icon: CreditCard,
+  }] : []),
+  {
+    id: "edebit",
+    label: "eDebit",
+    eyebrow: "Secure bank route",
+    title: "eDebit",
+    description: "Secure bank payment",
+    badge: "Secure",
+    icon: Building2,
   },
   {
     id: "zelle",
@@ -887,7 +898,7 @@ export default function RgvCheckout() {
   const [quoteError, setQuoteError] = useState("");
   const [orbitCardReady, setOrbitCardReady] = useState(false);
   const [orbitPaymentResult, setOrbitPaymentResult] = useState(null);
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("edebit");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
@@ -1154,7 +1165,7 @@ export default function RgvCheckout() {
 
   const isEdebitSelected = selectedPaymentMethodId === "edebit";
   const isZelleSelected = selectedPaymentMethodId === "zelle";
-  const isCardSelected = selectedPaymentMethodId === "card";
+  const isCardSelected = ORBIT_CARD_CHECKOUT_VISIBLE && selectedPaymentMethodId === "card";
   const requiresDirectDetails = isCardSelected || isEdebitSelected || isZelleSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
@@ -3010,7 +3021,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>Card, eligible wallets, or manual Zelle payment.</span>
+                <span>Secure eDebit bank payment or manual Zelle payment.</span>
               </div>
               <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
                 {PAYMENT_METHODS.map((method) => {
@@ -3021,6 +3032,7 @@ export default function RgvCheckout() {
                   </button>;
                 })}
               </div>
+              {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Secure bank payment. You will link your bank after your order is created.</p>}
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
 

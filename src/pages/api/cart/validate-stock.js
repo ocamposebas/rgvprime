@@ -71,6 +71,12 @@ function validateProduct(item, product) {
   const base = {
     ...item,
     name,
+    price: Number(product?.price || 0),
+    regular_price: Number(product?.regular_price || product?.price || 0),
+    sale_price:
+      product?.sale_price !== null && product?.sale_price !== undefined
+        ? Number(product.sale_price || 0)
+        : 0,
     stock_status: String(product?.stock_status || "unknown"),
     stock_quantity: availableQuantity,
     backorders_allowed: product?.backorders_allowed === true,
@@ -160,7 +166,7 @@ export async function POST({ request }) {
         const endpoint = new URL(`${cleanUrl}/wp-json/wc/v3/${path}`);
         endpoint.searchParams.set(
           "_fields",
-          "id,name,status,purchasable,stock_status,stock_quantity,manage_stock,backorders_allowed",
+          "id,name,status,purchasable,price,regular_price,sale_price,stock_status,stock_quantity,manage_stock,backorders_allowed",
         );
         endpoint.searchParams.set("_", String(Date.now()));
 

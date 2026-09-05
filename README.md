@@ -1,5 +1,21 @@
 # Astro Starter Kit: Basics
 
+## Storewide promotion timer
+
+The storefront can receive a scheduled WooCommerce discount and countdown from
+the companion **RGV Storewide Promotion** plugin.
+
+1. Install `wordpress-plugin/rgv-storewide-promotion-1.0.0.zip` in WordPress.
+2. Activate the plugin and open **WooCommerce > Storewide Promotion**.
+3. Set the percentage, announcement text, start/end time and destination URL.
+4. Enable the campaign and save it.
+
+WooCommerce calculates the promotional price on the server for products,
+variations and orders. The Astro storefront reads the public campaign state
+through `/api/promotion`, replaces the normal top announcement with the live
+countdown, and returns to the normal announcement when the campaign expires.
+Stored carts also reconcile their prices with WooCommerce on the next visit.
+
 ## Checkout compliance deployment
 
 The storefront and WooCommerce plugins now require the same private compliance

@@ -231,6 +231,7 @@ export function CartProvider({ children }) {
   const pendingAdditionsRef = useRef(new Set());
   const identifiedEmailRef = useRef("");
   const lastCheckoutSignatureRef = useRef("");
+  const hasReconciledPricesRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -496,12 +497,27 @@ export function CartProvider({ children }) {
       const reduced = data.items.filter(
         (item) => item.available && item.valid === false,
       );
+      const priceChanged = data.items.filter((liveItem) => {
+        const storedItem = itemsToValidate.find(
+          (item) => String(item.id) === String(liveItem.cart_id),
+        );
+
+        return (
+          storedItem &&
+          liveItem.available &&
+          Number.isFinite(Number(liveItem.price)) &&
+          Math.abs(Number(storedItem.price || 0) - Number(liveItem.price)) > 0.001
+        );
+      });
 
       // A successful stock check must not rewrite an unchanged cart. The checkout
       // treats cart identity changes as pricing changes and deliberately remounts
       // Stripe Elements; doing that between Elements.submit() and
       // createConfirmationToken() leaves Stripe with no mounted payment element.
-      if (reconcile && (unavailable.length > 0 || reduced.length > 0)) {
+      if (
+        reconcile &&
+        (unavailable.length > 0 || reduced.length > 0 || priceChanged.length > 0)
+      ) {
         setItems((storedItems) =>
           storedItems.flatMap((item) => {
             const validation = validationById.get(String(item.id));
@@ -521,6 +537,15 @@ export function CartProvider({ children }) {
                 stock_status: validation.stock_status,
                 stock_quantity: validation.stock_quantity,
                 backorders_allowed: validation.backorders_allowed === true,
+                price: Number.isFinite(Number(validation.price))
+                  ? Number(validation.price)
+                  : item.price,
+                regular_price: Number.isFinite(Number(validation.regular_price))
+                  ? Number(validation.regular_price)
+                  : item.regular_price,
+                sale_price: Number.isFinite(Number(validation.price))
+                  ? Number(validation.price)
+                  : item.sale_price,
                 quantity: hasStockLimit
                   ? Math.min(Number(item.quantity || 1), availableQuantity)
                   : Number(item.quantity || 1),
@@ -536,6 +561,8 @@ export function CartProvider({ children }) {
       } else if (reportStatus && reduced.length) {
         const names = reduced.map((item) => item.name).join(", ");
         setCartNotice(`Quantity adjusted to current stock for: ${names}.`);
+      } else if (reportStatus && priceChanged.length) {
+        setCartNotice("Cart prices were updated to the current store offer.");
       } else if (reportStatus) {
         setCartNotice("");
       }
@@ -550,6 +577,22 @@ export function CartProvider({ children }) {
       if (reportStatus) setIsCheckingStock(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (
+      !hasHydrated ||
+      hasReconciledPricesRef.current ||
+      itemsRef.current.length === 0
+    ) {
+      return;
+    }
+
+    hasReconciledPricesRef.current = true;
+    void validateStock(itemsRef.current, {
+      reconcile: true,
+      reportStatus: false,
+    });
+  }, [hasHydrated, validateStock]);
 
   async function addItem(product, quantity = 1) {
     const newItem = normalizeProduct(product, quantity);
@@ -603,6 +646,15 @@ export function CartProvider({ children }) {
 
       const verifiedItem = {
         ...newItem,
+        price: Number.isFinite(Number(liveItem.price))
+          ? Number(liveItem.price)
+          : newItem.price,
+        regular_price: Number.isFinite(Number(liveItem.regular_price))
+          ? Number(liveItem.regular_price)
+          : newItem.regular_price,
+        sale_price: Number.isFinite(Number(liveItem.price))
+          ? Number(liveItem.price)
+          : newItem.sale_price,
         stock_status: liveItem.stock_status,
         stock_quantity: liveItem.stock_quantity,
         backorders_allowed: liveItem.backorders_allowed === true,

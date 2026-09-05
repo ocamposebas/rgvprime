@@ -594,7 +594,7 @@ function AnnouncementGroup({ ariaHidden = false, repeats, measureRef }) {
   );
 }
 
-function AnnouncementTrack() {
+function DefaultAnnouncementTrack() {
   const wrapRef = useRef(null);
   const sequenceRef = useRef(null);
   const [repeats, setRepeats] = useState(8);
@@ -1023,6 +1023,255 @@ function SupportMenuCard({ mobile = false }) {
           Send a message
         </a>
       </div>
+    </div>
+  );
+}
+
+function padCountdownPart(value) {
+  return String(Math.max(0, value)).padStart(2, "0");
+}
+
+function normalizePromotionUrl(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (cleanValue.startsWith("/")) return cleanValue;
+
+  try {
+    const url = new URL(cleanValue);
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "/shop";
+  } catch {
+    return "/shop";
+  }
+}
+
+function PromotionAnnouncement() {
+  const [campaign, setCampaign] = useState(null);
+  const [remaining, setRemaining] = useState(0);
+  const clockOffsetRef = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let disposed = false;
+
+    async function loadCampaign() {
+      try {
+        const response = await fetch("/api/promotion", {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+
+        if (disposed || !response.ok || payload?.active !== true || !payload?.ends_at) {
+          if (!disposed) setCampaign(null);
+          return;
+        }
+
+        const serverTime = Date.parse(payload.server_time || "");
+        clockOffsetRef.current = Number.isFinite(serverTime)
+          ? serverTime - Date.now()
+          : 0;
+        setCampaign({
+          ...payload,
+          cta_url: normalizePromotionUrl(payload.cta_url),
+        });
+      } catch (error) {
+        if (!disposed && error?.name !== "AbortError") {
+          setCampaign(null);
+        }
+      }
+    }
+
+    void loadCampaign();
+    const refreshTimer = window.setInterval(loadCampaign, 30000);
+
+    return () => {
+      disposed = true;
+      controller.abort();
+      window.clearInterval(refreshTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!campaign?.ends_at) {
+      setRemaining(0);
+      return undefined;
+    }
+
+    const endsAt = Date.parse(campaign.ends_at);
+
+    if (!Number.isFinite(endsAt)) {
+      setCampaign(null);
+      return undefined;
+    }
+
+    function updateCountdown() {
+      const seconds = Math.max(
+        0,
+        Math.floor((endsAt - (Date.now() + clockOffsetRef.current)) / 1000),
+      );
+
+      setRemaining(seconds);
+
+      if (seconds <= 0) {
+        setCampaign(null);
+        window.dispatchEvent(new CustomEvent("rgv:promotion-expired"));
+      }
+    }
+
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [campaign?.ends_at]);
+
+  if (!campaign || remaining <= 0) {
+    return <DefaultAnnouncementTrack />;
+  }
+
+  const days = Math.floor(remaining / 86400);
+  const hours = Math.floor((remaining % 86400) / 3600);
+  const minutes = Math.floor((remaining % 3600) / 60);
+  const seconds = remaining % 60;
+  const endLabel = new Date(campaign.ends_at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <div className="rgv-announcement-wrap rgv-campaign-bar" aria-label="Limited-time promotion">
+      <div className="rgv-campaign-bar__inner">
+        <div className="rgv-campaign-bar__copy">
+          <span className="rgv-campaign-bar__eyebrow">{campaign.eyebrow}</span>
+          <strong>{campaign.headline}</strong>
+        </div>
+
+        <span className="rgv-campaign-bar__rule" aria-hidden="true" />
+
+        <time
+          className="rgv-campaign-bar__time"
+          dateTime={campaign.ends_at}
+          aria-label={`Offer ends ${endLabel}`}
+        >
+          <span>{padCountdownPart(days)}d</span>
+          <span>{padCountdownPart(hours)}h</span>
+          <span>{padCountdownPart(minutes)}m</span>
+          <span>{padCountdownPart(seconds)}s</span>
+        </time>
+
+        <a className="rgv-campaign-bar__link" href={campaign.cta_url}>
+          {campaign.cta_label}
+        </a>
+      </div>
+
+      <style>{`
+        .rgv-campaign-bar {
+          display: grid;
+          place-items: center;
+          mask-image: none;
+          -webkit-mask-image: none;
+        }
+
+        .rgv-campaign-bar__inner {
+          display: flex;
+          width: min(1180px, calc(100% - 24px));
+          height: 100%;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .rgv-campaign-bar__copy {
+          display: flex;
+          min-width: 0;
+          align-items: baseline;
+          gap: 9px;
+          white-space: nowrap;
+        }
+
+        .rgv-campaign-bar__eyebrow {
+          color: rgba(255, 255, 255, 0.58);
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.17em;
+          text-transform: uppercase;
+        }
+
+        .rgv-campaign-bar__copy strong {
+          overflow: hidden;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.07em;
+          text-overflow: ellipsis;
+          text-transform: uppercase;
+        }
+
+        .rgv-campaign-bar__rule {
+          width: 1px;
+          height: 13px;
+          flex: 0 0 auto;
+          background: rgba(255, 255, 255, 0.24);
+        }
+
+        .rgv-campaign-bar__time {
+          display: flex;
+          flex: 0 0 auto;
+          gap: 7px;
+          color: rgba(255, 255, 255, 0.88);
+          font-size: 10px;
+          font-weight: 750;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .rgv-campaign-bar__link {
+          flex: 0 0 auto;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+          color: #fff;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 0.12em;
+          line-height: 1.6;
+          text-transform: uppercase;
+          transition: border-color 160ms ease, opacity 160ms ease;
+        }
+
+        .rgv-campaign-bar__link:hover {
+          border-color: #fff;
+          opacity: 0.76;
+        }
+
+        @media (max-width: 700px) {
+          .rgv-campaign-bar__inner {
+            width: calc(100% - 16px);
+            gap: 9px;
+          }
+
+          .rgv-campaign-bar__eyebrow,
+          .rgv-campaign-bar__link,
+          .rgv-campaign-bar__rule {
+            display: none;
+          }
+
+          .rgv-campaign-bar__copy {
+            flex: 1 1 auto;
+          }
+
+          .rgv-campaign-bar__copy strong {
+            display: block;
+            max-width: 100%;
+            font-size: 9px;
+            letter-spacing: 0.055em;
+          }
+
+          .rgv-campaign-bar__time {
+            gap: 5px;
+            font-size: 9px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1526,7 +1775,7 @@ export default function Navbar({ transparent = false }) {
             borderColor: "rgba(255,255,255,var(--rgv-border))",
           }}
         >
-          <AnnouncementTrack />
+          <PromotionAnnouncement />
         </div>
 
         <nav

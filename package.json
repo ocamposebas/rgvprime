@@ -14,7 +14,8 @@
     "test:seo": "node scripts/verify-seo.mjs",
     "test:coa": "node scripts/verify-coa-metadata.mjs",
     "test:storefront": "node scripts/verify-storefront-regression.mjs",
-    "test:rush": "node scripts/verify-rush-processing-plugin.mjs"
+    "test:rush": "node scripts/verify-rush-processing-plugin.mjs",
+    "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.3",
