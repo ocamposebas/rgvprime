@@ -1162,7 +1162,10 @@ function PromotionAnnouncement() {
               [padCountdownPart(minutes), "M"],
               [padCountdownPart(seconds), "S"],
             ].map(([value, label]) => (
-              <span key={label}>
+              <span
+                key={label}
+                className={`rgv-campaign-bar__unit rgv-campaign-bar__unit--${label.toLowerCase()}`}
+              >
                 <b>{value}</b>
                 <small>{label}</small>
               </span>
@@ -1180,26 +1183,46 @@ function PromotionAnnouncement() {
         .rgv-campaign-bar {
           display: grid;
           place-items: center;
+          overflow: hidden;
           mask-image: none;
           -webkit-mask-image: none;
           background:
-            linear-gradient(90deg, rgba(220, 38, 38, 0.1), transparent 26%, transparent 74%, rgba(220, 38, 38, 0.07)),
-            #111112;
+            radial-gradient(circle at 14% 50%, rgba(255, 86, 103, 0.18), transparent 24%),
+            linear-gradient(104deg, #240407 0%, #5d0913 44%, #170204 100%);
         }
 
         .rgv-campaign-bar::before {
           position: absolute;
           inset: auto 0 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.28), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255, 104, 119, 0.5), transparent);
           content: "";
           pointer-events: none;
+        }
+
+        .rgv-campaign-bar::after {
+          position: absolute;
+          top: -150%;
+          left: -12%;
+          width: 18%;
+          height: 400%;
+          transform: rotate(18deg);
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+          content: "";
+          pointer-events: none;
+          animation: rgvCampaignShine 8s ease-in-out infinite;
+        }
+
+        @keyframes rgvCampaignShine {
+          0%, 70% { left: -18%; }
+          100% { left: 112%; }
         }
 
         .rgv-campaign-bar__inner {
           position: relative;
           display: flex;
-          width: min(1344px, calc(100% - 48px));
+          z-index: 1;
+          width: min(1344px, calc(100% - 56px));
           height: 100%;
           align-items: center;
           justify-content: space-between;
@@ -1217,34 +1240,34 @@ function PromotionAnnouncement() {
 
         .rgv-campaign-bar__eyebrow {
           display: inline-flex;
-          height: 22px;
+          height: 24px;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(248, 113, 113, 0.2);
+          border: 1px solid rgba(255, 178, 187, 0.22);
           border-radius: 999px;
-          background: rgba(127, 29, 29, 0.18);
-          padding: 0 9px;
-          color: rgba(254, 226, 226, 0.78);
-          font-size: 8px;
+          background: rgba(255, 255, 255, 0.07);
+          padding: 0 10px;
+          color: rgba(255, 235, 238, 0.88);
+          font-size: 9px;
           font-weight: 850;
           letter-spacing: 0.14em;
           text-transform: uppercase;
         }
 
         .rgv-campaign-bar__eyebrow i {
-          width: 4px;
-          height: 4px;
+          width: 5px;
+          height: 5px;
           border-radius: 999px;
-          background: #ef4444;
-          box-shadow: 0 0 9px rgba(239, 68, 68, 0.75);
+          background: #ff6b7b;
+          box-shadow: 0 0 12px rgba(255, 87, 105, 0.95);
         }
 
         .rgv-campaign-bar__copy strong {
           overflow: hidden;
           color: #fff;
-          font-size: 12px;
-          font-weight: 850;
-          letter-spacing: 0.08em;
+          font-size: 13px;
+          font-weight: 900;
+          letter-spacing: 0.07em;
           text-overflow: ellipsis;
           text-transform: uppercase;
         }
@@ -1257,8 +1280,8 @@ function PromotionAnnouncement() {
         }
 
         .rgv-campaign-bar__ends {
-          color: rgba(255, 255, 255, 0.4);
-          font-size: 8px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 9px;
           font-weight: 850;
           letter-spacing: 0.16em;
           text-transform: uppercase;
@@ -1273,20 +1296,20 @@ function PromotionAnnouncement() {
 
         .rgv-campaign-bar__time > span {
           display: inline-flex;
-          min-width: 29px;
-          height: 24px;
+          min-width: 30px;
+          height: 26px;
           align-items: baseline;
           justify-content: center;
           gap: 2px;
-          border: 1px solid rgba(255, 255, 255, 0.11);
-          border-radius: 6px;
-          background: rgba(0, 0, 0, 0.38);
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 7px;
+          background: rgba(0, 0, 0, 0.28);
           color: #fff;
           box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
         }
 
         .rgv-campaign-bar__time b {
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 900;
           letter-spacing: -0.02em;
         }
@@ -1300,16 +1323,16 @@ function PromotionAnnouncement() {
 
         .rgv-campaign-bar__link {
           display: inline-flex;
-          min-height: 26px;
+          min-height: 28px;
           align-items: center;
           gap: 7px;
           flex: 0 0 auto;
           border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 7px;
-          background: rgba(255, 255, 255, 0.96);
-          padding: 0 12px;
+          border-radius: 8px;
+          background: #fff;
+          padding: 0 14px;
           color: #111112;
-          font-size: 9px;
+          font-size: 10px;
           font-weight: 900;
           letter-spacing: 0.12em;
           text-transform: uppercase;
@@ -1328,9 +1351,15 @@ function PromotionAnnouncement() {
         }
 
         @media (max-width: 700px) {
+          .rgv-campaign-bar {
+            background:
+              radial-gradient(circle at 18% 20%, rgba(255, 153, 164, 0.24), transparent 30%),
+              linear-gradient(110deg, #7f1020 0%, #bd1731 48%, #620913 100%);
+          }
+
           .rgv-campaign-bar__inner {
-            width: calc(100% - 20px);
-            gap: 8px;
+            width: calc(100% - 16px);
+            gap: 7px;
           }
 
           .rgv-campaign-bar__eyebrow,
@@ -1340,47 +1369,70 @@ function PromotionAnnouncement() {
 
           .rgv-campaign-bar__copy {
             flex: 1 1 auto;
+            overflow: hidden;
           }
 
           .rgv-campaign-bar__copy strong {
             display: block;
             max-width: 100%;
-            font-size: 10px;
-            letter-spacing: 0.055em;
+            font-size: 11px;
+            letter-spacing: 0.06em;
           }
 
           .rgv-campaign-bar__action {
-            gap: 6px;
+            gap: 7px;
           }
 
           .rgv-campaign-bar__time > span {
-            min-width: 24px;
-            height: 24px;
+            min-width: 25px;
+            height: 26px;
             border-radius: 6px;
           }
 
           .rgv-campaign-bar__time b {
-            font-size: 9px;
+            font-size: 10px;
           }
 
           .rgv-campaign-bar__link {
-            min-height: 24px;
-            padding: 0 8px;
-            font-size: 0;
+            min-height: 28px;
+            padding: 0 9px;
+            border-color: rgba(255, 255, 255, 0.22);
+            background: #0b0b0c;
+            color: #fff;
+            font-size: 8px;
+            letter-spacing: 0.09em;
           }
 
           .rgv-campaign-bar__link > span {
-            font-size: 13px;
+            font-size: 11px;
           }
         }
 
         @media (max-width: 420px) {
+          .rgv-campaign-bar__unit--s {
+            display: none;
+          }
+
           .rgv-campaign-bar__time > span {
-            min-width: 23px;
+            min-width: 24px;
           }
 
           .rgv-campaign-bar__time small {
-            display: none;
+            font-size: 6px;
+          }
+
+          .rgv-campaign-bar__copy strong {
+            font-size: 10px;
+          }
+
+          .rgv-campaign-bar__link {
+            padding-inline: 8px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .rgv-campaign-bar::after {
+            animation: none;
           }
         }
       `}</style>
@@ -1863,12 +1915,12 @@ export default function Navbar({ transparent = false }) {
             "rgba(7,7,8,var(--rgv-header-bg))",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
-          boxShadow: "0 18px 48px rgba(0,0,0,var(--rgv-shadow))",
+          boxShadow: "0 16px 42px rgba(0,0,0,var(--rgv-shadow))",
           transform: "translate3d(0,0,0)",
         }}
       >
         <div
-          className="relative h-9 w-full overflow-hidden sm:h-[38px]"
+          className="relative h-11 w-full overflow-hidden sm:h-10"
         >
           <PromotionAnnouncement />
         </div>
@@ -1876,25 +1928,28 @@ export default function Navbar({ transparent = false }) {
         <nav
           className="relative w-full overflow-visible border-b"
           style={{
-            background: "rgba(7,7,8,0.94)",
+            background:
+              "linear-gradient(90deg, rgba(28,5,8,0.97) 0%, rgba(7,7,8,0.97) 22%, rgba(7,7,8,0.97) 78%, rgba(24,4,7,0.97) 100%)",
             borderColor: "rgba(255,255,255,var(--rgv-border))",
           }}
         >
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-[280px] bg-[radial-gradient(circle_at_left,rgba(239,68,68,0.12),transparent_70%)]" />
+
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/35 to-transparent"
             style={{ opacity: "var(--rgv-nav-progress)" }}
           />
 
-          <div className="relative z-10 mx-auto flex h-[70px] max-w-[1392px] items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-8">
+          <div className="relative z-10 mx-auto flex h-16 max-w-[1392px] items-center justify-between px-3 sm:h-[74px] sm:px-6 lg:px-8">
             <a
               href="/"
               aria-label="RGVPRIME Home"
-              className="flex min-w-0 shrink-0 items-center opacity-95 transition-opacity hover:opacity-100"
+              className="relative flex min-w-0 shrink-0 items-center opacity-95 transition-opacity after:absolute after:-bottom-2 after:left-0 after:h-px after:w-10 after:bg-gradient-to-r after:from-red-500 after:to-transparent hover:opacity-100 sm:after:-bottom-2.5"
             >
               <img
                 src="/logo.webp"
                 alt="RGVPRIME"
-                className="h-12 w-auto shrink-0 object-contain sm:h-[52px]"
+                className="h-10 w-auto shrink-0 object-contain sm:h-[54px]"
               />
             </a>
 
@@ -1940,6 +1995,14 @@ export default function Navbar({ transparent = false }) {
             </div>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:border-l lg:border-white/10 lg:pl-5">
+              <a
+                href="/shop"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.065] px-3 text-[10px] font-black uppercase tracking-[0.13em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:hidden"
+              >
+                Shop
+                <ArrowIcon />
+              </a>
+
               <button
                 type="button"
                 onClick={openSearchModal}
@@ -1987,8 +2050,7 @@ export default function Navbar({ transparent = false }) {
                   }
                 }}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border text-white transition hover:bg-white/10 lg:hidden"
-                style={glassStyle}
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-red-300/30 bg-gradient-to-br from-red-500 to-red-700 text-white shadow-[0_10px_24px_rgba(220,38,38,0.28),inset_0_1px_0_rgba(255,255,255,0.24)] transition hover:brightness-110 lg:hidden"
               >
                 {menuOpen ? <CloseIcon /> : <MenuIcon />}
               </button>
@@ -2001,16 +2063,28 @@ export default function Navbar({ transparent = false }) {
             initial={{ opacity: 0, y: -8, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(69,10,10,0.88),rgba(3,3,3,0.98),rgba(69,10,10,0.74))] px-4 py-5 backdrop-blur-xl sm:px-5 lg:hidden"
+            className="max-h-[calc(100svh-108px)] overflow-y-auto border-b border-white/10 bg-[#070708]/98 px-3 pb-5 pt-3 shadow-[0_28px_70px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:max-h-[calc(100svh-114px)] sm:px-5 lg:hidden"
           >
-            <div className="grid gap-2">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.2),transparent_56%)]" />
+
+            <div className="relative mx-auto w-full max-w-[560px]">
+            <button
+              type="button"
+              onClick={openSearchModal}
+              className="mb-3 flex min-h-12 w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] px-4 text-left text-sm font-bold text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:border-red-400/30 hover:bg-white/[0.08] hover:text-white"
+            >
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-black/30 text-red-300"><SearchIcon /></span>
+              Search products
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
               {navLinks.map((link) => link.label === "Support" ? (
-                <div key={link.label}>
+                <div key={link.label} className="col-span-2">
                   <button
                     type="button"
                     onClick={(event) => handleNavClick(event, link)}
                     aria-expanded={supportMenuOpen}
-                    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/75 transition hover:bg-red-600 hover:text-white"
+                    className="flex min-h-14 w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-[12px] font-black uppercase tracking-[0.14em] text-white/75 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-white"
                   >
                     {link.label}
                     <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
@@ -2022,25 +2096,22 @@ export default function Navbar({ transparent = false }) {
                   key={link.label}
                   href={link.href}
                   onClick={(event) => handleNavClick(event, link)}
-                  className="rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/75 transition hover:bg-red-600 hover:text-white"
+                  className={cn(
+                    "flex min-h-14 items-center justify-between rounded-2xl border px-4 text-[12px] font-black uppercase tracking-[0.13em] transition",
+                    link.label === "Shop"
+                      ? "border-red-300/25 bg-gradient-to-br from-red-500 to-red-700 text-white shadow-[0_12px_28px_rgba(220,38,38,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]"
+                      : "border-white/10 bg-white/[0.04] text-white/75 hover:border-red-400/25 hover:bg-red-500/10 hover:text-white",
+                  )}
                 >
                   {link.label}
+                  <ArrowIcon />
                 </a>
               ))}
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={openSearchModal}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/10 hover:text-white"
-              >
-                <SearchIcon />
-                Search
-              </button>
-
+            <div className="mt-3 grid grid-cols-1 gap-2 border-t border-white/8 pt-3 sm:grid-cols-2">
               {accountStatus === "loading" ? (
-                <div className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/60 sm:col-span-2">
+                <div className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/60 sm:col-span-2">
                   <UserIcon />
                   Checking Account
                 </div>
@@ -2049,7 +2120,7 @@ export default function Navbar({ transparent = false }) {
                   <a
                     href="/account"
                     onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/10 hover:text-white"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/[0.08] hover:text-white"
                   >
                     <UserIcon />
                     Profile
@@ -2058,7 +2129,7 @@ export default function Navbar({ transparent = false }) {
                   <button
                     type="button"
                     onClick={handleAccountLogout}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-red-600 hover:text-white sm:col-span-2"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-red-600 hover:text-white sm:col-span-2"
                   >
                     <LogoutIcon />
                     Sign Out
@@ -2069,7 +2140,7 @@ export default function Navbar({ transparent = false }) {
                   <a
                     href="/account?mode=login"
                     onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/10 hover:text-white"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/[0.08] hover:text-white"
                   >
                     <UserIcon />
                     Sign In
@@ -2078,13 +2149,14 @@ export default function Navbar({ transparent = false }) {
                   <a
                     href="/account?mode=register"
                     onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-500 sm:col-span-2"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-red-300/25 bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-500 sm:col-span-2"
                   >
                     <LockIcon />
                     Register
                   </a>
                 </>
               )}
+            </div>
             </div>
           </motion.div>
         )}
