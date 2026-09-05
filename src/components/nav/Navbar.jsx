@@ -19,7 +19,7 @@ const navLinks = [
 ];
 
 const desktopNavItemClass =
-  "inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full px-3 py-2.5 text-xs font-black uppercase leading-none tracking-[0.16em] text-white/80 transition hover:bg-white/10 hover:text-white lg:px-5 lg:text-sm";
+  "relative inline-flex min-h-11 items-center justify-center whitespace-nowrap px-2 text-[12px] font-extrabold uppercase leading-none tracking-[0.17em] text-white/62 transition-colors duration-200 after:absolute after:inset-x-2 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-red-500 after:transition-transform after:duration-200 hover:text-white hover:after:scale-x-100 lg:px-3";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const SUPPORT_PHONE = "+19565408538";
@@ -449,7 +449,7 @@ function AccountDropdown({
         onClick={onToggle}
         aria-label="Account menu"
         aria-expanded={open}
-        className="group relative flex h-10 min-w-10 items-center justify-center gap-2 rounded-full border px-0 text-white/75 transition hover:bg-white/10 hover:text-white md:h-11 md:min-w-11"
+        className="group relative flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border px-0 text-white/68 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white md:h-11 md:min-w-11"
         style={glassStyle}
       >
         {isLoggedIn ? (
@@ -1183,14 +1183,15 @@ function PromotionAnnouncement() {
           mask-image: none;
           -webkit-mask-image: none;
           background:
-            radial-gradient(circle at 18% 50%, rgba(239, 68, 68, 0.22), transparent 28%),
-            linear-gradient(90deg, #210505 0%, #090606 42%, #100303 100%);
+            linear-gradient(90deg, rgba(220, 38, 38, 0.1), transparent 26%, transparent 74%, rgba(220, 38, 38, 0.07)),
+            #111112;
         }
 
         .rgv-campaign-bar::before {
           position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.055), transparent);
+          inset: auto 0 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.28), transparent);
           content: "";
           pointer-events: none;
         }
@@ -1198,11 +1199,11 @@ function PromotionAnnouncement() {
         .rgv-campaign-bar__inner {
           position: relative;
           display: flex;
-          width: min(1240px, calc(100% - 40px));
+          width: min(1344px, calc(100% - 48px));
           height: 100%;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
+          gap: 28px;
           font-variant-numeric: tabular-nums;
         }
 
@@ -1210,40 +1211,40 @@ function PromotionAnnouncement() {
           display: flex;
           min-width: 0;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
           white-space: nowrap;
         }
 
         .rgv-campaign-bar__eyebrow {
           display: inline-flex;
-          height: 24px;
+          height: 22px;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(248, 113, 113, 0.25);
+          border: 1px solid rgba(248, 113, 113, 0.2);
           border-radius: 999px;
-          background: rgba(127, 29, 29, 0.24);
-          padding: 0 10px;
-          color: rgba(254, 226, 226, 0.82);
-          font-size: 7px;
+          background: rgba(127, 29, 29, 0.18);
+          padding: 0 9px;
+          color: rgba(254, 226, 226, 0.78);
+          font-size: 8px;
           font-weight: 850;
-          letter-spacing: 0.16em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
         }
 
         .rgv-campaign-bar__eyebrow i {
-          width: 5px;
-          height: 5px;
+          width: 4px;
+          height: 4px;
           border-radius: 999px;
           background: #ef4444;
-          box-shadow: 0 0 10px rgba(239, 68, 68, 0.9);
+          box-shadow: 0 0 9px rgba(239, 68, 68, 0.75);
         }
 
         .rgv-campaign-bar__copy strong {
           overflow: hidden;
           color: #fff;
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 0.055em;
+          font-size: 12px;
+          font-weight: 850;
+          letter-spacing: 0.08em;
           text-overflow: ellipsis;
           text-transform: uppercase;
         }
@@ -1252,12 +1253,12 @@ function PromotionAnnouncement() {
           display: flex;
           flex: 0 0 auto;
           align-items: center;
-          gap: 11px;
+          gap: 10px;
         }
 
         .rgv-campaign-bar__ends {
-          color: rgba(255, 255, 255, 0.46);
-          font-size: 7px;
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 8px;
           font-weight: 850;
           letter-spacing: 0.16em;
           text-transform: uppercase;
@@ -1272,20 +1273,20 @@ function PromotionAnnouncement() {
 
         .rgv-campaign-bar__time > span {
           display: inline-flex;
-          min-width: 31px;
-          height: 28px;
+          min-width: 29px;
+          height: 24px;
           align-items: baseline;
           justify-content: center;
           gap: 2px;
           border: 1px solid rgba(255, 255, 255, 0.11);
-          border-radius: 8px;
-          background: rgba(0, 0, 0, 0.3);
+          border-radius: 6px;
+          background: rgba(0, 0, 0, 0.38);
           color: #fff;
           box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
         }
 
         .rgv-campaign-bar__time b {
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 900;
           letter-spacing: -0.02em;
         }
@@ -1299,24 +1300,25 @@ function PromotionAnnouncement() {
 
         .rgv-campaign-bar__link {
           display: inline-flex;
-          min-height: 28px;
+          min-height: 26px;
           align-items: center;
           gap: 7px;
           flex: 0 0 auto;
-          border-radius: 999px;
-          background: #fff;
-          padding: 0 13px;
-          color: #160303;
-          font-size: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 7px;
+          background: rgba(255, 255, 255, 0.96);
+          padding: 0 12px;
+          color: #111112;
+          font-size: 9px;
           font-weight: 900;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          box-shadow: 0 5px 18px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
           transition: background 160ms ease, transform 160ms ease;
         }
 
         .rgv-campaign-bar__link:hover {
-          background: #fee2e2;
+          background: #fff;
           transform: translateY(-1px);
         }
 
@@ -1327,8 +1329,8 @@ function PromotionAnnouncement() {
 
         @media (max-width: 700px) {
           .rgv-campaign-bar__inner {
-            width: calc(100% - 12px);
-            gap: 7px;
+            width: calc(100% - 20px);
+            gap: 8px;
           }
 
           .rgv-campaign-bar__eyebrow,
@@ -1344,7 +1346,7 @@ function PromotionAnnouncement() {
             display: block;
             max-width: 100%;
             font-size: 10px;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.055em;
           }
 
           .rgv-campaign-bar__action {
@@ -1352,9 +1354,9 @@ function PromotionAnnouncement() {
           }
 
           .rgv-campaign-bar__time > span {
-            min-width: 25px;
-            height: 26px;
-            border-radius: 7px;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 6px;
           }
 
           .rgv-campaign-bar__time b {
@@ -1362,8 +1364,8 @@ function PromotionAnnouncement() {
           }
 
           .rgv-campaign-bar__link {
-            min-height: 26px;
-            padding: 0 9px;
+            min-height: 24px;
+            padding: 0 8px;
             font-size: 0;
           }
 
@@ -1518,15 +1520,9 @@ export default function Navbar({ transparent = false }) {
 
     const setNavProgress = (progress) => {
       header.style.setProperty("--rgv-nav-progress", String(progress));
-      header.style.setProperty("--rgv-header-bg", String(0.58 * progress));
-      header.style.setProperty("--rgv-header-bg-soft", String(0.26 * progress));
-      header.style.setProperty("--rgv-bar-bg", String(0.88 * progress));
-      header.style.setProperty("--rgv-nav-black", String(0.82 * progress));
-      header.style.setProperty("--rgv-nav-red", String(0.34 * progress));
-      header.style.setProperty("--rgv-border", String(0.14 * progress));
-      header.style.setProperty("--rgv-shadow", String(0.26 * progress));
-      header.style.setProperty("--rgv-effect", String(0.16 * progress));
-      header.style.setProperty("--rgv-shine", String(0.08 * progress));
+      header.style.setProperty("--rgv-header-bg", String(0.94 * progress));
+      header.style.setProperty("--rgv-border", String(0.11 * progress));
+      header.style.setProperty("--rgv-shadow", String(0.32 * progress));
     };
 
     const applyProgress = () => {
@@ -1847,10 +1843,10 @@ export default function Navbar({ transparent = false }) {
   const initialNavProgress = menuOpen || supportMenuOpen || !transparent ? 1 : 0.82;
 
   const glassStyle = {
-    background: "rgba(0,0,0,0.14)",
-    borderColor: "rgba(255,255,255,0.12)",
-    backdropFilter: "blur(14px)",
-    WebkitBackdropFilter: "blur(14px)",
+    background: "rgba(255,255,255,0.035)",
+    borderColor: "rgba(255,255,255,0.10)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
   };
 
   return (
@@ -1860,30 +1856,19 @@ export default function Navbar({ transparent = false }) {
         className="fixed left-0 top-0 z-[90] w-full text-white will-change-transform"
         style={{
           "--rgv-nav-progress": String(initialNavProgress),
-          "--rgv-header-bg": String(0.58 * initialNavProgress),
-          "--rgv-header-bg-soft": String(0.26 * initialNavProgress),
-          "--rgv-bar-bg": String(0.88 * initialNavProgress),
-          "--rgv-nav-black": String(0.82 * initialNavProgress),
-          "--rgv-nav-red": String(0.34 * initialNavProgress),
-          "--rgv-border": String(0.14 * initialNavProgress),
-          "--rgv-shadow": String(0.26 * initialNavProgress),
-          "--rgv-effect": String(0.16 * initialNavProgress),
-          "--rgv-shine": String(0.08 * initialNavProgress),
+          "--rgv-header-bg": String(0.94 * initialNavProgress),
+          "--rgv-border": String(0.11 * initialNavProgress),
+          "--rgv-shadow": String(0.32 * initialNavProgress),
           background:
-            "linear-gradient(180deg, rgba(0,0,0,var(--rgv-header-bg)) 0%, rgba(0,0,0,var(--rgv-header-bg-soft)) 72%, rgba(0,0,0,0) 100%)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          boxShadow: "0 20px 70px rgba(0,0,0,var(--rgv-shadow))",
+            "rgba(7,7,8,var(--rgv-header-bg))",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          boxShadow: "0 18px 48px rgba(0,0,0,var(--rgv-shadow))",
           transform: "translate3d(0,0,0)",
         }}
       >
         <div
-          className="relative h-10 w-full overflow-hidden border-b sm:h-11"
-          style={{
-            background:
-              "linear-gradient(90deg, rgba(69,10,10,var(--rgv-bar-bg)), rgba(8,8,8,var(--rgv-bar-bg)), rgba(69,10,10,var(--rgv-bar-bg)))",
-            borderColor: "rgba(255,255,255,var(--rgv-border))",
-          }}
+          className="relative h-9 w-full overflow-hidden sm:h-[38px]"
         >
           <PromotionAnnouncement />
         </div>
@@ -1891,39 +1876,30 @@ export default function Navbar({ transparent = false }) {
         <nav
           className="relative w-full overflow-visible border-b"
           style={{
-            background:
-              "linear-gradient(90deg, rgba(69,10,10,var(--rgv-nav-red)) 0%, rgba(3,3,3,var(--rgv-nav-black)) 28%, rgba(18,6,6,var(--rgv-nav-black)) 52%, rgba(69,10,10,var(--rgv-nav-red)) 100%)",
+            background: "rgba(7,7,8,0.94)",
             borderColor: "rgba(255,255,255,var(--rgv-border))",
           }}
         >
           <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(220,38,38,0.16),transparent_30%),radial-gradient(circle_at_88%_50%,rgba(127,29,29,0.16),transparent_34%)]"
-            style={{ opacity: "var(--rgv-effect)" }}
-          />
-
-
-
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/35 to-transparent"
             style={{ opacity: "var(--rgv-nav-progress)" }}
           />
 
-          <div className="relative z-10 mx-auto flex h-20 max-w-[1440px] items-center justify-between px-4 sm:px-5 md:px-8 lg:px-10">
+          <div className="relative z-10 mx-auto flex h-[70px] max-w-[1392px] items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-8">
             <a
               href="/"
               aria-label="RGVPRIME Home"
-              className="flex min-w-0 shrink-0 items-center"
+              className="flex min-w-0 shrink-0 items-center opacity-95 transition-opacity hover:opacity-100"
             >
               <img
                 src="/logo.webp"
                 alt="RGVPRIME"
-                className="h-14 w-auto shrink-0 object-contain transition-all duration-500 sm:h-16 md:h-20"
+                className="h-12 w-auto shrink-0 object-contain sm:h-[52px]"
               />
             </a>
 
             <div
-              className="hidden items-center gap-2 rounded-full border px-2 py-2 md:flex"
-              style={glassStyle}
+              className="hidden items-center gap-3 lg:flex lg:gap-5"
             >
               {navLinks.map((link) => link.label === "Support" ? (
                 <div key={link.label} ref={supportMenuRef} className="relative">
@@ -1963,12 +1939,12 @@ export default function Navbar({ transparent = false }) {
               ))}
             </div>
 
-            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 md:gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:border-l lg:border-white/10 lg:pl-5">
               <button
                 type="button"
                 onClick={openSearchModal}
                 aria-label="Search products"
-                className="hidden h-10 w-10 items-center justify-center rounded-full border text-white/75 transition hover:bg-white/10 hover:text-white sm:flex md:h-11 md:w-11"
+                className="hidden h-10 w-10 items-center justify-center rounded-xl border text-white/68 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white sm:flex md:h-11 md:w-11"
                 style={glassStyle}
               >
                 <SearchIcon />
@@ -1989,12 +1965,12 @@ export default function Navbar({ transparent = false }) {
                 type="button"
                 onClick={openCart}
                 aria-label="Open cart"
-                className="relative flex h-10 w-10 items-center justify-center rounded-full border text-white/85 transition hover:bg-white/10 hover:text-white md:h-11 md:w-11"
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl border text-white/78 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white md:h-11 md:w-11"
                 style={glassStyle}
               >
                 <CartIcon />
 
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white shadow-[0_0_18px_rgba(220,38,38,0.55)]">
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#070708] bg-red-600 px-1 text-[10px] font-black text-white">
                   {itemCount}
                 </span>
               </button>
@@ -2011,7 +1987,7 @@ export default function Navbar({ transparent = false }) {
                   }
                 }}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full border text-white transition hover:bg-white/10 md:hidden"
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border text-white transition hover:bg-white/10 lg:hidden"
                 style={glassStyle}
               >
                 {menuOpen ? <CloseIcon /> : <MenuIcon />}
@@ -2025,7 +2001,7 @@ export default function Navbar({ transparent = false }) {
             initial={{ opacity: 0, y: -8, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(69,10,10,0.88),rgba(3,3,3,0.98),rgba(69,10,10,0.74))] px-4 py-5 backdrop-blur-xl sm:px-5 md:hidden"
+            className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(69,10,10,0.88),rgba(3,3,3,0.98),rgba(69,10,10,0.74))] px-4 py-5 backdrop-blur-xl sm:px-5 lg:hidden"
           >
             <div className="grid gap-2">
               {navLinks.map((link) => link.label === "Support" ? (
