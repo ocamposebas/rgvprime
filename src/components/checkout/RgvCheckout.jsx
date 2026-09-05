@@ -3282,17 +3282,9 @@ export default function RgvCheckout() {
 
             {isOrbitSecureSelected && (
               <div className="rgvx-orbit-card-panel">
-                <div className="rgvx-block-title">
-                  <Lock size={16} />
-                  <div>
-                    <strong>Secure card details</strong>
-                    <small>Your card data is encrypted directly inside this secure ORBIT form.</small>
-                  </div>
-                </div>
                 <OrbitSecureCardPayment
                   ref={orbitSecureCardPaymentRef}
                   enabled={orbitSecurePaymentEnabled}
-                  totalUsd={estimatedDue}
                   onCreatePayment={createOrbitSecureCardPayment}
                   onReadyChange={setOrbitSecureCardReady}
                   onInteraction={markPaymentActivity}
