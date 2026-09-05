@@ -18,7 +18,8 @@ for (const method of ['id: "orbit_secure"', 'id: "edebit"', 'id: "zelle"']) {
   assert(checkout.includes(method), `Checkout payment method is missing: ${method}`);
 }
 assert(checkout.includes("const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false"), "The legacy ORBIT/Stripe form must remain hidden");
-assert(checkout.includes('useState("orbit_secure")'), "The embedded ORBIT card form must be selected initially");
+assert(checkout.includes("WOMPI_CARD_MAX_ORDER_USD_CENTS = 15000"), "The embedded ORBIT card form must have a $150 USD visibility limit");
+assert(checkout.includes('method.id !== "orbit_secure" || wompiCardAvailable'), "The ORBIT card option must be hidden above its order limit");
 assert(checkout.includes('badge: "ORBIT"'), "The visible card method must use the ORBIT brand");
 assert(!checkout.includes('badge: "Wompi"'), "Wompi must not appear as the visible card brand");
 assert(cardForm.includes("cardToken") && checkout.includes("...secureCard"), "The secure card token must enter the protected order request");
@@ -54,6 +55,7 @@ for (const expected of [
   "'payment_method_type' => 'CARD'",
   "'currency' => 'COP'",
   "'accept_personal_auth'",
+  "MAX_CARD_ORDER_USD_CENTS = 15000",
   "hash('sha256', $reference . $amount_cop_cents . 'COP' . $settings['integrity_secret'])",
   "verificationRequired",
   "transaction.updated",

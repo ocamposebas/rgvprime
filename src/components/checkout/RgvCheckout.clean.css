@@ -679,6 +679,10 @@
   gap: 10px;
 }
 
+.rgvx-payment-switch.has-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .rgvx-payment-option {
   display: grid;
   min-height: 66px;
@@ -1323,6 +1327,10 @@
   }
 
   .rgvx-payment-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .rgvx-payment-switch.has-three {
     grid-template-columns: 1fr;
   }
 

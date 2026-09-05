@@ -3,7 +3,7 @@ Contributors: rgvprime
 Requires at least: 6.4
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 
 Standalone embedded credit and debit card checkout branded as ORBIT. It does
 not replace or modify the RGV Zelle Checkout plugin.
@@ -39,6 +39,9 @@ encrypted in the browser and sent directly to the card processor. Only the
 resulting token is submitted to the storefront and WordPress servers.
 
 == Changelog ==
+
+= 1.0.2 =
+* Limits embedded ORBIT card checkout to orders of $150.00 USD or less.
 
 = 1.0.1 =
 * Automatically obtains and safely caches the official Colombian TRM.

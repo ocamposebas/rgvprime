@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Card Checkout
  * Description: Embedded ORBIT credit and debit card checkout for WooCommerce.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -18,6 +18,7 @@ final class RGV_ORBIT_Card_Checkout {
   const RATE_LIMIT_WINDOW = 600;
   const MAX_ORDER_ITEMS = 50;
   const MAX_ITEM_QUANTITY = 100;
+  const MAX_CARD_ORDER_USD_CENTS = 15000;
   const FREE_SHIPPING_MINIMUM = 200.0;
   const ORDER_PROCESSING_FEE_RATE = 0.03;
   const PRIORITY_PROCESSING_FEE_RATE = 0.05;
@@ -697,6 +698,7 @@ final class RGV_ORBIT_Card_Checkout {
 
       $total_usd = (float) $order->get_total();
       if (strtoupper((string) $order->get_currency()) !== 'USD' || $total_usd <= 0) throw new Exception('A positive USD order total is required before conversion.');
+      if ((int) round($total_usd * 100) > self::MAX_CARD_ORDER_USD_CENTS) throw new Exception('ORBIT card payment is available only for orders of $150.00 USD or less.');
       $amount_cop_cents = (int) round($total_usd * $settings['cop_per_usd'] * 100);
       if ($amount_cop_cents <= 0) throw new Exception('The converted card charge must be positive.');
       $reference = 'RGV-' . $order->get_id() . '-' . strtoupper(wp_generate_password(8, false, false));

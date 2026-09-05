@@ -161,7 +161,8 @@ const ACCEPTED_RECEIPT_TYPES = [
 ];
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
-const WOMPI_CARD_CHECKOUT_VISIBLE = false;
+const WOMPI_CARD_CHECKOUT_VISIBLE = true;
+const WOMPI_CARD_MAX_ORDER_USD_CENTS = 15000;
 
 const PAYMENT_METHODS = [
   ...(LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE ? [{
@@ -1243,6 +1244,22 @@ export default function RgvCheckout() {
     processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee,
     0
   );
+  const wompiCardAvailable = Boolean(
+    WOMPI_CARD_CHECKOUT_VISIBLE &&
+    Math.round(estimatedDue * 100) <= WOMPI_CARD_MAX_ORDER_USD_CENTS
+  );
+  const availablePaymentMethods = PAYMENT_METHODS.filter(
+    (method) => method.id !== "orbit_secure" || wompiCardAvailable
+  );
+
+  useEffect(() => {
+    if (!wompiCardAvailable && selectedPaymentMethodId === "orbit_secure") {
+      setSelectedPaymentMethodId("edebit");
+      setOrbitSecurePaymentResult(null);
+      setError("");
+      setPaymentNotice("");
+    }
+  }, [selectedPaymentMethodId, wompiCardAvailable]);
 
   const refreshCheckoutQuote = async ({ signal } = {}) => {
     const items = buildCheckoutItems(cartItems);
@@ -3265,10 +3282,10 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>Pay by secure eDebit or manual Zelle.</span>
+                <span>{wompiCardAvailable ? "Pay by ORBIT card, secure eDebit, or manual Zelle." : "Pay by secure eDebit or manual Zelle."}</span>
               </div>
-              <div className="rgvx-payment-switch" role="radiogroup" aria-label="Payment method">
-                {PAYMENT_METHODS.map((method) => {
+              <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""}`} role="radiogroup" aria-label="Payment method">
+                {availablePaymentMethods.map((method) => {
                   const Icon = method.icon;
                   const active = selectedPaymentMethodId === method.id;
                   return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
@@ -3281,7 +3298,7 @@ export default function RgvCheckout() {
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
 
-            {isOrbitSecureSelected && (
+            {isOrbitSecureSelected && wompiCardAvailable && (
               <div className="rgvx-orbit-card-panel">
                 <OrbitSecureCardPayment
                   ref={orbitSecureCardPaymentRef}
