@@ -19,6 +19,7 @@ const ROUTES = {
   "card-order": "/wp-json/orbit/v1/card-checkout",
   "zelle-order": "/wp-json/rgv/v1/manual-zelle-order",
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
+  "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
 };
 
 function containsPuertoRicoAddress(body = {}) {
@@ -75,26 +76,36 @@ export async function POST(context) {
   };
 
   const origin = storefrontOrigin(context.request);
-  const upstream = await fetch(`${WP_URL}${route}`, {
-    method: "POST",
-    redirect: "manual",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Origin: origin,
-      Referer: `${origin}/checkout`,
-      "X-RGV-Compliance-Secret": COMPLIANCE_SECRET,
-    },
-    body: JSON.stringify({ ...body, complianceAcceptance: acceptance }),
-  });
+  try {
+    const upstream = await fetch(`${WP_URL}${route}`, {
+      method: "POST",
+      redirect: "manual",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Origin: origin,
+        Referer: `${origin}/checkout`,
+        "X-RGV-Compliance-Secret": COMPLIANCE_SECRET,
+      },
+      body: JSON.stringify({ ...body, complianceAcceptance: acceptance }),
+    });
 
-  const responseBody = await upstream.arrayBuffer();
-  const headers = new Headers({
-    "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-  });
-  const location = upstream.headers.get("location");
-  if (location) headers.set("Location", location);
+    const responseBody = await upstream.arrayBuffer();
+    const headers = new Headers({
+      "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    const location = upstream.headers.get("location");
+    if (location) headers.set("Location", location);
 
-  return new Response(responseBody, { status: upstream.status, headers });
+    return new Response(responseBody, { status: upstream.status, headers });
+  } catch {
+    return json({
+      success: false,
+      upstreamUncertain: !isQuote,
+      message: isQuote
+        ? "The checkout service is temporarily unavailable."
+        : "The payment service did not return a response. Do not retry until the order is verified.",
+    }, 502);
+  }
 }

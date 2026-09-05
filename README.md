@@ -1,5 +1,47 @@
 # Astro Starter Kit: Basics
 
+## ORBIT embedded card checkout
+
+The custom checkout displays three separate payment choices: **ORBIT Card**,
+**eDebit**, and **Zelle**. The new ORBIT form is embedded directly in checkout;
+it does not redirect the customer to a hosted payment page.
+
+Install and activate the standalone `RGV ORBIT Card Checkout` plugin in
+WordPress. Keep the existing `RGV Zelle Checkout` plugin installed separately.
+Then add the four processor credentials as private environment variables on the
+WordPress service/container. Start with Sandbox keys and only switch to
+Production after an approved and a declined test transaction both behave
+correctly.
+
+```env
+WOMPI_PUBLIC_KEY=pub_test_REPLACE_ME
+WOMPI_PRIVATE_KEY=prv_test_REPLACE_ME
+WOMPI_INTEGRITY_SECRET=test_integrity_REPLACE_ME
+WOMPI_EVENTS_SECRET=test_events_REPLACE_ME
+```
+
+The plugin automatically obtains the currently valid official Colombian TRM
+from the Superfinanciera dataset on datos.gov.co. It caches the rate for six
+hours and retains a recent safe fallback for temporary outages. Checkout fails
+closed if neither a current nor recent safe rate is available.
+
+`WOMPI_COP_PER_USD` is now optional and should only be defined when a deliberate
+manual rate must override the official TRM.
+
+In the matching processor environment, configure the transaction event URL as:
+
+```text
+https://YOUR-WORDPRESS-DOMAIN/wp-json/rgv/v1/orbit-card-events
+```
+
+Private, integrity, and event keys stay in WordPress. The browser receives only
+the public merchant key and tokenization key. Card number and CVC are JWE
+encrypted in the embedded form and sent directly to the payment processor; only
+the resulting card token reaches this application's checkout API.
+
+Restart or redeploy WordPress after changing these variables. They belong only
+to WordPress, never to the Astro/frontend environment.
+
 ## Storewide promotion timer
 
 The storefront can receive a scheduled WooCommerce discount and countdown from

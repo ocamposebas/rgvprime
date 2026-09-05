@@ -5,7 +5,7 @@ import { hasRequiredAcknowledgements } from "../src/lib/complianceRules.js";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [ageGate, cart, checkout, proxy, middleware, zelle, orbit] = await Promise.all([
+const [ageGate, cart, checkout, proxy, middleware, zelle, orbit, orbitSecure] = await Promise.all([
   read("src/components/agegate/AgeGate.jsx"),
   read("src/components/cart/CartContext.jsx"),
   read("src/components/checkout/RgvCheckout.jsx"),
@@ -13,6 +13,7 @@ const [ageGate, cart, checkout, proxy, middleware, zelle, orbit] = await Promise
   read("src/middleware.ts"),
   read("wordpress-plugin/rgv-zelle-checkout/rgv-zelle-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
+  read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
 ]);
 
 assert.equal(hasRequiredAcknowledgements({ ageConfirmed: true, researchUseAcknowledged: true, termsAccepted: true }), true);
@@ -42,7 +43,7 @@ assert(!checkout.includes('["PR", "Puerto Rico"]'), "Puerto Rico must not be sel
 assert(proxy.includes('country === "PR" || state === "PR"'), "the checkout proxy must reject Puerto Rico addresses");
 assert(zelle.includes("$country === 'PR' || $state === 'PR'"), "Zelle checkout must reject Puerto Rico addresses");
 
-for (const backend of [zelle, orbit]) {
+for (const backend of [zelle, orbit, orbitSecure]) {
   assert(backend.includes("x-rgv-compliance-secret"), "WordPress must reject calls outside the protected storefront proxy");
   for (const key of [
     "_rgv_compliance_order_id",

@@ -15,7 +15,8 @@
     "test:coa": "node scripts/verify-coa-metadata.mjs",
     "test:storefront": "node scripts/verify-storefront-regression.mjs",
     "test:rush": "node scripts/verify-rush-processing-plugin.mjs",
-    "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs"
+    "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs",
+    "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.3",
