@@ -22,6 +22,7 @@ const ROUTES = {
   "edebit-status": "/wp-json/rgv-edebit/v1/order-status",
   "edebit-cancel": "/wp-json/rgv-edebit/v1/cancel-pending",
   "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
+  "orbit-hosted-status": "/wp-json/orbit/v1/card-hosted-status",
 };
 
 function containsPuertoRicoAddress(body = {}) {

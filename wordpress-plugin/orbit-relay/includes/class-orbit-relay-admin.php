@@ -39,6 +39,8 @@ final class ORBIT_Relay_Admin {
         $api_url = isset( $_POST['orbit_relay_api_url'] ) ? esc_url_raw( wp_unslash( $_POST['orbit_relay_api_url'] ) ) : '';
         $merchant_id = isset( $_POST['orbit_relay_merchant_id'] ) ? sanitize_text_field( wp_unslash( $_POST['orbit_relay_merchant_id'] ) ) : '';
         $environment = isset( $_POST['orbit_relay_environment'] ) ? sanitize_key( wp_unslash( $_POST['orbit_relay_environment'] ) ) : 'production';
+        $storefront_url = isset( $_POST['orbit_relay_storefront_url'] ) ? esc_url_raw( wp_unslash( $_POST['orbit_relay_storefront_url'] ) ) : '';
+        $connection_code = isset( $_POST['orbit_relay_connection_code'] ) ? sanitize_text_field( wp_unslash( $_POST['orbit_relay_connection_code'] ) ) : '';
 
         if ( ! in_array( $environment, array( 'production', 'staging' ), true ) ) {
             $environment = 'production';
@@ -47,8 +49,19 @@ final class ORBIT_Relay_Admin {
         update_option( 'orbit_relay_api_url', untrailingslashit( $api_url ), false );
         update_option( 'orbit_relay_merchant_id', $merchant_id, false );
         update_option( 'orbit_relay_environment', $environment, false );
+        update_option( 'orbit_relay_storefront_url', untrailingslashit( $storefront_url ), false );
         update_option( 'orbit_relay_enabled', isset( $_POST['orbit_relay_enabled'] ) ? '1' : '0', false );
         update_option( 'orbit_relay_allow_test_payment_completion', isset( $_POST['orbit_relay_allow_test_payment_completion'] ) ? '1' : '0', false );
+
+        if ( '' !== $connection_code ) {
+            $connected = ORBIT_Relay_Hosted_Checkout::connect( $api_url, $storefront_url, $connection_code );
+            if ( is_wp_error( $connected ) ) {
+                set_transient( 'orbit_relay_hosted_error_' . get_current_user_id(), $connected->get_error_message(), 120 );
+                self::redirect( 'hosted_error' );
+            }
+            ORBIT_Relay_Logger::log( 'WOO_HOSTED_CONNECTED', 'ORBIT hosted checkout connected.', array( 'merchant_id' => ORBIT_Relay::merchant_id() ) );
+            self::redirect( 'hosted_connected' );
+        }
 
         ORBIT_Relay_Logger::log( 'WOO_RELAY_CONFIGURED', 'ORBIT Relay configuration updated.', array( 'merchant_id' => $merchant_id ) );
         self::redirect( 'saved' );
@@ -76,6 +89,7 @@ final class ORBIT_Relay_Admin {
         self::guard();
 
         $api_url      = ORBIT_Relay::api_url();
+        $storefront_url = ORBIT_Relay::storefront_url();
         $merchant_id  = ORBIT_Relay::merchant_id();
         $environment  = ORBIT_Relay::environment();
         $enabled      = ORBIT_Relay::enabled();
@@ -86,14 +100,18 @@ final class ORBIT_Relay_Admin {
         $wordpress_utc = gmdate( 'c' );
         $wc_ok        = ORBIT_Relay::is_woocommerce_available();
         $configured   = $enabled && $wc_ok && '' !== $merchant_id && '' !== $api_url && $secret_set;
+        $hosted_configured = ORBIT_Relay::hosted_configured();
+        $hosted_installation = ORBIT_Relay::hosted_installation_id();
         $last_request = (string) get_option( 'orbit_relay_last_request_at', '' );
         $last_sync    = (string) get_option( 'orbit_relay_last_successful_sync_at', '' );
         $notice       = isset( $_GET['orbit_notice'] ) ? sanitize_key( wp_unslash( $_GET['orbit_notice'] ) ) : '';
         $one_time     = get_transient( 'orbit_relay_secret_once_' . get_current_user_id() );
+        $hosted_error = get_transient( 'orbit_relay_hosted_error_' . get_current_user_id() );
 
         if ( $one_time ) {
             delete_transient( 'orbit_relay_secret_once_' . get_current_user_id() );
         }
+        if ( $hosted_error ) delete_transient( 'orbit_relay_hosted_error_' . get_current_user_id() );
         ?>
         <div class="wrap orbit-relay-wrap">
             <div class="orbit-hero">
@@ -107,6 +125,10 @@ final class ORBIT_Relay_Admin {
 
             <?php if ( 'saved' === $notice ) : ?>
                 <div class="notice notice-success is-dismissible"><p>ORBIT Relay settings saved.</p></div>
+            <?php elseif ( 'hosted_connected' === $notice ) : ?>
+                <div class="notice notice-success is-dismissible"><p>ORBIT hosted checkout connected. Customers will now be redirected to the ORBIT payment page.</p></div>
+            <?php elseif ( 'hosted_error' === $notice ) : ?>
+                <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $hosted_error ?: 'ORBIT hosted checkout could not be connected.' ); ?></p></div>
             <?php elseif ( 'constant_secret' === $notice ) : ?>
                 <div class="notice notice-warning is-dismissible"><p>The signing secret is controlled by ORBIT_RELAY_SIGNING_SECRET in wp-config.php and cannot be regenerated here.</p></div>
             <?php elseif ( 'secret_error' === $notice ) : ?>
@@ -123,7 +145,7 @@ final class ORBIT_Relay_Admin {
             <?php endif; ?>
 
             <div class="orbit-grid orbit-grid-4">
-                <?php self::status_card( 'ORBIT Connection', $configured ? 'Connected' : 'Setup required', $configured ? 'good' : 'warn' ); ?>
+                <?php self::status_card( 'Hosted checkout', $hosted_configured ? 'Connected' : 'Setup required', $hosted_configured ? 'good' : 'warn' ); ?>
                 <?php self::status_card( 'WooCommerce', $wc_ok ? 'Available' : 'Unavailable', $wc_ok ? 'good' : 'bad' ); ?>
                 <?php self::status_card( 'Signing', $secret_set ? 'Configured' : 'Missing', $secret_set ? 'good' : 'bad' ); ?>
                 <?php self::status_card( 'Environment', ucfirst( $environment ), 'neutral' ); ?>
@@ -146,6 +168,16 @@ final class ORBIT_Relay_Admin {
                             <span>ORBIT API URL</span>
                             <input type="url" name="orbit_relay_api_url" value="<?php echo esc_attr( $api_url ); ?>" placeholder="https://app.your-orbit-domain.com" autocomplete="off">
                             <small>HTTPS origin of the ORBIT backend.</small>
+                        </label>
+                        <label>
+                            <span>Public storefront URL</span>
+                            <input type="url" name="orbit_relay_storefront_url" value="<?php echo esc_attr( $storefront_url ); ?>" placeholder="https://rgvprimellc.com" autocomplete="url">
+                            <small>Customers return here after paying on ORBIT.</small>
+                        </label>
+                        <label>
+                            <span>Hosted checkout connection code</span>
+                            <input type="text" name="orbit_relay_connection_code" value="" placeholder="orb_live_..." autocomplete="off">
+                            <small>Generate this one-time code in ORBIT. Leave blank after connection.</small>
                         </label>
                         <label>
                             <span>ORBIT Merchant ID</span>
@@ -203,6 +235,8 @@ final class ORBIT_Relay_Admin {
                     <h2>Operational status</h2>
                     <dl class="orbit-dl">
                         <div><dt>Merchant</dt><dd><?php echo esc_html( $merchant_id ?: 'Not configured' ); ?></dd></div>
+                        <div><dt>Hosted installation</dt><dd><code><?php echo esc_html( $hosted_installation ?: 'Not connected' ); ?></code></dd></div>
+                        <div><dt>Customer storefront</dt><dd><?php echo esc_html( $storefront_url ?: 'Not configured' ); ?></dd></div>
                         <div><dt>Secret fingerprint (SHA-256)</dt><dd><code><?php echo esc_html( $secret_fingerprint ); ?></code></dd></div>
                         <div><dt>WordPress UTC</dt><dd><code><?php echo esc_html( $wordpress_utc ); ?></code></dd></div>
                         <div><dt>Last ORBIT request</dt><dd><?php echo esc_html( $last_request ?: 'Never' ); ?></dd></div>

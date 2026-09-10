@@ -3,10 +3,23 @@ Contributors: orbit
 Tags: woocommerce, integration, hmac, order synchronization
 Requires at least: 6.5
 Requires PHP: 8.1
-Stable tag: 1.4.4
+Stable tag: 1.5.0
 License: Proprietary
 
 Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
+
+== Version 1.5.0 ==
+
+* Redirects customers to ORBIT's hosted payment page instead of collecting card details on the storefront.
+* Adds installation-scoped HMAC authentication, authoritative order verification, and durable payment events.
+* Supports a separate public storefront origin for headless WooCommerce sites.
+
+== Hosted checkout setup ==
+
+1. Deploy ORBIT with the WooCommerce storefront-origin migration and set ORBIT_PAYMENTS_PUBLIC_ORIGIN to the HTTPS payment domain.
+2. In ORBIT, generate a live WooCommerce connection code for the merchant.
+3. In WordPress, open WooCommerce > ORBIT Relay, enter the ORBIT API URL, https://rgvprimellc.com as the public storefront, and the one-time code.
+4. Save once. The installation secret is encrypted at rest and the one-time code is not retained.
 
 == Version 1.3.3 ==
 

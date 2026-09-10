@@ -125,7 +125,9 @@ final class ORBIT_Relay_Card_Checkout {
         try {
             $order = self::build_quote_order( $data, $items, $billing, $shipping );
             $expires_at = time() + 600;
-            $configuration = self::orbit_checkout_configuration();
+            $configuration = ORBIT_Relay::hosted_configured()
+                ? array( 'hostedCheckout' => true )
+                : self::orbit_checkout_configuration();
             if ( is_wp_error( $configuration ) ) {
                 return self::response( false, $configuration->get_error_message(), 503 );
             }
@@ -195,7 +197,7 @@ final class ORBIT_Relay_Card_Checkout {
         $quote_id = sanitize_text_field( (string) ( $data['quoteId'] ?? '' ) );
         $quote_expires_at = absint( $data['quoteExpiresAt'] ?? 0 );
         if (
-            ! preg_match( '/^ctoken_[A-Za-z0-9_]{8,200}$/', $confirmation_token_id ) ||
+            ( ! ORBIT_Relay::hosted_configured() && ! preg_match( '/^ctoken_[A-Za-z0-9_]{8,200}$/', $confirmation_token_id ) ) ||
             ! preg_match( '/^[A-Za-z0-9_-]{16,128}$/', $checkout_attempt_id ) ||
             ! preg_match( '/^orb_quote_[a-f0-9]{32}$/', $quote_id ) ||
             $quote_expires_at <= time() ||
@@ -381,6 +383,10 @@ final class ORBIT_Relay_Card_Checkout {
     }
 
     private static function prepare_orbit_payment( WC_Order $order ): WP_REST_Response {
+        if ( ORBIT_Relay::hosted_configured() ) {
+            return ORBIT_Relay_Hosted_Checkout::create_session( $order );
+        }
+
         $api_url = ORBIT_Relay::api_url();
         $merchant_id = ORBIT_Relay::merchant_id();
         $signing_secret = ORBIT_Relay::signing_secret();
@@ -574,7 +580,7 @@ final class ORBIT_Relay_Card_Checkout {
         return true;
     }
 
-    private static function compliance_secret(): string {
+    public static function compliance_secret(): string {
         $candidates = array(
             defined( 'RGV_COMPLIANCE_SIGNING_SECRET' ) ? RGV_COMPLIANCE_SIGNING_SECRET : '',
             defined( 'RGV_PORTAL_API_SECRET' ) ? RGV_PORTAL_API_SECRET : '',

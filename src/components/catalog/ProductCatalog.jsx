@@ -282,7 +282,7 @@ function getPriceLabel(product) {
   const formattedPrice = formatPrice(product.price);
 
   if (product.type === "variable") {
-    return formattedPrice ? `From ${formattedPrice}` : "View";
+    return formattedPrice || "View";
   }
 
   return formattedPrice || "View";
@@ -619,6 +619,37 @@ function isVariationAvailable(variation) {
   return isProductAvailable(variation);
 }
 
+function groupProductVariations(product, variations = []) {
+  const indexedVariations = variations.map((variation, index) => ({
+    variation,
+    index,
+  }));
+
+  return {
+    singles: indexedVariations.filter(
+      ({ variation, index }) => !isKitVariation(product, variation, index),
+    ),
+    kits: indexedVariations.filter(({ variation, index }) =>
+      isKitVariation(product, variation, index),
+    ),
+  };
+}
+
+function getDefaultVariationSelection(product, variations = []) {
+  const groups = groupProductVariations(product, variations);
+  const view = groups.singles.length ? "singles" : "kits";
+  const items = groups[view];
+  const preferredItem =
+    items.find(({ variation }) => isVariationAvailable(variation)) || items[0];
+
+  return {
+    view,
+    key: preferredItem
+      ? getVariationKey(preferredItem.variation, preferredItem.index)
+      : "",
+  };
+}
+
 function getPaginationItems(currentPage, totalPages) {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -805,30 +836,33 @@ function ProductImage({ src, alt, priority = false }) {
       fetchPriority={priority ? "high" : "auto"}
       width="600"
       height="600"
+      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
       onError={() => {
         if (imageSrc !== FALLBACK_IMAGE) {
           setImageSrc(FALLBACK_IMAGE);
         }
       }}
-      className="relative h-full w-full scale-[1.12] object-contain opacity-100 transition duration-500 group-hover:scale-[1.18]"
+      className="relative h-full w-full object-cover object-center opacity-100 transition-transform duration-200 group-hover:scale-[1.025]"
     />
   );
 }
 
 function ProductCard({ product, priority = false }) {
   const { addItem } = useCart();
+  const initialVariations = getProductVariations(product);
+  const initialSelection = getDefaultVariationSelection(
+    product,
+    initialVariations,
+  );
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [variationStatus, setVariationStatus] = useState(() =>
-    getProductVariations(product).length ? "success" : "idle",
+    initialVariations.length ? "success" : "idle",
   );
-  const [variations, setVariations] = useState(() =>
-    getProductVariations(product),
+  const [variations, setVariations] = useState(() => initialVariations);
+  const [variationView, setVariationView] = useState(initialSelection.view);
+  const [selectedVariationKey, setSelectedVariationKey] = useState(
+    initialSelection.key,
   );
-  const [selectedVariationKey, setSelectedVariationKey] = useState(() => {
-    const firstVariation =
-      getProductVariations(product).find(isVariationAvailable);
-    return firstVariation ? getVariationKey(firstVariation, 0) : "";
-  });
 
   const image = getImageUrl(product.image) || FALLBACK_IMAGE;
   const imageAlt = product.image_alt || product.name || "Product image";
@@ -842,6 +876,10 @@ function ProductCard({ product, priority = false }) {
   const isVariableProduct = product.type === "variable";
   const canAddToCart = !isVariableProduct && isProductAvailable(product);
   const discountSummary = getProductDiscountSummary(product, variations);
+  const variationGroups = useMemo(
+    () => groupProductVariations(product, variations),
+    [product, variations],
+  );
 
   const selectedVariation = useMemo(() => {
     if (!variations.length) return null;
@@ -858,16 +896,15 @@ function ProductCard({ product, priority = false }) {
 
   useEffect(() => {
     const productVariations = getProductVariations(product);
-    const firstAvailableVariation =
-      productVariations.find(isVariationAvailable);
+    const defaultSelection = getDefaultVariationSelection(
+      product,
+      productVariations,
+    );
 
     setVariations(productVariations);
     setVariationStatus(productVariations.length ? "success" : "idle");
-    setSelectedVariationKey(
-      firstAvailableVariation
-        ? getVariationKey(firstAvailableVariation, 0)
-        : "",
-    );
+    setVariationView(defaultSelection.view);
+    setSelectedVariationKey(defaultSelection.key);
     setOptionsOpen(false);
   }, [product]);
 
@@ -888,21 +925,9 @@ function ProductCard({ product, priority = false }) {
   }, [optionsOpen, isVariableProduct]);
 
   useEffect(() => {
-    if (!isVariableProduct) return;
-
-    loadVariations();
-  }, [product.id, isVariableProduct]);
-
-  useEffect(() => {
     if (!optionsOpen || !isVariableProduct || typeof document === "undefined") {
       return undefined;
     }
-
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 639px)").matches;
-
-    if (!isMobile) return undefined;
 
     const originalOverflow = document.body.style.overflow;
     const originalTouchAction = document.body.style.touchAction;
@@ -923,16 +948,14 @@ function ProductCard({ product, priority = false }) {
     try {
       setVariationStatus("loading");
       const nextVariations = await requestProductVariations(product);
-      const firstAvailableVariation = nextVariations.find(isVariationAvailable);
+      const defaultSelection = getDefaultVariationSelection(
+        product,
+        nextVariations,
+      );
 
       setVariations(nextVariations);
-      setSelectedVariationKey(
-        firstAvailableVariation
-          ? getVariationKey(firstAvailableVariation, 0)
-          : nextVariations[0]
-            ? getVariationKey(nextVariations[0], 0)
-            : "",
-      );
+      setVariationView(defaultSelection.view);
+      setSelectedVariationKey(defaultSelection.key);
       setVariationStatus(nextVariations.length ? "success" : "empty");
     } catch (error) {
       console.error(error);
@@ -950,6 +973,29 @@ function ProductCard({ product, priority = false }) {
 
       return nextState;
     });
+  }
+
+  function handleVariationViewChange(nextView) {
+    const nextItems = variationGroups[nextView] || [];
+
+    if (!nextItems.length) return;
+
+    const currentSelectionIsVisible = nextItems.some(
+      ({ variation, index }) =>
+        getVariationKey(variation, index) === selectedVariationKey,
+    );
+
+    if (!currentSelectionIsVisible) {
+      const preferredItem =
+        nextItems.find(({ variation }) => isVariationAvailable(variation)) ||
+        nextItems[0];
+
+      setSelectedVariationKey(
+        getVariationKey(preferredItem.variation, preferredItem.index),
+      );
+    }
+
+    setVariationView(nextView);
   }
 
   function handleAddVariation() {
@@ -996,45 +1042,45 @@ function ProductCard({ product, priority = false }) {
 
   function VariationsPanel({ mode = "desktop" }) {
     const isMobile = mode === "mobile";
+    const isDrawer = mode === "drawer";
 
     return (
       <div
         className={`rgv-variations-panel ${
           isMobile
             ? "rounded-t-[1.65rem] border-t border-white/10 bg-[#070707] p-4 shadow-[0_-24px_80px_rgba(0,0,0,0.75)]"
-            : "mt-3 rounded-2xl border border-red-500/20 bg-black/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+            : isDrawer
+              ? "h-full overflow-y-auto border-l border-white/10 bg-[#070707] p-6 shadow-[-18px_0_60px_rgba(0,0,0,0.36)]"
+              : "rounded-3xl border border-red-500/20 bg-[#070707] p-5"
         }`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[9px] font-black uppercase tracking-[0.16em] text-red-300">
-              Select strength
+              Choose your format
             </p>
 
-            {isMobile && (
-              <h3 className="mt-1 line-clamp-2 text-base font-black leading-tight text-white">
-                {product.name}
-              </h3>
-            )}
+            <h3 className="mt-1 line-clamp-2 text-base font-black leading-tight text-white">
+              {product.name}
+            </h3>
           </div>
 
-          {isMobile ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={productUrl}
+              className="hidden text-[9px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white sm:inline-flex"
+            >
+              Details
+            </a>
             <button
               type="button"
               onClick={() => setOptionsOpen(false)}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-white/60"
               aria-label="Close options"
             >
-              ×
+              &times;
             </button>
-          ) : (
-            <a
-              href={productUrl}
-              className="shrink-0 text-[9px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white"
-            >
-              Details
-            </a>
-          )}
+          </div>
         </div>
 
         {variationStatus === "loading" && (
@@ -1079,132 +1125,178 @@ function ProductCard({ product, priority = false }) {
             <div
               className={
                 isMobile
-                  ? "max-h-[48vh] space-y-4 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  : "space-y-4"
+                  ? "max-h-[52vh] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  : ""
               }
             >
-              {[
-                {
-                  key: "single-vials",
-                  title: "Single Vials",
-                  items: variations
-                    .map((variation, index) => ({ variation, index }))
-                    .filter(
-                      ({ variation, index }) =>
-                        !isKitVariation(product, variation, index),
-                    ),
-                },
-                {
-                  key: "kits",
-                  title: "Kits",
-                  items: variations
-                    .map((variation, index) => ({ variation, index }))
-                    .filter(({ variation, index }) =>
-                      isKitVariation(product, variation, index),
-                    ),
-                },
-              ]
-                .filter((group) => group.items.length > 0)
-                .map((group) => (
-                  <section key={group.key}>
-                    <div className="mb-2 flex items-center gap-2">
-                      <p className="shrink-0 text-[9px] font-black uppercase tracking-[0.16em] text-white/70">
-                        {group.title}
-                      </p>
-                      <span className="h-px flex-1 bg-white/10" />
-                      <span className="text-[8px] font-bold text-white/30">
-                        {group.items.length}
-                      </span>
-                    </div>
+              <div
+                className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/40 p-1"
+                role="tablist"
+                aria-label="Product format"
+              >
+                {[
+                  {
+                    key: "singles",
+                    title: "Single Vials",
+                    description: "One vial",
+                    count: variationGroups.singles.length,
+                  },
+                  {
+                    key: "kits",
+                    title: "Kits",
+                    description: "Multi-vial packs",
+                    count: variationGroups.kits.length,
+                  },
+                ].map((tab) => {
+                  const active = variationView === tab.key;
+                  const disabled = tab.count === 0;
 
-                    <div
-                      className={
-                        isMobile ? "grid gap-2" : "grid grid-cols-2 gap-2"
-                      }
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      disabled={disabled}
+                      onClick={() => handleVariationViewChange(tab.key)}
+                      className={`min-w-0 rounded-xl border px-2 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                        active
+                          ? "border-red-500 bg-red-600 text-white shadow-[0_10px_26px_rgba(220,38,38,0.25)]"
+                          : "border-transparent bg-transparent text-white/55 hover:bg-white/[0.05] hover:text-white"
+                      }`}
                     >
-                      {group.items.map(({ variation, index }) => {
-                        const variationKey = getVariationKey(variation, index);
-                        const label = getVariationLabel(
-                          product,
-                          variation,
-                          index,
-                        );
-                        const displayParts = getVariationDisplayParts(label);
-                        const optionPrice = formatPrice(
-                          getVariationPrice(variation, product),
-                        );
-                        const optionDiscount = getDiscountDetails(variation);
-                        const available = isVariationAvailable(variation);
-                        const active = variationKey === selectedVariationKey;
+                      <span className="flex items-center justify-between gap-1.5">
+                        <span className="truncate text-[10px] font-black uppercase tracking-[0.08em]">
+                          {tab.title}
+                        </span>
+                        <span
+                          className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[8px] font-black ${
+                            active ? "bg-white/20 text-white" : "bg-white/[0.06]"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      </span>
+                      <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.08em] opacity-60">
+                        {disabled ? "Not available" : tab.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                        return (
-                          <button
-                            key={variationKey}
-                            type="button"
-                            aria-pressed={active}
-                            disabled={!available}
-                            onClick={() => setSelectedVariationKey(variationKey)}
-                            className={`min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                              active
-                                ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
-                                : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
-                            }`}
-                          >
-                            <span className="block min-w-0 max-w-full">
-                              <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-                                <span className="min-w-0 break-words text-[13px] font-black uppercase leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]">
-                                  {displayParts.strength}
-                                </span>
+              <div className="mb-2 mt-3 flex items-center justify-between gap-3 px-1">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/65">
+                  Select strength
+                </p>
+                <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-white/30">
+                  {variationGroups[variationView]?.length || 0} options
+                </p>
+              </div>
 
-                                <span className="flex max-w-[78px] shrink-0 flex-col items-end text-right leading-none">
-                                  <span className="break-words text-[12px] font-black text-white [overflow-wrap:anywhere]">
-                                    {optionPrice || "View"}
-                                  </span>
-                                  {optionDiscount && (
-                                    <span className="mt-1 text-[9px] font-bold text-white/55 line-through decoration-white/45">
-                                      {formatPrice(optionDiscount.regularPrice)}
-                                    </span>
-                                  )}
-                                </span>
+              <div className={isMobile ? "grid gap-2" : "grid grid-cols-2 gap-2"}>
+                {(variationGroups[variationView] || []).map(
+                  ({ variation, index }) => {
+                    const variationKey = getVariationKey(variation, index);
+                    const label = getVariationLabel(product, variation, index);
+                    const displayParts = getVariationDisplayParts(label);
+                    const optionPrice = formatPrice(
+                      getVariationPrice(variation, product),
+                    );
+                    const optionDiscount = getDiscountDetails(variation);
+                    const available = isVariationAvailable(variation);
+                    const active = variationKey === selectedVariationKey;
+
+                    return (
+                      <button
+                        key={variationKey}
+                        type="button"
+                        aria-pressed={active}
+                        disabled={!available}
+                        onClick={() => setSelectedVariationKey(variationKey)}
+                        className={`min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          active
+                            ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
+                            : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
+                        }`}
+                      >
+                        <span className="block min-w-0 max-w-full">
+                          <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                            <span className="min-w-0 break-words text-[13px] font-black uppercase leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]">
+                              {displayParts.strength}
+                            </span>
+
+                            <span className="flex max-w-[78px] shrink-0 flex-col items-end text-right leading-none">
+                              <span className="break-words text-[12px] font-black text-white [overflow-wrap:anywhere]">
+                                {optionPrice || "View"}
                               </span>
-
-                              {displayParts.presentation && (
-                                <span className="mt-2 block max-w-full break-words text-[9px] font-black uppercase leading-[1.35] tracking-[0.06em] text-white/80 [overflow-wrap:anywhere]">
-                                  {displayParts.presentation}
+                              {optionDiscount && (
+                                <span className="mt-1 text-[9px] font-bold text-white/55 line-through decoration-white/45">
+                                  {formatPrice(optionDiscount.regularPrice)}
                                 </span>
                               )}
+                            </span>
+                          </span>
 
-                              <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
-                                {optionDiscount && (
-                                  <span
-                                    className={`rounded-full px-1.5 py-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] ${
-                                      active
-                                        ? "bg-white text-red-700"
-                                        : "bg-red-500/15 text-red-300"
-                                    }`}
-                                  >
-                                    {optionDiscount.percentage}% OFF
-                                  </span>
-                                )}
-                                <span className="flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
-                                  <span
-                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                                      available ? "bg-white" : "bg-red-300"
-                                    }`}
-                                  />
-                                  <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                                    {getVariationStockLabel(variation)}
-                                  </span>
-                                </span>
+                          {displayParts.presentation && (
+                            <span className="mt-2 block max-w-full break-words text-[9px] font-black uppercase leading-[1.35] tracking-[0.06em] text-white/80 [overflow-wrap:anywhere]">
+                              {displayParts.presentation}
+                            </span>
+                          )}
+
+                          <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                            {optionDiscount && (
+                              <span
+                                className={`rounded-full px-1.5 py-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] ${
+                                  active
+                                    ? "bg-white text-red-700"
+                                    : "bg-red-500/15 text-red-300"
+                                }`}
+                              >
+                                {optionDiscount.percentage}% OFF
+                              </span>
+                            )}
+                            <span className="flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
+                              <span
+                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                  available ? "bg-white" : "bg-red-300"
+                                }`}
+                              />
+                              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                                {getVariationStockLabel(variation)}
                               </span>
                             </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  },
+                )}
+              </div>
             </div>
+
+            {selectedVariation && (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
+                <span className="min-w-0">
+                  <span className="block text-[8px] font-black uppercase tracking-[0.12em] text-white/35">
+                    Selected
+                  </span>
+                  <span className="mt-0.5 block truncate text-[10px] font-black text-white/80">
+                    {variationView === "kits" ? "Kit" : "Single"}{" · "}
+                    {getVariationDisplayParts(
+                      getVariationLabel(
+                        product,
+                        selectedVariation,
+                        variations.indexOf(selectedVariation),
+                      ),
+                    ).strength}
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm font-black text-white">
+                  {formatPrice(getVariationPrice(selectedVariation, product))}
+                </span>
+              </div>
+            )}
 
             <button
               type="button"
@@ -1227,13 +1319,13 @@ function ProductCard({ product, priority = false }) {
 
   return (
     <>
-      <article className="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:bg-[#0d0d0d] hover:shadow-[0_28px_80px_rgba(0,0,0,0.42)] sm:rounded-3xl">
+      <article className="rgv-product-card group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition-colors duration-200 hover:border-red-500/40 hover:bg-[#0b0b0b] sm:rounded-3xl">
         <a
           href={productUrl}
-          className="relative flex h-[168px] items-center justify-center overflow-hidden bg-[#101010] p-3 sm:h-[275px] sm:p-5 lg:h-[315px]"
+          className="rgv-product-media relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden border-b border-white/10 bg-[#101010]"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.16),transparent_62%)] opacity-80 transition duration-300 group-hover:opacity-100" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.1),transparent_64%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.025] via-transparent to-black/20" />
 
           <ProductImage src={image} alt={imageAlt} priority={priority} />
 
@@ -1259,36 +1351,38 @@ function ProductCard({ product, priority = false }) {
           </span>
         </a>
 
-        <div className="flex flex-1 flex-col p-3 sm:p-5">
+        <div className="flex flex-1 flex-col p-3 sm:p-4">
           <div className="flex-1">
-            <p className="mb-1.5 line-clamp-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-400/80 sm:mb-2 sm:text-[10px] sm:tracking-[0.16em]">
+            <p className="mb-2 line-clamp-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-400/80 sm:text-[9px] sm:tracking-[0.14em]">
               {category}
             </p>
 
             <a href={productUrl}>
-              <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-[1.08] tracking-[-0.035em] text-white transition group-hover:text-red-100 sm:min-h-[46px] sm:text-lg sm:leading-tight">
+              <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-[1.08] tracking-[-0.035em] text-white transition group-hover:text-red-100 sm:min-h-[42px] sm:text-base sm:leading-tight">
                 {product.name}
               </h3>
             </a>
 
-            <p className="mt-1.5 line-clamp-2 min-h-[34px] text-[10px] leading-4 text-white/45 sm:mt-2 sm:min-h-[40px] sm:text-xs sm:leading-5">
+            <p className="mt-1.5 line-clamp-1 min-h-4 text-[10px] leading-4 text-white/42 sm:mt-2 sm:text-[11px]">
               {description}
             </p>
           </div>
 
-          <div className="mt-3 grid gap-2.5 border-t border-white/10 pt-3 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
-            <div className="min-w-0">
-              <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
-                Price
-              </p>
+          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:mt-4 sm:pt-4">
+            <div className="flex min-w-0 items-end justify-between gap-2">
+              <div>
+                <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
+                  {isVariableProduct ? "Starting at" : "Price"}
+                </p>
 
-              <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-2xl">
-                {price}
-              </p>
+                <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-xl">
+                  {price}
+                </p>
+              </div>
               {loyaltyPoints > 0 && (
-                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-red-100/70 sm:mt-2 sm:px-2.5 sm:text-[9px]">
-                  <span className="text-red-400" aria-hidden="true">★</span>
-                  +{formatPoints(loyaltyPoints)} points
+                <span className="mb-0.5 inline-flex shrink-0 items-center gap-1 text-[7px] font-black uppercase tracking-[0.06em] text-white/35 sm:text-[8px]">
+                  <span className="text-red-400" aria-hidden="true">&#9733;</span>
+                  Earn {formatPoints(loyaltyPoints)} pts
                 </span>
               )}
             </div>
@@ -1298,13 +1392,13 @@ function ProductCard({ product, priority = false }) {
                 type="button"
                 onClick={handleToggleOptions}
                 aria-expanded={optionsOpen}
-                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[9px] font-black uppercase tracking-[0.055em] text-white transition sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em] ${
+                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-[9px] font-black uppercase tracking-[0.07em] text-white transition sm:h-11 sm:gap-2 sm:text-[10px] sm:tracking-[0.1em] ${
                   optionsOpen
                     ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
                     : "bg-red-600 text-white hover:bg-red-500"
                 }`}
               >
-                <span className="whitespace-nowrap">Choose MG</span>
+                <span className="whitespace-nowrap">Select Format &amp; Strength</span>
                 <span
                   className={`shrink-0 transition duration-300 ${
                     optionsOpen ? "rotate-180" : ""
@@ -1317,7 +1411,7 @@ function ProductCard({ product, priority = false }) {
               <button
                 type="button"
                 onClick={() => addItem(product, 1)}
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:w-auto sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
               >
                 <PlusIcon />
                 Add to Cart
@@ -1325,32 +1419,37 @@ function ProductCard({ product, priority = false }) {
             ) : (
               <a
                 href={productUrl}
-                className="inline-flex h-9 w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white/45 sm:h-11 sm:w-auto sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+                className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white/45 sm:h-11 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
               >
                 View
               </a>
             )}
           </div>
 
-          {isVariableProduct && optionsOpen && (
-            <div className="hidden sm:block">
-              <VariationsPanel mode="desktop" />
-            </div>
-          )}
         </div>
       </article>
 
       {isVariableProduct && optionsOpen && (
-        <div className="fixed inset-0 z-[80] sm:hidden">
+        <div
+          className="fixed inset-0 z-[80]"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Choose an option for ${product.name}`}
+        >
           <button
             type="button"
             aria-label="Close options"
             onClick={() => setOptionsOpen(false)}
-            className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/70 backdrop-blur-[2px] sm:bg-transparent sm:backdrop-blur-none"
           />
 
-          <div className="absolute inset-x-0 bottom-0">
-            <VariationsPanel mode="mobile" />
+          <div className="absolute inset-x-0 bottom-0 sm:left-auto sm:right-0 sm:top-[114px] sm:w-[440px]">
+            <div className="sm:hidden">
+              <VariationsPanel mode="mobile" />
+            </div>
+            <div className="hidden h-full sm:block">
+              <VariationsPanel mode="drawer" />
+            </div>
           </div>
         </div>
       )}
@@ -1556,7 +1655,7 @@ export default function ProductCatalog() {
     <section className="relative bg-[#030303] pb-20 pt-[180px] text-white sm:pt-[192px] lg:pt-[205px]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_6%,rgba(220,38,38,0.1),transparent_30%)]" />
 
-      <div className="relative z-10 mx-auto max-w-[1220px] px-3 sm:px-5 lg:px-6">
+      <div className="relative z-10 mx-auto max-w-[1320px] px-3 sm:px-5 lg:px-6">
         <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
@@ -1625,10 +1724,18 @@ export default function ProductCatalog() {
 
             <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
+
+          <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-red-500/15 bg-red-500/[0.05] px-3 py-2.5 sm:items-center">
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 sm:mt-0" />
+            <p className="text-[10px] font-semibold leading-4 text-white/45">
+              Singles and kits stay separate. Open any product, choose a format,
+              then select the strength you need.
+            </p>
+          </div>
         </div>
 
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: PRODUCTS_PER_PAGE }).map((_, index) => (
               <div
                 key={index}
@@ -1681,12 +1788,12 @@ export default function ProductCatalog() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  priority={index < 8}
+                  priority={index < 4}
                 />
               ))}
             </div>

@@ -202,7 +202,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                 key={index}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"
               >
-                <div className="h-40 animate-pulse bg-white/[0.04] sm:h-56" />
+                <div className="aspect-[4/5] w-full animate-pulse bg-white/[0.04]" />
 
                 <div className="space-y-3 p-3 sm:p-4">
                   <div className="h-5 w-2/3 animate-pulse rounded bg-white/10" />
@@ -269,7 +269,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                   >
                     <a
                       href={productUrl}
-                      className="rgv-product-media relative flex h-40 items-center justify-center overflow-hidden bg-[#101010] p-2 sm:h-56"
+                      className="rgv-product-media relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden bg-[#101010]"
                     >
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
 
@@ -285,7 +285,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
                         width="520"
                         height="780"
                         sizes="(max-width: 639px) 50vw, (max-width: 1023px) 50vw, 25vw"
-                        className="relative h-[112%] w-[112%] max-w-none scale-[1.08] object-contain transition duration-500 group-hover:scale-[1.15]"
+                        className="relative h-full w-full max-w-none object-cover object-center transition-transform duration-200 group-hover:scale-[1.025]"
                       />
 
                       <span

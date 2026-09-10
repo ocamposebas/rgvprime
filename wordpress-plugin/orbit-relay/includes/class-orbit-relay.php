@@ -21,6 +21,7 @@ final class ORBIT_Relay {
         add_option( 'orbit_relay_enabled', '0', '', false );
         add_option( 'orbit_relay_allow_test_payment_completion', '0', '', false );
         add_option( 'orbit_relay_version', ORBIT_RELAY_VERSION, '', false );
+        add_option( 'orbit_relay_storefront_url', 'https://rgvprimellc.com', '', false );
         if ( ! wp_next_scheduled( 'orbit_relay_cleanup_checkout_locks' ) ) {
             wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'orbit_relay_cleanup_checkout_locks' );
         }
@@ -34,6 +35,7 @@ final class ORBIT_Relay {
         add_action( 'orbit_relay_cleanup_checkout_locks', array( 'ORBIT_Relay_Card_Checkout', 'cleanup_expired_request_locks' ) );
         ORBIT_Relay_Coupon_Guard::init();
         ORBIT_Relay_Card_Checkout::init();
+        ORBIT_Relay_Hosted_Checkout::init();
         ORBIT_Relay_REST::init();
         ORBIT_Relay_Admin::init();
     }
@@ -57,6 +59,27 @@ final class ORBIT_Relay {
 
     public static function enabled(): bool {
         return '1' === (string) get_option( 'orbit_relay_enabled', '0' );
+    }
+
+    public static function storefront_url(): string {
+        return untrailingslashit( trim( (string) get_option( 'orbit_relay_storefront_url', 'https://rgvprimellc.com' ) ) );
+    }
+
+    public static function hosted_installation_id(): string {
+        return trim( (string) get_option( 'orbit_relay_hosted_installation_id', '' ) );
+    }
+
+    public static function hosted_installation_secret(): string {
+        return ORBIT_Relay_Hosted_Secret_Store::get();
+    }
+
+    public static function hosted_configured(): bool {
+        return self::enabled()
+            && (bool) preg_match( '/^mrc_[A-Za-z0-9_-]{6,}$/', self::merchant_id() )
+            && (bool) preg_match( '/^ins_[A-Za-z0-9_-]{6,}$/', self::hosted_installation_id() )
+            && '' !== self::hosted_installation_secret()
+            && '' !== self::api_url()
+            && '' !== self::storefront_url();
     }
 
     public static function allow_test_payment_completion(): bool {
