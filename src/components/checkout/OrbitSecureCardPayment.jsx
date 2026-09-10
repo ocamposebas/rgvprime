@@ -126,12 +126,12 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
     })
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || data?.configured !== true) throw new Error(data?.message || "ORBIT is not configured.");
+        if (!response.ok || data?.configured !== true) throw new Error(data?.message || "ORBIT Payments is not configured.");
         setConfig(data);
         setConfigError("");
       })
       .catch((error) => {
-        if (error?.name !== "AbortError") setConfigError(error?.message || "ORBIT is unavailable.");
+        if (error?.name !== "AbortError") setConfigError(error?.message || "ORBIT Payments is unavailable.");
       });
     return () => controller.abort();
   }, []);
@@ -143,7 +143,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   async function confirm() {
     if (submitting) return { ignored: true };
     if (!enabled) return { error: "Complete the contact, shipping, address confirmation, and required agreements before paying." };
-    if (!config) return { error: configError || "ORBIT card payments are still loading." };
+    if (!config) return { error: configError || "ORBIT Payments is still loading." };
 
     const cleanHolder = holder.trim().replace(/\s+/g, " ");
     const cleanNumber = number.replace(/\D/g, "");
@@ -153,7 +153,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
     if (!passesLuhn(cleanNumber)) return { error: "Enter a valid card number." };
     if (!cleanExpiry) return { error: "Enter a valid future expiration date." };
     if (!/^\d{3,4}$/.test(cleanCvc)) return { error: "Enter a valid security code." };
-    if (!agreementsAccepted) return { error: "Accept the ORBIT payment terms before paying." };
+    if (!agreementsAccepted) return { error: "Accept the ORBIT Payments terms before paying." };
 
     setSubmitting(true);
     setFieldError("");
@@ -179,7 +179,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
       const tokenData = await tokenResponse.json().catch(() => ({}));
       const cardToken = String(tokenData?.data?.id || "");
       if (!tokenResponse.ok || !/^tok_(?:test|prod)_[A-Za-z0-9_]+$/.test(cardToken)) {
-        throw new Error(tokenData?.error?.reason || tokenData?.error?.message || "ORBIT could not secure this card.");
+        throw new Error(tokenData?.error?.reason || tokenData?.error?.message || "ORBIT Payments could not secure this card.");
       }
 
       return await onCreatePayment({
@@ -189,7 +189,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
         processorPersonalAuth: agreementsAccepted,
       });
     } catch (error) {
-      const message = error?.message || "The ORBIT card payment could not be completed.";
+      const message = error?.message || "The ORBIT Payments transaction could not be completed.";
       setFieldError(message);
       return { error: message };
     } finally {
@@ -225,7 +225,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
       <header className="rgvx-orbit-secure-card__header">
         <span className="rgvx-orbit-secure-card__shield" aria-hidden="true"><ShieldCheck size={20} /></span>
         <span className="rgvx-orbit-secure-card__heading">
-          <small>ORBIT SECURE</small>
+          <small>ORBIT PAYMENTS</small>
           <strong>Enter your card details</strong>
         </span>
         <span className="rgvx-orbit-secure-card__brands" aria-label="Accepted cards">
@@ -282,7 +282,7 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
           <input type="checkbox" checked={agreementsAccepted} onChange={(event) => { setAgreementsAccepted(event.target.checked); setFieldError(""); onInteraction?.(); }} />
           <Check size={14} aria-hidden="true" />
         </span>
-        <span>I agree to the ORBIT <a href="/policies#terms" target="_blank" rel="noreferrer">payment terms</a> and <a href="/policies#privacy" target="_blank" rel="noreferrer">data authorization</a>.</span>
+        <span>I agree to the ORBIT Payments <a href="/policies#terms" target="_blank" rel="noreferrer">payment terms</a> and <a href="/policies#privacy" target="_blank" rel="noreferrer">data authorization</a>.</span>
       </label>
 
       {configError && <p className="rgvx-orbit-secure-card__error" role="alert">{configError}</p>}

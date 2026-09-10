@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: RGV ORBIT Card Checkout
- * Description: Embedded ORBIT credit and debit card checkout for WooCommerce.
- * Version: 1.0.2
+ * Plugin Name: RGV ORBIT Payments Checkout
+ * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
+ * Version: 1.0.4
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -18,7 +18,7 @@ final class RGV_ORBIT_Card_Checkout {
   const RATE_LIMIT_WINDOW = 600;
   const MAX_ORDER_ITEMS = 50;
   const MAX_ITEM_QUANTITY = 100;
-  const MAX_CARD_ORDER_USD_CENTS = 15000;
+  const MAX_CARD_ORDER_USD_CENTS = 60000;
   const FREE_SHIPPING_MINIMUM = 200.0;
   const ORDER_PROCESSING_FEE_RATE = 0.03;
   const PRIORITY_PROCESSING_FEE_RATE = 0.05;
@@ -246,12 +246,12 @@ final class RGV_ORBIT_Card_Checkout {
     if (!headers_sent()) nocache_headers();
     $settings = $this->settings(true);
     if (!$settings['configured']) {
-      return new WP_REST_Response(['success' => false, 'configured' => false, 'message' => 'ORBIT card payments are not configured yet.'], 503);
+      return new WP_REST_Response(['success' => false, 'configured' => false, 'message' => 'ORBIT Payments is not configured yet.'], 503);
     }
     $merchant_info = $this->merchant_info($settings);
     $tokenization_key = $this->tokenization_key($settings);
     if (is_wp_error($merchant_info) || is_wp_error($tokenization_key)) {
-      return new WP_REST_Response(['success' => false, 'configured' => false, 'message' => 'ORBIT card security is temporarily unavailable.'], 503);
+      return new WP_REST_Response(['success' => false, 'configured' => false, 'message' => 'ORBIT Payments security is temporarily unavailable.'], 503);
     }
     $contracts = $this->contracts($merchant_info);
     if (!$contracts['acceptance_url'] || !$contracts['personal_auth_url']) {
@@ -599,7 +599,7 @@ final class RGV_ORBIT_Card_Checkout {
         $order->update_status('on-hold', 'Card payment approved; order retained for required manual review.');
       }
     } elseif (in_array($status, ['DECLINED', 'VOIDED', 'ERROR'], true) && !$order->is_paid()) {
-      $order->update_status('failed', 'ORBIT card payment ended with status ' . $status . '.');
+      $order->update_status('failed', 'ORBIT Payments transaction ended with status ' . $status . '.');
     }
     $order->save();
     return true;
@@ -625,7 +625,7 @@ final class RGV_ORBIT_Card_Checkout {
       return new WP_REST_Response(['success' => false, 'message' => 'The secure card token is invalid.'], 400);
     }
     $settings = $this->settings(true);
-    if (!$settings['configured']) return new WP_REST_Response(['success' => false, 'message' => 'ORBIT card payments are not configured.'], 503);
+    if (!$settings['configured']) return new WP_REST_Response(['success' => false, 'message' => 'ORBIT Payments is not configured.'], 503);
     if (($settings['environment'] === 'sandbox' && strpos($card_token, 'tok_test_') !== 0) ||
       ($settings['environment'] === 'production' && strpos($card_token, 'tok_prod_') !== 0)) {
       return new WP_REST_Response(['success' => false, 'message' => 'The card token does not match the configured environment.'], 400);
@@ -669,7 +669,7 @@ final class RGV_ORBIT_Card_Checkout {
       $order->set_address($this->clean_address($billing), 'billing');
       $order->set_address($this->clean_address($shipping), 'shipping');
       $order->set_payment_method('rgv_orbit_card');
-      $order->set_payment_method_title('ORBIT Card');
+      $order->set_payment_method_title('ORBIT Payments');
       $order->set_created_via('rgv_custom_checkout_orbit_card');
       $order->update_meta_data('_rgv_payment_source', 'rgv_custom_checkout_orbit_card');
       $order->update_meta_data('_rgv_orbit_card_request_key', $request_key);
@@ -698,7 +698,7 @@ final class RGV_ORBIT_Card_Checkout {
 
       $total_usd = (float) $order->get_total();
       if (strtoupper((string) $order->get_currency()) !== 'USD' || $total_usd <= 0) throw new Exception('A positive USD order total is required before conversion.');
-      if ((int) round($total_usd * 100) > self::MAX_CARD_ORDER_USD_CENTS) throw new Exception('ORBIT card payment is available only for orders of $150.00 USD or less.');
+      if ((int) round($total_usd * 100) > self::MAX_CARD_ORDER_USD_CENTS) throw new Exception('ORBIT Payments is available only for orders of $600.00 USD or less.');
       $amount_cop_cents = (int) round($total_usd * $settings['cop_per_usd'] * 100);
       if ($amount_cop_cents <= 0) throw new Exception('The converted card charge must be positive.');
       $reference = 'RGV-' . $order->get_id() . '-' . strtoupper(wp_generate_password(8, false, false));
@@ -740,7 +740,7 @@ final class RGV_ORBIT_Card_Checkout {
       if (!$transaction_id || !preg_match('/^[A-Za-z0-9_-]{8,191}$/', $transaction_id)) throw new Exception('The card processor did not return a valid transaction ID.');
       $order->update_meta_data('_rgv_orbit_card_transaction_id', $transaction_id);
       $order->update_meta_data('_rgv_orbit_card_status', strtoupper(sanitize_key((string) ($transaction['status'] ?? 'PENDING'))));
-      $order->add_order_note('ORBIT card transaction created: ' . $transaction_id . '. COP charge: ' . wc_format_decimal($amount_cop_cents / 100, 2) . '.');
+      $order->add_order_note('ORBIT Payments transaction created: ' . $transaction_id . '. COP charge: ' . wc_format_decimal($amount_cop_cents / 100, 2) . '.');
       $order->save();
       $sync = $this->sync_order($order, $transaction);
       if (is_wp_error($sync)) throw new Exception($sync->get_error_message());
@@ -771,7 +771,7 @@ final class RGV_ORBIT_Card_Checkout {
     $order = !empty($data['orderId']) ? wc_get_order(absint($data['orderId'])) : null;
     $order_key = sanitize_text_field((string) ($data['orderKey'] ?? ''));
     if (!$order || !$order_key || !hash_equals((string) $order->get_order_key(), $order_key) || $order->get_payment_method() !== 'rgv_orbit_card') {
-      return new WP_REST_Response(['success' => false, 'message' => 'ORBIT card order not found.'], 404);
+      return new WP_REST_Response(['success' => false, 'message' => 'ORBIT Payments order not found.'], 404);
     }
     $settings = $this->settings();
     $transaction_id = (string) $order->get_meta('_rgv_orbit_card_transaction_id', true);
@@ -779,7 +779,7 @@ final class RGV_ORBIT_Card_Checkout {
     $response = $this->json_request('GET', $settings['base_url'] . '/transactions/' . rawurlencode($transaction_id), [
       'Authorization' => 'Bearer ' . $settings['private_key'],
     ]);
-    if (is_wp_error($response)) return new WP_REST_Response(['success' => false, 'message' => 'Unable to verify the ORBIT card transaction.'], 503);
+    if (is_wp_error($response)) return new WP_REST_Response(['success' => false, 'message' => 'Unable to verify the ORBIT Payments transaction.'], 503);
     $transaction = is_array($response['data'] ?? null) ? $response['data'] : [];
     $sync = $this->sync_order($order, $transaction);
     if (is_wp_error($sync)) return new WP_REST_Response(['success' => false, 'message' => $sync->get_error_message()], 409);

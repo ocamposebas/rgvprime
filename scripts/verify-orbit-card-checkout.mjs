@@ -18,9 +18,10 @@ for (const method of ['id: "orbit_secure"', 'id: "edebit"', 'id: "zelle"']) {
   assert(checkout.includes(method), `Checkout payment method is missing: ${method}`);
 }
 assert(checkout.includes("const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false"), "The legacy ORBIT/Stripe form must remain hidden");
-assert(checkout.includes("WOMPI_CARD_MAX_ORDER_USD_CENTS = 15000"), "The embedded ORBIT card form must have a $150 USD visibility limit");
+assert(checkout.includes("const WOMPI_CARD_CHECKOUT_VISIBLE = true"), "ORBIT Payments through Wompi must be visible");
+assert(checkout.includes("WOMPI_CARD_MAX_ORDER_USD_CENTS = 60000"), "The embedded ORBIT Payments form must have a $600 USD visibility limit");
 assert(checkout.includes('method.id !== "orbit_secure" || wompiCardAvailable'), "The ORBIT card option must be hidden above its order limit");
-assert(checkout.includes('badge: "ORBIT"'), "The visible card method must use the ORBIT brand");
+assert(checkout.includes('title: "ORBIT Payments"'), "The visible card method must use the ORBIT Payments brand");
 assert(!checkout.includes('badge: "Wompi"'), "Wompi must not appear as the visible card brand");
 assert(cardForm.includes("cardToken") && checkout.includes("...secureCard"), "The secure card token must enter the protected order request");
 assert(!checkout.includes("secureCard.cvc") && !checkout.includes("secureCard.number"), "Raw card fields must not enter the order request");
@@ -45,7 +46,7 @@ assert(statusProxy.includes("requireApprovedSession(context)"), "ORBIT status ch
 assert(statusProxy.includes("X-RGV-Compliance-Secret"), "ORBIT status checks must authenticate to WordPress");
 
 for (const expected of [
-  "Plugin Name: RGV ORBIT Card Checkout",
+  "Plugin Name: RGV ORBIT Payments Checkout",
   "RGV_WOMPI_PRIVATE_KEY",
   "RGV_WOMPI_INTEGRITY_SECRET",
   "RGV_WOMPI_EVENTS_SECRET",
@@ -55,7 +56,7 @@ for (const expected of [
   "'payment_method_type' => 'CARD'",
   "'currency' => 'COP'",
   "'accept_personal_auth'",
-  "MAX_CARD_ORDER_USD_CENTS = 15000",
+  "MAX_CARD_ORDER_USD_CENTS = 60000",
   "hash('sha256', $reference . $amount_cop_cents . 'COP' . $settings['integrity_secret'])",
   "verificationRequired",
   "transaction.updated",

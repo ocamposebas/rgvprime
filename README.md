@@ -2,11 +2,11 @@
 
 ## ORBIT embedded card checkout
 
-The custom checkout displays three separate payment choices: **ORBIT Card**,
+The custom checkout displays three separate payment choices: **ORBIT Payments**,
 **eDebit**, and **Zelle**. The new ORBIT form is embedded directly in checkout;
 it does not redirect the customer to a hosted payment page.
 
-Install and activate the standalone `RGV ORBIT Card Checkout` plugin in
+Install and activate the standalone `RGV ORBIT Payments Checkout` plugin in
 WordPress. Keep the existing `RGV Zelle Checkout` plugin installed separately.
 Then add the four processor credentials as private environment variables on the
 WordPress service/container. Start with Sandbox keys and only switch to

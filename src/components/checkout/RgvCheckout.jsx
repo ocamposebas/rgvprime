@@ -164,8 +164,8 @@ const ACCEPTED_RECEIPT_TYPES = [
 ];
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
-const WOMPI_CARD_CHECKOUT_VISIBLE = false;
-const WOMPI_CARD_MAX_ORDER_USD_CENTS = 15000;
+const WOMPI_CARD_CHECKOUT_VISIBLE = true;
+const WOMPI_CARD_MAX_ORDER_USD_CENTS = 60000;
 
 const PAYMENT_METHODS = [
   ...(LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE ? [{
@@ -179,11 +179,11 @@ const PAYMENT_METHODS = [
   }] : []),
   ...(WOMPI_CARD_CHECKOUT_VISIBLE ? [{
     id: "orbit_secure",
-    label: "Card",
-    eyebrow: "Secure card route",
-    title: "Credit or Debit Card",
-    description: "Visa · Mastercard · American Express",
-    badge: "ORBIT",
+    label: "ORBIT Payments",
+    eyebrow: "Secure card payments",
+    title: "ORBIT Payments",
+    description: "Credit or debit card",
+    badge: "Secure",
     icon: CreditCard,
   }] : []),
   {
@@ -1623,7 +1623,7 @@ export default function RgvCheckout() {
       : isEdebitSelected
         ? "Connecting secure bank payment"
         : isOrbitSecureSelected
-          ? "Processing ORBIT card payment"
+          ? "Processing ORBIT Payments"
         : isCardSelected
           ? "Processing card payment"
           : "Preparing secure card payment"
@@ -2166,7 +2166,7 @@ export default function RgvCheckout() {
       const data = safeJsonParse(await response.text(), {});
       if (!response.ok || data?.success === false) {
         if ([502, 503, 504].includes(response.status)) continue;
-        throw new Error(data?.message || "Unable to verify the ORBIT card payment.");
+        throw new Error(data?.message || "Unable to verify the ORBIT Payments transaction.");
       }
       latest = data;
     }
@@ -2187,7 +2187,7 @@ export default function RgvCheckout() {
 
       setLoading(true);
       setError("");
-      setPaymentNotice("Creating your WooCommerce order and processing the ORBIT card...");
+      setPaymentNotice("Creating your WooCommerce order and processing with ORBIT Payments...");
       persistCheckoutDetails(checkoutForm, normalizedForm.email);
       const controller = new AbortController();
       const requestTimeout = window.setTimeout(() => controller.abort(), 70000);
@@ -2258,7 +2258,7 @@ export default function RgvCheckout() {
         orbitSecureCheckoutAttemptIdRef.current = replaceOrbitSecureAttemptId();
         throw new Error(status === "DECLINED"
           ? "The card was declined. Try another card or choose eDebit or Zelle."
-          : "The ORBIT card payment could not be completed.");
+          : "The ORBIT Payments transaction could not be completed.");
       } finally {
         window.clearTimeout(requestTimeout);
       }
@@ -2266,7 +2266,7 @@ export default function RgvCheckout() {
       if (err?.retrySafe) orbitSecureCheckoutAttemptIdRef.current = replaceOrbitSecureAttemptId();
       const message = err?.name === "AbortError"
         ? "ORBIT took too long to respond. Check the order before trying again."
-        : err?.message || "The ORBIT card payment could not be completed.";
+        : err?.message || "The ORBIT Payments transaction could not be completed.";
       setError(message);
       setPaymentNotice("");
       return { error: message };
@@ -2913,7 +2913,7 @@ export default function RgvCheckout() {
                 ? "The payment was submitted but the immediate response could not be confirmed. Do not retry it; the secure payment event will update the order."
                 : "ORBIT is still confirming the transaction. Your order will update automatically through the secure payment event."}</span>
             <div className="rgvx-receipt-thanks-details">
-              <div><CreditCard size={17} /><span>Payment method</span><strong>ORBIT Card</strong></div>
+              <div><CreditCard size={17} /><span>Payment method</span><strong>ORBIT Payments</strong></div>
               <div><ShieldCheck size={17} /><span>Secure charge</span><strong>{copAmount > 0 ? `${copAmount.toLocaleString("es-CO")} COP` : "COP"}</strong></div>
             </div>
             <a href="/shop" className="rgvx-receipt-thanks-button">Continue shopping <ChevronRight size={18} /></a>
@@ -3543,7 +3543,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>{wompiCardAvailable ? "Pay by ORBIT card, secure eDebit, or manual Zelle." : "Pay by secure eDebit or manual Zelle."}</span>
+                <span>{wompiCardAvailable ? "Pay with ORBIT Payments, secure eDebit, or manual Zelle." : "Pay by secure eDebit or manual Zelle."}</span>
               </div>
               <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""}`} role="radiogroup" aria-label="Payment method">
                 {availablePaymentMethods.map((method) => {
@@ -3554,7 +3554,7 @@ export default function RgvCheckout() {
                   </button>;
                 })}
               </div>
-              {isOrbitSecureSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> Credit or debit card securely processed inside ORBIT.</p>}
+              {isOrbitSecureSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> Credit or debit card securely processed by ORBIT Payments.</p>}
               {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Secure bank payment. You will link your bank after your order is created.</p>}
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
