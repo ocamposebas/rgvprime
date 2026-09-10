@@ -19,6 +19,8 @@ const ROUTES = {
   "card-order": "/wp-json/orbit/v1/card-checkout",
   "zelle-order": "/wp-json/rgv/v1/manual-zelle-order",
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
+  "edebit-status": "/wp-json/rgv-edebit/v1/order-status",
+  "edebit-cancel": "/wp-json/rgv-edebit/v1/cancel-pending",
   "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
 };
 
@@ -56,7 +58,13 @@ export async function POST(context) {
   }
 
   const isQuote = context.params.action === "card-quote";
-  if (!isQuote && !hasRequiredAcknowledgements(body)) {
+  const requiresCheckoutAcceptance = [
+    "card-order",
+    "zelle-order",
+    "edebit-order",
+    "orbit-card-order",
+  ].includes(context.params.action);
+  if (requiresCheckoutAcceptance && !hasRequiredAcknowledgements(body)) {
     return json({ success: false, message: "The separate RUO and Terms confirmations are required at final checkout." }, 400);
   }
 

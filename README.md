@@ -68,6 +68,21 @@ as `RGV_COMPLIANCE_SIGNING_SECRET` in `wp-config.php`. Never use a `PUBLIC_`
 prefix. Deploy the updated RGV Zelle Checkout and ORBIT Relay plugins together
 with the storefront; otherwise checkout fails closed.
 
+## eDebit abandonment guard
+
+The custom eDebit flow requires the `RGV eDebit Guard` WordPress plugin in
+`wordpress-plugin/rgv-edebit-guard-1.0.0.zip`. Install and activate that plugin
+before deploying the matching storefront build. It provides authoritative
+WooCommerce order-status checks, safe cancellation of replaced attempts, and
+automatic expiry of unpaid eDebit orders that remain in `Pending payment` for
+60 minutes. Paid, `On hold`, `Processing`, and `Completed` orders are never
+expired by the guard.
+
+The checkout no longer preselects eDebit. Customers must select it explicitly
+and confirm that they are ready to complete the hosted bank-linking flow. A
+recent matching attempt can be resumed; starting over first closes the earlier
+pending order so duplicate orders are not created.
+
 ## Maintenance mode
 
 The storefront includes a maintenance screen for VPS cleanup and code reviews.

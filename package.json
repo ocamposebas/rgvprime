@@ -16,7 +16,8 @@
     "test:storefront": "node scripts/verify-storefront-regression.mjs",
     "test:rush": "node scripts/verify-rush-processing-plugin.mjs",
     "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs",
-    "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs"
+    "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs",
+    "test:edebit": "node scripts/verify-edebit-guard.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.3",

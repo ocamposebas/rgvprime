@@ -59,6 +59,9 @@ const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PAYMENT_RETURN_TTL_MS = 60 * 60 * 1000;
+const EDEBIT_PENDING_TTL_MS = 60 * 60 * 1000;
+const EDEBIT_PENDING_STORAGE_KEY = "rgv_edebit_pending_order";
+const EDEBIT_ACTIVE_SESSION_KEY = "rgv_edebit_active_payment";
 
 const SHIPPING_METHODS = [
   {
@@ -697,6 +700,14 @@ function getEdebitOrderEndpoint() {
   return "/api/checkout/edebit-order";
 }
 
+function getEdebitStatusEndpoint() {
+  return "/api/checkout/edebit-status";
+}
+
+function getEdebitCancelEndpoint() {
+  return "/api/checkout/edebit-cancel";
+}
+
 function getOrbitSecureCardOrderEndpoint() {
   return "/api/checkout/orbit-card-order";
 }
@@ -735,6 +746,67 @@ function isRecoverableOrbitQuoteFailure(response, data) {
       (response?.status === 400 && message.includes("secure checkout session")) ||
       (response?.status === 409 && message.includes("order total changed"))
   );
+}
+
+function clearStoredEdebitAttempt() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(EDEBIT_PENDING_STORAGE_KEY);
+  sessionStorage.removeItem(EDEBIT_ACTIVE_SESSION_KEY);
+}
+
+function readStoredEdebitAttempt() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(EDEBIT_ACTIVE_SESSION_KEY) || "null");
+    const expiresAt = Number(stored?.expiresAt || 0);
+    const redirectUrl = new URL(String(stored?.redirectUrl || ""));
+
+    if (
+      !stored?.orderId ||
+      redirectUrl.protocol !== "https:" ||
+      expiresAt <= Date.now()
+    ) {
+      clearStoredEdebitAttempt();
+      return null;
+    }
+
+    return { ...stored, redirectUrl: redirectUrl.toString(), expiresAt };
+  } catch {
+    clearStoredEdebitAttempt();
+    return null;
+  }
+}
+
+function storeEdebitAttempt(attempt) {
+  if (typeof window === "undefined") return;
+
+  sessionStorage.setItem(EDEBIT_ACTIVE_SESSION_KEY, JSON.stringify(attempt));
+  localStorage.setItem(
+    EDEBIT_PENDING_STORAGE_KEY,
+    JSON.stringify({
+      orderId: attempt.orderId,
+      orderNumber: attempt.orderNumber,
+      createdAt: attempt.createdAt,
+      expiresAt: attempt.expiresAt,
+      lifecycle: "initiated",
+    })
+  );
+}
+
+function buildEdebitAttemptFingerprint(items, email, total, checkoutOptions = {}) {
+  return JSON.stringify({
+    email: String(email || "").trim().toLowerCase(),
+    total: Number(total || 0).toFixed(2),
+    shippingMethodId: String(checkoutOptions.shippingMethodId || ""),
+    coupon: String(checkoutOptions.coupon || "").trim().toUpperCase(),
+    priorityProcessing: checkoutOptions.priorityProcessing === true,
+    items: items.map((item) => [
+      Number(item.product_id || 0),
+      Number(item.variation_id || 0),
+      Number(item.quantity || 0),
+    ]),
+  });
 }
 
 const ORBIT_SECURE_ATTEMPT_STORAGE_KEY = "rgv_orbit_secure_checkout_attempt_id";
@@ -828,16 +900,17 @@ function getInitialEdebitReturn() {
 
   if (!isEdebitReturn) return null;
 
-  const rawPayment = String(params.get("payment") || "failed").toLowerCase();
-  const payment = ["success", "failed", "cancelled"].includes(rawPayment)
+  const rawPayment = String(params.get("payment") || "pending").toLowerCase();
+  const payment = ["success", "failed", "cancelled", "pending"].includes(rawPayment)
     ? rawPayment
     : ["cancel", "canceled"].includes(rawPayment)
       ? "cancelled"
-      : "failed";
+      : "pending";
 
   return {
     payment,
     orderId: String(params.get("order_id") || "").replace(/[^0-9]/g, "").slice(0, 20),
+    orderKey: String(params.get("order_key") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100),
     status: String(params.get("status") || "").replace(/[^a-z0-9_-]/gi, "").slice(0, 40),
     paymentMethod: String(params.get("payment_method") || "edebit_yodlee").slice(0, 80),
     message: String(params.get("message") || "").slice(0, 300),
@@ -931,6 +1004,9 @@ export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
   const [edebitReturn] = useState(() => getInitialEdebitReturn());
+  const [verifiedEdebitReturn, setVerifiedEdebitReturn] = useState(() =>
+    edebitReturn ? { ...edebitReturn, payment: "checking" } : null
+  );
   const [orbitCardCheckout, setOrbitCardCheckout] = useState(() => getInitialOrbitCardReturn());
   const [checkoutQuote, setCheckoutQuote] = useState(null);
   const [quoteRefreshVersion, setQuoteRefreshVersion] = useState(0);
@@ -941,7 +1017,7 @@ export default function RgvCheckout() {
   const [orbitPaymentResult, setOrbitPaymentResult] = useState(null);
   const [orbitSecureCardReady, setOrbitSecureCardReady] = useState(false);
   const [orbitSecurePaymentResult, setOrbitSecurePaymentResult] = useState(null);
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("edebit");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
@@ -959,6 +1035,9 @@ export default function RgvCheckout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
+  const [edebitConfirmationOpen, setEdebitConfirmationOpen] = useState(false);
+  const [edebitModalBusy, setEdebitModalBusy] = useState(false);
+  const [pendingEdebitAttempt, setPendingEdebitAttempt] = useState(() => readStoredEdebitAttempt());
   const [manualOrder, setManualOrder] = useState(null);
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
@@ -970,6 +1049,7 @@ export default function RgvCheckout() {
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
   const edebitSubmittingRef = useRef(false);
+  const edebitCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
   const orbitCardSubmittingRef = useRef(false);
   const orbitCardPaymentRef = useRef(null);
   const orbitSecureCardPaymentRef = useRef(null);
@@ -1060,7 +1140,7 @@ export default function RgvCheckout() {
   }, []);
 
   useEffect(() => {
-    if (!edebitReturn || typeof window === "undefined") return;
+    if (!edebitReturn || typeof window === "undefined") return undefined;
 
     const cleanReturnUrl = new URL(window.location.href);
     EDEBIT_RETURN_QUERY_KEYS.forEach((key) => cleanReturnUrl.searchParams.delete(key));
@@ -1070,23 +1150,83 @@ export default function RgvCheckout() {
       `${cleanReturnUrl.pathname}${cleanReturnUrl.search}${cleanReturnUrl.hash}`
     );
 
-    localStorage.removeItem("rgv_edebit_pending_order");
+    const controller = new AbortController();
 
-    if (edebitReturn.payment !== "success") return;
-
-    CART_STORAGE_FALLBACK_KEYS.forEach((key) => localStorage.removeItem(key));
-    localStorage.removeItem("rgv_checkout_coupon");
-
-    const clearCartHandler = cart?.clearCart || cart?.emptyCart || cart?.resetCart;
-
-    if (typeof clearCartHandler === "function") {
-      try {
-        clearCartHandler();
-      } catch (clearError) {
-        console.error("Unable to clear cart after eDebit payment:", clearError);
+    const verifyPayment = async () => {
+      if (!edebitReturn.orderId || !edebitReturn.orderKey) {
+        setVerifiedEdebitReturn({
+          ...edebitReturn,
+          payment: "unverified",
+          message: "We could not verify this bank payment yet. Your cart was preserved and no additional payment was started.",
+        });
+        return;
       }
-    }
-  }, [edebitReturn?.payment]);
+
+      try {
+        const response = await fetch(getEdebitStatusEndpoint(), {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            orderId: edebitReturn.orderId,
+            orderKey: edebitReturn.orderKey,
+          }),
+        });
+        const data = safeJsonParse(await response.text(), {});
+
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || "The payment status service is temporarily unavailable.");
+        }
+
+        const lifecycle = String(data?.lifecycle || "pending").toLowerCase();
+        const payment = lifecycle === "confirmed"
+          ? "success"
+          : ["cancelled", "expired"].includes(lifecycle)
+            ? "cancelled"
+            : lifecycle === "failed"
+              ? "failed"
+              : "pending";
+
+        setVerifiedEdebitReturn({
+          ...edebitReturn,
+          payment,
+          status: String(data?.orderStatus || edebitReturn.status || ""),
+          message: String(data?.message || ""),
+        });
+
+        if (["confirmed", "cancelled", "expired", "failed"].includes(lifecycle)) {
+          clearStoredEdebitAttempt();
+          setPendingEdebitAttempt(null);
+        }
+
+        if (lifecycle !== "confirmed") return;
+
+        CART_STORAGE_FALLBACK_KEYS.forEach((key) => localStorage.removeItem(key));
+        localStorage.removeItem("rgv_checkout_coupon");
+        const clearCartHandler = cart?.clearCart || cart?.emptyCart || cart?.resetCart;
+
+        if (typeof clearCartHandler === "function") {
+          try {
+            clearCartHandler();
+          } catch (clearError) {
+            console.error("Unable to clear cart after verified eDebit payment:", clearError);
+          }
+        }
+      } catch (statusError) {
+        if (statusError?.name === "AbortError") return;
+        setVerifiedEdebitReturn({
+          ...edebitReturn,
+          payment: "unverified",
+          message: "We could not verify this bank payment yet. Your cart was preserved; check your email or order history before trying again.",
+        });
+      }
+    };
+
+    verifyPayment();
+    return () => controller.abort();
+  }, [edebitReturn?.orderId, edebitReturn?.orderKey]);
 
   useEffect(() => {
     if (!orbitCardCheckout?.isReturn || typeof window === "undefined") return;
@@ -1212,6 +1352,7 @@ export default function RgvCheckout() {
   const isZelleSelected = selectedPaymentMethodId === "zelle";
   const isOrbitSecureSelected = selectedPaymentMethodId === "orbit_secure";
   const isCardSelected = LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE && selectedPaymentMethodId === "card";
+  const hasSelectedPaymentMethod = Boolean(selectedPaymentMethodId);
   const requiresDirectDetails = isCardSelected || isOrbitSecureSelected || isEdebitSelected || isZelleSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
@@ -1254,7 +1395,7 @@ export default function RgvCheckout() {
 
   useEffect(() => {
     if (!wompiCardAvailable && selectedPaymentMethodId === "orbit_secure") {
-      setSelectedPaymentMethodId("edebit");
+      setSelectedPaymentMethodId("");
       setOrbitSecurePaymentResult(null);
       setError("");
       setPaymentNotice("");
@@ -1447,6 +1588,19 @@ export default function RgvCheckout() {
     ? Number(checkoutQuote.priorityProcessingFeeMinor || 0) / 100
     : estimatedPriorityProcessingFee;
   const summaryTotal = isCardSelected ? authoritativeDue : estimatedDue;
+  const edebitAttemptFingerprint = buildEdebitAttemptFingerprint(
+    buildCheckoutItems(cartItems),
+    checkoutForm.email,
+    estimatedDue,
+    {
+      shippingMethodId: selectedShippingMethod?.id,
+      coupon,
+      priorityProcessing,
+    }
+  );
+  const canResumePendingEdebit = Boolean(
+    pendingEdebitAttempt && pendingEdebitAttempt.fingerprint === edebitAttemptFingerprint
+  );
   const displayedSummaryItems = isCardSelected && checkoutQuote?.items?.length === summaryItems.length
     ? summaryItems.map((item, index) => ({
         ...item,
@@ -1473,7 +1627,9 @@ export default function RgvCheckout() {
         : isCardSelected
           ? "Processing card payment"
           : "Preparing secure card payment"
-    : isZelleSelected
+    : !hasSelectedPaymentMethod
+      ? "Choose a payment method"
+      : isZelleSelected
       ? "Place order with Zelle"
       : isEdebitSelected
       ? "Continue with eDebit"
@@ -1489,7 +1645,9 @@ export default function RgvCheckout() {
         ? "Your card is encrypted and tokenized securely inside the ORBIT form."
       : isCardSelected
         ? "Your payment details are encrypted and protected throughout checkout."
-        : "Your WooCommerce order total is verified before payment.";
+        : !hasSelectedPaymentMethod
+          ? "Select eDebit or Zelle above before continuing."
+          : "Your WooCommerce order total is verified before payment.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
     const checkoutItems = buildCheckoutItems(cartItems);
@@ -2217,6 +2375,7 @@ export default function RgvCheckout() {
           couponValidation,
           coupon_validation: couponValidation,
           source: "rgvprime_custom_checkout_edebit",
+          checkoutAttemptId: edebitCheckoutAttemptIdRef.current,
           ageConfirmed: researchUseAcknowledged,
           researchUseAcknowledged,
           termsAccepted,
@@ -2257,14 +2416,22 @@ export default function RgvCheckout() {
         throw new Error("The bank transfer payment URL was not secure.");
       }
 
-      localStorage.setItem(
-        "rgv_edebit_pending_order",
-        JSON.stringify({
-          orderId: data?.orderId || "",
-          orderNumber: data?.orderNumber || "",
-          createdAt: new Date().toISOString(),
-        })
-      );
+      const createdAt = new Date().toISOString();
+      const nextPendingAttempt = {
+        orderId: String(data?.orderId || data?.order_id || ""),
+        orderNumber: String(data?.orderNumber || data?.order_number || data?.orderId || ""),
+        orderKey: String(data?.orderKey || data?.order_key || ""),
+        redirectUrl: parsedRedirect.toString(),
+        fingerprint: edebitAttemptFingerprint,
+        checkoutAttemptId: edebitCheckoutAttemptIdRef.current,
+        createdAt,
+        expiresAt: Date.now() + EDEBIT_PENDING_TTL_MS,
+      };
+
+      if (nextPendingAttempt.orderId) {
+        storeEdebitAttempt(nextPendingAttempt);
+        setPendingEdebitAttempt(nextPendingAttempt);
+      }
 
       redirecting = true;
       window.location.assign(parsedRedirect.toString());
@@ -2283,6 +2450,88 @@ export default function RgvCheckout() {
         edebitSubmittingRef.current = false;
         setLoading(false);
       }
+    }
+  };
+
+  const openEdebitConfirmation = () => {
+    if (!validateBaseCheckout()) return;
+
+    if (couponInput && couponInput !== coupon) {
+      setError("Apply or clear the coupon code before continuing with bank transfer.");
+      return;
+    }
+
+    if (!validateDirectPaymentForm("bank transfer")) return;
+
+    const activeAttempt = readStoredEdebitAttempt();
+    setPendingEdebitAttempt(activeAttempt);
+    setError("");
+    setPaymentNotice("");
+    setEdebitConfirmationOpen(true);
+  };
+
+  const resumePendingEdebit = () => {
+    if (!canResumePendingEdebit || !pendingEdebitAttempt?.redirectUrl) return;
+
+    try {
+      const redirectUrl = new URL(pendingEdebitAttempt.redirectUrl);
+      if (redirectUrl.protocol !== "https:") throw new Error("Invalid payment URL");
+      setEdebitConfirmationOpen(false);
+      window.location.assign(redirectUrl.toString());
+    } catch {
+      clearStoredEdebitAttempt();
+      setPendingEdebitAttempt(null);
+      setError("The previous bank session expired. Start a new secure bank payment.");
+    }
+  };
+
+  const cancelPendingEdebit = async () => {
+    if (!pendingEdebitAttempt?.orderId || !pendingEdebitAttempt?.orderKey) {
+      throw new Error("The previous bank order cannot be closed automatically. Continue that payment or choose Zelle; no duplicate order was created.");
+    }
+
+    const response = await fetch(getEdebitCancelEndpoint(), {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        orderId: pendingEdebitAttempt.orderId,
+        orderKey: pendingEdebitAttempt.orderKey,
+        checkoutAttemptId: pendingEdebitAttempt.checkoutAttemptId || "",
+      }),
+    });
+    const data = safeJsonParse(await response.text(), {});
+
+    if (!response.ok || data?.success === false) {
+      throw new Error(data?.message || "The previous bank payment could not be closed safely.");
+    }
+
+    if (String(data?.lifecycle || "").toLowerCase() === "confirmed") {
+      throw new Error("The previous bank payment is already confirmed. Check your order history; no new payment was started.");
+    }
+
+    clearStoredEdebitAttempt();
+    setPendingEdebitAttempt(null);
+    return true;
+  };
+
+  const startFreshEdebit = async () => {
+    if (edebitModalBusy) return;
+    setEdebitModalBusy(true);
+    setError("");
+
+    try {
+      if (pendingEdebitAttempt) await cancelPendingEdebit();
+      edebitCheckoutAttemptIdRef.current = createCheckoutAttemptId();
+      setEdebitConfirmationOpen(false);
+      await createEdebitOrder();
+    } catch (replaceError) {
+      setError(replaceError?.message || "Unable to safely restart bank payment.");
+      setPaymentNotice("");
+      setEdebitConfirmationOpen(false);
+    } finally {
+      setEdebitModalBusy(false);
     }
   };
 
@@ -2468,11 +2717,11 @@ export default function RgvCheckout() {
     }
 
     if (isEdebitSelected) {
-      createEdebitOrder();
+      openEdebitConfirmation();
       return;
     }
 
-    continueToCardCheckout();
+    setError("Choose a payment method before continuing.");
   };
 
   const handleReceiptFile = (event) => {
@@ -2558,21 +2807,31 @@ export default function RgvCheckout() {
     </main>
   );
 
-  if (edebitReturn) {
-    const paymentSucceeded = edebitReturn.payment === "success";
-    const paymentCancelled = edebitReturn.payment === "cancelled";
-    const orderLabel = edebitReturn.orderId ? `ORDER #${edebitReturn.orderId}` : "EDEBIT PAYMENT";
-    const returnTitle = paymentSucceeded
+  if (verifiedEdebitReturn) {
+    const paymentSucceeded = verifiedEdebitReturn.payment === "success";
+    const paymentCancelled = verifiedEdebitReturn.payment === "cancelled";
+    const paymentChecking = verifiedEdebitReturn.payment === "checking";
+    const paymentPending = ["pending", "unverified"].includes(verifiedEdebitReturn.payment);
+    const orderLabel = verifiedEdebitReturn.orderId ? `ORDER #${verifiedEdebitReturn.orderId}` : "EDEBIT PAYMENT";
+    const returnTitle = paymentChecking
+      ? "Verifying bank payment"
+      : paymentSucceeded
       ? "Bank payment completed"
       : paymentCancelled
         ? "Bank payment cancelled"
-        : "Bank payment was not completed";
-    const returnMessage = edebitReturn.message ||
-      (paymentSucceeded
+        : paymentPending
+          ? "Bank payment is not confirmed"
+          : "Bank payment was not completed";
+    const returnMessage = verifiedEdebitReturn.message ||
+      (paymentChecking
+        ? "Please wait while we confirm the order directly with WooCommerce."
+        : paymentSucceeded
         ? "Your bank transfer payment was received and your order is now being processed."
         : paymentCancelled
           ? "Your order was not paid. Your cart is still available so you can try again or choose another payment method."
-          : "The bank payment could not be completed. Your cart is still available and no new payment attempt will be made automatically.");
+          : paymentPending
+            ? "No payment has been confirmed. Your cart is preserved; check your email or order history before trying again."
+            : "The bank payment could not be completed. Your cart is still available and no new payment attempt will be made automatically.");
 
     return (
       <main className="rgvx-page rgvx-thanks-page">
@@ -2585,8 +2844,8 @@ export default function RgvCheckout() {
             </a>
 
             <div className={`rgvx-lock-pill ${paymentSucceeded ? "rgvx-confirmed-pill" : ""}`}>
-              {paymentSucceeded ? <BadgeCheck size={13} /> : <X size={13} />}
-              {paymentSucceeded ? "Payment confirmed" : paymentCancelled ? "Payment cancelled" : "Payment failed"}
+              {paymentSucceeded ? <BadgeCheck size={13} /> : paymentChecking || paymentPending ? <ShieldCheck size={13} /> : <X size={13} />}
+              {paymentChecking ? "Checking status" : paymentSucceeded ? "Payment confirmed" : paymentCancelled ? "Payment cancelled" : paymentPending ? "Confirmation pending" : "Payment failed"}
             </div>
           </div>
 
@@ -2609,15 +2868,17 @@ export default function RgvCheckout() {
               <div>
                 <ShieldCheck size={17} />
                 <span>Current status</span>
-                <strong>{paymentSucceeded ? "Processing" : paymentCancelled ? "Cancelled" : "Payment required"}</strong>
+                <strong>{paymentChecking ? "Verifying" : paymentSucceeded ? "Processing" : paymentCancelled ? "Cancelled" : paymentPending ? "Not confirmed" : "Payment required"}</strong>
               </div>
             </div>
 
             <a
-              href={paymentSucceeded ? "/shop" : "/checkout/"}
+              href={paymentSucceeded ? "/shop" : paymentChecking ? "#" : "/checkout/"}
               className="rgvx-receipt-thanks-button"
+              aria-disabled={paymentChecking}
+              onClick={paymentChecking ? (event) => event.preventDefault() : undefined}
             >
-              {paymentSucceeded ? "Continue shopping" : "Return to checkout"}
+              {paymentChecking ? "Verifying payment..." : paymentSucceeded ? "Continue shopping" : "Return to checkout"}
               <ChevronRight size={18} />
             </a>
           </section>
@@ -3288,7 +3549,7 @@ export default function RgvCheckout() {
                 {availablePaymentMethods.map((method) => {
                   const Icon = method.icon;
                   const active = selectedPaymentMethodId === method.id;
-                  return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
+                  return <button key={method.id} type="button" role="radio" aria-checked={active} disabled={loading || Boolean(orbitCardCheckout)} className={`rgvx-payment-option ${active ? "active" : ""}`} onClick={() => { setSelectedPaymentMethodId(method.id); setEdebitConfirmationOpen(false); setManualOrder(null); setError(""); setPaymentNotice(""); }}>
                     <Icon size={18} /><span><strong>{method.title}</strong><small>{method.description}</small></span><em>{method.badge}</em>
                   </button>;
                 })}
@@ -3352,7 +3613,7 @@ export default function RgvCheckout() {
             <button
               type="button"
               onClick={handleContinuePayment}
-              disabled={loading || (isOrbitSecureSelected && !orbitSecureCardReady) || (isCardSelected && (!stripePaymentContext || !orbitCardReady || quoteLoading))}
+              disabled={!hasSelectedPaymentMethod || loading || (isOrbitSecureSelected && !orbitSecureCardReady) || (isCardSelected && (!stripePaymentContext || !orbitCardReady || quoteLoading))}
               className="rgvx-final-button"
             >
               <span>
@@ -3361,6 +3622,62 @@ export default function RgvCheckout() {
               </span>
               <ChevronRight size={20} />
             </button>
+
+            {edebitConfirmationOpen && (
+              <div className="rgvx-edebit-confirm-backdrop" role="presentation">
+                <section
+                  className="rgvx-edebit-confirm"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="rgvx-edebit-confirm-title"
+                >
+                  <button
+                    type="button"
+                    className="rgvx-edebit-confirm-close"
+                    aria-label="Close bank payment confirmation"
+                    disabled={edebitModalBusy}
+                    onClick={() => setEdebitConfirmationOpen(false)}
+                  >
+                    <X size={18} />
+                  </button>
+                  <span className="rgvx-edebit-confirm-icon"><Building2 size={24} /></span>
+                  <p>SECURE BANK PAYMENT</p>
+                  <h2 id="rgvx-edebit-confirm-title">
+                    {pendingEdebitAttempt ? "You already started a bank payment" : "Ready to connect your bank?"}
+                  </h2>
+                  <span>
+                    {pendingEdebitAttempt
+                      ? canResumePendingEdebit
+                        ? `Order #${pendingEdebitAttempt.orderNumber || pendingEdebitAttempt.orderId} is still awaiting payment. Continue it to avoid creating a duplicate order.`
+                        : `Order #${pendingEdebitAttempt.orderNumber || pendingEdebitAttempt.orderId} belongs to an earlier checkout. We will cancel it before starting this one.`
+                      : "Your WooCommerce order will be created and eDebit will open its secure bank-linking flow. The payment is not complete until your bank connection and authorization finish."}
+                  </span>
+                  <div className="rgvx-edebit-confirm-points">
+                    <div><Check size={15} /><span>Finish every eDebit/Yodlee screen before closing the window.</span></div>
+                    <div><Check size={15} /><span>No additional attempt starts automatically if you cancel or leave.</span></div>
+                    <div><ShieldCheck size={15} /><span>We confirm payment directly with WooCommerce before processing.</span></div>
+                  </div>
+                  <div className="rgvx-edebit-confirm-actions">
+                    {canResumePendingEdebit && (
+                      <button type="button" disabled={edebitModalBusy} onClick={resumePendingEdebit}>
+                        Continue order #{pendingEdebitAttempt.orderNumber || pendingEdebitAttempt.orderId}
+                      </button>
+                    )}
+                    <button type="button" disabled={edebitModalBusy} onClick={startFreshEdebit}>
+                      {edebitModalBusy
+                        ? "Preparing secure payment..."
+                        : pendingEdebitAttempt
+                          ? "Cancel old attempt and start new"
+                          : "Create order and continue"}
+                    </button>
+                    <button type="button" className="secondary" disabled={edebitModalBusy} onClick={() => setEdebitConfirmationOpen(false)}>
+                      Go back
+                    </button>
+                  </div>
+                  <small>Having trouble linking your bank? Go back and choose Zelle instead.</small>
+                </section>
+              </div>
+            )}
 
             <div className="rgvx-checkout-assurance" aria-label="Payment security">
               <Lock size={13} />
@@ -10671,7 +10988,134 @@ const styles = `
     display: none !important;
   }
 
+  .rgvx-edebit-confirm-backdrop {
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    background: rgba(2, 4, 8, .82);
+    padding: 24px;
+    backdrop-filter: blur(12px);
+  }
+
+  .rgvx-edebit-confirm {
+    position: relative;
+    display: grid;
+    width: min(100%, 540px);
+    gap: 16px;
+    border: 1px solid rgba(248, 113, 113, .28);
+    border-radius: 26px;
+    background: linear-gradient(145deg, #17191f, #0b0d11);
+    padding: 34px;
+    color: #fff;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .58);
+  }
+
+  .rgvx-edebit-confirm-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .05);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .rgvx-edebit-confirm-icon {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border: 1px solid rgba(248, 113, 113, .3);
+    border-radius: 17px;
+    background: rgba(220, 38, 38, .12);
+    color: #f87171;
+  }
+
+  .rgvx-edebit-confirm > p {
+    margin: 2px 0 -9px;
+    color: #f87171;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .16em;
+  }
+
+  .rgvx-edebit-confirm > h2 {
+    margin: 0;
+    padding-right: 32px;
+    font-size: clamp(24px, 5vw, 34px);
+    line-height: 1.05;
+    letter-spacing: -.045em;
+  }
+
+  .rgvx-edebit-confirm > span:not(.rgvx-edebit-confirm-icon),
+  .rgvx-edebit-confirm > small {
+    color: rgba(255, 255, 255, .62);
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.6;
+  }
+
+  .rgvx-edebit-confirm-points {
+    display: grid;
+    gap: 10px;
+    border-block: 1px solid rgba(255, 255, 255, .09);
+    padding-block: 17px;
+  }
+
+  .rgvx-edebit-confirm-points > div {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 8px;
+    align-items: start;
+    color: rgba(255, 255, 255, .78);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .rgvx-edebit-confirm-points svg { color: #f87171; }
+
+  .rgvx-edebit-confirm-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .rgvx-edebit-confirm-actions button {
+    min-height: 50px;
+    border: 1px solid #dc263a;
+    border-radius: 14px;
+    background: linear-gradient(90deg, #ae1229, #dc263a);
+    padding: 12px 18px;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .rgvx-edebit-confirm-actions button.secondary {
+    border-color: rgba(255, 255, 255, .14);
+    background: rgba(255, 255, 255, .04);
+  }
+
+  .rgvx-edebit-confirm-actions button:disabled,
+  .rgvx-edebit-confirm-close:disabled {
+    cursor: wait;
+    opacity: .58;
+  }
+
   @media (max-width: 620px) {
+    .rgvx-edebit-confirm-backdrop { padding: 12px; }
+    .rgvx-edebit-confirm { border-radius: 21px; padding: 26px 20px; }
+
     .rgvx-review-confirm {
       margin-top: 28px !important;
       padding: 34px 0 38px !important;
