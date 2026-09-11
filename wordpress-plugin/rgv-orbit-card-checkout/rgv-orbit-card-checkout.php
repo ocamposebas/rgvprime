@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.0.4
+ * Version: 1.1.0
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -14,7 +14,7 @@ final class RGV_ORBIT_Card_Checkout {
   const REQUEST_LOCK_TTL = 180;
   const REQUEST_RESULT_TTL = 86400;
   const ORDER_RATE_LIMIT_MAX = 10;
-  const STATUS_RATE_LIMIT_MAX = 60;
+  const STATUS_RATE_LIMIT_MAX = 180;
   const RATE_LIMIT_WINDOW = 600;
   const MAX_ORDER_ITEMS = 50;
   const MAX_ITEM_QUANTITY = 100;
@@ -473,6 +473,33 @@ final class RGV_ORBIT_Card_Checkout {
     ];
   }
 
+  private function clean_browser_info($data) {
+    $browser = is_array($data['browserInfo'] ?? null) ? $data['browserInfo'] : [];
+    $color_depth = sanitize_text_field((string) ($browser['browser_color_depth'] ?? ''));
+    $screen_height = sanitize_text_field((string) ($browser['browser_screen_height'] ?? ''));
+    $screen_width = sanitize_text_field((string) ($browser['browser_screen_width'] ?? ''));
+    $language = sanitize_text_field((string) ($browser['browser_language'] ?? ''));
+    $user_agent = sanitize_text_field((string) ($browser['browser_user_agent'] ?? ''));
+    $timezone = sanitize_text_field((string) ($browser['browser_tz'] ?? ''));
+
+    if (!preg_match('/^\d{1,3}$/', $color_depth) || (int) $color_depth < 1 || (int) $color_depth > 128 ||
+      !preg_match('/^\d{2,6}$/', $screen_height) || (int) $screen_height < 100 ||
+      !preg_match('/^\d{2,6}$/', $screen_width) || (int) $screen_width < 100 ||
+      !preg_match('/^[A-Za-z0-9-]{2,35}$/', $language) || strlen($user_agent) < 10 || strlen($user_agent) > 512 ||
+      !preg_match('/^-?\d{1,4}$/', $timezone) || abs((int) $timezone) > 900) {
+      return new WP_Error('rgv_orbit_card_browser_info', 'Secure browser information is required for card authentication. Refresh the page and try again.');
+    }
+
+    return [
+      'browser_color_depth' => $color_depth,
+      'browser_screen_height' => $screen_height,
+      'browser_screen_width' => $screen_width,
+      'browser_language' => $language,
+      'browser_user_agent' => $user_agent,
+      'browser_tz' => $timezone,
+    ];
+  }
+
   private function add_product(WC_Order $order, $item) {
     $stock = $this->validate_stock($item);
     if (is_wp_error($stock)) throw new Exception($stock->get_error_message());
@@ -547,8 +574,28 @@ final class RGV_ORBIT_Card_Checkout {
     $order->set_status('on-hold');
   }
 
-  private function order_response(WC_Order $order) {
+  private function three_ds_response(array $transaction) {
+    $payment_method = is_array($transaction['payment_method'] ?? null) ? $transaction['payment_method'] : [];
+    $extra = is_array($payment_method['extra'] ?? null) ? $payment_method['extra'] : [];
+    $auth = is_array($extra['three_ds_auth'] ?? null) ? $extra['three_ds_auth'] : [];
+    if (!$auth && is_array($payment_method['three_ds_auth'] ?? null)) $auth = $payment_method['three_ds_auth'];
+    if (!$auth && is_array($transaction['three_ds_auth'] ?? null)) $auth = $transaction['three_ds_auth'];
+    $enabled = filter_var($extra['is_three_ds'] ?? $transaction['is_three_ds'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    if (!$enabled && !$auth) return null;
+
+    $method_data = is_string($auth['three_ds_method_data'] ?? null) ? $auth['three_ds_method_data'] : '';
+    if (strlen($method_data) > 262144) $method_data = '';
     return [
+      'enabled' => true,
+      'brand' => strtoupper(sanitize_text_field((string) ($extra['brand'] ?? ''))),
+      'currentStep' => strtoupper(sanitize_text_field((string) ($auth['current_step'] ?? ''))),
+      'currentStepStatus' => strtoupper(sanitize_text_field((string) ($auth['current_step_status'] ?? ''))),
+      'methodData' => $method_data,
+    ];
+  }
+
+  private function order_response(WC_Order $order, array $transaction = []) {
+    $response = [
       'orderId' => $order->get_id(),
       'orderNumber' => $order->get_order_number(),
       'orderKey' => $order->get_order_key(),
@@ -559,6 +606,12 @@ final class RGV_ORBIT_Card_Checkout {
       'transactionId' => (string) $order->get_meta('_rgv_orbit_card_transaction_id', true),
       'transactionStatus' => (string) $order->get_meta('_rgv_orbit_card_status', true),
     ];
+    if ($transaction) {
+      $response['statusMessage'] = sanitize_text_field((string) ($transaction['status_message'] ?? ''));
+      $three_ds = $this->three_ds_response($transaction);
+      if ($three_ds) $response['threeDs'] = $three_ds;
+    }
+    return $response;
   }
 
   private function find_order($transaction_id) {
@@ -623,6 +676,10 @@ final class RGV_ORBIT_Card_Checkout {
     $installments = absint($data['installments'] ?? 1);
     if (!preg_match('/^tok_(?:test|prod)_[A-Za-z0-9_]+$/', $card_token) || $installments < 1 || $installments > 36) {
       return new WP_REST_Response(['success' => false, 'message' => 'The secure card token is invalid.'], 400);
+    }
+    $browser_info = $this->clean_browser_info($data);
+    if (is_wp_error($browser_info)) {
+      return new WP_REST_Response(['success' => false, 'message' => $browser_info->get_error_message()], 400);
     }
     $settings = $this->settings(true);
     if (!$settings['configured']) return new WP_REST_Response(['success' => false, 'message' => 'ORBIT Payments is not configured.'], 503);
@@ -709,13 +766,12 @@ final class RGV_ORBIT_Card_Checkout {
       $order->update_meta_data('_rgv_orbit_card_exchange_rate_source', $settings['exchange_rate_source']);
       $order->update_meta_data('_rgv_orbit_card_exchange_rate_valid_until', $settings['exchange_rate_valid_until']);
       $order->update_meta_data('_rgv_orbit_card_environment', $settings['environment']);
+      $order->update_meta_data('_rgv_orbit_card_3ds_enabled', 'yes');
       $order->save();
       $this->complete_request($request_option, $order->get_id());
 
       $processor_submitted = true;
-      $transaction_response = $this->json_request('POST', $settings['base_url'] . '/transactions', [
-        'Authorization' => 'Bearer ' . $settings['private_key'],
-      ], [
+      $transaction_payload = [
         'acceptance_token' => $contracts['acceptance_token'],
         'accept_personal_auth' => $contracts['personal_auth_token'],
         'amount_in_cents' => $amount_cop_cents,
@@ -723,14 +779,20 @@ final class RGV_ORBIT_Card_Checkout {
         'customer_email' => $order->get_billing_email(),
         'payment_method' => ['type' => 'CARD', 'token' => $card_token, 'installments' => $installments],
         'payment_method_type' => 'CARD',
+        'is_three_ds' => true,
         'reference' => $reference,
         'signature' => $signature,
         'customer_data' => [
           'full_name' => trim($order->get_formatted_billing_full_name()),
           'phone_number' => preg_replace('/[^0-9+]/', '', (string) $order->get_billing_phone()),
+          'browser_info' => $browser_info,
         ],
         'ip' => (string) $compliance['ip'],
-      ]);
+      ];
+      if ($settings['environment'] === 'sandbox') $transaction_payload['three_ds_auth_type'] = 'challenge_v2';
+      $transaction_response = $this->json_request('POST', $settings['base_url'] . '/transactions', [
+        'Authorization' => 'Bearer ' . $settings['private_key'],
+      ], $transaction_payload);
       if (is_wp_error($transaction_response)) {
         if ($transaction_response->get_error_code() === 'rgv_orbit_card_api_error') $processor_submitted = false;
         throw new Exception($transaction_response->get_error_message());
@@ -740,11 +802,11 @@ final class RGV_ORBIT_Card_Checkout {
       if (!$transaction_id || !preg_match('/^[A-Za-z0-9_-]{8,191}$/', $transaction_id)) throw new Exception('The card processor did not return a valid transaction ID.');
       $order->update_meta_data('_rgv_orbit_card_transaction_id', $transaction_id);
       $order->update_meta_data('_rgv_orbit_card_status', strtoupper(sanitize_key((string) ($transaction['status'] ?? 'PENDING'))));
-      $order->add_order_note('ORBIT Payments transaction created: ' . $transaction_id . '. COP charge: ' . wc_format_decimal($amount_cop_cents / 100, 2) . '.');
+      $order->add_order_note('ORBIT Payments 3D Secure transaction created: ' . $transaction_id . '. COP charge: ' . wc_format_decimal($amount_cop_cents / 100, 2) . '.');
       $order->save();
       $sync = $this->sync_order($order, $transaction);
       if (is_wp_error($sync)) throw new Exception($sync->get_error_message());
-      return new WP_REST_Response(array_merge(['success' => true, 'duplicatePrevented' => false], $this->order_response($order)), 200);
+      return new WP_REST_Response(array_merge(['success' => true, 'duplicatePrevented' => false], $this->order_response($order, $transaction)), 200);
     } catch (Exception $error) {
       if ($processor_submitted && $order instanceof WC_Order && $order->get_id()) {
         if (!$order->is_paid()) $order->update_status('on-hold', 'Card submission had an uncertain response. Verify the processor reference before retrying or collecting another payment.');
@@ -783,7 +845,7 @@ final class RGV_ORBIT_Card_Checkout {
     $transaction = is_array($response['data'] ?? null) ? $response['data'] : [];
     $sync = $this->sync_order($order, $transaction);
     if (is_wp_error($sync)) return new WP_REST_Response(['success' => false, 'message' => $sync->get_error_message()], 409);
-    return new WP_REST_Response(array_merge(['success' => true], $this->order_response($order)), 200);
+    return new WP_REST_Response(array_merge(['success' => true], $this->order_response($order, $transaction)), 200);
   }
 
   private function event_property(array $data, $path) {

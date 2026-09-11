@@ -3,7 +3,7 @@ Contributors: rgvprime
 Requires at least: 6.4
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.0.4
+Stable tag: 1.1.0
 
 Standalone embedded credit and debit card checkout branded as ORBIT Payments. It does
 not replace or modify the RGV Zelle Checkout plugin.
@@ -38,7 +38,18 @@ The form stays embedded in the RGV storefront. Card number and CVC are JWE
 encrypted in the browser and sent directly to the card processor. Only the
 resulting token is submitted to the storefront and WordPress servers.
 
+Version 1.1.0 requests Wompi 3D Secure on every card transaction. The storefront
+sends the required browser information and displays an issuer challenge when one
+is returned. Confirm with Wompi support that 3D Secure is enabled for the merchant
+account and its active Visa/Mastercard processing model before production rollout.
+
 == Changelog ==
+
+= 1.1.0 =
+* Enables Wompi 3D Secure for production card transactions.
+* Sends validated browser information required for issuer authentication.
+* Supports frictionless authentication and visible bank challenge iframes.
+* Polls securely until the transaction reaches a final state while preserving webhook verification.
 
 = 1.0.4 =
 * Raises the ORBIT Payments maximum order total from $150 to $600 USD.
