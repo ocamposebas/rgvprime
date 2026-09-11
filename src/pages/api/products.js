@@ -14,6 +14,18 @@ export const prerender = false;
 const FALLBACK_IMAGE = "/logo.webp";
 const DEFAULT_CATALOG_LIMIT = 70;
 const MAX_CATALOG_LIMIT = 100;
+const PRODUCT_CACHE_TTL_MS = 60 * 1000;
+const PRODUCT_STALE_TTL_MS = 15 * 60 * 1000;
+const productResponseCache = new Map();
+
+function storeProductResponse(cacheKey, payload) {
+  productResponseCache.set(cacheKey, { payload, cachedAt: Date.now() });
+
+  if (productResponseCache.size > 200) {
+    const oldestKey = productResponseCache.keys().next().value;
+    if (oldestKey) productResponseCache.delete(oldestKey);
+  }
+}
 
 const PRODUCTS_WITHOUT_COA = new Set([
   "ahk-cu-100mg",
@@ -75,14 +87,18 @@ function sanitizePriceHtml(value) {
   });
 }
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, cacheStatus = "BYPASS", cacheable = false) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": NO_CACHE_CONTROL,
-      Pragma: "no-cache",
-      Expires: "0",
+      "Cache-Control": cacheable
+        ? "public, max-age=30, s-maxage=60, stale-while-revalidate=600"
+        : NO_CACHE_CONTROL,
+      ...(cacheable
+        ? { "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=600" }
+        : { Pragma: "no-cache", Expires: "0" }),
+      "X-Product-Cache": cacheStatus,
     },
   });
 }
@@ -231,7 +247,13 @@ function mapProductForCatalog(product) {
     image: getWooImage(product),
     image_alt: imageAlt,
     images: Array.isArray(product.images)
-      ? product.images.map((image) => ({ ...image, alt: imageAlt }))
+      ? product.images.slice(0, 1).map((image) => ({
+          src: image.src,
+          srcset: image.srcset,
+          sizes: image.sizes,
+          thumbnail: image.thumbnail,
+          alt: imageAlt,
+        }))
       : [],
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
@@ -330,12 +352,13 @@ function buildWooEndpoint({
   wcUrl,
   limit = DEFAULT_CATALOG_LIMIT,
   featured = null,
+  refresh = false,
 }) {
   const cleanUrl = wcUrl.replace(/\/$/, "");
   const endpoint = new URL(`${cleanUrl}/wp-json/wc/v3/products`);
 
   endpoint.searchParams.set("status", "publish");
-  endpoint.searchParams.set("_", String(Date.now()));
+  if (refresh) endpoint.searchParams.set("_", String(Date.now()));
 
   if (slug) {
     endpoint.searchParams.set("slug", slug);
@@ -415,7 +438,7 @@ function buildWooEndpoint({
   return endpoint;
 }
 
-function buildWooVariationEndpoint({ productId, wcUrl }) {
+function buildWooVariationEndpoint({ productId, wcUrl, refresh = false }) {
   const cleanUrl = wcUrl.replace(/\/$/, "");
   const endpoint = new URL(
     `${cleanUrl}/wp-json/wc/v3/products/${productId}/variations`
@@ -424,7 +447,7 @@ function buildWooVariationEndpoint({ productId, wcUrl }) {
   endpoint.searchParams.set("per_page", "100");
   endpoint.searchParams.set("orderby", "menu_order");
   endpoint.searchParams.set("order", "asc");
-  endpoint.searchParams.set("_", String(Date.now()));
+  if (refresh) endpoint.searchParams.set("_", String(Date.now()));
 
   endpoint.searchParams.set(
     "_fields",
@@ -569,6 +592,7 @@ async function fetchWooProductVariations({
   consumerKey,
   consumerSecret,
   signal,
+  refresh = false,
 }) {
   if (!productId) return [];
 
@@ -576,6 +600,7 @@ async function fetchWooProductVariations({
     const variationEndpoint = buildWooVariationEndpoint({
       productId,
       wcUrl,
+      refresh,
     });
 
     const variationResponse = await fetchWooCommerce(
@@ -635,6 +660,15 @@ export async function GET({ request }) {
     shouldBypassCache(requestUrl.searchParams.get("refresh")) ||
     shouldBypassCache(request.headers.get("cache-control")) ||
     requestUrl.searchParams.has("_");
+  const cacheKey = JSON.stringify({ slug: slug || "", limit, featured });
+  const cached = productResponseCache.get(cacheKey);
+  const cacheAge = cached
+    ? Date.now() - cached.cachedAt
+    : Number.POSITIVE_INFINITY;
+
+  if (!refresh && !debug && cached && cacheAge < PRODUCT_CACHE_TTL_MS) {
+    return jsonResponse(cached.payload, 200, "HIT", true);
+  }
 
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
   const consumerKey = import.meta.env.WC_CONSUMER_KEY;
@@ -657,6 +691,7 @@ export async function GET({ request }) {
     wcUrl,
     limit,
     featured,
+    refresh,
   });
 
   const controller = new AbortController();
@@ -674,6 +709,10 @@ export async function GET({ request }) {
 
     if (!result.ok) {
       clearTimeout(timeout);
+
+      if (!refresh && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
+        return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
+      }
 
       return jsonResponse(
         {
@@ -717,6 +756,7 @@ export async function GET({ request }) {
           consumerKey,
           consumerSecret,
           signal: controller.signal,
+          refresh,
         });
 
         product.variations = variationDetails;
@@ -757,27 +797,32 @@ export async function GET({ request }) {
         };
       }
 
-      return jsonResponse(payload, 200);
+      if (!debug) storeProductResponse(cacheKey, payload);
+      return jsonResponse(payload, 200, refresh ? "REFRESH" : "MISS", !refresh && !debug);
     }
 
     clearTimeout(timeout);
 
     const mappedProducts = products.map(mapProductForCatalog);
 
-    return jsonResponse(
-      {
-        success: true,
-        count: mappedProducts.length,
-        products: mappedProducts,
-        cache: refresh ? "refresh" : "fresh",
-        limit,
-        featured,
-        updatedAt: new Date().toISOString(),
-      },
-      200
-    );
+    const payload = {
+      success: true,
+      count: mappedProducts.length,
+      products: mappedProducts,
+      cache: refresh ? "refresh" : "fresh",
+      limit,
+      featured,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (!debug) storeProductResponse(cacheKey, payload);
+    return jsonResponse(payload, 200, refresh ? "REFRESH" : "MISS", !refresh && !debug);
   } catch (error) {
     clearTimeout(timeout);
+
+    if (!refresh && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
+      return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
+    }
 
     const isTimeout = error.name === "AbortError";
 

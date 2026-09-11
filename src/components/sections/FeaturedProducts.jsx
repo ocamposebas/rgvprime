@@ -277,6 +277,7 @@ export default function FeaturedProducts({ initialProducts } = {}) {
 
                       <img
                         src={image}
+                        srcSet={product?.images?.[0]?.srcset || undefined}
                         alt={product.image_alt || product.name}
                         loading={index < 2 ? "eager" : "lazy"}
                         fetchPriority={index < 2 ? "high" : "auto"}

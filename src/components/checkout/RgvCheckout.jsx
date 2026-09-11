@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -30,8 +30,9 @@ import {
 } from "../../lib/loyaltyProgram";
 import { getMeOnce } from "../../lib/accountSession";
 import OrbitSecureCardPayment from "./OrbitSecureCardPayment";
-import OrbitCardPayment from "./OrbitCardPayment";
 import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
+
+const OrbitCardPayment = lazy(() => import("./OrbitCardPayment"));
 
 const WOO_URL =
   import.meta.env.PUBLIC_WOOCOMMERCE_URL ||
@@ -3782,24 +3783,26 @@ export default function RgvCheckout() {
                   </div>
                 </div>
 
-                <OrbitCardPayment
-                  key={`orbit-card-${paymentSessionVersion}`}
-                  ref={orbitCardPaymentRef}
-                  context={stripePaymentContext}
-                  enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
-                  onCreatePayment={createOrbitCardPayment}
-                  onPreflight={preflightOrbitPayment}
-                  onReadyChange={setOrbitCardReady}
-                  onPaymentResult={handleOrbitPaymentResult}
-                  onInteraction={markPaymentActivity}
-                  onBlocked={() => {
-                    setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
-                    const target = !shippingAddressConfirmed
-                      ? document.querySelector(".rgvx-address-confirmation")
-                      : document.querySelector(".rgvx-review-confirm-flow");
-                    target?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                />
+                <Suspense fallback={<p className="rgvx-checkout-state">Loading secure payment form…</p>}>
+                  <OrbitCardPayment
+                    key={`orbit-card-${paymentSessionVersion}`}
+                    ref={orbitCardPaymentRef}
+                    context={stripePaymentContext}
+                    enabled={cardPaymentEnabled || Boolean(orbitCardCheckout?.isReturn)}
+                    onCreatePayment={createOrbitCardPayment}
+                    onPreflight={preflightOrbitPayment}
+                    onReadyChange={setOrbitCardReady}
+                    onPaymentResult={handleOrbitPaymentResult}
+                    onInteraction={markPaymentActivity}
+                    onBlocked={() => {
+                      setError("Complete your contact and shipping details, confirm the shipping address, and accept both required agreements before choosing a fast payment option.");
+                      const target = !shippingAddressConfirmed
+                        ? document.querySelector(".rgvx-address-confirmation")
+                        : document.querySelector(".rgvx-review-confirm-flow");
+                      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                  />
+                </Suspense>
               </div>
             )}
 

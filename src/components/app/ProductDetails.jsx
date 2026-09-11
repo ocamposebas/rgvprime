@@ -900,8 +900,13 @@ function ComplementProductCard({ product }) {
 
         <img
           src={image}
+          srcSet={product?.images?.[0]?.srcset || undefined}
+          sizes="(max-width: 639px) 88vw, (max-width: 1023px) 45vw, 320px"
           alt={product.image_alt || `${product.name} laboratory research product`}
           loading="lazy"
+          decoding="async"
+          width="480"
+          height="320"
           className={`relative h-full w-full object-contain drop-shadow-[0_22px_45px_rgba(0,0,0,0.55)] transition duration-500 group-hover:scale-[1.08] ${
             isSoldOut ? "opacity-55 grayscale-[0.25]" : "opacity-100"
           }`}
@@ -1441,6 +1446,13 @@ export default function ProductDetails({ slug }) {
                     <motion.img
                       key={image}
                       src={image}
+                      srcSet={displayProduct?.images?.[0]?.srcset || undefined}
+                      sizes="(max-width: 639px) 88vw, (max-width: 1023px) 470px, 500px"
+                      width="500"
+                      height="500"
+                      loading="eager"
+                      decoding="async"
+                      fetchPriority="high"
                       alt={
                         displayProduct.image_alt ||
                         product.image_alt ||

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "motion/react";
 import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 
@@ -84,6 +83,7 @@ function getImageUrl(value) {
 
 function getProductImage(product) {
   return (
+    getImageUrl(product?.images?.[0]?.thumbnail) ||
     getImageUrl(product?.image) ||
     getImageUrl(product?.images?.[0]) ||
     getImageUrl(product?.images?.[0]?.src) ||
@@ -361,6 +361,8 @@ function SearchResultImage({ src, alt, priority = false }) {
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         fetchPriority={priority ? "high" : "auto"}
+        width="76"
+        height="76"
         onLoad={() => setLoaded(true)}
         onError={() => {
           setImageSrc(FALLBACK_IMAGE);
@@ -462,11 +464,8 @@ function AccountDropdown({
       </button>
 
       {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.96, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute right-0 top-[calc(100%+0.45rem)] z-[120] w-[285px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#070707]/96 p-3 text-white shadow-[0_30px_100px_rgba(0,0,0,0.72)] backdrop-blur-xl"
+        <div
+          className="rgv-pop-in absolute right-0 top-[calc(100%+0.45rem)] z-[120] w-[285px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#070707]/96 p-3 text-white shadow-[0_30px_100px_rgba(0,0,0,0.72)] backdrop-blur-xl"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.18),transparent_38%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
@@ -553,7 +552,7 @@ function AccountDropdown({
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
@@ -843,11 +842,8 @@ function SearchModal({
         className="absolute inset-0 h-full w-full cursor-default"
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: -14, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 mx-auto mt-20 w-full max-w-[780px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#070707] shadow-[0_30px_120px_rgba(0,0,0,0.72)] sm:mt-24"
+      <div
+        className="rgv-pop-in rgv-pop-in-from-top relative z-10 mx-auto mt-20 w-full max-w-[780px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#070707] shadow-[0_30px_120px_rgba(0,0,0,0.72)] sm:mt-24"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.14),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
@@ -989,7 +985,7 @@ function SearchModal({
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -1972,14 +1968,11 @@ export default function Navbar({ transparent = false }) {
                     <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
                   </button>
                   {supportMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-[calc(100%+0.8rem)] z-[120]"
+                    <div
+                      className="rgv-pop-in absolute right-0 top-[calc(100%+0.8rem)] z-[120]"
                     >
                       <SupportMenuCard />
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -2059,11 +2052,8 @@ export default function Navbar({ transparent = false }) {
         </nav>
 
         {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="max-h-[calc(100svh-108px)] overflow-y-auto border-b border-white/10 bg-[#070708]/98 px-3 pb-5 pt-3 shadow-[0_28px_70px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:max-h-[calc(100svh-114px)] sm:px-5 lg:hidden"
+          <div
+            className="rgv-pop-in rgv-pop-in-from-top max-h-[calc(100svh-108px)] overflow-y-auto border-b border-white/10 bg-[#070708]/98 px-3 pb-5 pt-3 shadow-[0_28px_70px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:max-h-[calc(100svh-114px)] sm:px-5 lg:hidden"
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.2),transparent_56%)]" />
 
@@ -2158,7 +2148,7 @@ export default function Navbar({ transparent = false }) {
               )}
             </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </header>
 

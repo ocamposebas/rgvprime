@@ -310,11 +310,13 @@ const webpageSchema = {
           };
 
           var scheduleOmnisend = function () {
-            if ("requestIdleCallback" in window) {
-              window.requestIdleCallback(loadOmnisend, { timeout: 2000 });
-            } else {
-              window.setTimeout(loadOmnisend, 800);
-            }
+            window.setTimeout(function () {
+              if ("requestIdleCallback" in window) {
+                window.requestIdleCallback(loadOmnisend, { timeout: 4000 });
+              } else {
+                loadOmnisend();
+              }
+            }, 2500);
           };
 
           if (document.readyState === "complete") {

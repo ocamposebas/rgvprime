@@ -11,14 +11,6 @@ const loadNeedHelp = () => import("../sections/NeedHelp");
 const loadHowToOrder = () => import("../sections/HowToOrder");
 const loadFaq = () => import("../sections/FAQSection");
 
-const sectionLoaders = [
-  loadTrustBar,
-  loadFeaturedProducts,
-  loadNeedHelp,
-  loadHowToOrder,
-  loadFaq,
-];
-
 const TrustBar = lazy(loadTrustBar);
 const FeaturedProducts = lazy(loadFeaturedProducts);
 const NeedHelp = lazy(loadNeedHelp);
@@ -161,40 +153,6 @@ function LazyCartDrawer() {
 }
 
 export default function HomePage({ featuredProducts = [] }) {
-  useEffect(() => {
-    let idleId = null;
-    let timeoutId = null;
-    let started = false;
-
-    const preloadSections = () => {
-      if (started) return;
-      started = true;
-      sectionLoaders.forEach((loadSection) => void loadSection());
-    };
-
-    const preloadEvents = ["scroll", "touchstart", "pointerdown"];
-    preloadEvents.forEach((eventName) =>
-      window.addEventListener(eventName, preloadSections, {
-        once: true,
-        passive: true,
-      }),
-    );
-
-    if ("requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(preloadSections, { timeout: 1200 });
-    } else {
-      timeoutId = window.setTimeout(preloadSections, 800);
-    }
-
-    return () => {
-      preloadEvents.forEach((eventName) =>
-        window.removeEventListener(eventName, preloadSections),
-      );
-      if (idleId !== null) window.cancelIdleCallback(idleId);
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-    };
-  }, []);
-
   return (
     <CartProvider>
       <Navbar transparent />

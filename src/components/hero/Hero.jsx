@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowRight,
   FileCheck2,
@@ -40,21 +39,14 @@ const stats = [
   { value: "COA", label: "Quality Documentation" },
 ];
 
-const easing = [0.16, 1, 0.3, 1];
-
-function reveal(reduceMotion, delay = 0, distance = 16) {
+function revealStyle(delay = 0, distance = 16) {
   return {
-    initial: reduceMotion
-      ? false
-      : { opacity: 0, y: distance, filter: "blur(8px)" },
-    animate: { opacity: 1, y: 0, filter: "blur(0px)" },
-    transition: { delay, duration: 0.72, ease: easing },
+    "--rgv-hero-delay": `${delay}s`,
+    "--rgv-hero-distance": `${distance}px`,
   };
 }
 
 export default function Hero() {
-  const reduceMotion = useReducedMotion();
-
   return (
     <section className="rgv-hero relative isolate min-h-[100svh] overflow-hidden bg-[#020202] text-white">
       {/* Layered background */}
@@ -95,9 +87,9 @@ export default function Hero() {
           </div>
 
           {/* CTAs: full-width primary + two compact secondary actions on mobile */}
-          <motion.div
-            {...reveal(reduceMotion, 0.25, 14)}
-            className="mx-auto mt-6 grid w-full max-w-[410px] grid-cols-2 gap-2 sm:mt-8 sm:gap-2.5 md:mt-9 md:flex md:max-w-none md:items-center md:justify-center md:gap-3"
+          <div
+            style={revealStyle(0.25, 14)}
+            className="rgv-hero-reveal mx-auto mt-6 grid w-full max-w-[410px] grid-cols-2 gap-2 sm:mt-8 sm:gap-2.5 md:mt-9 md:flex md:max-w-none md:items-center md:justify-center md:gap-3"
           >
             <a
               href="/shop"
@@ -124,12 +116,12 @@ export default function Hero() {
               <PackageSearch className="mr-1.5 h-[15px] w-[15px] text-red-400 md:mr-2 md:h-[17px] md:w-[17px]" strokeWidth={1.8} />
               Track Order
             </a>
-          </motion.div>
+          </div>
 
           {/* Mobile benefit cards */}
-          <motion.div
-            {...reveal(reduceMotion, 0.34, 14)}
-            className="mx-auto mt-7 grid w-full max-w-[440px] grid-cols-3 gap-2.5 md:hidden"
+          <div
+            style={revealStyle(0.34, 14)}
+            className="rgv-hero-reveal mx-auto mt-7 grid w-full max-w-[440px] grid-cols-3 gap-2.5 md:hidden"
           >
             {mobileBenefits.map(({ title, description, icon: Icon }) => (
               <div
@@ -150,12 +142,12 @@ export default function Hero() {
                 </p>
               </div>
             ))}
-          </motion.div>
+          </div>
 
           {/* Trust pills */}
-          <motion.div
-            {...reveal(reduceMotion, 0.42, 12)}
-            className="mx-auto mt-6 flex max-w-[580px] flex-wrap items-center justify-center gap-2 sm:mt-8 sm:gap-3"
+          <div
+            style={revealStyle(0.42, 12)}
+            className="rgv-hero-reveal mx-auto mt-6 flex max-w-[580px] flex-wrap items-center justify-center gap-2 sm:mt-8 sm:gap-3"
           >
             {trustBadges.map(({ label, icon: Icon }) => (
               <div
@@ -166,12 +158,12 @@ export default function Hero() {
                 {label}
               </div>
             ))}
-          </motion.div>
+          </div>
 
           {/* Desktop-only research stats */}
-          <motion.div
-            {...reveal(reduceMotion, 0.48, 14)}
-            className="mx-auto mt-10 hidden max-w-[800px] grid-cols-3 gap-3 md:grid"
+          <div
+            style={revealStyle(0.48, 14)}
+            className="rgv-hero-reveal mx-auto mt-10 hidden max-w-[800px] grid-cols-3 gap-3 md:grid"
           >
             {stats.map((item) => (
               <div
@@ -186,14 +178,14 @@ export default function Hero() {
                 </p>
               </div>
             ))}
-          </motion.div>
+          </div>
 
-          <motion.p
-            {...reveal(reduceMotion, 0.5, 8)}
-            className="mx-auto mt-5 max-w-[390px] text-[8px] font-bold uppercase leading-4 tracking-[0.12em] text-white/27 md:hidden"
+          <p
+            style={revealStyle(0.5, 8)}
+            className="rgv-hero-reveal mx-auto mt-5 max-w-[390px] text-[8px] font-bold uppercase leading-4 tracking-[0.12em] text-white/27 md:hidden"
           >
             For in-vitro laboratory research only · Not for human or animal use
-          </motion.p>
+          </p>
         </div>
       </div>
     </section>

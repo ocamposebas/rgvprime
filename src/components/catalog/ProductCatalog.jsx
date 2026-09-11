@@ -7,7 +7,8 @@ import {
 import { isProductAvailable } from "../../lib/inventory";
 
 const FALLBACK_IMAGE = "/logo.webp";
-const PRODUCTS_PER_PAGE = 12;
+const DESKTOP_PRODUCTS_PER_PAGE = 12;
+const MOBILE_PRODUCTS_PER_PAGE = 14;
 const variationRequestCache = new Map();
 
 const statusFilters = [
@@ -820,7 +821,7 @@ function SortDropdown({ value, onChange }) {
   );
 }
 
-function ProductImage({ src, alt, priority = false }) {
+function ProductImage({ src, srcSet, alt, priority = false }) {
   const [imageSrc, setImageSrc] = useState(src || FALLBACK_IMAGE);
 
   useEffect(() => {
@@ -830,6 +831,7 @@ function ProductImage({ src, alt, priority = false }) {
   return (
     <img
       src={imageSrc}
+      srcSet={imageSrc === FALLBACK_IMAGE ? undefined : srcSet || undefined}
       alt={alt || "Product image"}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
@@ -1319,7 +1321,7 @@ function ProductCard({ product, priority = false }) {
 
   return (
     <>
-      <article className="rgv-product-card group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#080808] transition-colors duration-200 hover:border-red-500/40 hover:bg-[#0b0b0b] sm:rounded-3xl">
+      <article className="rgv-product-card group flex h-full min-w-0 flex-col overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#080808] transition-colors duration-200 hover:border-red-500/40 hover:bg-[#0b0b0b] sm:rounded-3xl">
         <a
           href={productUrl}
           className="rgv-product-media relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden border-b border-white/10 bg-[#101010]"
@@ -1327,7 +1329,12 @@ function ProductCard({ product, priority = false }) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.1),transparent_64%)]" />
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.025] via-transparent to-black/20" />
 
-          <ProductImage src={image} alt={imageAlt} priority={priority} />
+          <ProductImage
+            src={image}
+            srcSet={product?.images?.[0]?.srcset}
+            alt={imageAlt}
+            priority={priority}
+          />
 
           <span
             className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
@@ -1351,36 +1358,36 @@ function ProductCard({ product, priority = false }) {
           </span>
         </a>
 
-        <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-4">
           <div className="flex-1">
-            <p className="mb-2 line-clamp-1 text-[8px] font-black uppercase tracking-[0.12em] text-red-400/80 sm:text-[9px] sm:tracking-[0.14em]">
+            <p className="mb-2 hidden line-clamp-1 text-[9px] font-black uppercase tracking-[0.14em] text-red-400/80 sm:block">
               {category}
             </p>
 
             <a href={productUrl}>
-              <h3 className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-[1.08] tracking-[-0.035em] text-white transition group-hover:text-red-100 sm:min-h-[42px] sm:text-base sm:leading-tight">
+              <h3 className="line-clamp-2 min-h-[30px] break-words text-[12px] font-black leading-[1.15] tracking-[-0.025em] text-white transition group-hover:text-red-100 [overflow-wrap:anywhere] sm:min-h-[42px] sm:text-base sm:leading-tight sm:tracking-[-0.035em]">
                 {product.name}
               </h3>
             </a>
 
-            <p className="mt-1.5 line-clamp-1 min-h-4 text-[10px] leading-4 text-white/42 sm:mt-2 sm:text-[11px]">
+            <p className="mt-2 hidden line-clamp-1 min-h-4 text-[11px] leading-4 text-white/42 sm:block">
               {description}
             </p>
           </div>
 
-          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:mt-4 sm:pt-4">
+          <div className="mt-2.5 grid min-w-0 gap-2.5 border-t border-white/10 pt-2.5 sm:mt-4 sm:gap-3 sm:pt-4">
             <div className="flex min-w-0 items-end justify-between gap-2">
-              <div>
-                <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
+              <div className="min-w-0">
+                <p className="text-[7px] font-bold uppercase tracking-[0.1em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
                   {isVariableProduct ? "Starting at" : "Price"}
                 </p>
 
-                <p className="mt-0.5 text-lg font-black tracking-[-0.05em] text-white sm:mt-1 sm:text-xl">
+                <p className="mt-0.5 truncate text-base font-black tracking-[-0.04em] text-white sm:mt-1 sm:text-xl sm:tracking-[-0.05em]">
                   {price}
                 </p>
               </div>
               {loyaltyPoints > 0 && (
-                <span className="mb-0.5 inline-flex shrink-0 items-center gap-1 text-[7px] font-black uppercase tracking-[0.06em] text-white/35 sm:text-[8px]">
+                <span className="mb-0.5 hidden shrink-0 items-center gap-1 text-[8px] font-black uppercase tracking-[0.06em] text-white/35 sm:inline-flex">
                   <span className="text-red-400" aria-hidden="true">&#9733;</span>
                   Earn {formatPoints(loyaltyPoints)} pts
                 </span>
@@ -1392,13 +1399,14 @@ function ProductCard({ product, priority = false }) {
                 type="button"
                 onClick={handleToggleOptions}
                 aria-expanded={optionsOpen}
-                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-[9px] font-black uppercase tracking-[0.07em] text-white transition sm:h-11 sm:gap-2 sm:text-[10px] sm:tracking-[0.1em] ${
+                className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white transition sm:h-11 sm:gap-2 sm:px-3 sm:text-[10px] sm:tracking-[0.1em] ${
                   optionsOpen
                     ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
                     : "bg-red-600 text-white hover:bg-red-500"
                 }`}
               >
-                <span className="whitespace-nowrap">Select Format &amp; Strength</span>
+                <span className="whitespace-nowrap sm:hidden">Choose Options</span>
+                <span className="hidden whitespace-nowrap sm:inline">Select Format &amp; Strength</span>
                 <span
                   className={`shrink-0 transition duration-300 ${
                     optionsOpen ? "rotate-180" : ""
@@ -1411,15 +1419,16 @@ function ProductCard({ product, priority = false }) {
               <button
                 type="button"
                 onClick={() => addItem(product, 1)}
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:h-11 sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+                className="inline-flex h-9 w-full min-w-0 items-center justify-center gap-1 rounded-xl bg-red-600 px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white transition hover:bg-red-500 sm:h-11 sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
               >
                 <PlusIcon />
-                Add to Cart
+                <span className="sm:hidden">Add</span>
+                <span className="hidden sm:inline">Add to Cart</span>
               </button>
             ) : (
               <a
                 href={productUrl}
-                className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-[8px] font-black uppercase tracking-[0.08em] text-white/45 sm:h-11 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
+                className="inline-flex h-9 w-full min-w-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white/45 sm:h-11 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
               >
                 View
               </a>
@@ -1524,6 +1533,26 @@ export default function ProductCatalog() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(
+    DESKTOP_PRODUCTS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 639px)");
+
+    function updateProductsPerPage(event) {
+      setProductsPerPage(
+        event.matches ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE,
+      );
+    }
+
+    updateProductsPerPage(mobileQuery);
+    mobileQuery.addEventListener("change", updateProductsPerPage);
+
+    return () => {
+      mobileQuery.removeEventListener("change", updateProductsPerPage);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1532,19 +1561,11 @@ export default function ProductCatalog() {
       try {
         setStatus("loading");
 
-        const cacheBuster = Date.now();
-        const response = await fetch(
-          `/api/products?limit=70&refresh=1&_=${cacheBuster}`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
-            cache: "no-store",
-          },
-        );
+        const response = await fetch("/api/products?limit=70", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          cache: "default",
+        });
 
         const data = await response.json();
 
@@ -1574,7 +1595,7 @@ export default function ProductCatalog() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeFilter, sortBy]);
+  }, [searchTerm, activeFilter, sortBy, productsPerPage]);
 
   const filteredProducts = useMemo(() => {
     const result = products.filter((product) => {
@@ -1620,11 +1641,11 @@ export default function ProductCatalog() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE),
+    Math.ceil(filteredProducts.length / productsPerPage),
   );
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const startIndex = (safeCurrentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
   const visibleStart = filteredProducts.length > 0 ? startIndex + 1 : 0;
   const visibleEnd = Math.min(endIndex, filteredProducts.length);
@@ -1735,8 +1756,8 @@ export default function ProductCatalog() {
         </div>
 
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: PRODUCTS_PER_PAGE }).map((_, index) => (
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: productsPerPage }).map((_, index) => (
               <div
                 key={index}
                 className="h-[385px] animate-pulse rounded-[1.35rem] border border-white/10 bg-white/[0.035] sm:h-[470px] sm:rounded-3xl"
@@ -1777,7 +1798,7 @@ export default function ProductCatalog() {
                 </p>
 
                 <p className="text-[10px] font-semibold text-white/35">
-                  {PRODUCTS_PER_PAGE} products per page
+                  {productsPerPage} products per page
                 </p>
               </div>
 
@@ -1788,7 +1809,7 @@ export default function ProductCatalog() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}

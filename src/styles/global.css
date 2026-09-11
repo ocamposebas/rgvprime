@@ -1,5 +1,62 @@
 @import "tailwindcss";
 
+@keyframes rgv-pop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.rgv-pop-in {
+  animation: rgv-pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.rgv-pop-in-from-top {
+  animation-name: rgv-pop-in-from-top;
+}
+
+@keyframes rgv-pop-in-from-top {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes rgv-hero-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--rgv-hero-distance, 16px), 0);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+.rgv-hero-reveal {
+  animation: rgv-hero-reveal 720ms cubic-bezier(0.16, 1, 0.3, 1) var(--rgv-hero-delay, 0s) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rgv-pop-in,
+  .rgv-hero-reveal {
+    animation: none;
+  }
+}
+
 :root {
   --bg: #050505;
   --bg-soft: #0b0b0d;

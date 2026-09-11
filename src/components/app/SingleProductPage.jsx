@@ -1,5 +1,5 @@
 import { CartProvider } from "../cart/CartContext";
-import CartDrawer from "../cart/CartDrawer";
+import LazyCartDrawer from "../cart/LazyCartDrawer";
 import Navbar from "../nav/Navbar";
 import SiteFooter from "../footer/SiteFooter";
 import ProductDetails from "./ProductDetails";
@@ -10,7 +10,7 @@ export default function SingleProductPage({ slug }) {
       <Navbar />
       <ProductDetails slug={slug} />
       <SiteFooter />
-      <CartDrawer checkoutPath="/checkout" />
+      <LazyCartDrawer checkoutPath="/checkout" />
     </CartProvider>
   );
 }

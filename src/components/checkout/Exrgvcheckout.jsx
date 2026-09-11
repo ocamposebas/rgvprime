@@ -1,5 +1,5 @@
 import { CartProvider } from "../cart/CartContext";
-import CartDrawer from "../cart/CartDrawer";
+import LazyCartDrawer from "../cart/LazyCartDrawer";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import RgvCheckout from "./RgvCheckout";
 import "./Exrgvcheckout.css";
@@ -25,7 +25,7 @@ export default function CheckoutPage() {
         </div>
       </header>
       <RgvCheckout />
-      <CartDrawer checkoutPath="/checkout" />
+      <LazyCartDrawer checkoutPath="/checkout" />
     </CartProvider>
   );
 }
