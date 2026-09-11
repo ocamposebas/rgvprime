@@ -29,6 +29,7 @@ final class RGV_COA_Plugin {
         RGV_COA_Post_Type::hooks();
         RGV_COA_REST_API::hooks();
         RGV_COA_Admin::hooks();
+        RGV_COA_Migration::hooks();
 
         add_action('admin_notices', [$this, 'woocommerce_notice']);
     }
@@ -43,4 +44,3 @@ final class RGV_COA_Plugin {
         echo '</p></div>';
     }
 }
-

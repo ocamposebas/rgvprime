@@ -1,4 +1,4 @@
-import { correctVerifiedCoaIdentities } from "../../lib/coaMetadata.js";
+import { normalizeCoaPayload } from "../../lib/coaMetadata.js";
 
 export const prerender = false;
 
@@ -69,7 +69,7 @@ export async function GET({ request }) {
       );
     }
 
-    return json(correctVerifiedCoaIdentities(payload), 200);
+    return json(normalizeCoaPayload(payload), 200);
   } catch (error) {
     return json(
       {

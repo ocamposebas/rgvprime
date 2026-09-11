@@ -1,0 +1,6812 @@
+{
+  "schema_version": 2,
+  "parser_version": "2026-09-11.1",
+  "generated_at": "2026-09-11T16:25:58.212Z",
+  "source_snapshot_sha256": "d94010c9d6ea29555cb996b1e54f0fa86d3d2711058ee35250b9419ef9321606",
+  "record_count": 87,
+  "records": [
+    {
+      "id": 3045,
+      "product_name": "RG RT 30MG",
+      "compound_name": "Retatrutide",
+      "aliases": [
+        "Retatrutide - 30mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-30MG",
+      "batch": "RGVRT30",
+      "lab": "ILS Laboratories",
+      "sample_id": null,
+      "received_date": "2026-07-05",
+      "test_date": null,
+      "report_date": "2026-07-22",
+      "report_code": "COA-2026-956515",
+      "purity": "99.92%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen",
+        "Endotoxin (USP <85>)",
+        "Arsenic (As)",
+        "Cadmium (Cd)",
+        "Lead (Pb)",
+        "Mercury (Hg)",
+        "Chromium (Cr)",
+        "Sterility (PCR)"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.92%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "30.88",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Retatrutide",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        },
+        {
+          "name": "Endotoxin (USP <85>)",
+          "result": "NMT 0.05 EU/mL",
+          "specification": "Report Result",
+          "unit": "EU/mL",
+          "status": "Reported",
+          "method": "USP <85>"
+        },
+        {
+          "name": "Arsenic (As)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Cadmium (Cd)",
+          "result": "Not Detected",
+          "specification": "NMT 0.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Lead (Pb)",
+          "result": "Not Detected",
+          "specification": "NMT 1 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Mercury (Hg)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Chromium (Cr)",
+          "result": "Not Detected",
+          "specification": "NMT 10 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Sterility (PCR)",
+          "result": "No Growth",
+          "specification": "No Growth",
+          "unit": null,
+          "status": "PASS",
+          "method": "PCR"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.92%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "30.88",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Endotoxin (USP <85>)",
+          "value": "NMT 0.05 EU/mL",
+          "unit": "EU/mL",
+          "status": "Reported"
+        },
+        {
+          "analyte": "Arsenic (As)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Cadmium (Cd)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Lead (Pb)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Mercury (Hg)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Chromium (Cr)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Sterility (PCR)",
+          "value": "No Growth",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/09/rgvprime-RGVRT30-CiYgk8.pdf",
+      "is_current": false,
+      "product_ids": [
+        132
+      ],
+      "group_key": "wc-20-30mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "e0ccf39dc9634915bf63657b0e7c27bbf9f89e274a4baea5888ee5162653a1a3",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": [
+        {
+          "field": "test_date",
+          "type": "source_date_conflict",
+          "values": [
+            "2026-07-17",
+            "2026-09-01"
+          ],
+          "message": "Analysis Date (2026-07-17) conflicts with Date Tested (2026-09-01) in the PDF."
+        }
+      ]
+    },
+    {
+      "id": 2966,
+      "product_name": "RG-Cag 5mg",
+      "compound_name": "Cagrilintide",
+      "aliases": [
+        "Cagrilintide 5mg"
+      ],
+      "sku": "RG-Cag 5MG",
+      "batch": "CAG5-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608270110",
+      "received_date": "2026-08-27",
+      "test_date": null,
+      "report_date": "2026-08-29",
+      "report_code": "RGVE2608270110",
+      "purity": "99.81%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Cagrilintide",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.81%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Cagrilintide",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.81%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608270110.pdf",
+      "is_current": true,
+      "product_ids": [
+        69
+      ],
+      "group_key": "wc-69-5mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "c6b2b79a3292757f8e6d990dfe7e936194db80b05804e0536c5ebdedf25815cf",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2846,
+      "product_name": "RGV-TR 10mg",
+      "compound_name": "GLP TZ",
+      "aliases": [
+        "Tirzepatide 10mg",
+        "RG-Tz"
+      ],
+      "sku": "RG-Tz-SINGLE-10MG",
+      "batch": "TR10-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170831",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170831",
+      "purity": "99.97%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP TZ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.97%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP TZ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.97%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170831.pdf",
+      "is_current": true,
+      "product_ids": [
+        24,
+        120
+      ],
+      "group_key": "wc-24-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0124febf5a576c74c6e140b020b6011490eccf4d54641c627d406397e765d3c2",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2858,
+      "product_name": "LIPO-C/B-12 10ML",
+      "compound_name": "Choline/Carnitine/Arginine/Inositol/Pantothenic Acid (B5)/Pyridoxine (B6)",
+      "aliases": [
+        "LIPO-C/B12 10ml"
+      ],
+      "sku": "LIPO-C-B12-10ML",
+      "batch": "LC216-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170824",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170824",
+      "purity": null,
+      "analytes": [
+        "Identity (LC-MS)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Choline/Carnitine/Arginine/Inositol/Pantothenic Acid (B5)/Pyridoxine (B6)",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Choline/Carnitine/Arginine/Inositol/Pantothenic Acid (B5)/Pyridoxine (B6)",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170824.pdf",
+      "is_current": true,
+      "product_ids": [
+        71
+      ],
+      "group_key": "wc-71-10ml",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "5d87b5515d57b449341072e54f4a57d2ff0e97002d06d4964723cadde7d33c77",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2856,
+      "product_name": "SEMAX + SELANK 20MG",
+      "compound_name": "Selank/Semax",
+      "aliases": [],
+      "sku": "SEMAX-SELANK-20MG",
+      "batch": "XS20-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170825",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170825",
+      "purity": "99.50%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Selank/Semax",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.50%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Selank/Semax",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.50%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170825.pdf",
+      "is_current": true,
+      "product_ids": [
+        2317
+      ],
+      "group_key": "wc-2317-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "4b0a487533a1e34fb25a656f2b149d16d3f7267f7eec9afc47ab22843728ff0f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2854,
+      "product_name": "Kisspeptin 10mg",
+      "compound_name": "Kisspeptin",
+      "aliases": [],
+      "sku": "KISSPEPTIN-10MG",
+      "batch": "KS10-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170826",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170826",
+      "purity": "99.01%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Kisspeptin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.01%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Kisspeptin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.01%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170826.pdf",
+      "is_current": true,
+      "product_ids": [
+        58
+      ],
+      "group_key": "wc-58-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "132badf5bb5f2a4491f6a2c4038eeee5c25118475e4da4c716c9d10611ec6919",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2852,
+      "product_name": "5-AMINO 1MQ 50MG",
+      "compound_name": "5-Amino 1MQ",
+      "aliases": [
+        "5AMINO-1MQ 50mg"
+      ],
+      "sku": "5AMINO-1MQ-50MG",
+      "batch": "50AM-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170827",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170827",
+      "purity": "99.85%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "5-Amino 1MQ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.85%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "5-Amino 1MQ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.85%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170827.pdf",
+      "is_current": true,
+      "product_ids": [
+        68
+      ],
+      "group_key": "wc-68-50mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "ef887729ff62bb569fcd15a77e2b9bc0ae6378602aea3c48dcc8a452afd8ddfd",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2850,
+      "product_name": "BPC/TB 20MG",
+      "compound_name": "Thymosin Beta-4/BPC-157",
+      "aliases": [
+        "BPC-157/TB-500 20mg",
+        "BPC-157/TB-500"
+      ],
+      "sku": "BPC-TB-SINGLE-20MG",
+      "batch": "BB20-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170828",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170828",
+      "purity": "99.46%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Thymosin Beta-4/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.46%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Thymosin Beta-4/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.46%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170828.pdf",
+      "is_current": true,
+      "product_ids": [
+        141
+      ],
+      "group_key": "wc-32-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "c8529a8248928092238f772c5408a34e2117c7982cd16e21b41730a63eda0826",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2848,
+      "product_name": "BPC/TB 10MG",
+      "compound_name": "Thymosin Beta-4/BPC-157",
+      "aliases": [
+        "BPC-157/TB-500 10mg",
+        "BPC-157/TB-500"
+      ],
+      "sku": "BPC-TB-SINGLE-10MG",
+      "batch": "BB10-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170829",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170829",
+      "purity": "99.48%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Thymosin Beta-4/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.48%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Thymosin Beta-4/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.48%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170829.pdf",
+      "is_current": true,
+      "product_ids": [
+        140
+      ],
+      "group_key": "wc-32-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "03c52126c9307993fa3b8b887554536ceaed0b3c82e13d843a2edfe40c17e087",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2844,
+      "product_name": "RGV-PUMP",
+      "compound_name": "Arginine/Ornithine/Citruline/Lysine/Glutamine/Proline/Taurine/Carnitine/NAC",
+      "aliases": [
+        "RGV-PUMP BLEND 10ml",
+        "RG-PUMP 10ML"
+      ],
+      "sku": "RG-PUMP",
+      "batch": "Clear Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608170832",
+      "received_date": "2026-08-17",
+      "test_date": null,
+      "report_date": "2026-08-23",
+      "report_code": "RGVE2608170832",
+      "purity": null,
+      "analytes": [
+        "Identity (LC-MS)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Arginine/Ornithine/Citruline/Lysine/Glutamine/Proline/Taurine/Carnitine/NAC",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Arginine/Ornithine/Citruline/Lysine/Glutamine/Proline/Taurine/Carnitine/NAC",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608170832.pdf",
+      "is_current": true,
+      "product_ids": [
+        2240
+      ],
+      "group_key": "wc-2240-10ml",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "f8590bb23932616cba15e552c07f3d2c8d1b6841723836988eda187216ede05c",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2347,
+      "product_name": "RGV-LIPO-B (LC526)",
+      "compound_name": "Choline/Carnitine/Pyridoxine (B6)/Inositol/NAD+/Cyanocobalamin (B12)",
+      "aliases": [
+        "Fat Blaster LC526 526mg"
+      ],
+      "sku": "RGV-LIPO-B",
+      "batch": "LC526-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040553",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040553",
+      "purity": null,
+      "analytes": [
+        "Identity (LC-MS)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Choline/Carnitine/Pyridoxine (B6)/Inositol/NAD+/Cyanocobalamin (B12)",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Choline/Carnitine/Pyridoxine (B6)/Inositol/NAD+/Cyanocobalamin (B12)",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040553-1.pdf",
+      "is_current": true,
+      "product_ids": [
+        72
+      ],
+      "group_key": "wc-72-default",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "28355dcca56b48655b9eaa11f43cc55e0a553512e987da020186cb19054d6785",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2670,
+      "product_name": "KOREAN GLUTA (GUTHIONE)",
+      "compound_name": "Glutathione",
+      "aliases": [
+        "Korean Gluta (Guthione 1200mg)"
+      ],
+      "sku": "KOREAN-GLUTA-GUTHIONE-1200MG",
+      "batch": "F0112602A",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608100840",
+      "received_date": "2026-08-10",
+      "test_date": null,
+      "report_date": "2026-08-14",
+      "report_code": "RGVE2608100840",
+      "purity": "99.72%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Glutathione",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.72%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Glutathione",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.72%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608100840.pdf",
+      "is_current": true,
+      "product_ids": [
+        1342
+      ],
+      "group_key": "wc-1342-1200mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "cfffb0311a08563dcfb26df07f08cbd890fdfe98428065da19976cad56c394fa",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2668,
+      "product_name": "AHK-CU 100MG",
+      "compound_name": "AHK-Cu",
+      "aliases": [],
+      "sku": "AHK-CU-100MG",
+      "batch": "AHK-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608130309",
+      "received_date": "2026-08-13",
+      "test_date": null,
+      "report_date": "2026-08-18",
+      "report_code": "RGVE2608130309",
+      "purity": "99.86%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "AHK-Cu",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.86%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "AHK-Cu",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.86%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608130309.pdf",
+      "is_current": true,
+      "product_ids": [
+        558
+      ],
+      "group_key": "wc-558-100mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0334611c5688a71efe65902048ab4e80361475e843db78f9768d9bbadcad8a19",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2666,
+      "product_name": "BPC-157 10MG",
+      "compound_name": "BPC-157",
+      "aliases": [],
+      "sku": "BPC-157-10MG",
+      "batch": "BC10-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608130310",
+      "received_date": "2026-08-13",
+      "test_date": null,
+      "report_date": "2026-08-18",
+      "report_code": "RGVE2608130310",
+      "purity": "99.94%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.94%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.94%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608130310.pdf",
+      "is_current": true,
+      "product_ids": [
+        52
+      ],
+      "group_key": "wc-52-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "1dfb1148e506a4262296e9c9a24e8e04df06e364519fc0ffe00f4864abe968fd",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2664,
+      "product_name": "RGV-TESA 20MG",
+      "compound_name": "Tesamorelin",
+      "aliases": [
+        "Tesa 20mg",
+        "RGV-TESA"
+      ],
+      "sku": "RGV-TESA-SINGLE-20MG",
+      "batch": "TSM20-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608130311",
+      "received_date": "2026-08-13",
+      "test_date": null,
+      "report_date": "2026-08-18",
+      "report_code": "RGVE2608130311",
+      "purity": "99.84%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Tesamorelin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.84%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Tesamorelin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.84%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608130311.pdf",
+      "is_current": true,
+      "product_ids": [
+        2314
+      ],
+      "group_key": "wc-55-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "d92b332d410338218bbb8d0e9510830d52c117f27df0128d5c2511a435b10752",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2662,
+      "product_name": "SS-31 50MG",
+      "compound_name": "SS-31",
+      "aliases": [],
+      "sku": "SS-31-SINGLE-50MG",
+      "batch": "2S50-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608130313",
+      "received_date": "2026-08-13",
+      "test_date": null,
+      "report_date": "2026-08-18",
+      "report_code": "RGVE2608130313",
+      "purity": "99.78%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "SS-31",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.78%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "SS-31",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.78%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608130313.pdf",
+      "is_current": true,
+      "product_ids": [
+        2316
+      ],
+      "group_key": "wc-61-50mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "aad8a4db418f4df60399b9427598391c592d7512fb77eaf81d9b18f43c7bf198",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2659,
+      "product_name": "KLOW 80MG",
+      "compound_name": "GHK-Cu/KPV/TB-500/BPC-157",
+      "aliases": [],
+      "sku": "KLOW-80MG",
+      "batch": "KLOW80-0826",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608130315",
+      "received_date": "2026-08-13",
+      "test_date": null,
+      "report_date": "2026-08-18",
+      "report_code": "RGVE2608130315",
+      "purity": "99.67%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu/KPV/TB-500/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.67%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu/KPV/TB-500/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.67%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608130315.pdf",
+      "is_current": true,
+      "product_ids": [
+        47
+      ],
+      "group_key": "wc-47-80mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "36ceadb5eba5c25c168e153d39553b65a9aa981fd60120ca5eecff7db850281d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2634,
+      "product_name": "GHK-CU 50MG",
+      "compound_name": "GHK-Cu",
+      "aliases": [],
+      "sku": "GHK-CU-SINGLE-50MG",
+      "batch": "COREGHK50",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-15573",
+      "received_date": "2026-08-11",
+      "test_date": null,
+      "report_date": "2026-08-17",
+      "report_code": "COA-2026-956051",
+      "purity": "99.77%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen",
+        "Endotoxin (USP <85>)",
+        "Arsenic (As)",
+        "Cadmium (Cd)",
+        "Lead (Pb)",
+        "Mercury (Hg)",
+        "Chromium (Cr)",
+        "Sterility (PCR)"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.77%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "53.48",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "GHK-Cu",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        },
+        {
+          "name": "Endotoxin (USP <85>)",
+          "result": "0.173 EU/mL",
+          "specification": "Report Result",
+          "unit": "EU/mL",
+          "status": "Reported",
+          "method": "USP <85>"
+        },
+        {
+          "name": "Arsenic (As)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Cadmium (Cd)",
+          "result": "Not Detected",
+          "specification": "NMT 0.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Lead (Pb)",
+          "result": "Not Detected",
+          "specification": "NMT 1.0 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Mercury (Hg)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Chromium (Cr)",
+          "result": "Not Detected",
+          "specification": "NMT 10.0 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Sterility (PCR)",
+          "result": "No Growth",
+          "specification": "No Growth",
+          "unit": null,
+          "status": "PASS",
+          "method": "PCR"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.77%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "53.48",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Endotoxin (USP <85>)",
+          "value": "0.173 EU/mL",
+          "unit": "EU/mL",
+          "status": "Reported"
+        },
+        {
+          "analyte": "Arsenic (As)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Cadmium (Cd)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Lead (Pb)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Mercury (Hg)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Chromium (Cr)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Sterility (PCR)",
+          "value": "No Growth",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-COREGHK50-2DhV_v.pdf",
+      "is_current": true,
+      "product_ids": [
+        114
+      ],
+      "group_key": "wc-29-50mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "167717238ff2cfa7b6496ff2ec8fb4a47dfeed96d4a1096829240cbff9898179",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": [
+        {
+          "field": "test_date",
+          "type": "source_date_conflict",
+          "values": [
+            "2026-08-15",
+            "2026-08-17"
+          ],
+          "message": "Analysis Date (2026-08-15) conflicts with Date Tested (2026-08-17) in the PDF."
+        }
+      ]
+    },
+    {
+      "id": 2632,
+      "product_name": "KPV 10mg",
+      "compound_name": "KPV",
+      "aliases": [],
+      "sku": "KPV-10MG",
+      "batch": "KPV10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": null,
+      "received_date": "2026-07-25",
+      "test_date": "2026-08-10",
+      "report_date": "2026-08-10",
+      "report_code": "COA-2026-HD-O0_",
+      "purity": "99.65%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.65%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.32",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "KPV",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.65%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.32",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-KPV10-0726-uzv3wK-1.pdf",
+      "is_current": false,
+      "product_ids": [
+        63
+      ],
+      "group_key": "wc-63-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "36419279040cfe794b1048ab2fa4576ccf5dd9c3372e6b296c61b1e67b8212e8",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2630,
+      "product_name": "5AMINO-1MQ",
+      "compound_name": "5-amino-1MQ",
+      "aliases": [
+        "5-Amino-1MQ - 50mg",
+        "5AMINO-1MQ 50mg"
+      ],
+      "sku": "5AMINO-1MQ-50MG",
+      "batch": "50AM-0827",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-15566",
+      "received_date": "2026-08-11",
+      "test_date": "2026-08-17",
+      "report_date": "2026-08-17",
+      "report_code": "COA-2026-956055",
+      "purity": "99.90%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen",
+        "Endotoxin (USP <85>)",
+        "Arsenic (As)",
+        "Cadmium (Cd)",
+        "Lead (Pb)",
+        "Mercury (Hg)",
+        "Chromium (Cr)",
+        "Sterility (PCR)"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.90%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "53.55",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "5-amino-1MQ",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        },
+        {
+          "name": "Endotoxin (USP <85>)",
+          "result": "0.219 EU/mL",
+          "specification": "Report Result",
+          "unit": "EU/mL",
+          "status": "Reported",
+          "method": "USP <85>"
+        },
+        {
+          "name": "Arsenic (As)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Cadmium (Cd)",
+          "result": "Not Detected",
+          "specification": "NMT 0.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Lead (Pb)",
+          "result": "Not Detected",
+          "specification": "NMT 1.0 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Mercury (Hg)",
+          "result": "Not Detected",
+          "specification": "NMT 1.5 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Chromium (Cr)",
+          "result": "Not Detected",
+          "specification": "NMT 10.0 ppm",
+          "unit": "ppm",
+          "status": "PASS",
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Sterility (PCR)",
+          "result": "No Growth",
+          "specification": "No Growth",
+          "unit": null,
+          "status": "PASS",
+          "method": "PCR"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.90%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "53.55",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Endotoxin (USP <85>)",
+          "value": "0.219 EU/mL",
+          "unit": "EU/mL",
+          "status": "Reported"
+        },
+        {
+          "analyte": "Arsenic (As)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Cadmium (Cd)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Lead (Pb)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Mercury (Hg)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Chromium (Cr)",
+          "value": "Not Detected",
+          "unit": "ppm",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Sterility (PCR)",
+          "value": "No Growth",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-50AM-0827-HRpnWw.pdf",
+      "is_current": false,
+      "product_ids": [
+        68
+      ],
+      "group_key": "wc-68-50mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "3f5a25ff4eaef4297e0b8f3b4578f45539048f2de8d62c205604cb7cf4a49f5f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2480,
+      "product_name": "CJC/IPA (NO DAC) 10mg",
+      "compound_name": "CJC-1295 + IPAMORELIN",
+      "aliases": [
+        "CJC-1295 / Ipamorelin - 10mg"
+      ],
+      "sku": "CJC-IPA-NO-DAC-10MG",
+      "batch": "CP10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": null,
+      "received_date": "2026-07-25",
+      "test_date": "2026-08-10",
+      "report_date": "2026-08-10",
+      "report_code": "COA-2026-U6S2_O",
+      "purity": "98.60%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "98.60%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "CJC-1295 + IPAMORELIN",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "98.60%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-CP10-0726-jYWY8C.pdf",
+      "is_current": true,
+      "product_ids": [
+        53
+      ],
+      "group_key": "wc-53-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "945b06d2ea436e2075883f135136f29d1f985ae6921a7a00ae85a18ea892982d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1942,
+      "product_name": "CJC/IPA (no dac) 10mg",
+      "compound_name": "Ipamorelin/CJC-1295",
+      "aliases": [
+        "CJC-1295 No DAC/Ipamorelin 10mg"
+      ],
+      "sku": "CJC-IPA-NO-DAC-10MG",
+      "batch": "CP10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290488",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290488",
+      "purity": "99.91%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Ipamorelin/CJC-1295",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.91%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Ipamorelin/CJC-1295",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.91%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290488.pdf",
+      "is_current": false,
+      "product_ids": [
+        53
+      ],
+      "group_key": "wc-53-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "e1d67a827a3000d627e71ff75fd5954c351fd228e5fddcc6a6f16644afc88d2b",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1935,
+      "product_name": "RECON WATER 10ML",
+      "compound_name": "Benzyl Alcohol",
+      "aliases": [
+        "Bacteriostatic Water 10ml",
+        "RECON WATER",
+        "10ml"
+      ],
+      "sku": "RECON-WATER-10ML",
+      "batch": "Blue Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080211",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080211",
+      "purity": "99.81%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Benzyl Alcohol",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.81%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Benzyl Alcohol",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.81%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080211.pdf",
+      "is_current": false,
+      "product_ids": [
+        110
+      ],
+      "group_key": "wc-41-10ml",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "1e2835853c6c52ce5c99b2debe948b1a58935b52519888b7e9a970188825ce01",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1936,
+      "product_name": "RECON WATER 10ML",
+      "compound_name": "Benzyl Alcohol",
+      "aliases": [
+        "Bacteriostatic Water 10ml",
+        "RECON WATER",
+        "10ml"
+      ],
+      "sku": "RECON-WATER-10ML",
+      "batch": "Spartan Industries",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080212",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080212",
+      "purity": "99.87%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Benzyl Alcohol",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.87%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Benzyl Alcohol",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.87%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080212.pdf",
+      "is_current": true,
+      "product_ids": [
+        110
+      ],
+      "group_key": "wc-41-10ml",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0f092b5253b118f8a1a174005411d425c2f19a26a6a772cc06e7ef4dc466e40d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1937,
+      "product_name": "Glutathione 1200mg",
+      "compound_name": "Glutathione",
+      "aliases": [
+        "Glutathione Inj. 1200mg",
+        "Korean Gluta (Glutaone 1200mg)"
+      ],
+      "sku": "KOREAN-GLUTA-GLUTAONE-1200MG",
+      "batch": "Green Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080213",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080213",
+      "purity": "99.88%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Glutathione",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.88%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Glutathione",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.88%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080213.pdf",
+      "is_current": false,
+      "product_ids": [
+        1325
+      ],
+      "group_key": "wc-1325-1200mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0dd6e8b3d7422e5330c977ee5be75be2b8148f3ac2e73f05cec86a4106c6d6e7",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1930,
+      "product_name": "BPC-157/TB-500 20mg",
+      "compound_name": "BPC-157/Thymosin Beta-4",
+      "aliases": [
+        "Wolverine Stack 20mg",
+        "BPC-157/TB-500"
+      ],
+      "sku": "BPC-TB",
+      "batch": "White Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604270050",
+      "received_date": "2026-04-27",
+      "test_date": null,
+      "report_date": "2026-04-27",
+      "report_code": "RGVE2604270050",
+      "purity": "99.46%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "BPC-157/Thymosin Beta-4",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.46%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "BPC-157/Thymosin Beta-4",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.46%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604270050.pdf",
+      "is_current": false,
+      "product_ids": [
+        32
+      ],
+      "group_key": "wc-32-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "96993f3e0bced73ec8e51b969b04b3d63c7ed059757e91111b332027a34235d4",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2482,
+      "product_name": "KPV 10MG",
+      "compound_name": "KPV",
+      "aliases": [],
+      "sku": "KPV-10MG",
+      "batch": "KPV10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": null,
+      "received_date": "2026-07-25",
+      "test_date": "2026-08-10",
+      "report_date": "2026-08-10",
+      "report_code": "COA-2026-HD-O0_",
+      "purity": "99.65%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.65%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.32",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "KPV",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.65%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.32",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-KPV10-0726-uzv3wK.pdf",
+      "is_current": true,
+      "product_ids": [
+        63
+      ],
+      "group_key": "wc-63-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "36419279040cfe794b1048ab2fa4576ccf5dd9c3372e6b296c61b1e67b8212e8",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2478,
+      "product_name": "Epithalon",
+      "compound_name": "Epitalon",
+      "aliases": [
+        "Epitalon - 10mg",
+        "EPITHALON 10mg"
+      ],
+      "sku": "EPITHALON-10MG",
+      "batch": "ET10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": null,
+      "received_date": "2026-07-25",
+      "test_date": "2026-08-10",
+      "report_date": "2026-08-10",
+      "report_code": "COA-2026-F9NXKJ",
+      "purity": "99.30%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.30%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.34",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Epitalon",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.30%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.34",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/rgvprime-ET10-0726-MUK6jV.pdf",
+      "is_current": true,
+      "product_ids": [
+        59
+      ],
+      "group_key": "wc-59-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "fa0d2e2e89e07ebf4b6593fddc82c527bab1077ddaaa7586f72bed755fbdaff3",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2345,
+      "product_name": "Cartalax 20mg",
+      "compound_name": "Cartalax",
+      "aliases": [],
+      "sku": "Cartalax-20MG",
+      "batch": "LAX20-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040555",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040555",
+      "purity": "99.46%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Cartalax",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.46%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Cartalax",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.46%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040555-2.pdf",
+      "is_current": true,
+      "product_ids": [
+        2236
+      ],
+      "group_key": "wc-2236-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "b8836b44d1adcb502d77224ab12fbf0c1aa2022d27f4832f9266048a68102ef4",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2343,
+      "product_name": "Korean Gluta (Detoxione 1200mg)",
+      "compound_name": "Glutathione",
+      "aliases": [
+        "Glutathione 1200mg"
+      ],
+      "sku": "KOREAN-GLUTA-DETOXIONE-1200MG",
+      "batch": "KGLUT-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040556",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040556",
+      "purity": "99.84%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Glutathione",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.84%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Glutathione",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.84%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040556-1.pdf",
+      "is_current": true,
+      "product_ids": [
+        1343
+      ],
+      "group_key": "wc-1343-1200mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "e0f0c951d139cc87d87ad1355b0a2537a0bdbc72ada2916937a50511434fa93e",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2341,
+      "product_name": "MT1 10MG",
+      "compound_name": "Melanotan-I",
+      "aliases": [],
+      "sku": "MT1-10MG",
+      "batch": "MT1-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608050020",
+      "received_date": "2026-08-05",
+      "test_date": null,
+      "report_date": "2026-08-07",
+      "report_code": "RGVE2608050020",
+      "purity": "99.57%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Melanotan-I",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.57%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Melanotan-I",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.57%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608050020.pdf",
+      "is_current": true,
+      "product_ids": [
+        2239
+      ],
+      "group_key": "wc-2239-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "533e4ea73c49fe0c125203e631393fce581789ca6c22502e3468a8ba5b3fe726",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2339,
+      "product_name": "IPAMORELIN 10MG",
+      "compound_name": "Ipamorelin",
+      "aliases": [],
+      "sku": "Ipamorelin-10MG",
+      "batch": "IP10-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608050021",
+      "received_date": "2026-08-05",
+      "test_date": null,
+      "report_date": "2026-08-07",
+      "report_code": "RGVE2608050021",
+      "purity": "99.80%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Ipamorelin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.80%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Ipamorelin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.80%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608050021.pdf",
+      "is_current": true,
+      "product_ids": [
+        2238
+      ],
+      "group_key": "wc-2238-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "911d647587c98e5b5e9139f6347c676d1477d9c7e4afd83245a37167651d75bc",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2310,
+      "product_name": "E-RECON WATER 30ML",
+      "compound_name": "Benzyl alcohol",
+      "aliases": [
+        "eBac BAC Water 30 mL"
+      ],
+      "sku": "E-RECON.WATER-30ML",
+      "batch": "EB61901",
+      "lab": "Chromate",
+      "sample_id": null,
+      "received_date": "2026-05-12",
+      "test_date": "2026-05-22",
+      "report_date": "2026-05-24",
+      "report_code": "35348",
+      "purity": null,
+      "analytes": [
+        "Identity",
+        "Quantity",
+        "Sterility",
+        "Endotoxins",
+        "pH"
+      ],
+      "tests": [
+        {
+          "name": "Identity",
+          "result": "Benzyl alcohol",
+          "specification": "Benzyl alcohol",
+          "unit": null,
+          "status": "Conforms",
+          "method": "RP-HPLC with UV detection"
+        },
+        {
+          "name": "Quantity",
+          "result": "0.921%",
+          "specification": "0.9%",
+          "unit": "%",
+          "status": "Conforms",
+          "method": "RP-HPLC with UV detection"
+        },
+        {
+          "name": "Sterility",
+          "result": "Pass",
+          "specification": "Pass",
+          "unit": null,
+          "status": "Conforms",
+          "method": "USP <1223> BacT/ALERT"
+        },
+        {
+          "name": "Endotoxins",
+          "result": "< 0.25 EU/mL",
+          "specification": "< 0.5 EU/mL",
+          "unit": "EU/mL",
+          "status": "Conforms",
+          "method": "Kinetic chromogenic LAL assay"
+        },
+        {
+          "name": "pH",
+          "result": "6.253",
+          "specification": "4.5 - 7.0",
+          "unit": null,
+          "status": "Conforms",
+          "method": null
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity",
+          "value": "Benzyl alcohol",
+          "unit": null,
+          "status": "Conforms"
+        },
+        {
+          "analyte": "Quantity",
+          "value": "0.921%",
+          "unit": "%",
+          "status": "Conforms"
+        },
+        {
+          "analyte": "Sterility",
+          "value": "Pass",
+          "unit": null,
+          "status": "Conforms"
+        },
+        {
+          "analyte": "Endotoxins",
+          "value": "< 0.25 EU/mL",
+          "unit": "EU/mL",
+          "status": "Conforms"
+        },
+        {
+          "analyte": "pH",
+          "value": "6.253",
+          "unit": null,
+          "status": "Conforms"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/EB61901-6.pdf",
+      "is_current": true,
+      "product_ids": [
+        2237
+      ],
+      "group_key": "wc-2237-30ml",
+      "source": {
+        "parser": "chromate-ocr-v1",
+        "pdf_sha256": "038e3630eee54623c8089940960bda454c2ccba9b59576a12e250e53cd066c75",
+        "captured_at": "2026-09-11T16:25:58.212Z",
+        "visual_override": "Visual review of the original one-page Chromate certificate; OCR omitted the Batch label and misread pH."
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2242,
+      "product_name": "Cartalax 20mg",
+      "compound_name": "Cartalax",
+      "aliases": [],
+      "sku": "Cartalax-20MG",
+      "batch": "LAX20-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040554",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040554",
+      "purity": "99.45%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Cartalax",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.45%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Cartalax",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.45%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040554.pdf",
+      "is_current": false,
+      "product_ids": [
+        2236
+      ],
+      "group_key": "wc-2236-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "e2100f6305cebe2097351a116e86f2b64e2d1b3d73a9420cc1756701dcc8368f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2234,
+      "product_name": "NAD+ 500mg",
+      "compound_name": "NAD+",
+      "aliases": [],
+      "sku": "NAD-500MG",
+      "batch": "Red Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040557",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040557",
+      "purity": "99.86%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "NAD+",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.86%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "NAD+",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.86%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040557.pdf",
+      "is_current": true,
+      "product_ids": [
+        60
+      ],
+      "group_key": "wc-60-500mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "9e314040de820ee0c24f95d0708e1631b6040662637f7e900a82a337de26d22d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2232,
+      "product_name": "Glutathione 1200mg",
+      "compound_name": "Glutathione",
+      "aliases": [
+        "Korean Gluta (Glutaone 1200mg)"
+      ],
+      "sku": "KOREAN-GLUTA-GLUTAONE-1200MG",
+      "batch": "KGLUT-0726",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2608040556",
+      "received_date": "2026-08-04",
+      "test_date": null,
+      "report_date": "2026-08-05",
+      "report_code": "RGVE2608040556",
+      "purity": "99.84%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Glutathione",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.84%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Glutathione",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.84%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RGVE2608040556.pdf",
+      "is_current": true,
+      "product_ids": [
+        1325
+      ],
+      "group_key": "wc-1325-1200mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "e0f0c951d139cc87d87ad1355b0a2537a0bdbc72ada2916937a50511434fa93e",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1918,
+      "product_name": "RG-Tesa 10mg",
+      "compound_name": "Tesamorelin",
+      "aliases": [
+        "Tesamorelin 10mg",
+        "RGV-TESA"
+      ],
+      "sku": "RGV-TESA-10MG",
+      "batch": "TSM10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2603260139",
+      "received_date": "2026-03-26",
+      "test_date": null,
+      "report_date": "2026-03-27",
+      "report_code": "RGVE2603260139",
+      "purity": "99.202%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "Tesamorelin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.202%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "Tesamorelin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.202%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2603260139.pdf",
+      "is_current": false,
+      "product_ids": [
+        55
+      ],
+      "group_key": "wc-55-10mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "e959d5b5409a19105807daf62eeb1b933fe91ce5347a37a428a098ce49943d98",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1946,
+      "product_name": "RG-Tesa 10mg",
+      "compound_name": "Tesamorelin",
+      "aliases": [
+        "Tesamorelin 10mg",
+        "RGV-TESA"
+      ],
+      "sku": "RGV-TESA-10MG",
+      "batch": "TSM10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290492",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290492",
+      "purity": "99.86%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Tesamorelin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.86%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Tesamorelin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.86%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290492.pdf",
+      "is_current": false,
+      "product_ids": [
+        55
+      ],
+      "group_key": "wc-55-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "695799d3fbe54d5365e7dfc6d3e1d44c7e75dac6a5f6384e660e8256e7ab419f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1956,
+      "product_name": "RG-Tesa 10mg",
+      "compound_name": "Tesamorelin",
+      "aliases": [
+        "Tesamorelin 10mg",
+        "RGV-TESA"
+      ],
+      "sku": "RGV-TESA-10MG",
+      "batch": "TSM10-250101",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030536",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030536",
+      "purity": "99.95%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Tesamorelin",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.95%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Tesamorelin",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.95%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030536.pdf",
+      "is_current": true,
+      "product_ids": [
+        55
+      ],
+      "group_key": "wc-55-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "18715a2060b67b321d83f93854aa2839f97c630b66c1a92d96e67b0807e0950d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1919,
+      "product_name": "RGV-TZ 30",
+      "compound_name": "GLP TZ",
+      "aliases": [
+        "Tirzepatide 30mg",
+        "RG-Tz"
+      ],
+      "sku": "RG-TZ-SINGLE-30MG",
+      "batch": "TR30-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2603260140",
+      "received_date": "2026-03-26",
+      "test_date": null,
+      "report_date": "2026-03-27",
+      "report_code": "RGVE2603260140",
+      "purity": "99.779%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "GLP TZ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.779%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "GLP TZ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.779%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2603260140.pdf",
+      "is_current": true,
+      "product_ids": [
+        122
+      ],
+      "group_key": "wc-24-30mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "1a3b8357a333a25d9f1c30baf0430b9e5e3686fd266b952b6043cdbe1cf18d3f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1921,
+      "product_name": "RGV-TZ 20",
+      "compound_name": "GLP TZ",
+      "aliases": [
+        "Tirzepatide 20mg",
+        "RG-Tz"
+      ],
+      "sku": "RG-TZ-SINGLE-20MG",
+      "batch": "TR20-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2603260142",
+      "received_date": "2026-03-26",
+      "test_date": null,
+      "report_date": "2026-03-27",
+      "report_code": "RGVE2603260142",
+      "purity": "99.941%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "GLP TZ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.941%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "GLP TZ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.941%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2603260142.pdf",
+      "is_current": false,
+      "product_ids": [
+        121
+      ],
+      "group_key": "wc-24-20mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "620d0b6c24aa512ea4d688ff265b29abc666fb5437eef380acca1d035e613536",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1975,
+      "product_name": "RGV-TZ 20",
+      "compound_name": "Tirzepatide",
+      "aliases": [
+        "Tirzepatide - 20mg",
+        "RG-Tz"
+      ],
+      "sku": "RG-TZ-SINGLE-20MG",
+      "batch": "TR20-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10847",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954673",
+      "purity": "99.60%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.60%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "21",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Tirzepatide",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.60%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "21",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RG-Tz_TR20-0726_COA-2026-954673-2.pdf",
+      "is_current": true,
+      "product_ids": [
+        121
+      ],
+      "group_key": "wc-24-20mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "73d532062445fb1245cbc08ce00ecdb2c76fec80aa0bb298276dfbce2d835807",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1940,
+      "product_name": "RGV-RT 20",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 20mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-20MG",
+      "batch": "RT20-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080216",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080216",
+      "purity": "99.87%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.87%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.87%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080216.pdf",
+      "is_current": false,
+      "product_ids": [
+        131
+      ],
+      "group_key": "wc-20-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "ae7e85020eed38f725eed042e2b4c640652e43e9a99f20b519acd92b89c1ea45",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1961,
+      "product_name": "RGV-RT 20",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 20mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-20MG",
+      "batch": "RT20-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030544",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030544",
+      "purity": "99.87%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.87%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.87%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030544.pdf",
+      "is_current": false,
+      "product_ids": [
+        131
+      ],
+      "group_key": "wc-20-20mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "cba5a2f4a66a57d78129450ee5d2bd65a7f739ad3deebf6a80cfd8f39684c165",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1969,
+      "product_name": "RGV-RT 20",
+      "compound_name": "Retatrutide",
+      "aliases": [
+        "Retatrutide - 20mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-20MG",
+      "batch": "RT10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10851",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954676",
+      "purity": "99.62%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.62%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "21.09",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Retatrutide",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.62%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "21.09",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RG-Rt_RT10-0726_COA-2026-954676-6.pdf",
+      "is_current": true,
+      "product_ids": [
+        131
+      ],
+      "group_key": "wc-20-20mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "6ab5670acc83bc39a9ec86966e5a264b4f1cb6c92bb1f12ca1cbf019c7349ae8",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1939,
+      "product_name": "RGV-RT 30",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 30mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-30MG",
+      "batch": "Purple Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080215",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080215",
+      "purity": "99.94%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.94%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.94%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080215.pdf",
+      "is_current": false,
+      "product_ids": [
+        132
+      ],
+      "group_key": "wc-20-30mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "612121ee756027a7f944a95a5b0f7a550253f336530414cfb744d35d6163c6f9",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1962,
+      "product_name": "RGV-RT 30",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 30mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-30MG",
+      "batch": "RT30-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030546",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030546",
+      "purity": "99.86%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.86%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.86%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030546.pdf",
+      "is_current": false,
+      "product_ids": [
+        132
+      ],
+      "group_key": "wc-20-30mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "58468f893a88ea5b34f4099db612cbdfc1f0b3ec42a688744c9c18a08882485e",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2004,
+      "product_name": "RGV-RT 30",
+      "compound_name": "Retatrutide",
+      "aliases": [
+        "Retatrutide - 30mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-30MG",
+      "batch": "RT10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10853",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954677",
+      "purity": "99.85%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.85%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "31.09",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Retatrutide",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.85%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "31.09",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RG-Rt_RT10-0726_COA-2026-954677-4.pdf",
+      "is_current": true,
+      "product_ids": [
+        132
+      ],
+      "group_key": "wc-20-30mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "f2d82eb98209b181289d15ec78241bc4bb30d223d615e4e41fef3443e1bfcf47",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1917,
+      "product_name": "RGV-RT 10",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 10mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-10MG",
+      "batch": "RT10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2603260138",
+      "received_date": "2026-03-26",
+      "test_date": null,
+      "report_date": "2026-03-27",
+      "report_code": "RGVE2603260138",
+      "purity": "99.82%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.82%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.82%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2603260138.pdf",
+      "is_current": false,
+      "product_ids": [
+        130
+      ],
+      "group_key": "wc-20-10mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "65e052ad7522023c83897658375055f3dc09fdb7f71322d901f4392badb3d6fb",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1960,
+      "product_name": "RGV-RT 10",
+      "compound_name": "GLP RT",
+      "aliases": [
+        "Retatrutide 10mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-10MG",
+      "batch": "RT10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030542",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030542",
+      "purity": "99.82%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GLP RT",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.82%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GLP RT",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.82%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030542.pdf",
+      "is_current": false,
+      "product_ids": [
+        130
+      ],
+      "group_key": "wc-20-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "3aa7c5e9bf6d084d9638e8040d69c0c4d48e79571f10b5dc393c49e32325fa1a",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2007,
+      "product_name": "RGV-RT 10",
+      "compound_name": "Retatrutide",
+      "aliases": [
+        "Retatrutide - 10mg",
+        "RG-Rt"
+      ],
+      "sku": "RG-RT-SINGLE-10MG",
+      "batch": "RT10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10850",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954675",
+      "purity": "99.80%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.80%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.61",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "Retatrutide",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.80%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.61",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/RG-Rt_RT10-0726_COA-2026-954675-5.pdf",
+      "is_current": true,
+      "product_ids": [
+        130
+      ],
+      "group_key": "wc-20-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "b8a263f38645499337618e0c604198dcb3e48b61362b11283decf523f4ea46bb",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1928,
+      "product_name": "SS-31 10mg",
+      "compound_name": "SS-31",
+      "aliases": [],
+      "sku": "SS-31-10MG",
+      "batch": "2S10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604270048",
+      "received_date": "2026-04-27",
+      "test_date": null,
+      "report_date": "2026-04-27",
+      "report_code": "RGVE2604270048",
+      "purity": "99.95%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "SS-31",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.95%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "SS-31",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.95%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604270048.pdf",
+      "is_current": false,
+      "product_ids": [
+        61
+      ],
+      "group_key": "wc-61-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "158626a1c6e34e07545aa57089532a1fbb2f27025cf13ecb14fad29a88caa17b",
+        "captured_at": "2026-09-11T16:25:58.212Z",
+        "visual_override": "Visual review of the original one-page Freedom Diagnostics certificate; OCR read the leading '2S' in the Lot as '25'."
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2011,
+      "product_name": "GHK-Cu + KPV 60mg",
+      "compound_name": "GHK-Cu/KPV",
+      "aliases": [
+        "GHK+KPV 60mg"
+      ],
+      "sku": "GHK+KPV-SINGLE",
+      "batch": "P1-BTY06",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607280197",
+      "received_date": "2026-07-28",
+      "test_date": null,
+      "report_date": "2026-07-31",
+      "report_code": "RGVP2607280197",
+      "purity": "99.84%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Fentanyl",
+        "Microbial Analysis (PCR)",
+        "Elemental Impurities (ICP-MS)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu/KPV",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.84%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Fentanyl",
+          "result": "No Fentanyl Detected",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": null
+        },
+        {
+          "name": "Microbial Analysis (PCR)",
+          "result": "Pass",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "PCR"
+        },
+        {
+          "name": "Elemental Impurities (ICP-MS)",
+          "result": "Pass",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "ICP-MS"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu/KPV",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.84%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Fentanyl",
+          "value": "No Fentanyl Detected",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Microbial Analysis (PCR)",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Elemental Impurities (ICP-MS)",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVP2607280197.pdf",
+      "is_current": true,
+      "product_ids": [
+        1785
+      ],
+      "group_key": "wc-1412-60mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "453f4122123b1eca6f088d3125c77c84c032a9a8d697b61b431fea4e3d1cec7c",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 2009,
+      "product_name": "GHK-Cu 50mg",
+      "compound_name": "GHK-Cu",
+      "aliases": [],
+      "sku": "GHK-CU-SINGLE-50MG",
+      "batch": "CU50-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10856",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954680",
+      "purity": "99.94%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.94%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "51.46",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "GHK-Cu",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.94%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "51.46",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/GHK-Cu_CU50-0726_COA-2026-954680-3.pdf",
+      "is_current": false,
+      "product_ids": [
+        114
+      ],
+      "group_key": "wc-29-50mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "2345d84eaeef462e23422cef7c87ccaf433620b77ebf103dab7c44b7c0d7323f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1967,
+      "product_name": "GHK-Cu 100mg",
+      "compound_name": "GHK-Cu",
+      "aliases": [],
+      "sku": "GHK-CU-SINGLE-100MG",
+      "batch": "CU50-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10857",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954681",
+      "purity": "99.74%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.74%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "103.57",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "GHK-Cu",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.74%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "103.57",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/GHK-Cu_CU50-0726_COA-2026-954681-2.pdf",
+      "is_current": true,
+      "product_ids": [
+        115
+      ],
+      "group_key": "wc-29-100mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "628ad16a5783dc79dc7b99bdde7c0e761a72e924ba066e0cc0427a5009f31fbd",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1979,
+      "product_name": "BPC-157 10mg",
+      "compound_name": "BPC-157",
+      "aliases": [],
+      "sku": "BPC-157-10MG",
+      "batch": "BC10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10849",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954674",
+      "purity": "99.72%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.72%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.56",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "BPC-157",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.72%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.56",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/BPC-157_BC10-0726_COA-2026-954674-2.pdf",
+      "is_current": false,
+      "product_ids": [
+        52
+      ],
+      "group_key": "wc-52-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "e6c826d874e5182b1c6c03974e7a40af7eb64336fb61b507c75affaae80a4ba0",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1977,
+      "product_name": "ARA-290 10mg",
+      "compound_name": "ARA-290",
+      "aliases": [],
+      "sku": "ARA-290-10MG",
+      "batch": "RA10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10854",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-07-31",
+      "report_code": "COA-2026-954678",
+      "purity": "99.25%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.25%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.22",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "ARA-290",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.25%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.22",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/Ara-290_RA10-0726_COA-2026-954678-2.pdf",
+      "is_current": true,
+      "product_ids": [
+        65
+      ],
+      "group_key": "wc-65-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "a096e5f905c94c02a96eb9187724d6a31668e1a9d1334f1672b78687aad6e1c2",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1973,
+      "product_name": "SS-31 10mg",
+      "compound_name": "SS-31 (Elamipretide)",
+      "aliases": [
+        "SS-31"
+      ],
+      "sku": "SS-31-10MG",
+      "batch": "2S10-0726",
+      "lab": "ILS Laboratories",
+      "sample_id": "ACC-2026-10855",
+      "received_date": "2026-07-17",
+      "test_date": "2026-07-31",
+      "report_date": "2026-08-03",
+      "report_code": "COA-2026-954679",
+      "purity": "99.87%",
+      "analytes": [
+        "Peptide Purity (HPLC)",
+        "Net Peptide Content",
+        "Identity (HPLC-RTM)",
+        "Fentanyl Screen"
+      ],
+      "tests": [
+        {
+          "name": "Peptide Purity (HPLC)",
+          "result": "99.87%",
+          "specification": ">= 95.0%",
+          "unit": "%",
+          "status": "PASS",
+          "method": "HPLC"
+        },
+        {
+          "name": "Net Peptide Content",
+          "result": "10.47",
+          "specification": "Report Only",
+          "unit": "mg",
+          "status": "N/A",
+          "method": "HPLC"
+        },
+        {
+          "name": "Identity (HPLC-RTM)",
+          "result": "Confirmed",
+          "specification": "SS-31 (Elamipretide)",
+          "unit": null,
+          "status": "PASS",
+          "method": "HPLC-RTM"
+        },
+        {
+          "name": "Fentanyl Screen",
+          "result": "Not Detected",
+          "specification": "Immunoassay, 50 ng/mL cutoff",
+          "unit": null,
+          "status": "PASS",
+          "method": "Immunoassay"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Peptide Purity (HPLC)",
+          "value": "99.87%",
+          "unit": "%",
+          "status": "PASS"
+        },
+        {
+          "analyte": "Net Peptide Content",
+          "value": "10.47",
+          "unit": "mg",
+          "status": "N/A"
+        },
+        {
+          "analyte": "Identity (HPLC-RTM)",
+          "value": "Confirmed",
+          "unit": null,
+          "status": "PASS"
+        },
+        {
+          "analyte": "Fentanyl Screen",
+          "value": "Not Detected",
+          "unit": null,
+          "status": "PASS"
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://wp.rgvprimellc.com/wp-content/uploads/2026/08/SS-31_2S10-0726_COA-2026-954679-2.pdf",
+      "is_current": true,
+      "product_ids": [
+        61
+      ],
+      "group_key": "wc-61-10mg",
+      "source": {
+        "parser": "ils-v1",
+        "pdf_sha256": "9e5abc8d45341954f6c66f5172cc71b39f841e911e84520796de8f3f775841b8",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1963,
+      "product_name": "GHK-Cu Raw 1g",
+      "compound_name": "GHK-Cu",
+      "aliases": [
+        "RAW-GHK 1g"
+      ],
+      "sku": "RAW-GHK-1G",
+      "batch": "Blue Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030549",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030549",
+      "purity": "99.47%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.47%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.47%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030549.pdf",
+      "is_current": true,
+      "product_ids": [
+        46
+      ],
+      "group_key": "wc-46-1g",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "775191cbf69f5ff853c7a9bba15b1b4326a9d97ec34d30285634c112d2d3c8ef",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1958,
+      "product_name": "Semax 10mg",
+      "compound_name": "Semax",
+      "aliases": [],
+      "sku": "SEMAX-10MG",
+      "batch": "XA10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030540",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030540",
+      "purity": "99.85%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Semax",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.85%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Semax",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.85%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030540.pdf",
+      "is_current": true,
+      "product_ids": [
+        50
+      ],
+      "group_key": "wc-50-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "bd43108730d4b0d45cdba38c8e3ea61eaee631cccc435888a30ac5892d61b61f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1959,
+      "product_name": "BPC-157 10mg",
+      "compound_name": "BPC-157",
+      "aliases": [],
+      "sku": "BPC-157-10MG",
+      "batch": "BC10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030541",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030541",
+      "purity": "99.20%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.20%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.20%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030541.pdf",
+      "is_current": false,
+      "product_ids": [
+        52
+      ],
+      "group_key": "wc-52-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "07e019a130f9a18dd3a28c50b740da62216b2c117846827449ba695970c1527f",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1955,
+      "product_name": "NAD+ 500mg",
+      "compound_name": "NAD+",
+      "aliases": [],
+      "sku": "NAD-500MG",
+      "batch": "NJ500-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030534",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030534",
+      "purity": "99.87%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "NAD+",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.87%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "NAD+",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.87%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030534.pdf",
+      "is_current": false,
+      "product_ids": [
+        60
+      ],
+      "group_key": "wc-60-500mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "c580aa4c3e1bef3bc111e0d9dd3adbb0171621b336df9b4eb2418dc38da39156",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1957,
+      "product_name": "MOTS-C 40mg",
+      "compound_name": "MOTS-C",
+      "aliases": [],
+      "sku": "MOTS-C-SINGLE-40MG",
+      "batch": "MS40-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2607030538",
+      "received_date": "2026-07-03",
+      "test_date": null,
+      "report_date": "2026-07-07",
+      "report_code": "RGVE2607030538",
+      "purity": "99.62%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)",
+        "Endotoxin Replicate 1",
+        "Endotoxin Replicate 2"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "MOTS-C",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.62%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        },
+        {
+          "name": "Endotoxin Replicate 1",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        },
+        {
+          "name": "Endotoxin Replicate 2",
+          "result": "Pass",
+          "specification": "≤0.05 EU/mL",
+          "unit": null,
+          "status": null,
+          "method": "USP <85>"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "MOTS-C",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.62%",
+          "unit": "%",
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 1",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Endotoxin Replicate 2",
+          "value": "Pass",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2607030538.pdf",
+      "is_current": true,
+      "product_ids": [
+        84
+      ],
+      "group_key": "wc-38-40mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0f4e2e0f039a4f0a64cbb126f629cee867c660f582addd6998e107990aff52e1",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1952,
+      "product_name": "LL37",
+      "compound_name": "LL-37",
+      "aliases": [
+        "LL-37 5mg"
+      ],
+      "sku": "LL-37-5MG",
+      "batch": "LL375",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2606090468",
+      "received_date": "2026-06-09",
+      "test_date": null,
+      "report_date": "2026-06-12",
+      "report_code": "RGVE2606090468",
+      "purity": "99.25%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "LL-37",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.25%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "LL-37",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.25%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090468.pdf",
+      "is_current": true,
+      "product_ids": [
+        564
+      ],
+      "group_key": "wc-564-5mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "609a7597b5d62357fa18eee5849081a1f298ae9fb2946f272eaf3f8f39a68828",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1953,
+      "product_name": "IGF-LR3 1mg",
+      "compound_name": "IGF-LR3",
+      "aliases": [
+        "IGF1-LR3 1mg"
+      ],
+      "sku": "IGF1-LR3-1MG",
+      "batch": "Clear Blue Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2606090469",
+      "received_date": "2026-06-09",
+      "test_date": null,
+      "report_date": "2026-06-12",
+      "report_code": "RGVE2606090469",
+      "purity": "99.81%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "IGF-LR3",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.81%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "IGF-LR3",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.81%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090469.pdf",
+      "is_current": true,
+      "product_ids": [
+        54
+      ],
+      "group_key": "wc-54-1mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "fa2b3359da415af937ce5634eec88a22d088a7f5f3087625f77adcfeaa583b70",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1954,
+      "product_name": "KLOW 80mg",
+      "compound_name": "GHK-Cu/KPV/TB-500/BPC-157",
+      "aliases": [],
+      "sku": "KLOW-80MG",
+      "batch": "Clear Pink Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2606090470",
+      "received_date": "2026-06-09",
+      "test_date": null,
+      "report_date": "2026-06-12",
+      "report_code": "RGVE2606090470",
+      "purity": "99.86%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu/KPV/TB-500/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.86%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu/KPV/TB-500/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.86%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090470.pdf",
+      "is_current": false,
+      "product_ids": [
+        47
+      ],
+      "group_key": "wc-47-80mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "a0a2a71ec9f1f0cb49eb4827d1cc065c329244ec6b353eef1315a0576bd6ac6b",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1950,
+      "product_name": "5-Amino 1MQ 50mg",
+      "compound_name": "5-Amino 1MQ",
+      "aliases": [
+        "5AMINO-1MQ 50mg"
+      ],
+      "sku": "5AMINO-1MQ-50MG",
+      "batch": "50AM-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2606010518",
+      "received_date": "2026-06-01",
+      "test_date": null,
+      "report_date": "2026-06-02",
+      "report_code": "RGVE2606010518",
+      "purity": "99.73%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "5-Amino 1MQ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.73%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "5-Amino 1MQ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.73%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2606010518.pdf",
+      "is_current": false,
+      "product_ids": [
+        68
+      ],
+      "group_key": "wc-68-50mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "b9570e53f2c88d568a826ed2de0306d5e66dce9a37e3291b4ebc4362f5d77388",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1951,
+      "product_name": "NAD + 500mg",
+      "compound_name": "NAD+",
+      "aliases": [],
+      "sku": "NAD-500MG",
+      "batch": "NJ500",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2606090467",
+      "received_date": "2026-06-09",
+      "test_date": null,
+      "report_date": "2026-06-12",
+      "report_code": "RGVE2606090467",
+      "purity": "99.69%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "NAD+",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.69%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "NAD+",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.69%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2606090467.pdf",
+      "is_current": false,
+      "product_ids": [
+        60
+      ],
+      "group_key": "wc-60-500mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "a1c8242070a79dcb4c1a16f474c08fd3b4effb1d2528872f52a74e834197fcec",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1948,
+      "product_name": "GLOW 70mg",
+      "compound_name": "GHK-Cu/Thymosin Beta-4/BPC-157",
+      "aliases": [],
+      "sku": "GLOW-70MG",
+      "batch": "BBG70-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290494",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290494",
+      "purity": "99.84%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu/Thymosin Beta-4/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.84%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu/Thymosin Beta-4/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.84%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290494.pdf",
+      "is_current": true,
+      "product_ids": [
+        48
+      ],
+      "group_key": "wc-48-70mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "382c4c39da8c24f57d9518ceec0ca55c6b94b36e2f418fb74813d110d02df1ec",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1949,
+      "product_name": "GHK 1g",
+      "compound_name": "GHK-Cu",
+      "aliases": [
+        "RAW-GHK 1g"
+      ],
+      "sku": "RAW-GHK-1G",
+      "batch": "2026040701",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290495",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290495",
+      "purity": "99.95%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.95%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.95%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290495.pdf",
+      "is_current": false,
+      "product_ids": [
+        46
+      ],
+      "group_key": "wc-46-1g",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "b422d566aea76409e507a5ec56148e473461c4533fcdd76442b26a30bfc3a4f4",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1945,
+      "product_name": "Adamax 10mg",
+      "compound_name": "Adamax (Low MW)",
+      "aliases": [],
+      "sku": "ADAMAX-10MG",
+      "batch": "ADAMAX10",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290491",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290491",
+      "purity": "99.91%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Adamax (Low MW)",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.91%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Adamax (Low MW)",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.91%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290491.pdf",
+      "is_current": true,
+      "product_ids": [
+        49
+      ],
+      "group_key": "wc-49-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0563cbe693ecf2fd67f425923ac2f787078c0be11fcb0a917c49796d139e283a",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1947,
+      "product_name": "GHK-Cu 100mg",
+      "compound_name": "GHK-Cu",
+      "aliases": [],
+      "sku": "GHK-CU-SINGLE-100MG",
+      "batch": "GHK-CU100",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290493",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290493",
+      "purity": "99.81%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "GHK-Cu",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.81%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "GHK-Cu",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.81%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290493.pdf",
+      "is_current": false,
+      "product_ids": [
+        115
+      ],
+      "group_key": "wc-29-100mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "e3aacbf4635c6b4dce5e5ee2be347389031a6639039fb194cd0db54cd6f6972c",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1943,
+      "product_name": "BPC-157 / TB-500 10mg",
+      "compound_name": "Thymosin Beta-4/BPC-157",
+      "aliases": [
+        "BPC-157/TB-500"
+      ],
+      "sku": "BPC-TB-SINGLE-10MG",
+      "batch": "BB10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290489",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290489",
+      "purity": "99.08%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Thymosin Beta-4/BPC-157",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.08%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Thymosin Beta-4/BPC-157",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.08%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290489.pdf",
+      "is_current": false,
+      "product_ids": [
+        140
+      ],
+      "group_key": "wc-32-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "d7f3a4f333243b432d1e83e1ba6fecb03c1087d283805b2e749013963d42631b",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1944,
+      "product_name": "IGF-1 LR3 1mg",
+      "compound_name": "IGF-LR3",
+      "aliases": [
+        "IGF1-LR3 1mg"
+      ],
+      "sku": "IGF1-LR3-1MG",
+      "batch": "IGF",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290490",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290490",
+      "purity": "99.43%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "IGF-LR3",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.43%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "IGF-LR3",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.43%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290490.pdf",
+      "is_current": false,
+      "product_ids": [
+        54
+      ],
+      "group_key": "wc-54-1mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "ccba32f94d62e8e9008059d5161b6b14c378fc9e02ec4e9c855df5cd718964cf",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1941,
+      "product_name": "MOTS-C 40mg",
+      "compound_name": "MOTS-C",
+      "aliases": [],
+      "sku": "MOTS-C-SINGLE-40MG",
+      "batch": "MS40-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605290487",
+      "received_date": "2026-05-29",
+      "test_date": null,
+      "report_date": "2026-06-01",
+      "report_code": "RGVE2605290487",
+      "purity": "99.91%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "MOTS-C",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.91%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "MOTS-C",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.91%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605290487.pdf",
+      "is_current": false,
+      "product_ids": [
+        84
+      ],
+      "group_key": "wc-38-40mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "aa650eed0abeb203a7ade5017b639ab33f02c46981d560e7734d60cf8328ba94",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1938,
+      "product_name": "DSIP 10mg",
+      "compound_name": "DSIP",
+      "aliases": [],
+      "sku": "DSIP-10MG",
+      "batch": "Blue Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2605080214",
+      "received_date": "2026-05-08",
+      "test_date": null,
+      "report_date": "2026-05-11",
+      "report_code": "RGVE2605080214",
+      "purity": "99.22%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "DSIP",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.22%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "DSIP",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.22%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2605080214.pdf",
+      "is_current": true,
+      "product_ids": [
+        62
+      ],
+      "group_key": "wc-62-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "1b3aa629f61cdbaae3b0dabb8ac7be6a9d0bc545d9e5af000d41649fec36a936",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1933,
+      "product_name": "MT2 10mg",
+      "compound_name": "Melanotan-II",
+      "aliases": [],
+      "sku": "MT2-10MG",
+      "batch": "White Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604290146",
+      "received_date": "2026-04-29",
+      "test_date": null,
+      "report_date": "2026-04-30",
+      "report_code": "RGVE2604290146",
+      "purity": "99.88%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Melanotan-II",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.88%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Melanotan-II",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.88%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290146.pdf",
+      "is_current": true,
+      "product_ids": [
+        64
+      ],
+      "group_key": "wc-64-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "02be209f676fcf3f5e5c12e134ace600be6d2302401eacb1e726f891164234c4",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1934,
+      "product_name": "5-Amino 1MQ 50mg",
+      "compound_name": "5-Amino 1MQ",
+      "aliases": [
+        "5AMINO-1MQ 50mg"
+      ],
+      "sku": "5AMINO-1MQ-50MG",
+      "batch": "50AM-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604290147",
+      "received_date": "2026-04-29",
+      "test_date": null,
+      "report_date": "2026-04-30",
+      "report_code": "RGVE2604290147",
+      "purity": "99.81%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "5-Amino 1MQ",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.81%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "5-Amino 1MQ",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.81%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290147.pdf",
+      "is_current": false,
+      "product_ids": [
+        68
+      ],
+      "group_key": "wc-68-50mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "0e52b6c962855f4aa2616caea2d68524531cf2d63a687111c23e79fa57dd03a8",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1932,
+      "product_name": "KPV 10mg",
+      "compound_name": "KPV",
+      "aliases": [],
+      "sku": "KPV-10MG",
+      "batch": "Black Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604290145",
+      "received_date": "2026-04-29",
+      "test_date": null,
+      "report_date": "2026-04-30",
+      "report_code": "RGVE2604290145",
+      "purity": "99.59%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "KPV",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.59%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "KPV",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.59%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604290145.pdf",
+      "is_current": false,
+      "product_ids": [
+        63
+      ],
+      "group_key": "wc-63-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "6e32ba39fd873c2f1081a339f83cea26c62f3c94b8191e29453ea7f798d7f226",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1929,
+      "product_name": "Semax 10mg",
+      "compound_name": "Semax",
+      "aliases": [],
+      "sku": "SEMAX-10MG",
+      "batch": "XA10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604270049",
+      "received_date": "2026-04-27",
+      "test_date": null,
+      "report_date": "2026-04-27",
+      "report_code": "RGVE2604270049",
+      "purity": "99.62%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Semax",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.62%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Semax",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.62%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604270049.pdf",
+      "is_current": false,
+      "product_ids": [
+        50
+      ],
+      "group_key": "wc-50-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "b3e4eba3c4280068d7938106c10bd5874a04edf6deb8347792c03783d2268794",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1926,
+      "product_name": "MOTS-C 10mg",
+      "compound_name": "MOTS-C",
+      "aliases": [],
+      "sku": null,
+      "batch": "MS 10-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604270046",
+      "received_date": "2026-04-27",
+      "test_date": null,
+      "report_date": "2026-04-27",
+      "report_code": "RGVE2604270046",
+      "purity": "99.70%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "MOTS-C",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.70%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "MOTS-C",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.70%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604270046.pdf",
+      "is_current": true,
+      "product_ids": [
+        362
+      ],
+      "group_key": "wc-38-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "ad0551f44a108f053c5509bb3cf93d66671f3ae6fde781825711fa3b4a409c0d",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": [
+        {
+          "field": "sku",
+          "type": "catalog_mapping",
+          "values": [
+            "362"
+          ],
+          "message": "Catalog mapping is missing; SKU was not inferred."
+        }
+      ]
+    },
+    {
+      "id": 1927,
+      "product_name": "Selank 10mg",
+      "compound_name": "Selank",
+      "aliases": [],
+      "sku": "SELANK-10MG",
+      "batch": "Blue Cap",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604270047",
+      "received_date": "2026-04-27",
+      "test_date": null,
+      "report_date": "2026-04-27",
+      "report_code": "RGVE2604270047",
+      "purity": "99.79%",
+      "analytes": [
+        "Identity (LC-MS)",
+        "Purity (HPLC-UV)"
+      ],
+      "tests": [
+        {
+          "name": "Identity (LC-MS)",
+          "result": "Selank",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity (HPLC-UV)",
+          "result": "99.79%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Identity (LC-MS)",
+          "value": "Selank",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity (HPLC-UV)",
+          "value": "99.79%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604270047.pdf",
+      "is_current": true,
+      "product_ids": [
+        51
+      ],
+      "group_key": "wc-51-10mg",
+      "source": {
+        "parser": "freedom-v1",
+        "pdf_sha256": "757dc2995d5577a1cd3c7088e5c07eda1ba4ba9732ff8c1565c87e1868d907f6",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1923,
+      "product_name": "KLOW 80mg",
+      "compound_name": "GHK-Cu/KPV/BPC-157/Thymosin Beta-4",
+      "aliases": [],
+      "sku": "KLOW-80MG",
+      "batch": "KLOW80-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604060178",
+      "received_date": "2026-04-06",
+      "test_date": null,
+      "report_date": "2026-04-07",
+      "report_code": "RGVE2604060178",
+      "purity": "99.443%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "GHK-Cu/KPV/BPC-157/Thymosin Beta-4",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.443%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "GHK-Cu/KPV/BPC-157/Thymosin Beta-4",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.443%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060178.pdf",
+      "is_current": false,
+      "product_ids": [
+        47
+      ],
+      "group_key": "wc-47-80mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "eef51cf50c0140f4377a23a9c13573e84ff5b9c79b58fa5874ac73b27f9a46ae",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1924,
+      "product_name": "NAD+ 500mg",
+      "compound_name": "NAD+",
+      "aliases": [],
+      "sku": "NAD-500MG",
+      "batch": "NJ500-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604060179",
+      "received_date": "2026-04-06",
+      "test_date": null,
+      "report_date": "2026-04-07",
+      "report_code": "RGVE2604060179",
+      "purity": "99.924%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "NAD+",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.924%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "NAD+",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.924%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060179.pdf",
+      "is_current": false,
+      "product_ids": [
+        60
+      ],
+      "group_key": "wc-60-500mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "ab7ead19cca97877223d32676008a67da8bb693da7799d0b5901253f228ee494",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1925,
+      "product_name": "Lipo-C/B12 10ml",
+      "compound_name": "Choline/Carnitine/Arginin e/Inositol/Pantothenic acid (B5)/Pyridoxine (B6)/Cyanocobalamin (B12)",
+      "aliases": [],
+      "sku": "LIPO-C-B12-10ML",
+      "batch": "LC216-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604060180",
+      "received_date": "2026-04-06",
+      "test_date": null,
+      "report_date": "2026-04-07",
+      "report_code": "RGVE2604060180",
+      "purity": null,
+      "analytes": [
+        "Mass Identification"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "Choline/Carnitine/Arginin e/Inositol/Pantothenic acid (B5)/Pyridoxine (B6)/Cyanocobalamin (B12)",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "Choline/Carnitine/Arginin e/Inositol/Pantothenic acid (B5)/Pyridoxine (B6)/Cyanocobalamin (B12)",
+          "unit": null,
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060180.pdf",
+      "is_current": false,
+      "product_ids": [
+        71
+      ],
+      "group_key": "wc-71-10ml",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "0014a031fb2a41f98d8692703f9c4913a863a1d6b670b8c76f9f15339282ee4b",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1920,
+      "product_name": "MOTS-C 40mg",
+      "compound_name": "MOTS-C",
+      "aliases": [],
+      "sku": "MOTS-C-SINGLE-40MG",
+      "batch": "MS40-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2603260141",
+      "received_date": "2026-03-26",
+      "test_date": null,
+      "report_date": "2026-03-27",
+      "report_code": "RGVE2603260141",
+      "purity": "99.199%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "MOTS-C",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.199%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "MOTS-C",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.199%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2603260141.pdf",
+      "is_current": false,
+      "product_ids": [
+        84
+      ],
+      "group_key": "wc-38-40mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "867fe3fe82ff3cf9c46618ca797ec4b5458cbaccdf98e6c5c666796ce72d6d9b",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    },
+    {
+      "id": 1922,
+      "product_name": "GHK-Cu 50mg",
+      "compound_name": "GHK-Cu",
+      "aliases": [],
+      "sku": "GHK-CU-SINGLE-50MG",
+      "batch": "GHK-CU50-2501-01",
+      "lab": "Freedom Diagnostics",
+      "sample_id": "2604060177",
+      "received_date": "2026-04-06",
+      "test_date": null,
+      "report_date": "2026-04-07",
+      "report_code": "RGVE2604060177",
+      "purity": "99.773%",
+      "analytes": [
+        "Mass Identification",
+        "Purity"
+      ],
+      "tests": [
+        {
+          "name": "Mass Identification",
+          "result": "GHK-Cu",
+          "specification": null,
+          "unit": null,
+          "status": null,
+          "method": "LC-MS"
+        },
+        {
+          "name": "Purity",
+          "result": "99.773%",
+          "specification": null,
+          "unit": "%",
+          "status": null,
+          "method": "HPLC-UV"
+        }
+      ],
+      "results": [
+        {
+          "analyte": "Mass Identification",
+          "value": "GHK-Cu",
+          "unit": null,
+          "status": null
+        },
+        {
+          "analyte": "Purity",
+          "value": "99.773%",
+          "unit": "%",
+          "status": null
+        }
+      ],
+      "notes": null,
+      "pdf_url": "https://coas.freedomdiagnosticstesting.com/RGVE2604060177.pdf",
+      "is_current": false,
+      "product_ids": [
+        114
+      ],
+      "group_key": "wc-29-50mg",
+      "source": {
+        "parser": "freedom-legacy-ocr-v1",
+        "pdf_sha256": "e22e4a26c2f737c78247121434bf6650fe0d0bd0abe71dca4c9bb78a42823bc9",
+        "captured_at": "2026-09-11T16:25:58.212Z"
+      },
+      "manual_review": []
+    }
+  ]
+}

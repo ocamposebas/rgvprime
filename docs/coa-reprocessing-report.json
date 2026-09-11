@@ -1,0 +1,4150 @@
+{
+  "generated_at": "2026-09-11T16:25:58.212Z",
+  "before": {
+    "current_shipping": 49,
+    "history": 38,
+    "families": 49,
+    "total": 87,
+    "generated_at": "2026-09-11T15:48:46+00:00"
+  },
+  "after": {
+    "total": 87,
+    "current_shipping": 49,
+    "history": 38
+  },
+  "changed_record_count": 87,
+  "changes": [
+    {
+      "id": 3045,
+      "product_name": "RG RT 30MG",
+      "changes": [
+        {
+          "field": "aliases",
+          "before": [
+            "s, brand names,",
+            "RGVRT30",
+            "2026-956515",
+            "Retatrutide",
+            "s,brandnames,"
+          ],
+          "after": [
+            "Retatrutide - 30mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-30MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "entifications",
+          "after": null
+        },
+        {
+          "field": "test_date",
+          "before": "2026-07-17",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-07-22"
+        },
+        {
+          "field": "report_code",
+          "before": "2026-956515",
+          "after": "COA-2026-956515"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2966,
+      "product_name": "RG-Cag 5mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Cagrilintide"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Cagrilintide 5mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "CG5",
+          "after": "RG-Cag 5MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608270110"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-27"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-29"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.81%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2846,
+      "product_name": "RGV-TR 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "GLP TZ"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Tirzepatide 10mg",
+            "RG-Tz"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "RG-TR-10",
+          "after": "RG-Tz-SINGLE-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170831"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.97%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2858,
+      "product_name": "LIPO-C/B-12 10ML",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Choline/Carnitine/Arginine/Inositol/Pantothenic Acid (B5)/Pyridoxine (B6)"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "LIPO-C/B12 10ml"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "LC216",
+          "after": "LIPO-C-B12-10ML"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170824"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVE2608170825",
+          "after": "RGVE2608170824"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2856,
+      "product_name": "SEMAX + SELANK 20MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Selank/Semax"
+        },
+        {
+          "field": "sku",
+          "before": "XS20",
+          "after": "SEMAX-SELANK-20MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170825"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.50%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2854,
+      "product_name": "Kisspeptin 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Kisspeptin"
+        },
+        {
+          "field": "sku",
+          "before": "KS10",
+          "after": "KISSPEPTIN-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170826"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.01%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2852,
+      "product_name": "5-AMINO 1MQ 50MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "5-Amino 1MQ"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "5AMINO-1MQ 50mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "50AM",
+          "after": "5AMINO-1MQ-50MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170827"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.85%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2850,
+      "product_name": "BPC/TB 20MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Thymosin Beta-4/BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "BPC-157/TB-500 20mg",
+            "BPC-157/TB-500"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "BB20",
+          "after": "BPC-TB-SINGLE-20MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170828"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.46%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2848,
+      "product_name": "BPC/TB 10MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Thymosin Beta-4/BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "BPC-157/TB-500 10mg",
+            "BPC-157/TB-500"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "BB10",
+          "after": "BPC-TB-SINGLE-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170829"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.48%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2844,
+      "product_name": "RGV-PUMP",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Arginine/Ornithine/Citruline/Lysine/Glutamine/Proline/Taurine/Carnitine/NAC"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "RGV-PUMP BLEND 10ml",
+            "RG-PUMP 10ML"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "RGV-PUMP",
+          "after": "RG-PUMP"
+        },
+        {
+          "field": "batch",
+          "before": "Clear cap",
+          "after": "Clear Cap"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608170832"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-23"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2347,
+      "product_name": "RGV-LIPO-B (LC526)",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Choline/Carnitine/Pyridoxine (B6)/Inositol/NAD+/Cyanocobalamin (B12)"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Fat Blaster LC526 526mg"
+          ]
+        },
+        {
+          "field": "batch",
+          "before": "RGV-LIPO-B",
+          "after": "LC526-0726"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608040553"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-04"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-05"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVE2608040553-1",
+          "after": "RGVE2608040553"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2670,
+      "product_name": "KOREAN GLUTA (GUTHIONE)",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Glutathione"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Korean Gluta (Guthione 1200mg)"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "KGLUTA-GUTHIONE",
+          "after": "KOREAN-GLUTA-GUTHIONE-1200MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608100840"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-14"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.72%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2668,
+      "product_name": "AHK-CU 100MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "AHK-Cu"
+        },
+        {
+          "field": "sku",
+          "before": "AHK100",
+          "after": "AHK-CU-100MG"
+        },
+        {
+          "field": "batch",
+          "before": "AHK100-0826",
+          "after": "AHK-0826"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608130309"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-13"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-18"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.86%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2666,
+      "product_name": "BPC-157 10MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "BPC-157"
+        },
+        {
+          "field": "sku",
+          "before": "BPC-157",
+          "after": "BPC-157-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608130310"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-13"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-18"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.94%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2664,
+      "product_name": "RGV-TESA 20MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Tesamorelin"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Tesa 20mg",
+            "RGV-TESA"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "RGV-TESA-20",
+          "after": "RGV-TESA-SINGLE-20MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608130311"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-13"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-18"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.84%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2662,
+      "product_name": "SS-31 50MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "SS-31"
+        },
+        {
+          "field": "sku",
+          "before": "SS-31-50",
+          "after": "SS-31-SINGLE-50MG"
+        },
+        {
+          "field": "batch",
+          "before": "S250-0826",
+          "after": "2S50-0826"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608130313"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-13"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-18"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.78%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2659,
+      "product_name": "KLOW 80MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "GHK-Cu/KPV/TB-500/BPC-157"
+        },
+        {
+          "field": "sku",
+          "before": "KLOW-80",
+          "after": "KLOW-80MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608130315"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-13"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-18"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.67%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2634,
+      "product_name": "GHK-CU 50MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "s, brand names,",
+            "COREGHK50",
+            "2026-956051",
+            "Fentanyl",
+            "s,brandnames,"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK-CU-SINGLE-50MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-15573 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-15573"
+        },
+        {
+          "field": "test_date",
+          "before": "2026-08-15",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "report_code",
+          "before": "2026-956051",
+          "after": "COA-2026-956051"
+        },
+        {
+          "field": "purity",
+          "before": "NPC%",
+          "after": "99.77%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2632,
+      "product_name": "KPV 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "KPV"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "KPV 10mg",
+            "KPV10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "KPV10mg",
+            "KPV 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KPV-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "RIMEllc",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-25",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-HD-O0_"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2630,
+      "product_name": "5AMINO-1MQ",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "5-amino-1MQ"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "s, brand names,",
+            "50AM-0827",
+            "2026-956055",
+            "Fentanyl",
+            "s,brandnames,"
+          ],
+          "after": [
+            "5-Amino-1MQ - 50mg",
+            "5AMINO-1MQ 50mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "5AMINO-1MQ-50MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-15566 || Sample Matrix: || Lyophilized || Scan to verify",
+          "after": "ACC-2026-15566"
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-17"
+        },
+        {
+          "field": "report_code",
+          "before": "2026-956055",
+          "after": "COA-2026-956055"
+        },
+        {
+          "field": "purity",
+          "before": "NPC%",
+          "after": "99.90%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2480,
+      "product_name": "CJC/IPA (NO DAC) 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "CJC-1295 + IPAMORELIN"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "CJC-1295 / Ipamorelin - 10mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "CP10",
+          "after": "CJC-IPA-NO-DAC-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-07-25"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "98.60%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1942,
+      "product_name": "CJC/IPA (no dac) 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Ipamorelin/CJC-1295"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "CJC-1295 No DAC/Ipamorelin 10mg",
+            "CP10-2501-01",
+            "RGVE2605290488",
+            "Confirmed",
+            "CJC 1295 No DAC Ipamorelin 10mg",
+            "CJC-1295NoDAC/Ipamorelin10mg",
+            "CJC-1295 No DAC/Ipamorelin 10 mg"
+          ],
+          "after": [
+            "CJC-1295 No DAC/Ipamorelin 10mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "CJC-IPA-NO-DAC-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1935,
+      "product_name": "RECON WATER 10ML",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Benzyl Alcohol"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Bacteriostatic Water 10ml",
+            "RECON WATER",
+            "10ml"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RECON-WATER-10ML"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1936,
+      "product_name": "RECON WATER 10ML",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Benzyl Alcohol"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Bacteriostatic Water 10ml",
+            "RECON WATER",
+            "10ml"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RECON-WATER-10ML"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1937,
+      "product_name": "Glutathione 1200mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Glutathione"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Glutathione"
+          ],
+          "after": [
+            "Glutathione Inj. 1200mg",
+            "Korean Gluta (Glutaone 1200mg)"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KOREAN-GLUTA-GLUTAONE-1200MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1930,
+      "product_name": "BPC-157/TB-500 20mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed · BPC-157/Thymosin Beta-4",
+          "after": "BPC-157/Thymosin Beta-4"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Wolverine Stack 20mg",
+            "White Cap",
+            "RGVE2604270050",
+            "Confirmed · BPC-157/Thymosin Beta-4",
+            "WolverineStack20mg",
+            "Wolverine Stack 20 mg"
+          ],
+          "after": [
+            "Wolverine Stack 20mg",
+            "BPC-157/TB-500"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "BB20",
+          "after": "BPC-TB"
+        },
+        {
+          "field": "batch",
+          "before": "BB20",
+          "after": "White Cap"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2482,
+      "product_name": "KPV 10MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "KPV"
+        },
+        {
+          "field": "sku",
+          "before": "KPV10",
+          "after": "KPV-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-07-25"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.65%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2478,
+      "product_name": "Epithalon",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Epitalon"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Epitalon - 10mg",
+            "EPITHALON 10mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "ET10",
+          "after": "EPITHALON-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-07-25"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-10"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.30%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2345,
+      "product_name": "Cartalax 20mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Cartalax"
+        },
+        {
+          "field": "sku",
+          "before": "LAX-20",
+          "after": "Cartalax-20MG"
+        },
+        {
+          "field": "batch",
+          "before": "LAX-20",
+          "after": "LAX20-0726"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608040555"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-04"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-05"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVE2608040555-2",
+          "after": "RGVE2608040555"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.46%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2343,
+      "product_name": "Korean Gluta (Detoxione 1200mg)",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Glutathione"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "Glutathione 1200mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "K-GLUTA-DETOXIONE",
+          "after": "KOREAN-GLUTA-DETOXIONE-1200MG"
+        },
+        {
+          "field": "batch",
+          "before": "K-GLUTA-DETOXIONE",
+          "after": "KGLUT-0726"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608040556"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-04"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-05"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVE2608050020",
+          "after": "RGVE2608040556"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.84%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2341,
+      "product_name": "MT1 10MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Melanotan-I"
+        },
+        {
+          "field": "batch",
+          "before": "MT1-10MG",
+          "after": "MT1-0726"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608050020"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-05"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-07"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.57%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2339,
+      "product_name": "IPAMORELIN 10MG",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Ipamorelin"
+        },
+        {
+          "field": "sku",
+          "before": "IPAMORELIN-10MG",
+          "after": "Ipamorelin-10MG"
+        },
+        {
+          "field": "batch",
+          "before": "IPA-10",
+          "after": "IP10-0726"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Freedom Diagnostics"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": "2608050021"
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-08-05"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-08-07"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": "99.80%"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2310,
+      "product_name": "E-RECON WATER 30ML",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Benzyl alcohol"
+        },
+        {
+          "field": "aliases",
+          "before": [],
+          "after": [
+            "eBac BAC Water 30 mL"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "E-RECON-WATER",
+          "after": "E-RECON.WATER-30ML"
+        },
+        {
+          "field": "batch",
+          "before": "EB61901-6",
+          "after": "EB61901"
+        },
+        {
+          "field": "lab",
+          "before": "",
+          "after": "Chromate"
+        },
+        {
+          "field": "sample_id",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "received_date",
+          "before": "",
+          "after": "2026-05-12"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": "2026-05-22"
+        },
+        {
+          "field": "report_date",
+          "before": "",
+          "after": "2026-05-24"
+        },
+        {
+          "field": "report_code",
+          "before": "RGV-E-RECON WATER",
+          "after": "35348"
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2242,
+      "product_name": "Cartalax 20mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Cartalax"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Cartalax 20mg",
+            "LAX20-0726",
+            "RGVE2608040554",
+            "Confirmed",
+            "Cartalax20mg",
+            "Cartalax 20 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "Cartalax-20MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2234,
+      "product_name": "NAD+ 500mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "NAD+"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "NAD+ 500mg",
+            "Red Cap",
+            "RGVE2608040557",
+            "Confirmed",
+            "NAD 500mg",
+            "NAD+500mg",
+            "NAD+ 500 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "NAD-500MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2232,
+      "product_name": "Glutathione 1200mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Glutathione"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Glutathione 1200mg",
+            "KGLUT-0726",
+            "RGVE2608040556",
+            "Confirmed",
+            "Glutathione1200mg",
+            "Glutathione 1200 mg"
+          ],
+          "after": [
+            "Korean Gluta (Glutaone 1200mg)"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KOREAN-GLUTA-GLUTAONE-1200MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1918,
+      "product_name": "RG-Tesa 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "Tesamorelin"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Tesamorelin 1 g",
+            "RGVE2603260139",
+            "Tesamorelin1g",
+            "Tesamorelin 1g"
+          ],
+          "after": [
+            "Tesamorelin 10mg",
+            "RGV-TESA"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RGV-TESA-10MG"
+        },
+        {
+          "field": "batch",
+          "before": "RGVE2603260139",
+          "after": "TSM10-2501-01"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1946,
+      "product_name": "RG-Tesa 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Tesamorelin"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Tesamorelin 10mg",
+            "TSM10-2501-01",
+            "RGVE2605290492",
+            "Confirmed",
+            "Tesamorelin10mg",
+            "Tesamorelin 10 mg"
+          ],
+          "after": [
+            "Tesamorelin 10mg",
+            "RGV-TESA"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RGV-TESA-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1956,
+      "product_name": "RG-Tesa 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Tesamorelin"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Tesamorelin 10mg",
+            "TSM10-250101",
+            "RGVE2607030536",
+            "Confirmed",
+            "Tesamorelin10mg",
+            "Tesamorelin 10 mg"
+          ],
+          "after": [
+            "Tesamorelin 10mg",
+            "RGV-TESA"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RGV-TESA-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1919,
+      "product_name": "RGV-TZ 30",
+      "changes": [
+        {
+          "field": "aliases",
+          "before": [
+            "Tirzepatide 30mg",
+            "TR30-2501-01",
+            "RGVE2603260140",
+            "GLP TZ",
+            "Tirzepatide30mg",
+            "Tirzepatide 30 mg"
+          ],
+          "after": [
+            "Tirzepatide 30mg",
+            "RG-Tz"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-TZ-SINGLE-30MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1921,
+      "product_name": "RGV-TZ 20",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "GLP TZ"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "RGVE2603260142"
+          ],
+          "after": [
+            "Tirzepatide 20mg",
+            "RG-Tz"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-TZ-SINGLE-20MG"
+        },
+        {
+          "field": "batch",
+          "before": "RGVE2603260142",
+          "after": "TR20-2501-01"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1975,
+      "product_name": "RGV-TZ 20",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "Tirzepatide"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Tirzepatide 20mg",
+            "TR20-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "Tirzepatide20mg",
+            "Tirzepatide 20 mg"
+          ],
+          "after": [
+            "Tirzepatide - 20mg",
+            "RG-Tz"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-TZ-SINGLE-20MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10847 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10847"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954673"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1940,
+      "product_name": "RGV-RT 20",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 20mg",
+            "RT20-2501-01",
+            "RGVE2605080216",
+            "Confirmed",
+            "Retatrutide20mg",
+            "Retatrutide 20 mg"
+          ],
+          "after": [
+            "Retatrutide 20mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-20MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1961,
+      "product_name": "RGV-RT 20",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 20mg",
+            "RT20-2501-01",
+            "RGVE2607030544",
+            "Confirmed",
+            "Retatrutide20mg",
+            "Retatrutide 20 mg"
+          ],
+          "after": [
+            "Retatrutide 20mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-20MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1969,
+      "product_name": "RGV-RT 20",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "Retatrutide"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 20mg",
+            "RT10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "Retatrutide20mg",
+            "Retatrutide 20 mg"
+          ],
+          "after": [
+            "Retatrutide - 20mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-20MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10851 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10851"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954676"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1939,
+      "product_name": "RGV-RT 30",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 30mg",
+            "Purple Cap",
+            "RGVE2605080215",
+            "Confirmed",
+            "Retatrutide30mg",
+            "Retatrutide 30 mg"
+          ],
+          "after": [
+            "Retatrutide 30mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-30MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1962,
+      "product_name": "RGV-RT 30",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 30mg",
+            "RT30-2501-01",
+            "RGVE2607030546",
+            "Confirmed",
+            "Retatrutide30mg",
+            "Retatrutide 30 mg"
+          ],
+          "after": [
+            "Retatrutide 30mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-30MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2004,
+      "product_name": "RGV-RT 30",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "Retatrutide"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 30mg",
+            "RT10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "Retatrutide30mg",
+            "Retatrutide 30 mg"
+          ],
+          "after": [
+            "Retatrutide - 30mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-30MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10853 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10853"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954677"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1917,
+      "product_name": "RGV-RT 10",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "RGVE2603260138"
+          ],
+          "after": [
+            "Retatrutide 10mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-10MG"
+        },
+        {
+          "field": "batch",
+          "before": "RGVE2603260138",
+          "after": "RT10-2501-01"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1960,
+      "product_name": "RGV-RT 10",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GLP RT"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 10mg",
+            "RT10-2501-01",
+            "RGVE2607030542",
+            "Confirmed",
+            "Retatrutide10mg",
+            "Retatrutide 10 mg"
+          ],
+          "after": [
+            "Retatrutide 10mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2007,
+      "product_name": "RGV-RT 10",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "Retatrutide"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Retatrutide 10mg",
+            "RT10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "Retatrutide10mg",
+            "Retatrutide 10 mg"
+          ],
+          "after": [
+            "Retatrutide - 10mg",
+            "RG-Rt"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RG-RT-SINGLE-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10850 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10850"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954675"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1928,
+      "product_name": "SS-31 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed · 5-31",
+          "after": "SS-31"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "55-31 10mg",
+            "2510-2501-01",
+            "RGVE2604270048",
+            "Confirmed · 5-31",
+            "55 31 10mg",
+            "55-3110mg",
+            "55-31 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "SS-31-10MG"
+        },
+        {
+          "field": "batch",
+          "before": "2510-2501-01",
+          "after": "2S10-2501-01"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2011,
+      "product_name": "GHK-Cu + KPV 60mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu/KPV"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu + KPV 60mg",
+            "P1-BTY06",
+            "RGVP2607280197",
+            "Confirmed",
+            "GHK Cu KPV 60mg",
+            "GHK-Cu+KPV60mg",
+            "GHK-Cu + KPV 60 mg"
+          ],
+          "after": [
+            "GHK+KPV 60mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK+KPV-SINGLE"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "purity",
+          "before": "99.82%",
+          "after": "99.84%"
+        },
+        {
+          "field": "notes",
+          "before": "Vial 1 purity: 99.84%; Vial 2 purity: 99.83%\r\nMicrobial analysis: Pass\r\nElemental impurities: Pass\r\nFentanyl: Detected\r\nFentanyl: No Fentanyl Detected",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 2009,
+      "product_name": "GHK-Cu 50mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu 50mg",
+            "CU50-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "GHK Cu 50mg",
+            "GHK-Cu50mg",
+            "GHK-Cu 50 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK-CU-SINGLE-50MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10856 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10856"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954680"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1967,
+      "product_name": "GHK-Cu 100mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu 100mg",
+            "CU50-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "GHK Cu 100mg",
+            "GHK-Cu100mg",
+            "GHK-Cu 100 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK-CU-SINGLE-100MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10857 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10857"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954681"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1979,
+      "product_name": "BPC-157 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "BPC-157 10mg",
+            "BC10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "BPC 157 10mg",
+            "BPC-15710mg",
+            "BPC-157 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "BPC-157-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10849 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10849"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954674"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1977,
+      "product_name": "ARA-290 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "ARA-290"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "ARA-290 10mg",
+            "RA10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "ARA 290 10mg",
+            "ARA-29010mg",
+            "ARA-290 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "ARA-290-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10854 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10854"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-07-31"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954678"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1973,
+      "product_name": "SS-31 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Fentanyl",
+          "after": "SS-31 (Elamipretide)"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "SS-31 10mg",
+            "2S10-0726",
+            "RGVPRIMEllc",
+            "Fentanyl",
+            "SS 31 10mg",
+            "SS-3110mg",
+            "SS-31 10 mg"
+          ],
+          "after": [
+            "SS-31"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "SS-31-10MG"
+        },
+        {
+          "field": "lab",
+          "before": "Freedom Diagnostics",
+          "after": "ILS Laboratories"
+        },
+        {
+          "field": "sample_id",
+          "before": "ACC-2026-10855 || Sample Matrix: || Lyophilized",
+          "after": "ACC-2026-10855"
+        },
+        {
+          "field": "report_date",
+          "before": "2026-07-17",
+          "after": "2026-08-03"
+        },
+        {
+          "field": "report_code",
+          "before": "RGVPRIMEllc",
+          "after": "COA-2026-954679"
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1963,
+      "product_name": "GHK-Cu Raw 1g",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu Raw 1g",
+            "Blue Cap",
+            "RGVE2607030549",
+            "Confirmed",
+            "GHK Cu Raw 1g",
+            "GHK-CuRaw1g",
+            "GHK-Cu Raw 1 g"
+          ],
+          "after": [
+            "RAW-GHK 1g"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RAW-GHK-1G"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1958,
+      "product_name": "Semax 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Semax"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Semax 10mg",
+            "XA10-2501-01",
+            "RGVE2607030540",
+            "Confirmed",
+            "Semax10mg",
+            "Semax 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "SEMAX-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1959,
+      "product_name": "BPC-157 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "BPC-157 10mg",
+            "BC10-2501-01",
+            "RGVE2607030541",
+            "Confirmed",
+            "BPC 157 10mg",
+            "BPC-15710mg",
+            "BPC-157 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "BPC-157-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1955,
+      "product_name": "NAD+ 500mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "NAD+"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "NAD+ 500mg",
+            "NJ500-2501-01",
+            "RGVE2607030534",
+            "Confirmed",
+            "NAD 500mg",
+            "NAD+500mg",
+            "NAD+ 500 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "NAD-500MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1957,
+      "product_name": "MOTS-C 40mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "MOTS-C"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "MOTS-C 40mg",
+            "MS40-2501-01",
+            "RGVE2607030538",
+            "Confirmed",
+            "MOTS C 40mg",
+            "MOTS-C40mg",
+            "MOTS-C 40 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "MOTS-C-SINGLE-40MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1952,
+      "product_name": "LL37",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "LL-37"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "LL37",
+            "LL375",
+            "RGVE2606090468",
+            "Confirmed"
+          ],
+          "after": [
+            "LL-37 5mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "LL-37-5MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1953,
+      "product_name": "IGF-LR3 1mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "IGF-LR3"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "IGF-LR3 1mg",
+            "Clear Blue Cap",
+            "RGVE2606090469",
+            "Confirmed",
+            "IGF LR3 1mg",
+            "IGF-LR31mg",
+            "IGF-LR3 1 mg"
+          ],
+          "after": [
+            "IGF1-LR3 1mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "IGF1-LR3-1MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1954,
+      "product_name": "KLOW 80mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu/KPV/TB-500/BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "KLOW 80mg",
+            "Clear Pink Cap",
+            "RGVE2606090470",
+            "Confirmed",
+            "KLOW80mg",
+            "KLOW 80 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KLOW-80MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1950,
+      "product_name": "5-Amino 1MQ 50mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "5-Amino 1MQ"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "5-Amino 1MQ 50mg",
+            "50AM-2501-01",
+            "RGVE2606010518",
+            "Confirmed",
+            "5 Amino 1MQ 50mg",
+            "5-Amino1MQ50mg",
+            "5-Amino 1MQ 50 mg"
+          ],
+          "after": [
+            "5AMINO-1MQ 50mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "5AMINO-1MQ-50MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1951,
+      "product_name": "NAD + 500mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "NAD+"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "NAD + 500mg",
+            "NJ500",
+            "RGVE2606090467",
+            "Confirmed",
+            "NAD 500mg",
+            "NAD+500mg",
+            "NAD + 500 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "NAD-500MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1948,
+      "product_name": "GLOW 70mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu/Thymosin Beta-4/BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GLOW 70mg",
+            "BBG70-2501-01",
+            "RGVE2605290494",
+            "Confirmed",
+            "GLOW70mg",
+            "GLOW 70 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GLOW-70MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1949,
+      "product_name": "GHK 1g",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK 1g",
+            "2026040701",
+            "RGVE2605290495",
+            "Confirmed",
+            "GHK1g",
+            "GHK 1 g"
+          ],
+          "after": [
+            "RAW-GHK 1g"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "RAW-GHK-1G"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1945,
+      "product_name": "Adamax 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Adamax (Low MW)"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Adamax 10mg",
+            "ADAMAX10",
+            "RGVE2605290491",
+            "Confirmed",
+            "Adamax10mg",
+            "Adamax 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "ADAMAX-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1947,
+      "product_name": "GHK-Cu 100mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "GHK-Cu"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu 100mg",
+            "GHK-CU100",
+            "RGVE2605290493",
+            "Confirmed",
+            "GHK Cu 100mg",
+            "GHK-Cu100mg",
+            "GHK-Cu 100 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK-CU-SINGLE-100MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1943,
+      "product_name": "BPC-157 / TB-500 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Thymosin Beta-4/BPC-157"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "BPC-157 / TB-500 10mg",
+            "BB10-2501-01",
+            "RGVE2605290489",
+            "Confirmed",
+            "BPC 157 TB 500 10mg",
+            "BPC-157/TB-50010mg",
+            "BPC-157 / TB-500 10 mg"
+          ],
+          "after": [
+            "BPC-157/TB-500"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "BPC-TB-SINGLE-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1944,
+      "product_name": "IGF-1 LR3 1mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "IGF-LR3"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "IGF-1 LR3 1mg",
+            "IGF",
+            "RGVE2605290490",
+            "Confirmed",
+            "IGF 1 LR3 1mg",
+            "IGF-1LR31mg",
+            "IGF-1 LR3 1 mg"
+          ],
+          "after": [
+            "IGF1-LR3 1mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "IGF1-LR3-1MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1941,
+      "product_name": "MOTS-C 40mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "MOTS-C"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "MOTS-C 40mg",
+            "MS40-2501-01",
+            "RGVE2605290487",
+            "Confirmed",
+            "MOTS C 40mg",
+            "MOTS-C40mg",
+            "MOTS-C 40 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "MOTS-C-SINGLE-40MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1938,
+      "product_name": "DSIP 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "DSIP"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "DSIP 10mg",
+            "Blue Cap",
+            "RGVE2605080214",
+            "Confirmed",
+            "DSIP10mg",
+            "DSIP 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "DSIP-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1933,
+      "product_name": "MT2 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "Melanotan-II"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "MT2 10mg",
+            "White Cap",
+            "RGVE2604290146",
+            "Confirmed",
+            "MT210mg",
+            "MT2 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "MT2-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1934,
+      "product_name": "5-Amino 1MQ 50mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "5-Amino 1MQ"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "5-Amino 1MQ 50mg",
+            "50AM-2501-01",
+            "RGVE2604290147",
+            "Confirmed",
+            "5 Amino 1MQ 50mg",
+            "5-Amino1MQ50mg",
+            "5-Amino 1MQ 50 mg"
+          ],
+          "after": [
+            "5AMINO-1MQ 50mg"
+          ]
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "5AMINO-1MQ-50MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1932,
+      "product_name": "KPV 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed",
+          "after": "KPV"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "KPV 10mg",
+            "Black Cap",
+            "RGVE2604290145",
+            "Confirmed",
+            "KPV10mg",
+            "KPV 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KPV-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1929,
+      "product_name": "Semax 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed · Semax",
+          "after": "Semax"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Semax 10mg",
+            "XA10-2501-01",
+            "RGVE2604270049",
+            "Confirmed · Semax",
+            "Semax10mg",
+            "Semax 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "SEMAX-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1926,
+      "product_name": "MOTS-C 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed · MOTS-C",
+          "after": "MOTS-C"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "MOTS-C 10mg",
+            "MS 10-2501-01",
+            "RGVE2604270046",
+            "Confirmed · MOTS-C",
+            "MOTS C 10mg",
+            "MOTS-C10mg",
+            "MOTS-C 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1927,
+      "product_name": "Selank 10mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Confirmed · Selank",
+          "after": "Selank"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Selank 10mg",
+            "Blue Cap",
+            "RGVE2604270047",
+            "Confirmed · Selank",
+            "Selank10mg",
+            "Selank 10 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "SELANK-10MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1923,
+      "product_name": "KLOW 80mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "Blue Lyophilized Powder",
+          "after": "GHK-Cu/KPV/BPC-157/Thymosin Beta-4"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "KLOW 80mg",
+            "KLOW80-2501-01",
+            "RGVE2604060178",
+            "Blue Lyophilized Powder",
+            "KLOW80mg",
+            "KLOW 80 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "KLOW-80MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1924,
+      "product_name": "NAD+ 500mg",
+      "changes": [
+        {
+          "field": "aliases",
+          "before": [
+            "NAD+ 500mg",
+            "NJ500-2501-01",
+            "RGVE2604060179",
+            "NAD+",
+            "NAD 500mg",
+            "NAD+500mg",
+            "NAD+ 500 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "NAD-500MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1925,
+      "product_name": "Lipo-C/B12 10ml",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "acid (B5)/Pyridoxine",
+          "after": "Choline/Carnitine/Arginin e/Inositol/Pantothenic acid (B5)/Pyridoxine (B6)/Cyanocobalamin (B12)"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "Lipo-C/B12 10ml",
+            "LC216-2501-01",
+            "RGVE2604060180",
+            "acid (B5)/Pyridoxine",
+            "Lipo C B12 10ml",
+            "Lipo-C/B1210ml",
+            "Lipo-C/B12 10 ml"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "LIPO-C-B12-10ML"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "purity",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1920,
+      "product_name": "MOTS-C 40mg",
+      "changes": [
+        {
+          "field": "compound_name",
+          "before": "",
+          "after": "MOTS-C"
+        },
+        {
+          "field": "aliases",
+          "before": [
+            "MOTS-C 40mg",
+            "MS40-2501-01",
+            "RGVE2603260141",
+            "MOTS C 40mg",
+            "MOTS-C40mg",
+            "MOTS-C 40 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "MOTS-C-SINGLE-40MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    },
+    {
+      "id": 1922,
+      "product_name": "GHK-Cu 50mg",
+      "changes": [
+        {
+          "field": "aliases",
+          "before": [
+            "GHK-Cu 50mg",
+            "GHK-CU50-2501-01",
+            "RGVE2604060177",
+            "GHK-Cu",
+            "GHK Cu 50mg",
+            "GHK-Cu50mg",
+            "GHK-Cu 50 mg"
+          ],
+          "after": []
+        },
+        {
+          "field": "sku",
+          "before": "",
+          "after": "GHK-CU-SINGLE-50MG"
+        },
+        {
+          "field": "test_date",
+          "before": "",
+          "after": null
+        },
+        {
+          "field": "notes",
+          "before": "",
+          "after": null
+        }
+      ]
+    }
+  ],
+  "issue_count": 4,
+  "issues": [
+    {
+      "id": 3045,
+      "product_name": "RG RT 30MG",
+      "severity": "review",
+      "code": "source_date_conflict",
+      "field": "test_date",
+      "value": [
+        "2026-07-17",
+        "2026-09-01"
+      ]
+    },
+    {
+      "id": 2634,
+      "product_name": "GHK-CU 50MG",
+      "severity": "review",
+      "code": "source_date_conflict",
+      "field": "test_date",
+      "value": [
+        "2026-08-15",
+        "2026-08-17"
+      ]
+    },
+    {
+      "id": 1926,
+      "product_name": "MOTS-C 10mg",
+      "severity": "review",
+      "code": "sku_unresolved",
+      "field": "sku"
+    },
+    {
+      "id": 1926,
+      "product_name": "MOTS-C 10mg",
+      "severity": "review",
+      "code": "catalog_mapping",
+      "field": "sku",
+      "value": [
+        "362"
+      ]
+    }
+  ]
+}

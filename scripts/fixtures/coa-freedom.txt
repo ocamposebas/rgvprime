@@ -1,0 +1,23 @@
+Certificate of Analysis
+FreedomDiagnosticsTesting.com
+Client: RGV Prime
+Accession #: 2607280197
+Search Code: RGVP2607280197
+Received: 7/28/2026
+Reported: 7/31/2026
+Lot: P1-BTY06
+Sample Summary
+Product: GHK-Cu + KPV 60mg Purity:
+Vial 1: 99.84%
+Vial 2: 99.83%
+Identity: Confirmed Net Content: Vial 1: GHK-Cu - 51.70 mg
+Appearance: Blue Lyophilized Powder
+Fentanyl No Fentanyl Detected
+Analytical Results
+Test Result
+Identity (LC-MS) GHK-Cu/KPV
+Purity (HPLC-UV) 99.84%
+Elemental Impurities (ICP-MS): Pass - below reporting/specification limits
+Microbial Analysis (PCR) No Detectable Microbial DNA
+Endotoxin Replicate 1: Pass Assay Sensitivity: <=0.05 EU/mL
+Endotoxin Replicate 2: Pass Assay Sensitivity: <=0.05 EU/mL

@@ -1,54 +1,39 @@
 import assert from "node:assert/strict";
-import {
-  correctVerifiedCoaIdentities,
-  VERIFIED_COA_IDENTITIES,
-} from "../src/lib/coaMetadata.js";
+import sourceTruth from "../src/components/data/coa-source-truth.json" with { type: "json" };
+import { normalizeCoaPayload } from "../src/lib/coaMetadata.js";
 
-const fentanylResult = "Fentanyl Screen: Not Detected";
-const affectedRecords = Object.entries(VERIFIED_COA_IDENTITIES).map(
-  ([id, expectedIdentity]) => ({
-    id: Number(id),
-    identity: "Fentanyl",
-    notes: fentanylResult,
-    expectedIdentity,
-  }),
-);
+const ghk = sourceTruth.records.find((record) => record.id === 2634);
+const unrelated = {
+  id: 999999,
+  identity: "Fentanyl",
+  aliases: ["Fentanyl"],
+  url: "https://example.test/genuine-fentanyl-product.pdf",
+};
 const payload = {
-  items: affectedRecords,
-  companies: [
+  items: [
     {
-      files: [
-        {
-          ...affectedRecords[0],
-          history: affectedRecords.slice(1, 4),
-        },
-      ],
+      id: ghk.id,
+      identity: "Fentanyl",
+      aliases: ["Fentanyl"],
+      purity: "NPC%",
+      url: ghk.pdf_url,
     },
+    unrelated,
   ],
-  unrelated: {
-    id: 999999,
-    identity: "Fentanyl",
-    notes: "A genuine unrelated identity must not be rewritten.",
-  },
 };
 
-const corrected = correctVerifiedCoaIdentities(payload);
-
-for (const record of corrected.items) {
-  assert.equal(record.identity, record.expectedIdentity);
-  assert.equal(record.notes, fentanylResult);
-}
-
-for (const record of corrected.companies[0].files[0].history) {
-  assert.equal(record.identity, record.expectedIdentity);
-  assert.equal(record.notes, fentanylResult);
-}
-
-assert.equal(corrected.unrelated.identity, "Fentanyl");
+const normalized = normalizeCoaPayload(payload);
+assert.equal(normalized.items[0].identity, "GHK-Cu");
+assert.equal(normalized.items[0].aliases.includes("Fentanyl"), false);
+assert.equal(normalized.items[0].purity, "99.77%");
 assert.equal(
-  payload.items[0].identity,
-  "Fentanyl",
-  "normalization must not mutate upstream data",
+  normalized.items[0].results.some(
+    (result) => result.analyte === "Fentanyl Screen" && result.value === "Not Detected",
+  ),
+  true,
 );
+assert.deepEqual(normalized.items[1], unrelated, "unverified records must not be rewritten");
+assert.equal(payload.items[0].identity, "Fentanyl", "normalization must not mutate upstream data");
+assert.equal(normalized.meta.schema_version, 2);
 
-console.log("Verified COA identity metadata checks passed");
+console.log("Source-verified COA metadata checks passed");

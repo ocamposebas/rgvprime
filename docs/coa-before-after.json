@@ -1,0 +1,1142 @@
+{
+  "generated_at": "2026-09-11T16:25:59.088Z",
+  "before": {
+    "total": 87,
+    "current": 49,
+    "history": 38,
+    "fentanyl_aliases": 12,
+    "malformed_purity": 2,
+    "empty_sku": 62,
+    "malformed_sample_id": 13,
+    "contradictory_fentanyl": 1,
+    "strict_schema_records": 0
+  },
+  "after": {
+    "total": 87,
+    "current": 49,
+    "history": 38,
+    "fentanyl_aliases": 0,
+    "malformed_purity": 0,
+    "empty_sku": 1,
+    "malformed_sample_id": 0,
+    "contradictory_fentanyl": 0,
+    "strict_schema_records": 87
+  },
+  "changed_record_count": 87,
+  "changed_records": [
+    {
+      "id": 3045,
+      "product_name": "RG RT 30MG",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "test_date",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 2966,
+      "product_name": "RG-Cag 5mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2846,
+      "product_name": "RGV-TR 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2858,
+      "product_name": "LIPO-C/B-12 10ML",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2856,
+      "product_name": "SEMAX + SELANK 20MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2854,
+      "product_name": "Kisspeptin 10mg",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2852,
+      "product_name": "5-AMINO 1MQ 50MG",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2850,
+      "product_name": "BPC/TB 20MG",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2848,
+      "product_name": "BPC/TB 10MG",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2844,
+      "product_name": "RGV-PUMP",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2347,
+      "product_name": "RGV-LIPO-B (LC526)",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2670,
+      "product_name": "KOREAN GLUTA (GUTHIONE)",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2668,
+      "product_name": "AHK-CU 100MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2666,
+      "product_name": "BPC-157 10MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2664,
+      "product_name": "RGV-TESA 20MG",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2662,
+      "product_name": "SS-31 50MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2659,
+      "product_name": "KLOW 80MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2634,
+      "product_name": "GHK-CU 50MG",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2632,
+      "product_name": "KPV 10mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 2630,
+      "product_name": "5AMINO-1MQ",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2480,
+      "product_name": "CJC/IPA (NO DAC) 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 1942,
+      "product_name": "CJC/IPA (no dac) 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1935,
+      "product_name": "RECON WATER 10ML",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1936,
+      "product_name": "RECON WATER 10ML",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1937,
+      "product_name": "Glutathione 1200mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1930,
+      "product_name": "BPC-157/TB-500 20mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2482,
+      "product_name": "KPV 10MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2478,
+      "product_name": "Epithalon",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2345,
+      "product_name": "Cartalax 20mg",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2343,
+      "product_name": "Korean Gluta (Detoxione 1200mg)",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2341,
+      "product_name": "MT1 10MG",
+      "changed_fields": [
+        "compound_name",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2339,
+      "product_name": "IPAMORELIN 10MG",
+      "changed_fields": [
+        "compound_name",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2310,
+      "product_name": "E-RECON WATER 30ML",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "lab",
+        "sample_id",
+        "received_date",
+        "test_date",
+        "report_date",
+        "report_code",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2242,
+      "product_name": "Cartalax 20mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2234,
+      "product_name": "NAD+ 500mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2232,
+      "product_name": "Glutathione 1200mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1918,
+      "product_name": "RG-Tesa 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1946,
+      "product_name": "RG-Tesa 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1956,
+      "product_name": "RG-Tesa 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1919,
+      "product_name": "RGV-TZ 30",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1921,
+      "product_name": "RGV-TZ 20",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1975,
+      "product_name": "RGV-TZ 20",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1940,
+      "product_name": "RGV-RT 20",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1961,
+      "product_name": "RGV-RT 20",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1969,
+      "product_name": "RGV-RT 20",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1939,
+      "product_name": "RGV-RT 30",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1962,
+      "product_name": "RGV-RT 30",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2004,
+      "product_name": "RGV-RT 30",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1917,
+      "product_name": "RGV-RT 10",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1960,
+      "product_name": "RGV-RT 10",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2007,
+      "product_name": "RGV-RT 10",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1928,
+      "product_name": "SS-31 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "batch",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 2011,
+      "product_name": "GHK-Cu + KPV 60mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 2009,
+      "product_name": "GHK-Cu 50mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1967,
+      "product_name": "GHK-Cu 100mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1979,
+      "product_name": "BPC-157 10mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1977,
+      "product_name": "ARA-290 10mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1973,
+      "product_name": "SS-31 10mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "lab",
+        "sample_id",
+        "report_date",
+        "report_code",
+        "notes"
+      ]
+    },
+    {
+      "id": 1963,
+      "product_name": "GHK-Cu Raw 1g",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1958,
+      "product_name": "Semax 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1959,
+      "product_name": "BPC-157 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1955,
+      "product_name": "NAD+ 500mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1957,
+      "product_name": "MOTS-C 40mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1952,
+      "product_name": "LL37",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1953,
+      "product_name": "IGF-LR3 1mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1954,
+      "product_name": "KLOW 80mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1950,
+      "product_name": "5-Amino 1MQ 50mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1951,
+      "product_name": "NAD + 500mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1948,
+      "product_name": "GLOW 70mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1949,
+      "product_name": "GHK 1g",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1945,
+      "product_name": "Adamax 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1947,
+      "product_name": "GHK-Cu 100mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1943,
+      "product_name": "BPC-157 / TB-500 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1944,
+      "product_name": "IGF-1 LR3 1mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1941,
+      "product_name": "MOTS-C 40mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1938,
+      "product_name": "DSIP 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1933,
+      "product_name": "MT2 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1934,
+      "product_name": "5-Amino 1MQ 50mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1932,
+      "product_name": "KPV 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1929,
+      "product_name": "Semax 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1926,
+      "product_name": "MOTS-C 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1927,
+      "product_name": "Selank 10mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1923,
+      "product_name": "KLOW 80mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1924,
+      "product_name": "NAD+ 500mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1925,
+      "product_name": "Lipo-C/B12 10ml",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "purity",
+        "notes"
+      ]
+    },
+    {
+      "id": 1920,
+      "product_name": "MOTS-C 40mg",
+      "changed_fields": [
+        "compound_name",
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    },
+    {
+      "id": 1922,
+      "product_name": "GHK-Cu 50mg",
+      "changed_fields": [
+        "aliases",
+        "sku",
+        "test_date",
+        "notes"
+      ]
+    }
+  ],
+  "pdf_urls_unchanged": true,
+  "changed_pdf_url_ids": []
+}

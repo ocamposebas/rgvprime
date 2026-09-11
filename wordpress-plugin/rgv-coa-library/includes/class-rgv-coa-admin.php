@@ -251,6 +251,7 @@ final class RGV_COA_Admin {
                     <div class="rgv-coa-card-heading"><span>01</span><div><h2><?php esc_html_e('Certificate identity', 'rgv-coa-library'); ?></h2><p><?php esc_html_e('The information customers use to identify the correct batch.', 'rgv-coa-library'); ?></p></div></div>
                     <div class="rgv-coa-fields rgv-coa-fields--2">
                         <?php self::input($post_id, 'product_name', __('Product name', 'rgv-coa-library'), true, 'Retatrutide 30mg'); ?>
+                        <?php self::input($post_id, 'compound_name', __('Compound name', 'rgv-coa-library'), false, 'Retatrutide'); ?>
                         <?php self::input($post_id, 'sku', __('SKU', 'rgv-coa-library'), false, 'RGV-R3TA-30MG'); ?>
                         <?php self::input($post_id, 'report_code', __('Certificate / Report ID', 'rgv-coa-library'), true, 'RGVE2607030546'); ?>
                         <?php self::input($post_id, 'batch', __('Batch / Lot number', 'rgv-coa-library'), true, 'RT30-2501-01'); ?>
@@ -265,6 +266,7 @@ final class RGV_COA_Admin {
                         <?php self::input($post_id, 'lab_name', __('Laboratory name', 'rgv-coa-library'), false, 'Laboratory name'); ?>
                         <?php self::input($post_id, 'sample_id', __('Sample ID', 'rgv-coa-library'), false, 'Sample reference'); ?>
                         <?php self::input($post_id, 'test_method', __('Test method', 'rgv-coa-library'), false, 'HPLC / MS'); ?>
+                        <?php self::input($post_id, 'received_date', __('Received date', 'rgv-coa-library'), false, '', 'date'); ?>
                         <?php self::input($post_id, 'test_date', __('Test date', 'rgv-coa-library'), false, '', 'date'); ?>
                         <?php self::input($post_id, 'report_date', __('Report date', 'rgv-coa-library'), false, '', 'date'); ?>
                     </div>
@@ -300,6 +302,17 @@ final class RGV_COA_Admin {
                     </div>
                 </section>
             </aside>
+        </form>
+        <form class="rgv-coa-settings" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="<?php echo esc_attr(RGV_COA_Migration::ACTION); ?>">
+            <?php wp_nonce_field(RGV_COA_Migration::ACTION); ?>
+            <section class="rgv-coa-card">
+                <div class="rgv-coa-card-heading"><span>02</span><div><h2><?php esc_html_e('Source-verified migration', 'rgv-coa-library'); ?></h2><p><?php esc_html_e('Back up every COA record, verify each PDF SHA-256, then apply the audited structured metadata manifest.', 'rgv-coa-library'); ?></p></div></div>
+                <?php if (isset($_GET['coa_migrated'])) : ?>
+                    <p><?php echo esc_html(sprintf(__('Updated %1$d records; skipped %2$d records for review.', 'rgv-coa-library'), absint($_GET['coa_migrated']), absint($_GET['coa_skipped'] ?? 0))); ?></p>
+                <?php endif; ?>
+                <button class="rgv-coa-primary" type="submit"><?php esc_html_e('Back up and apply verified COA data', 'rgv-coa-library'); ?></button>
+            </section>
         </form>
         <?php
         self::footer();
@@ -388,11 +401,20 @@ final class RGV_COA_Admin {
             wp_die(esc_html($post_id->get_error_message()));
         }
 
-        $fields = ['product_name', 'sku', 'report_code', 'batch', 'purity', 'quantity', 'lab_name', 'sample_id', 'test_method', 'test_date', 'report_date', 'document_url'];
+        $fields = ['product_name', 'compound_name', 'sku', 'report_code', 'batch', 'purity', 'quantity', 'lab_name', 'sample_id', 'test_method', 'received_date', 'test_date', 'report_date', 'document_url'];
         foreach ($fields as $field) {
             $value = sanitize_text_field(wp_unslash($_POST[$field] ?? ''));
             if ('document_url' === $field) {
                 $value = esc_url_raw($value);
+            }
+            if ('purity' === $field && $value && !RGV_COA_Integrity::valid_purity($value)) {
+                wp_die(esc_html__('Purity must be a numeric percentage or left empty.', 'rgv-coa-library'));
+            }
+            if (in_array($field, ['received_date', 'test_date', 'report_date'], true) && $value && !RGV_COA_Integrity::valid_date($value)) {
+                wp_die(esc_html__('COA dates must be valid ISO dates.', 'rgv-coa-library'));
+            }
+            if ('sample_id' === $field && $value && !RGV_COA_Integrity::valid_sample_id($value)) {
+                wp_die(esc_html__('Sample ID is malformed.', 'rgv-coa-library'));
             }
             update_post_meta($post_id, RGV_COA_Post_Type::META_PREFIX . $field, $value);
         }
@@ -405,6 +427,10 @@ final class RGV_COA_Admin {
 
         $raw_aliases = preg_split('/\r\n|\r|\n/', wp_unslash($_POST['aliases'] ?? ''));
         $aliases = array_values(array_unique(array_filter(array_map('sanitize_text_field', $raw_aliases))));
+        $aliases = RGV_COA_Integrity::remove_analyte_aliases(
+            $aliases,
+            RGV_COA_Post_Type::array_meta($post_id, 'analytes')
+        );
         update_post_meta($post_id, RGV_COA_Post_Type::META_PREFIX . 'aliases', $aliases);
 
         update_post_meta($post_id, RGV_COA_Post_Type::META_PREFIX . 'product_ids', $product_ids);

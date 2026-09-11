@@ -105,7 +105,7 @@ The storefront reads Certificate of Analysis records from the companion
 `RGV COA Library` WordPress plugin instead of importing
 `src/components/data/coas.json`.
 
-1. Install `wordpress-plugin/rgv-coa-library-1.0.0.zip` in WordPress.
+1. Install `wordpress-plugin/rgv-coa-library-1.12.0.zip` in WordPress.
 2. Activate the plugin and open **COA Library** in WordPress admin.
 3. Add a certificate, upload its PDF, link its WooCommerce product IDs, and
    choose **Current Shipping** or **History**.
@@ -113,6 +113,12 @@ The storefront reads Certificate of Analysis records from the companion
 
 The storefront proxy is available at `/api/coas`. WordPress exposes the
 read-only source endpoints under `/wp-json/rgv-coa/v1`.
+
+Version 1.12 uses the laboratory PDF as the analytical source of truth, keeps
+analytes/results separate from product aliases, validates source hashes before
+migration, and exposes the schema-v2 fields while retaining legacy response
+keys for the existing COA UI. See `docs/coa-pipeline.md` for the snapshot,
+reprocessing, validation, and migration workflow.
 
 ## Omnisend dynamic abandoned cart
 

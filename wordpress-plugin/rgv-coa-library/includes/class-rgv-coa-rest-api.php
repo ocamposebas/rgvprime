@@ -4,7 +4,7 @@ defined('ABSPATH') || exit;
 
 final class RGV_COA_REST_API {
     const NAMESPACE = 'rgv-coa/v1';
-    const CACHE_KEY = 'rgv_coa_library_payload_v1';
+    const CACHE_KEY = 'rgv_coa_library_payload_v2';
 
     public static function hooks() {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
@@ -80,26 +80,44 @@ final class RGV_COA_REST_API {
             $group_key = sanitize_title($product_name);
         }
 
+        $purity = RGV_COA_Post_Type::meta($id, 'purity');
+        $purity = $purity && RGV_COA_Integrity::valid_purity($purity) ? $purity : null;
+        $sample_id = RGV_COA_Post_Type::meta($id, 'sample_id');
+        $sample_id = $sample_id && RGV_COA_Integrity::valid_sample_id($sample_id) ? $sample_id : null;
+        $analytes = RGV_COA_Post_Type::array_meta($id, 'analytes');
+        $aliases = RGV_COA_Integrity::remove_analyte_aliases(RGV_COA_Post_Type::aliases($id), $analytes);
+
         return [
             'id' => $id,
             'code' => RGV_COA_Post_Type::meta($id, 'report_code'),
+            'report_code' => RGV_COA_Post_Type::meta($id, 'report_code'),
             'lot' => RGV_COA_Post_Type::meta($id, 'batch'),
             'batch' => RGV_COA_Post_Type::meta($id, 'batch'),
             'product' => $product_name,
+            'product_name' => $product_name,
+            'compound_name' => RGV_COA_Post_Type::meta($id, 'compound_name'),
             'sku' => RGV_COA_Post_Type::meta($id, 'sku'),
             'url' => RGV_COA_Post_Type::document_url($id),
+            'pdf_url' => RGV_COA_Post_Type::document_url($id),
             'status' => RGV_COA_Post_Type::sanitize_status(RGV_COA_Post_Type::meta($id, 'status')),
-            'purity' => RGV_COA_Post_Type::meta($id, 'purity'),
+            'is_current' => 'history' !== RGV_COA_Post_Type::sanitize_status(RGV_COA_Post_Type::meta($id, 'status')),
+            'purity' => $purity,
             'quantity' => RGV_COA_Post_Type::meta($id, 'quantity'),
+            'lab' => RGV_COA_Post_Type::meta($id, 'lab_name'),
             'lab_name' => RGV_COA_Post_Type::meta($id, 'lab_name'),
-            'sample_id' => RGV_COA_Post_Type::meta($id, 'sample_id'),
+            'sample_id' => $sample_id,
             'test_method' => RGV_COA_Post_Type::meta($id, 'test_method'),
+            'received_date' => RGV_COA_Post_Type::meta($id, 'received_date'),
             'test_date' => RGV_COA_Post_Type::meta($id, 'test_date'),
             'report_date' => RGV_COA_Post_Type::meta($id, 'report_date'),
             'group_key' => $group_key,
             'canonical_key' => $group_key,
             'product_ids' => RGV_COA_Post_Type::product_ids($id),
-            'aliases' => RGV_COA_Post_Type::aliases($id),
+            'aliases' => $aliases,
+            'analytes' => $analytes,
+            'tests' => RGV_COA_Post_Type::array_meta($id, 'tests'),
+            'results' => RGV_COA_Post_Type::array_meta($id, 'results'),
+            'manual_review' => RGV_COA_Post_Type::array_meta($id, 'manual_review'),
             'notes' => wp_kses_post(get_post_meta($id, RGV_COA_Post_Type::META_PREFIX . 'notes', true)),
             'updated_at' => get_post_modified_time('c', true, $post),
         ];
@@ -139,14 +157,26 @@ final class RGV_COA_REST_API {
             return strnatcasecmp($a['product'], $b['product']);
         });
 
+        $families = array_map(function ($record) use ($history_by_group) {
+            return [
+                'key' => $record['group_key'],
+                'name' => $record['product_name'],
+                'current' => [$record],
+                'history' => array_values($history_by_group[$record['group_key']] ?? []),
+                'count' => 1 + count($history_by_group[$record['group_key']] ?? []),
+            ];
+        }, $current);
+
         $payload = [
             'companies' => [[
                 'name' => sanitize_text_field($settings['company_name']),
                 'aliases' => $aliases,
                 'files' => $files,
             ]],
+            'families' => array_values($families),
             'items' => $records,
             'meta' => [
+                'schema_version' => 2,
                 'current_shipping' => count($current),
                 'history' => count($records) - count($current),
                 'total' => count($records),
@@ -186,4 +216,3 @@ final class RGV_COA_REST_API {
         return $response;
     }
 }
-

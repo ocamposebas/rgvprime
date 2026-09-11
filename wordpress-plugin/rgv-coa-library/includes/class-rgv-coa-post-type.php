@@ -25,8 +25,8 @@ final class RGV_COA_Post_Type {
         ]);
 
         $text_fields = [
-            'product_name', 'sku', 'report_code', 'batch', 'purity', 'quantity',
-            'lab_name', 'sample_id', 'test_method', 'test_date', 'report_date',
+            'product_name', 'compound_name', 'sku', 'report_code', 'batch', 'purity', 'quantity',
+            'lab_name', 'sample_id', 'test_method', 'received_date', 'test_date', 'report_date',
             'group_key', 'document_url',
         ];
 
@@ -70,6 +70,11 @@ final class RGV_COA_Post_Type {
         return array_values(array_filter(array_map('sanitize_text_field', is_array($aliases) ? $aliases : [])));
     }
 
+    public static function array_meta($post_id, $key) {
+        $value = get_post_meta($post_id, self::META_PREFIX . $key, true);
+        return is_array($value) ? array_values($value) : [];
+    }
+
     public static function document_url($post_id) {
         $attachment_id = absint(get_post_meta($post_id, self::META_PREFIX . 'attachment_id', true));
         $url = $attachment_id ? wp_get_attachment_url($attachment_id) : '';
@@ -77,4 +82,3 @@ final class RGV_COA_Post_Type {
         return $url ?: esc_url_raw(self::meta($post_id, 'document_url'));
     }
 }
-

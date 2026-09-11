@@ -12,7 +12,7 @@
     "astro": "astro",
     "test:compliance": "node scripts/verify-compliance-controls.mjs",
     "test:seo": "node scripts/verify-seo.mjs",
-    "test:coa": "node scripts/verify-coa-metadata.mjs",
+    "test:coa": "node scripts/verify-coa-metadata.mjs && node scripts/verify-coa-pipeline.mjs && node scripts/verify-coa-wordpress-plugin.mjs",
     "test:storefront": "node scripts/verify-storefront-regression.mjs",
     "test:rush": "node scripts/verify-rush-processing-plugin.mjs",
     "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs",
@@ -34,5 +34,10 @@
     "react-dom": "^19.2.8",
     "sanitize-html": "^2.17.7",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "pdfjs-dist": "^6.3.289",
+    "tesseract.js": "^7.0.0"
   }
 }

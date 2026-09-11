@@ -1,0 +1,27 @@
+ILS Laboratories
+8222 Vickers St, Suite 106, San Diego, CA 92111
+Certificate of Analysis
+GHK-Cu - 50mg PASS
+Tested for: RGVPRIME
+COA #: COA-2026-956051
+Lot Number: COREGHK50
+Accession #: ACC-2026-15573
+Labeled Content: 50mg
+Analysis Date: 08/15/2026
+Appearance: Good
+Sample Matrix: Lyophilized
+Date Received: 08/11/2026
+Method: Full QC Panel
+Identity
+GHK-Cu
+Peptide Purity
+99.77%
+Fentanyl
+Free
+Purity, Identity & Quantitation (HPLC)
+Analyte Specification Result Unit Status
+Peptide Purity (HPLC) >= 95.0% 99.77% % PASS
+Net Peptide Content Report Only 53.48 mg N/A
+Identity (HPLC-RTM) GHK-Cu Confirmed - PASS
+Fentanyl Screen Immunoassay, 50 ng/mL cutoff Not Detected - PASS
+Issued: 8/17/2026

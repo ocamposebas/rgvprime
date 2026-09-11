@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": 2310,
+      "pdf_sha256": "038e3630eee54623c8089940960bda454c2ccba9b59576a12e250e53cd066c75",
+      "evidence": "Visual review of the original one-page Chromate certificate; OCR omitted the Batch label and misread pH.",
+      "fields": {
+        "product_name": "eBac BAC Water 30 mL",
+        "compound_name": "Benzyl alcohol",
+        "batch": "EB61901",
+        "lab": "Chromate",
+        "sample_id": null,
+        "received_date": "2026-05-12",
+        "test_date": "2026-05-22",
+        "report_date": "2026-05-24",
+        "report_code": "35348",
+        "purity": null,
+        "tests": [
+          {
+            "name": "Identity",
+            "result": "Benzyl alcohol",
+            "specification": "Benzyl alcohol",
+            "unit": null,
+            "status": "Conforms",
+            "method": "RP-HPLC with UV detection"
+          },
+          {
+            "name": "Quantity",
+            "result": "0.921%",
+            "specification": "0.9%",
+            "unit": "%",
+            "status": "Conforms",
+            "method": "RP-HPLC with UV detection"
+          },
+          {
+            "name": "Sterility",
+            "result": "Pass",
+            "specification": "Pass",
+            "unit": null,
+            "status": "Conforms",
+            "method": "USP <1223> BacT/ALERT"
+          },
+          {
+            "name": "Endotoxins",
+            "result": "< 0.25 EU/mL",
+            "specification": "< 0.5 EU/mL",
+            "unit": "EU/mL",
+            "status": "Conforms",
+            "method": "Kinetic chromogenic LAL assay"
+          },
+          {
+            "name": "pH",
+            "result": "6.253",
+            "specification": "4.5 - 7.0",
+            "unit": null,
+            "status": "Conforms",
+            "method": null
+          }
+        ],
+        "source_conflicts": []
+      }
+    },
+    {
+      "id": 1928,
+      "pdf_sha256": "158626a1c6e34e07545aa57089532a1fbb2f27025cf13ecb14fad29a88caa17b",
+      "evidence": "Visual review of the original one-page Freedom Diagnostics certificate; OCR read the leading '2S' in the Lot as '25'.",
+      "fields": {
+        "batch": "2S10-2501-01"
+      }
+    }
+  ]
+}

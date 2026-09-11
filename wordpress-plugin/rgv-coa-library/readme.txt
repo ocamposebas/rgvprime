@@ -4,7 +4,7 @@ Tags: coa, certificates, woocommerce, laboratory, product documents
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.12.0
 License: GPLv2 or later
 
 An organized Certificate of Analysis library for WooCommerce.
@@ -14,7 +14,7 @@ An organized Certificate of Analysis library for WooCommerce.
 RGV COA Library replaces manually maintained storefront data with a structured WordPress library.
 
 * Upload COA PDF files through the WordPress Media Library.
-* Store product name, SKU, report ID, batch/lot, purity, tested quantity, lab, sample ID, method, dates, aliases, and notes.
+* Store product name, compound name, SKU, report ID, batch/lot, purity, tested quantity, lab, sample ID, received/test/report dates, aliases, analytes, results, and notes separately.
 * Link each COA to one or more WooCommerce products or variations by ID.
 * Mark records as Current Shipping or History.
 * Current Shipping records are exposed for linked product pages.
@@ -36,6 +36,11 @@ RGV COA Library replaces manually maintained storefront data with a structured W
 
 == Changelog ==
 
+= 1.12.0 =
+* Adds source-hash-verified COA migration with a complete pre-write snapshot.
+* Separates product aliases, compound identity, analytes, and results.
+* Validates purity, sample IDs, dates, and analyte-derived aliases.
+* Adds schema-v2 REST fields while preserving legacy response keys.
+
 = 1.0.0 =
 * Initial release.
-
