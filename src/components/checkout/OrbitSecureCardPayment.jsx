@@ -1,5 +1,57 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { Check, CreditCard, LockKeyhole, ShieldCheck } from "lucide-react";
+
+let wompiFingerprintScriptPromise;
+
+function loadWompiFingerprint(publicKey) {
+  if (window.$wompi?.initialize) return Promise.resolve(window.$wompi);
+  if (!wompiFingerprintScriptPromise) {
+    wompiFingerprintScriptPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-rgv-wompi-fingerprint="true"]');
+      const script = existing || document.createElement("script");
+      const finish = () => window.$wompi?.initialize
+        ? resolve(window.$wompi)
+        : reject(new Error("Wompi device security did not initialize."));
+      script.addEventListener("load", finish, { once: true });
+      script.addEventListener("error", () => reject(new Error("Wompi device security could not load.")), { once: true });
+      if (!existing) {
+        script.src = "https://wompijs.wompi.com/libs/js/v1.js";
+        script.async = true;
+        script.dataset.publicKey = publicKey;
+        script.dataset.rgvWompiFingerprint = "true";
+        document.head.appendChild(script);
+      }
+    }).catch((error) => {
+      wompiFingerprintScriptPromise = undefined;
+      throw error;
+    });
+  }
+  return wompiFingerprintScriptPromise;
+}
+
+async function collectWompiDeviceSecurity(publicKey) {
+  try {
+    const wompi = await loadWompiFingerprint(publicKey);
+    return await new Promise((resolve) => {
+      let settled = false;
+      const finish = (value = {}) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve(value);
+      };
+      const timeout = window.setTimeout(() => finish(), 5000);
+      wompi.initialize((data, error) => {
+        if (error) return finish();
+        const sessionId = String(data?.sessionId || "").slice(0, 191);
+        const deviceId = String(data?.deviceData?.deviceID || "").slice(0, 191);
+        finish({ sessionId, deviceId });
+      });
+    });
+  } catch {
+    return {};
+  }
+}
 
 function base64Url(bytes) {
   let binary = "";
@@ -101,26 +153,6 @@ function detectCardBrand(value) {
   return "";
 }
 
-function collectBrowserInfo() {
-  const screen = window.screen || {};
-  return {
-    browser_color_depth: String(screen.colorDepth || 24),
-    browser_screen_height: String(screen.height || window.innerHeight || 720),
-    browser_screen_width: String(screen.width || window.innerWidth || 1280),
-    browser_language: String(window.navigator?.language || "en-US"),
-    browser_user_agent: String(window.navigator?.userAgent || ""),
-    browser_tz: String(new Date().getTimezoneOffset()),
-  };
-}
-
-function decodeThreeDsHtml(value) {
-  if (typeof window === "undefined" || !value) return "";
-  const raw = String(value);
-  if (/<(?:!doctype|html|iframe|form|script)\b/i.test(raw)) return raw;
-  const parser = new window.DOMParser();
-  return parser.parseFromString(raw, "text/html").body.textContent || raw;
-}
-
 const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   { enabled, onCreatePayment, onReadyChange, onInteraction },
   ref,
@@ -135,8 +167,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   const [agreementsAccepted, setAgreementsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState("");
-  const [threeDs, setThreeDs] = useState(null);
-  const threeDsRef = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -162,11 +192,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
     onReadyChange?.(Boolean(config && !configError && !submitting));
   }, [config, configError, onReadyChange, submitting]);
 
-  useEffect(() => {
-    if (String(threeDs?.currentStep || "").toUpperCase() !== "CHALLENGE" || !threeDs?.methodData) return;
-    threeDsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [threeDs?.currentStep, threeDs?.methodData]);
-
   async function confirm() {
     if (submitting) return { ignored: true };
     if (!enabled) return { error: "Complete the contact, shipping, address confirmation, and required agreements before paying." };
@@ -184,7 +209,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
 
     setSubmitting(true);
     setFieldError("");
-    setThreeDs(null);
     try {
       onInteraction?.();
       const payload = await encryptCard({
@@ -210,25 +234,22 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
         throw new Error(tokenData?.error?.reason || tokenData?.error?.message || "ORBIT Payments could not secure this card.");
       }
 
+      const deviceSecurity = await collectWompiDeviceSecurity(config.publicKey);
       const result = await onCreatePayment({
         cardToken,
         installments: Number(installments),
         processorAcceptance: agreementsAccepted,
         processorPersonalAuth: agreementsAccepted,
-        browserInfo: collectBrowserInfo(),
-      }, setThreeDs);
+        ...deviceSecurity,
+      });
       if (result?.error) {
-        setNumber("");
         setCvc("");
-        setThreeDs(null);
       }
       return result;
     } catch (error) {
       const message = error?.message || "The ORBIT Payments transaction could not be completed.";
       setFieldError(message);
-      setNumber("");
       setCvc("");
-      setThreeDs(null);
       return { error: message };
     } finally {
       setSubmitting(false);
@@ -257,12 +278,6 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
   };
 
   const activeBrand = detectCardBrand(number);
-  const threeDsHtml = decodeThreeDsHtml(threeDs?.methodData);
-  const threeDsStep = String(threeDs?.currentStep || "").toUpperCase();
-  const threeDsStatus = String(threeDs?.currentStepStatus || "").toUpperCase();
-  const threeDsBrand = String(threeDs?.brand || "").toUpperCase();
-  const challengeVisible = threeDsStep === "CHALLENGE" && threeDsStatus === "PENDING" && threeDsHtml;
-
   return (
     <section className={`rgvx-orbit-secure-card ${submitting ? "is-submitting" : ""}`} aria-busy={submitting}>
       <header className="rgvx-orbit-secure-card__header">
@@ -328,41 +343,13 @@ const OrbitSecureCardPayment = forwardRef(function OrbitSecureCardPayment(
         <span>I agree to the ORBIT Payments <a href="/policies#terms" target="_blank" rel="noreferrer">payment terms</a> and <a href="/policies#privacy" target="_blank" rel="noreferrer">data authorization</a>.</span>
       </label>
 
-      {threeDs && (
-        <section ref={threeDsRef} className="rgvx-orbit-three-ds" aria-live="polite">
-          <header>
-            <span className={`rgvx-orbit-three-ds__mark ${threeDsBrand === "VISA" ? "is-visa" : ""}`} aria-hidden="true">
-              {threeDsBrand === "MASTERCARD" ? <><i /><i /></> : <b>{threeDsBrand === "VISA" ? "VISA" : "3DS"}</b>}
-            </span>
-            <span>
-              <small>{threeDsBrand === "MASTERCARD" ? "MASTERCARD IDENTITY CHECK" : threeDsBrand === "VISA" ? "VISA SECURE" : "3D SECURE AUTHENTICATION"}</small>
-              <strong>{challengeVisible ? "Confirm this purchase with your bank" : "Your bank is securely authenticating the payment"}</strong>
-            </span>
-          </header>
-          {challengeVisible ? (
-            <iframe
-              key={`${threeDsStep}-${threeDsHtml.length}`}
-              title="Bank card authentication"
-              srcDoc={threeDsHtml}
-              sandbox="allow-forms allow-scripts"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <p><i /> Please wait while your bank verifies the card. Do not close or reload this page.</p>
-          )}
-        </section>
-      )}
-
       {configError && <p className="rgvx-orbit-secure-card__error" role="alert">{configError}</p>}
       {fieldError && <p className="rgvx-orbit-secure-card__error" role="alert">{fieldError}</p>}
-      <footer className="rgvx-orbit-secure-card__security"><LockKeyhole size={14} aria-hidden="true" /><span>Your card details are encrypted and never stored by RGVPRIME.</span></footer>
-      {submitting && !threeDs && <div className="rgvx-orbit-secure-card__loading" role="status"><i /> Securing card and confirming payment...</div>}
+      <footer className="rgvx-orbit-secure-card__security"><LockKeyhole size={14} aria-hidden="true" /><span>Your card details are encrypted and never stored by RGVPRIME. Wompi processes the charge in COP; your bank handles any conversion.</span></footer>
+      {submitting && <div className="rgvx-orbit-secure-card__loading" role="status"><i /> Securing card and confirming payment...</div>}
 
       <style>{`
         .rgvx-orbit-secure-card{position:relative;overflow:hidden;display:grid;gap:18px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:linear-gradient(155deg,#151316 0%,#0c0b0d 62%,#120b0d 100%);padding:22px;box-shadow:0 22px 55px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.035);color:#f8f5f6}.rgvx-orbit-secure-card:before{content:"";position:absolute;right:-90px;top:-110px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(220,38,55,.13),transparent 68%);pointer-events:none}.rgvx-orbit-secure-card.is-submitting>*:not(.rgvx-orbit-secure-card__loading){pointer-events:none;opacity:.42}.rgvx-orbit-secure-card__header{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:11px}.rgvx-orbit-secure-card__shield{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(243,72,91,.24);border-radius:11px;background:linear-gradient(145deg,rgba(226,45,66,.18),rgba(111,22,34,.12));color:#f05a6b}.rgvx-orbit-secure-card__heading{display:grid;gap:2px;min-width:0}.rgvx-orbit-secure-card__heading small{color:#e94c5e;font-size:8px;font-weight:850;letter-spacing:.18em}.rgvx-orbit-secure-card__heading strong{color:#f7f3f4;font-size:13px;font-weight:680;letter-spacing:.01em}.rgvx-orbit-secure-card__brands{display:flex;align-items:center;gap:5px}.rgvx-orbit-secure-card__brands b{display:grid;place-items:center;min-width:32px;height:22px;border:1px solid #373238;border-radius:6px;background:#19171a;padding:0 6px;color:#79737b;font-size:7px;font-weight:900;letter-spacing:.03em;transition:.18s ease}.rgvx-orbit-secure-card__brands b.is-active{border-color:rgba(240,82,100,.45);background:rgba(217,40,60,.13);color:#fff}.rgvx-orbit-secure-card__divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1) 12%,rgba(255,255,255,.1) 88%,transparent)}.rgvx-orbit-secure-card__fields{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:14px}.rgvx-orbit-secure-card__field{display:grid;gap:7px;min-width:0}.rgvx-orbit-secure-card__field>span:first-child{color:#bdb6ba;font-size:10px;font-weight:680;letter-spacing:.035em}.rgvx-orbit-secure-card__field>span:first-child small{display:inline-grid;place-items:center;width:13px;height:13px;margin-left:3px;border:1px solid #4a4449;border-radius:50%;color:#8f878c;font-size:8px;cursor:help}.rgvx-orbit-secure-card__field--number{grid-column:auto}.rgvx-orbit-secure-card__input-wrap{position:relative;display:block}.rgvx-orbit-secure-card__input-wrap>svg{position:absolute;z-index:1;left:13px;top:50%;transform:translateY(-50%);color:#777178;pointer-events:none}.rgvx-orbit-secure-card__input-wrap input,.rgvx-orbit-secure-card__input-wrap select{display:block;box-sizing:border-box;width:100%;height:48px;border:1px solid #353136!important;border-radius:11px!important;outline:0!important;background:rgba(5,5,6,.68)!important;color:#fff!important;padding:0 14px!important;font:inherit!important;font-size:12px!important;font-weight:520!important;letter-spacing:.015em;box-shadow:inset 0 1px 0 rgba(255,255,255,.02)!important;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}.rgvx-orbit-secure-card__input-wrap.has-icon input{padding-left:42px!important}.rgvx-orbit-secure-card__input-wrap input::placeholder{color:#625d62;opacity:1}.rgvx-orbit-secure-card__input-wrap input:focus,.rgvx-orbit-secure-card__input-wrap select:focus{border-color:#dd3d52!important;background:#0c090b!important;box-shadow:0 0 0 3px rgba(221,61,82,.12),inset 0 1px 0 rgba(255,255,255,.025)!important}.rgvx-orbit-secure-card__row{grid-column:1/-1;display:grid;grid-template-columns:.78fr .78fr 1.2fr;gap:12px}.rgvx-orbit-secure-card__consent{display:grid!important;grid-template-columns:20px minmax(0,1fr)!important;align-items:center!important;gap:10px!important;margin:0!important;border:1px solid #2c292d;border-radius:11px;background:rgba(255,255,255,.018);padding:11px 13px!important;color:#999297!important;font-size:9.5px!important;font-weight:520!important;line-height:1.55!important;cursor:pointer;transition:.16s ease}.rgvx-orbit-secure-card__consent:hover,.rgvx-orbit-secure-card__consent.is-checked{border-color:rgba(224,65,84,.3);background:rgba(220,38,55,.045)}.rgvx-orbit-secure-card__check{position:relative;display:grid;place-items:center;width:18px!important;height:18px!important}.rgvx-orbit-secure-card__check input{position:absolute;inset:0;width:18px!important;height:18px!important;margin:0!important;border:1px solid #565057!important;border-radius:5px!important;appearance:none;background:#0d0c0e!important;cursor:pointer}.rgvx-orbit-secure-card__check svg{position:relative;z-index:1;color:white;opacity:0;pointer-events:none}.rgvx-orbit-secure-card__consent.is-checked .rgvx-orbit-secure-card__check input{border-color:#e04255!important;background:linear-gradient(145deg,#e84156,#ae2033)!important}.rgvx-orbit-secure-card__consent.is-checked .rgvx-orbit-secure-card__check svg{opacity:1}.rgvx-orbit-secure-card__consent a{color:#ef7b89!important;text-decoration-color:rgba(239,123,137,.45);text-underline-offset:2px}.rgvx-orbit-secure-card__error{margin:0;border:1px solid rgba(239,67,80,.35);border-radius:10px;background:rgba(216,33,50,.1);padding:10px 12px;color:#ffd4d7;font-size:10px;font-weight:600}.rgvx-orbit-secure-card__security{display:flex;align-items:center;justify-content:center;gap:7px;color:#706a70;font-size:9px;letter-spacing:.025em}.rgvx-orbit-secure-card__security svg{color:#8a8389}.rgvx-orbit-secure-card__loading{position:absolute;z-index:4;inset:0;display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(10,8,9,.88);backdrop-filter:blur(5px);color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-orbit-secure-card__loading i{width:14px;height:14px;border:2px solid rgba(255,255,255,.16);border-top-color:#e8495e;border-radius:50%;animation:rgvx-orbit-secure-spin .7s linear infinite}@keyframes rgvx-orbit-secure-spin{to{transform:rotate(360deg)}}@media(max-width:700px){.rgvx-orbit-secure-card{padding:17px}.rgvx-orbit-secure-card__fields{grid-template-columns:1fr}.rgvx-orbit-secure-card__row{grid-template-columns:1fr 1fr}.rgvx-orbit-secure-card__row .rgvx-orbit-secure-card__field:last-child{grid-column:1/-1}.rgvx-orbit-secure-card__brands b{min-width:29px;padding:0 4px}.rgvx-orbit-secure-card__field--number{grid-column:auto}}@media(max-width:420px){.rgvx-orbit-secure-card__header{grid-template-columns:36px minmax(0,1fr)}.rgvx-orbit-secure-card__brands{grid-column:1/-1;padding-left:47px}.rgvx-orbit-secure-card__row{grid-template-columns:1fr 1fr}.rgvx-orbit-secure-card__consent{align-items:start!important}}
-      `}</style>
-      <style>{`
-        .rgvx-orbit-secure-card.is-submitting>.rgvx-orbit-three-ds{pointer-events:auto;opacity:1}.rgvx-orbit-three-ds{position:relative;z-index:5;display:grid;gap:14px;border:1px solid rgba(239,68,86,.28);border-radius:14px;background:#0b090b;padding:14px;box-shadow:0 18px 45px rgba(0,0,0,.3)}.rgvx-orbit-three-ds>header{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:11px}.rgvx-orbit-three-ds>header>span:last-child{display:grid;gap:3px}.rgvx-orbit-three-ds small{color:#d95b68;font-size:8px;font-weight:850;letter-spacing:.11em}.rgvx-orbit-three-ds strong{color:#fff;font-size:12px}.rgvx-orbit-three-ds__mark{position:relative;display:grid;width:38px;height:24px;place-items:center}.rgvx-orbit-three-ds__mark i{position:absolute;top:1px;width:23px;height:23px;border-radius:50%;background:#eb001b}.rgvx-orbit-three-ds__mark i:first-child{left:0}.rgvx-orbit-three-ds__mark i:last-child{right:0;background:#f79e1b;mix-blend-mode:screen}.rgvx-orbit-three-ds__mark b{color:#fff;font-size:12px;font-weight:900;font-style:italic;letter-spacing:.02em}.rgvx-orbit-three-ds__mark.is-visa{border-radius:6px;background:#172b85}.rgvx-orbit-three-ds iframe{display:block;width:100%;height:clamp(420px,62vh,560px);border:0;border-radius:10px;background:#fff}.rgvx-orbit-three-ds>p{display:flex;align-items:center;gap:9px;margin:0;border-radius:10px;background:rgba(255,255,255,.035);padding:13px;color:#c9c1c5;font-size:10px;line-height:1.5}.rgvx-orbit-three-ds>p i{flex:0 0 auto;width:14px;height:14px;border:2px solid rgba(255,255,255,.16);border-top-color:#e8495e;border-radius:50%;animation:rgvx-orbit-secure-spin .7s linear infinite}@media(max-width:700px){.rgvx-orbit-three-ds{margin-inline:-5px;padding:10px}.rgvx-orbit-three-ds iframe{height:500px}}
       `}</style>
     </section>
   );

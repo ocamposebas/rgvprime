@@ -165,7 +165,7 @@ const ACCEPTED_RECEIPT_TYPES = [
 ];
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
-const ORBIT_PAYMENT_MODE = "disabled";
+const ORBIT_PAYMENT_MODE = "embedded";
 const ORBIT_EMBEDDED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "embedded";
 const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted";
 const ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000;
@@ -2182,11 +2182,10 @@ export default function RgvCheckout() {
     }
   };
 
-  const checkOrbitSecurePaymentStatus = async (payment, signal, onThreeDsUpdate) => {
+  const checkOrbitSecurePaymentStatus = async (payment, signal) => {
     let latest = payment;
-    onThreeDsUpdate?.(latest?.threeDs || null);
-    for (let attempt = 0; attempt < 150 && String(latest?.transactionStatus).toUpperCase() === "PENDING"; attempt += 1) {
-      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    for (let attempt = 0; attempt < 20 && String(latest?.transactionStatus).toUpperCase() === "PENDING"; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
       const response = await fetch(getOrbitSecureCardStatusEndpoint(), {
         method: "POST",
         cache: "no-store",
@@ -2201,12 +2200,11 @@ export default function RgvCheckout() {
         throw new Error(data?.message || "Unable to verify the ORBIT Payments transaction.");
       }
       latest = data;
-      onThreeDsUpdate?.(latest?.threeDs || null);
     }
     return latest;
   };
 
-  const createOrbitSecureCardPayment = async (secureCard, onThreeDsUpdate) => {
+  const createOrbitSecureCardPayment = async (secureCard) => {
     if (loading) return { error: "Your payment is already being prepared." };
     try {
       validateBaseCheckout({ throwOnFailure: true });
@@ -2223,7 +2221,7 @@ export default function RgvCheckout() {
       setPaymentNotice("Creating your WooCommerce order and processing with ORBIT Payments...");
       persistCheckoutDetails(checkoutForm, normalizedForm.email);
       const controller = new AbortController();
-      const requestTimeout = window.setTimeout(() => controller.abort(), 315000);
+      const requestTimeout = window.setTimeout(() => controller.abort(), 70000);
 
       try {
         const response = await fetch(getOrbitSecureCardOrderEndpoint(), {
@@ -2266,15 +2264,9 @@ export default function RgvCheckout() {
         }
 
         if (String(data.transactionStatus || "").toUpperCase() === "PENDING") {
-          onThreeDsUpdate?.(data?.threeDs || null);
-          setPaymentNotice(data?.threeDs
-            ? "Your bank is authenticating the card. Complete any instructions shown below."
-            : "Card submitted. Waiting for ORBIT confirmation...");
+          setPaymentNotice("Card submitted. Waiting for ORBIT confirmation...");
           try {
-            data = await checkOrbitSecurePaymentStatus(data, controller.signal, (threeDs) => {
-              onThreeDsUpdate?.(threeDs);
-              if (threeDs) setPaymentNotice("Your bank is securely authenticating the card. Do not close this page.");
-            });
+            data = await checkOrbitSecurePaymentStatus(data, controller.signal);
           } catch (verificationError) {
             console.error("ORBIT status verification will continue by webhook:", verificationError);
             data = { ...data, verificationRequired: true };
@@ -2283,7 +2275,6 @@ export default function RgvCheckout() {
 
         const status = String(data.transactionStatus || "PENDING").toUpperCase();
         if (status === "APPROVED") {
-          onThreeDsUpdate?.(null);
           setOrbitSecurePaymentResult({ ...data, status });
           clearOrbitSecureAttemptId();
           clearCartAfterOrbitSecurePayment();
@@ -2295,16 +2286,16 @@ export default function RgvCheckout() {
           clearCartAfterOrbitSecurePayment();
           return { success: true, status, payment: data };
         }
-        onThreeDsUpdate?.(null);
         orbitSecureCheckoutAttemptIdRef.current = replaceOrbitSecureAttemptId();
-        throw new Error(status === "DECLINED"
-          ? data?.statusMessage || "The card was declined. Try another card or choose eDebit or Zelle."
-          : "The ORBIT Payments transaction could not be completed.");
+        if (status === "DECLINED") {
+          const reason = String(data?.statusMessage || "The bank declined this card.").trim();
+          throw new Error(`${reason} Do not keep retrying the same card; use another card or choose eDebit or Zelle.`);
+        }
+        throw new Error(data?.statusMessage || "The ORBIT Payments transaction could not be completed.");
       } finally {
         window.clearTimeout(requestTimeout);
       }
     } catch (err) {
-      onThreeDsUpdate?.(null);
       if (err?.retrySafe) orbitSecureCheckoutAttemptIdRef.current = replaceOrbitSecureAttemptId();
       const message = err?.name === "AbortError"
         ? "ORBIT took too long to respond. Check the order before trying again."

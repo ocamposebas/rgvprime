@@ -34,9 +34,10 @@ for (const method of ['id: "orbit_secure"', 'id: "edebit"', 'id: "zelle"']) {
   assert(checkout.includes(method), `Checkout payment method is missing: ${method}`);
 }
 
-assert(checkout.includes('const ORBIT_PAYMENT_MODE = "disabled"'), "ORBIT/Wompi must remain hidden until USD processing is selected");
+assert(checkout.includes('const ORBIT_PAYMENT_MODE = "embedded"'), "The embedded ORBIT/Wompi payment form must be active");
 assert(checkout.includes('const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted"'), "Hosted checkout must remain available behind the mode switch");
-assert(checkout.includes('useState("edebit")'), "eDebit must be selected by default while ORBIT/Wompi is hidden");
+assert(checkout.includes('useState("edebit")'), "eDebit must remain the default while COP card charging is an optional fallback");
+assert(checkout.includes('description: ORBIT_EMBEDDED_CHECKOUT_VISIBLE ? "Credit or debit card"'), "The Wompi option must use concise card copy");
 assert(checkout.includes("ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000"), "ORBIT Payments must support orders through $600 USD");
 assert(checkout.includes("<OrbitSecureCardPayment"), "The embedded ORBIT card form must be mounted");
 assert(checkout.includes("...secureCard"), "The tokenized embedded-card result must enter the protected order request");
@@ -53,14 +54,10 @@ for (const expected of [
   "JSON.stringify({ payload })",
   'autoComplete="cc-number" inputMode="numeric"',
   'autoComplete="cc-csc" inputMode="numeric" type="password"',
-  "browser_color_depth",
-  "browser_screen_height",
-  "browser_screen_width",
-  "browser_language",
-  "browser_user_agent",
-  "browser_tz",
-  'srcDoc={threeDsHtml}',
-  'sandbox="allow-forms allow-scripts"',
+  "Wompi processes the charge in COP; your bank handles any conversion.",
+  "https://wompijs.wompi.com/libs/js/v1.js",
+  "sessionId",
+  "deviceID",
 ]) assert(cardForm.includes(expected), `Secure embedded card form is missing: ${expected}`);
 
 for (const forbidden of ["RGV_WOMPI_PRIVATE_KEY", "WOMPI_PRIVATE_KEY", "RGV_WOMPI_INTEGRITY_SECRET", "RGV_WOMPI_EVENTS_SECRET"]) {
@@ -79,11 +76,8 @@ for (const expected of [
   "MAX_CARD_ORDER_USD_CENTS = 60000",
   "'payment_method_type' => 'CARD'",
   "'currency' => 'COP'",
-  "'is_three_ds' => true",
-  "'browser_info' => $browser_info",
-  "'three_ds_auth_type'] = 'challenge_v2'",
-  "'three_ds_auth'",
-  "'three_ds_method_data'",
+  "'session_id'",
+  "'device_id'",
   "hash('sha256', $reference . $amount_cop_cents . 'COP' . $settings['integrity_secret'])",
   "$processor_submitted = true",
   "Do not retry it yet",
@@ -92,7 +86,14 @@ for (const expected of [
   "x-event-checksum",
   "payment_complete",
 ]) assert(embeddedPlugin.includes(expected), `Embedded ORBIT payment plugin is missing: ${expected}`);
-assert(checkout.includes("attempt < 150") && checkout.includes("window.setTimeout(resolve, 2000)"), "3D Secure status polling must use the documented interval and bounded five-minute window");
+for (const forbidden of ["'is_three_ds' => true", "three_ds_auth_type", "three_ds_method_data", "browser_info"]) {
+  assert(!embeddedPlugin.includes(forbidden), `Embedded ORBIT backend must not request or relay 3D Secure data: ${forbidden}`);
+}
+for (const forbidden of ["<iframe", "threeDs", "browser_color_depth", "browser_user_agent"]) {
+  assert(!cardForm.includes(forbidden), `Embedded ORBIT form must not open or render card-authentication UI: ${forbidden}`);
+}
+assert(!cardForm.includes('setNumber("")'), "A recoverable processor error must not force the customer to re-enter the card number");
+assert(checkout.includes("attempt < 20") && checkout.includes("window.setTimeout(resolve, 1500)"), "Standard card status polling must remain bounded");
 assert(embeddedPlugin.includes("getenv($environment_name)") && embeddedPlugin.includes("$_ENV[$environment_name]") && embeddedPlugin.includes("$_SERVER[$environment_name]"), "WordPress must read processor credentials from environment variables");
 assert(embeddedPlugin.includes("www.datos.gov.co/resource/mcec-87by.json") && embeddedPlugin.includes("superfinanciera_trm"), "The plugin must obtain the official current TRM automatically");
 assert(embeddedPlugin.includes("6 * HOUR_IN_SECONDS") && embeddedPlugin.includes("3 * DAY_IN_SECONDS"), "The official TRM must use bounded caching and a recent fallback");
@@ -114,4 +115,4 @@ for (const expected of [
 assert(hostedSecret.includes("sodium_crypto_secretbox") && hostedSecret.includes("aes-256-gcm"), "Hosted installation secret must remain encrypted at rest");
 assert(admin.includes("orbit_relay_connection_code") && admin.includes("Public storefront URL"), "Hosted setup controls must remain available for later use");
 
-console.log("ORBIT payment verification passed (Wompi hidden, 3D Secure implementation retained, eDebit default, hosted mode retained).");
+console.log("ORBIT payment verification passed (embedded Wompi active, no 3D Secure UI, COP disclosure, hosted mode retained).");
