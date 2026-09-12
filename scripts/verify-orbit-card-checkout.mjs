@@ -96,6 +96,8 @@ for (const forbidden of ["Installments", "Number of installments", "LockKeyhole"
 }
 assert(embeddedPlugin.includes("'installments' => 1"), "Wompi card payments must be submitted as one payment");
 assert(!embeddedPlugin.includes("$data['installments']"), "The backend must not accept installment selection from the browser");
+assert(embeddedPlugin.includes("round($total_usd * $settings['cop_per_usd'], 0, PHP_ROUND_HALF_UP) * 100"), "The USD conversion must round to a whole COP before creating minor units");
+assert(embeddedPlugin.includes("$amount_cop_cents % 100 !== 0"), "The backend must reject fractional-peso card amounts before calling Wompi");
 assert(!cardForm.includes('setNumber("")'), "A recoverable processor error must not force the customer to re-enter the card number");
 assert(checkout.includes("attempt < 20") && checkout.includes("window.setTimeout(resolve, 1500)"), "Standard card status polling must remain bounded");
 assert(embeddedPlugin.includes("getenv($environment_name)") && embeddedPlugin.includes("$_ENV[$environment_name]") && embeddedPlugin.includes("$_SERVER[$environment_name]"), "WordPress must read processor credentials from environment variables");

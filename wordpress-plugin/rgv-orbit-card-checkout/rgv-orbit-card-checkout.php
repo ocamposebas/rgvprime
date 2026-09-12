@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -706,8 +706,13 @@ final class RGV_ORBIT_Card_Checkout {
       $total_usd = (float) $order->get_total();
       if (strtoupper((string) $order->get_currency()) !== 'USD' || $total_usd <= 0) throw new Exception('A positive USD order total is required before conversion.');
       if ((int) round($total_usd * 100) > self::MAX_CARD_ORDER_USD_CENTS) throw new Exception('ORBIT Payments is available only for orders of $600.00 USD or less.');
-      $amount_cop_cents = (int) round($total_usd * $settings['cop_per_usd'] * 100);
-      if ($amount_cop_cents <= 0) throw new Exception('The converted card charge must be positive.');
+      // Wompi names this field amount_in_cents, but CARD transactions reject
+      // fractional Colombian pesos. Round to a whole COP before converting it
+      // to the API's integer minor-unit representation.
+      $amount_cop_cents = (int) round($total_usd * $settings['cop_per_usd'], 0, PHP_ROUND_HALF_UP) * 100;
+      if ($amount_cop_cents <= 0 || $amount_cop_cents % 100 !== 0) {
+        throw new Exception('The converted card charge must be a positive whole-peso COP amount.');
+      }
       $reference = 'RGV-' . $order->get_id() . '-' . strtoupper(wp_generate_password(8, false, false));
       $signature = hash('sha256', $reference . $amount_cop_cents . 'COP' . $settings['integrity_secret']);
       $order->update_meta_data('_rgv_orbit_card_reference', $reference);
