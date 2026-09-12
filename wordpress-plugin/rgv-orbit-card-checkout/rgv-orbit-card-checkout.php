@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -624,8 +624,7 @@ final class RGV_ORBIT_Card_Checkout {
     }
 
     $card_token = sanitize_text_field((string) ($data['cardToken'] ?? ''));
-    $installments = absint($data['installments'] ?? 1);
-    if (!preg_match('/^tok_(?:test|prod)_[A-Za-z0-9_]+$/', $card_token) || $installments < 1 || $installments > 36) {
+    if (!preg_match('/^tok_(?:test|prod)_[A-Za-z0-9_]+$/', $card_token)) {
       return new WP_REST_Response(['success' => false, 'message' => 'The secure card token is invalid.'], 400);
     }
     $session_id = sanitize_text_field((string) ($data['sessionId'] ?? ''));
@@ -728,7 +727,7 @@ final class RGV_ORBIT_Card_Checkout {
         'amount_in_cents' => $amount_cop_cents,
         'currency' => 'COP',
         'customer_email' => $order->get_billing_email(),
-        'payment_method' => ['type' => 'CARD', 'token' => $card_token, 'installments' => $installments],
+        'payment_method' => ['type' => 'CARD', 'token' => $card_token, 'installments' => 1],
         'payment_method_type' => 'CARD',
         'reference' => $reference,
         'signature' => $signature,

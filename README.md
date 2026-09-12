@@ -40,10 +40,9 @@ encrypted in the embedded form and sent directly to the payment processor; only
 the resulting card token reaches this application's checkout API.
 
 The embedded card flow uses Wompi's standard transaction request and does not
-enable 3D Secure or render a bank challenge. Wompi currently processes only COP,
-so checkout keeps only a short currency disclosure near the encrypted card form;
-the customer's bank may use its own exchange rate or add an international-card
-fee. On submission, the current Wompi JS
+enable 3D Secure or render a bank challenge. Wompi currently processes only COP;
+the conversion stays server-side while the storefront continues to present its
+order total in USD. On submission, the current Wompi JS
 fingerprinting library silently supplies `session_id` and `device_id` when
 available for antifraud analysis; it does not open a panel or redirect the user.
 

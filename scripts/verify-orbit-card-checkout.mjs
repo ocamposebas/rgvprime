@@ -54,7 +54,6 @@ for (const expected of [
   "JSON.stringify({ payload })",
   'autoComplete="cc-number" inputMode="numeric"',
   'autoComplete="cc-csc" inputMode="numeric" type="password"',
-  "Wompi processes the charge in COP; your bank handles any conversion.",
   "https://wompijs.wompi.com/libs/js/v1.js",
   "sessionId",
   "deviceID",
@@ -92,6 +91,11 @@ for (const forbidden of ["'is_three_ds' => true", "three_ds_auth_type", "three_d
 for (const forbidden of ["<iframe", "threeDs", "browser_color_depth", "browser_user_agent"]) {
   assert(!cardForm.includes(forbidden), `Embedded ORBIT form must not open or render card-authentication UI: ${forbidden}`);
 }
+for (const forbidden of ["Installments", "Number of installments", "LockKeyhole", "Wompi processes the charge in COP"]) {
+  assert(!cardForm.includes(forbidden), `Embedded ORBIT form must omit removed payment UI: ${forbidden}`);
+}
+assert(embeddedPlugin.includes("'installments' => 1"), "Wompi card payments must be submitted as one payment");
+assert(!embeddedPlugin.includes("$data['installments']"), "The backend must not accept installment selection from the browser");
 assert(!cardForm.includes('setNumber("")'), "A recoverable processor error must not force the customer to re-enter the card number");
 assert(checkout.includes("attempt < 20") && checkout.includes("window.setTimeout(resolve, 1500)"), "Standard card status polling must remain bounded");
 assert(embeddedPlugin.includes("getenv($environment_name)") && embeddedPlugin.includes("$_ENV[$environment_name]") && embeddedPlugin.includes("$_SERVER[$environment_name]"), "WordPress must read processor credentials from environment variables");
@@ -115,4 +119,4 @@ for (const expected of [
 assert(hostedSecret.includes("sodium_crypto_secretbox") && hostedSecret.includes("aes-256-gcm"), "Hosted installation secret must remain encrypted at rest");
 assert(admin.includes("orbit_relay_connection_code") && admin.includes("Public storefront URL"), "Hosted setup controls must remain available for later use");
 
-console.log("ORBIT payment verification passed (embedded Wompi active, no 3D Secure UI, COP disclosure, hosted mode retained).");
+console.log("ORBIT payment verification passed (embedded Wompi active, no 3D Secure or installment UI, hosted mode retained).");
