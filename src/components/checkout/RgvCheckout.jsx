@@ -165,7 +165,8 @@ const ACCEPTED_RECEIPT_TYPES = [
 ];
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
-const ORBIT_PAYMENT_MODE = "embedded";
+const ORBIT_PAYMENT_MODE = "disabled";
+const ZELLE_PAYMENT_VISIBLE = false;
 const ORBIT_EMBEDDED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "embedded";
 const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted";
 const ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000;
@@ -198,7 +199,7 @@ const PAYMENT_METHODS = [
     badge: "Secure",
     icon: Building2,
   },
-  {
+  ...(ZELLE_PAYMENT_VISIBLE ? [{
     id: "zelle",
     label: "Zelle",
     eyebrow: "Manual route",
@@ -206,7 +207,7 @@ const PAYMENT_METHODS = [
     description: "Manual payment",
     badge: "Manual",
     icon: Building2,
-  },
+  }] : []),
 ];
 
 const US_STATES = [
@@ -1677,7 +1678,7 @@ export default function RgvCheckout() {
       : isCardSelected
         ? "Your payment details are encrypted and protected throughout checkout."
         : !hasSelectedPaymentMethod
-          ? "Select eDebit or Zelle above before continuing."
+          ? "Select eDebit above before continuing."
           : "Your WooCommerce order total is verified before payment.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
@@ -2661,7 +2662,7 @@ export default function RgvCheckout() {
 
   const cancelPendingEdebit = async () => {
     if (!pendingEdebitAttempt?.orderId || !pendingEdebitAttempt?.orderKey) {
-      throw new Error("The previous bank order cannot be closed automatically. Continue that payment or choose Zelle; no duplicate order was created.");
+      throw new Error("The previous bank order cannot be closed automatically. Continue that payment; no duplicate order was created.");
     }
 
     const response = await fetch(getEdebitCancelEndpoint(), {
@@ -3726,11 +3727,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>{orbitPaymentsAvailable
-                  ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
-                    ? "Pay here with ORBIT Payments, by secure eDebit, or with manual Zelle."
-                    : "Pay on ORBIT's secure hosted page, by eDebit, or with manual Zelle."
-                  : "Pay by secure eDebit or manual Zelle."}</span>
+                <span>Pay securely by linking your bank with eDebit.</span>
               </div>
               <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""}`} role="radiogroup" aria-label="Payment method">
                 {availablePaymentMethods.map((method) => {
@@ -3884,7 +3881,7 @@ export default function RgvCheckout() {
                       Go back
                     </button>
                   </div>
-                  <small>Having trouble linking your bank? Go back and choose Zelle instead.</small>
+                  <small>Your bank details stay protected throughout the secure linking process.</small>
                 </section>
               </div>
             )}
