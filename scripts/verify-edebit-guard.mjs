@@ -10,9 +10,11 @@ const [checkout, proxy, plugin] = await Promise.all([
   read("wordpress-plugin/rgv-edebit-guard/rgv-edebit-guard.php"),
 ]);
 
-assert(checkout.includes('useState("")'), "eDebit must not be selected by default");
-assert(checkout.includes("Ready to connect your bank?"), "eDebit confirmation dialog is missing");
-assert(checkout.includes("Continue order #"), "pending eDebit resume control is missing");
+assert(checkout.includes('useState("edebit")'), "eDebit must remain the default payment method");
+assert(!checkout.includes("Ready to connect your bank?"), "eDebit must not be blocked by a confirmation dialog");
+assert(checkout.includes("void continueWithEdebit()"), "eDebit must continue directly from the checkout button");
+assert(checkout.includes("activeAttempt?.fingerprint === edebitAttemptFingerprint"), "pending eDebit reuse protection is missing");
+assert(checkout.includes("edebitFlowSubmittingRef.current || loading"), "direct eDebit double-submit protection is missing");
 assert(checkout.includes("getEdebitStatusEndpoint"), "server-authoritative eDebit status verification is missing");
 assert(checkout.includes("checkoutAttemptId: edebitCheckoutAttemptIdRef.current"), "eDebit attempt identifier is missing");
 assert(proxy.includes('"edebit-status": "/wp-json/rgv-edebit/v1/order-status"'), "status proxy route is missing");
@@ -29,4 +31,4 @@ for (const expected of [
   "paymentConfirmed",
 ]) assert(plugin.includes(expected), `eDebit Guard is missing: ${expected}`);
 
-console.log("eDebit Guard verification passed (explicit choice, confirmation, reuse, authoritative status, safe expiry). ");
+console.log("eDebit Guard verification passed (direct checkout, reuse, authoritative status, safe expiry). ");
