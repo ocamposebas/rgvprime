@@ -21,6 +21,176 @@
   color-scheme: dark;
 }
 
+/* Branded catalog dropdowns: one clickable control, consistent across browsers. */
+
+.rgv-catalog .rgv-catalog-dropdown {
+  position: relative;
+  z-index: 2;
+  display: block;
+  overflow: visible;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.rgv-catalog .rgv-catalog-dropdown.is-open {
+  z-index: 40;
+  border-color: rgba(216, 33, 58, 0.72);
+  box-shadow: 0 0 0 3px rgba(216, 33, 58, 0.11);
+}
+
+.rgv-catalog-dropdown__trigger {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: inherit;
+  grid-template-columns: auto minmax(0, 1fr) 2.75rem;
+  align-items: center;
+  padding: 0;
+  color: var(--rgv-text);
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rgv-catalog-dropdown__trigger > span {
+  padding-left: 0.85rem;
+  color: var(--rgv-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rgv-catalog-dropdown__trigger > strong {
+  min-width: 0;
+  overflow: hidden;
+  padding-left: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rgv-catalog .rgv-catalog-dropdown__trigger > i {
+  position: static;
+  right: auto;
+  display: grid;
+  width: 2.75rem;
+  height: 100%;
+  place-items: center;
+  color: var(--rgv-muted);
+  pointer-events: none;
+  transition:
+    color 150ms ease,
+    transform 180ms ease;
+}
+
+.rgv-catalog-dropdown.is-open .rgv-catalog-dropdown__trigger > i {
+  color: #ff7c8d;
+  transform: rotate(180deg);
+}
+
+.rgv-catalog-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: -1px;
+  left: -1px;
+  z-index: 50;
+  max-height: min(19rem, 50vh);
+  overflow-y: auto;
+  padding: 0.4rem;
+  border: 1px solid #49363c;
+  border-radius: 0.8rem;
+  background: #100c0e;
+  box-shadow: 0 1.25rem 3.5rem rgba(0, 0, 0, 0.52);
+  scrollbar-color: #5c4148 #100c0e;
+}
+
+.rgv-catalog-dropdown__option {
+  display: flex;
+  width: 100%;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  color: #cbbbc0;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.rgv-catalog-dropdown__option.is-highlighted:not(:disabled) {
+  color: #fff;
+  background: #251b1e;
+}
+
+.rgv-catalog-dropdown__option.is-selected {
+  color: #fff;
+  background: #991b1b;
+}
+
+.rgv-catalog-dropdown__option.is-selected::after {
+  content: "✓";
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.rgv-catalog-dropdown__option:disabled {
+  color: #62575b;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+@media (max-width: 520px) {
+  .rgv-catalog-dropdown__trigger {
+    grid-template-columns: minmax(0, 1fr) 2.2rem;
+  }
+
+  .rgv-catalog-dropdown__trigger > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .rgv-catalog-dropdown__trigger > strong {
+    padding-left: 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .rgv-catalog .rgv-catalog-dropdown__trigger > i {
+    width: 2.2rem;
+  }
+
+  .rgv-catalog-dropdown__menu {
+    top: calc(100% + 0.35rem);
+    padding: 0.3rem;
+    border-radius: 0.7rem;
+  }
+
+  .rgv-catalog-dropdown__option {
+    min-height: 2.4rem;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.68rem;
+  }
+}
+
 /* Product-page recommendations share the catalog card language. */
 
 .rgv-product-related {
@@ -276,7 +446,28 @@
 .rgv-index-sort select {
   padding: 0 2.7rem 0 0.45rem;
   appearance: none;
+  color-scheme: dark;
   font-weight: 700;
+}
+
+.rgv-catalog-status select option,
+.rgv-index-sort select option,
+.rgv-catalog-status select optgroup,
+.rgv-index-sort select optgroup {
+  color: #f8f4f5;
+  background: #151113;
+}
+
+.rgv-catalog-status select option:checked,
+.rgv-index-sort select option:checked {
+  color: #fff;
+  background: #991b1b;
+}
+
+.rgv-catalog-status select option:disabled,
+.rgv-index-sort select option:disabled {
+  color: #74696d;
+  background: #151113;
 }
 
 .rgv-catalog-status i,

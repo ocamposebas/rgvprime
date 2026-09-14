@@ -897,43 +897,200 @@ function ChevronIcon() {
   );
 }
 
-function SortDropdown({ value, onChange }) {
+function getNextEnabledOptionIndex(options, currentIndex, direction) {
+  if (!options.length) return -1;
+
+  for (let step = 1; step <= options.length; step += 1) {
+    const index =
+      (currentIndex + direction * step + options.length) % options.length;
+
+    if (!options[index]?.disabled) return index;
+  }
+
+  return currentIndex;
+}
+
+function CatalogDropdown({
+  label,
+  value,
+  onChange,
+  options,
+  className = "rgv-catalog-status",
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const optionRefs = useRef([]);
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((item) => item.value === value),
+  );
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+  const selectedOption = options[selectedIndex] || options[0];
+  const idBase = `catalog-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    setActiveIndex(selectedIndex);
+    const frame = window.requestAnimationFrame(() => {
+      optionRefs.current[selectedIndex]?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen, selectedIndex]);
+
+  function closeMenu({ restoreFocus = false } = {}) {
+    setIsOpen(false);
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  }
+
+  function chooseOption(item) {
+    if (item.disabled) return;
+    onChange(item.value);
+    closeMenu({ restoreFocus: true });
+  }
+
+  function focusOption(index) {
+    if (index < 0) return;
+    setActiveIndex(index);
+    optionRefs.current[index]?.focus();
+  }
+
+  function handleTriggerKeyDown(event) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setIsOpen(true);
+      return;
+    }
+
+    if (event.key === "Escape") closeMenu();
+  }
+
+  function handleOptionKeyDown(event, index, item) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      focusOption(
+        getNextEnabledOptionIndex(
+          options,
+          index,
+          event.key === "ArrowDown" ? 1 : -1,
+        ),
+      );
+      return;
+    }
+
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      const startIndex = event.key === "Home" ? -1 : 0;
+      const direction = event.key === "Home" ? 1 : -1;
+      focusOption(getNextEnabledOptionIndex(options, startIndex, direction));
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      chooseOption(item);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu({ restoreFocus: true });
+      return;
+    }
+
+    if (event.key === "Tab") closeMenu();
+  }
+
   return (
-    <label className="rgv-index-sort">
-      <span>Sort by</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {sortOptions.map((item) => (
-          <option key={item.value} value={item.value}>
-            {item.label}
-          </option>
-        ))}
-      </select>
-      <i aria-hidden="true">
-        <ChevronIcon />
-      </i>
-    </label>
+    <div
+      ref={rootRef}
+      className={`${className} rgv-catalog-dropdown${isOpen ? " is-open" : ""}`}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="rgv-catalog-dropdown__trigger"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={`${idBase}-listbox`}
+        aria-labelledby={`${idBase}-label ${idBase}-value`}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={handleTriggerKeyDown}
+      >
+        <span id={`${idBase}-label`}>{label}</span>
+        <strong id={`${idBase}-value`}>{selectedOption?.label || "Select"}</strong>
+        <i aria-hidden="true">
+          <ChevronIcon />
+        </i>
+      </button>
+
+      {isOpen && (
+        <div
+          id={`${idBase}-listbox`}
+          className="rgv-catalog-dropdown__menu"
+          role="listbox"
+          aria-labelledby={`${idBase}-label`}
+        >
+          {options.map((item, index) => {
+            const selected = item.value === value;
+
+            return (
+              <button
+                key={item.value}
+                ref={(node) => {
+                  optionRefs.current[index] = node;
+                }}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                aria-disabled={Boolean(item.disabled)}
+                disabled={item.disabled}
+                tabIndex={activeIndex === index ? 0 : -1}
+                className={`rgv-catalog-dropdown__option${
+                  selected ? " is-selected" : ""
+                }${activeIndex === index ? " is-highlighted" : ""}`}
+                onMouseEnter={() => {
+                  if (!item.disabled) setActiveIndex(index);
+                }}
+                onClick={() => chooseOption(item)}
+                onKeyDown={(event) => handleOptionKeyDown(event, index, item)}
+              >
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
-function CatalogDropdown({ label, value, onChange, options }) {
+function SortDropdown({ value, onChange }) {
   return (
-    <label className="rgv-catalog-status">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((item) => (
-          <option
-            key={item.value}
-            value={item.value}
-            disabled={item.disabled}
-          >
-            {item.label}
-          </option>
-        ))}
-      </select>
-      <i aria-hidden="true">
-        <ChevronIcon />
-      </i>
-    </label>
+    <CatalogDropdown
+      className="rgv-index-sort"
+      label="Sort by"
+      value={value}
+      onChange={onChange}
+      options={sortOptions}
+    />
   );
 }
 
