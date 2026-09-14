@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -22,6 +22,19 @@ function isPublicPath() {
       window.location.pathname === path ||
       window.location.pathname.startsWith(`${path}/`),
   );
+}
+
+function resetPageScrollPosition() {
+  if (typeof window === "undefined") return;
+
+  const root = document.documentElement;
+  const previousScrollBehavior = root.style.scrollBehavior;
+
+  root.style.scrollBehavior = "auto";
+  window.scrollTo(0, 0);
+  root.scrollTop = 0;
+  document.body.scrollTop = 0;
+  root.style.scrollBehavior = previousScrollBehavior;
 }
 
 function passwordChecks(password = "") {
@@ -124,6 +137,7 @@ export default function AgeGate() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const gateWasVisibleRef = useRef(false);
 
   const checks = useMemo(() => passwordChecks(password), [password]);
   const resetChecks = useMemo(() => passwordChecks(resetPassword), [resetPassword]);
@@ -206,15 +220,41 @@ export default function AgeGate() {
   useEffect(() => {
     if (status !== "locked") return undefined;
 
+    gateWasVisibleRef.current = true;
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
 
+    resetPageScrollPosition();
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(resetPageScrollPosition);
 
     return () => {
+      window.cancelAnimationFrame(frame);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !gateWasVisibleRef.current) {
+      return undefined;
+    }
+
+    gateWasVisibleRef.current = false;
+    resetPageScrollPosition();
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      resetPageScrollPosition();
+      secondFrame = window.requestAnimationFrame(resetPageScrollPosition);
+    });
+    const settleTimer = window.setTimeout(resetPageScrollPosition, 120);
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(settleTimer);
     };
   }, [status]);
 
