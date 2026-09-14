@@ -1,11 +1,27 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ShopPage from "../components/app/ShopPage.jsx";
+
+let initialProducts = [];
+
+try {
+  const response = await fetch(new URL("/api/products?limit=70", Astro.url.origin), {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(7000),
+  });
+
+  if (response.ok) {
+    const payload = await response.json();
+    initialProducts = Array.isArray(payload?.products) ? payload.products : [];
+  }
+} catch {
+  initialProducts = [];
+}
 ---
 
 <BaseLayout
   title="Research Product Catalog | RGVPRIME LLC"
   description="Explore the RGVPRIME LLC research catalog with product identifiers, available configurations, inventory status, and certificate documentation."
 >
-  <ShopPage client:load />
+  <ShopPage initialProducts={initialProducts} client:load />
 </BaseLayout>

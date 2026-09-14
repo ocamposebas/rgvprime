@@ -1,29 +1,38 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "../cart/CartContext";
-import {
-  formatPoints,
-  getProductLoyaltyPoints,
-} from "../../lib/loyaltyProgram";
 import { isProductAvailable } from "../../lib/inventory";
+import {
+  getFormatMeta,
+  getProductFormatSupport,
+  isPurchaseFormatAttribute,
+  PRODUCT_FORMATS,
+} from "../../lib/productFormat";
+import "../../styles/storefront-v2.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const DESKTOP_PRODUCTS_PER_PAGE = 12;
 const MOBILE_PRODUCTS_PER_PAGE = 14;
+const VARIATION_CACHE_TTL_MS = 60 * 1000;
 const variationRequestCache = new Map();
+const variationSummaryCache = new Map();
+const variationSummaryRequestCache = new Map();
 
-const statusFilters = [
-  { label: "All", value: "all" },
-  { label: "Available", value: "available" },
-  { label: "Low Stock", value: "low" },
-  { label: "Sold Out", value: "sold-out" },
+const formatFilters = [
+  {
+    label: "Single",
+    value: PRODUCT_FORMATS.SINGLE,
+    description: "1 vial",
+  },
+  {
+    label: "Kit ×10",
+    value: PRODUCT_FORMATS.KIT,
+    description: "10 vials",
+  },
 ];
 
 const sortOptions = [
-  { label: "Default Order", value: "featured" },
-  { label: "Price Low", value: "price-low" },
-  { label: "Price High", value: "price-high" },
+  { label: "Featured", value: "featured" },
   { label: "Name A-Z", value: "name" },
-  { label: "Stock", value: "stock" },
 ];
 
 const customProductOrder = [
@@ -222,10 +231,6 @@ function productMatchesSearch(product, value = "") {
   });
 }
 
-function stripHtml(html = "") {
-  return html.replace(/<[^>]*>?/gm, "").trim();
-}
-
 function formatPrice(price) {
   if (!price) return null;
 
@@ -267,18 +272,6 @@ function getDiscountDetails(item) {
   };
 }
 
-function getProductDiscountSummary(product, variations = []) {
-  const discounts = [product, ...variations]
-    .map(getDiscountDetails)
-    .filter(Boolean);
-
-  if (!discounts.length) return null;
-
-  return discounts.reduce((bestDiscount, discount) =>
-    discount.percentage > bestDiscount.percentage ? discount : bestDiscount,
-  );
-}
-
 function getPriceLabel(product) {
   const formattedPrice = formatPrice(product.price);
 
@@ -287,20 +280,6 @@ function getPriceLabel(product) {
   }
 
   return formattedPrice || "View";
-}
-
-function getDescription(product) {
-  const cleanDescription = stripHtml(product.short_description);
-
-  if (!cleanDescription) {
-    return "Research-use-only laboratory product.";
-  }
-
-  if (cleanDescription.length > 78) {
-    return `${cleanDescription.slice(0, 78)}...`;
-  }
-
-  return cleanDescription;
 }
 
 function getProductUrl(product = {}) {
@@ -317,6 +296,46 @@ function getMainCategory(product) {
   );
 
   return category?.name || "Research Product";
+}
+
+function getCatalogCategories(product) {
+  const categories = Array.isArray(product?.categories)
+    ? product.categories
+    : [];
+
+  return categories
+    .filter((item) => item?.slug && item.slug !== "uncategorized")
+    .map((item) => ({
+      label: String(item.name || item.slug)
+        .replace(/^Research\s+/i, "")
+        .trim(),
+      value: String(item.slug),
+    }));
+}
+
+function productMatchesCategory(product, category) {
+  if (!category || category === "all") return true;
+
+  return getCatalogCategories(product).some((item) => item.value === category);
+}
+
+function getCatalogStrengthOptions(product) {
+  const attributes = Array.isArray(product?.attributes)
+    ? product.attributes
+    : [];
+  const options = attributes
+    .filter((attribute) => !isPurchaseFormatAttribute(attribute))
+    .flatMap((attribute) =>
+      Array.isArray(attribute?.options) ? attribute.options : [],
+    )
+    .map(cleanVariationText)
+    .filter(Boolean);
+  const uniqueOptions = [...new Set(options)];
+  const measuredOptions = uniqueOptions.filter((option) =>
+    /\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu|ml)\b/i.test(option),
+  );
+
+  return measuredOptions.length ? measuredOptions : uniqueOptions;
 }
 
 function getStockBadge(product) {
@@ -442,7 +461,7 @@ function getAttributeOptions(attributes) {
   return [];
 }
 
-function getProductVariations(product) {
+export function getProductVariations(product) {
   const rawVariations =
     product?.variations ||
     product?.variation_options ||
@@ -476,14 +495,19 @@ async function requestProductVariations(product) {
 
   const cacheKey = String(product?.id || product?.slug || "").trim();
 
-  if (cacheKey && variationRequestCache.has(cacheKey)) {
-    return variationRequestCache.get(cacheKey);
+  const cachedRequest = cacheKey ? variationRequestCache.get(cacheKey) : null;
+
+  if (cachedRequest && cachedRequest.expiresAt > Date.now()) {
+    return cachedRequest.promise;
   }
 
-  const request = fetch(
-    `/api/products?slug=${encodeURIComponent(product.slug)}&refresh=1`,
-    { cache: "no-store" },
-  )
+  if (cacheKey && cachedRequest) {
+    variationRequestCache.delete(cacheKey);
+  }
+
+  const request = fetch(`/api/products?slug=${encodeURIComponent(product.slug)}`, {
+    cache: "default",
+  })
     .then(async (response) => {
       const data = await response.json();
 
@@ -498,9 +522,112 @@ async function requestProductVariations(product) {
       throw error;
     });
 
-  if (cacheKey) variationRequestCache.set(cacheKey, request);
+  if (cacheKey) {
+    variationRequestCache.set(cacheKey, {
+      promise: request,
+      expiresAt: Date.now() + VARIATION_CACHE_TTL_MS,
+    });
+  }
 
   return request;
+}
+
+export function getCachedVariationSummary(productId) {
+  const cacheKey = String(productId || "").trim();
+  const cached = cacheKey ? variationSummaryCache.get(cacheKey) : null;
+
+  if (!cached) return null;
+  if (cached.expiresAt > Date.now()) return cached.variations;
+
+  variationSummaryCache.delete(cacheKey);
+  return null;
+}
+
+export async function requestVariationSummaryBatch(productIds = []) {
+  const uniqueIds = [
+    ...new Set(
+      productIds
+        .map((productId) => Number(productId))
+        .filter((productId) => Number.isInteger(productId) && productId > 0),
+    ),
+  ].slice(0, MOBILE_PRODUCTS_PER_PAGE);
+  const summaries = {};
+  const missingIds = [];
+
+  uniqueIds.forEach((productId) => {
+    const cached = getCachedVariationSummary(productId);
+
+    if (cached) summaries[productId] = cached;
+    else missingIds.push(productId);
+  });
+
+  if (!missingIds.length) {
+    return { summaries, failedIds: [] };
+  }
+
+  const requestKey = [...missingIds].sort((a, b) => a - b).join(",");
+  let requestEntry = variationSummaryRequestCache.get(requestKey);
+
+  if (!requestEntry || requestEntry.expiresAt <= Date.now()) {
+    const promise = fetch(
+      `/api/products?option_ids=${encodeURIComponent(requestKey)}`,
+      {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "default",
+      },
+    )
+      .then(async (response) => {
+        const data = await response.json();
+
+        if (!response.ok || data?.success !== true) {
+          throw new Error(data?.message || "Could not load product options.");
+        }
+
+        const nextSummaries = data?.summaries || {};
+        const failedIds = Array.isArray(data?.failed_ids)
+          ? data.failed_ids.map(String)
+          : [];
+
+        missingIds.forEach((productId) => {
+          const key = String(productId);
+          const variations = nextSummaries[key];
+
+          if (!Array.isArray(variations)) return;
+
+          variationSummaryCache.set(key, {
+            variations,
+            expiresAt: Date.now() + VARIATION_CACHE_TTL_MS,
+          });
+        });
+
+        return {
+          summaries: nextSummaries,
+          failedIds: missingIds.filter(
+            (productId) =>
+              failedIds.includes(String(productId)) ||
+              !Array.isArray(nextSummaries[String(productId)]),
+          ),
+        };
+      })
+      .catch((error) => {
+        variationSummaryRequestCache.delete(requestKey);
+        throw error;
+      });
+
+    requestEntry = {
+      promise,
+      expiresAt: Date.now() + VARIATION_CACHE_TTL_MS,
+    };
+    variationSummaryRequestCache.set(requestKey, requestEntry);
+  }
+
+  const requested = await requestEntry.promise;
+
+  return {
+    summaries: { ...summaries, ...requested.summaries },
+    failedIds: requested.failedIds,
+  };
 }
 
 function getVariationLabel(product, variation, index = 0) {
@@ -511,6 +638,7 @@ function getVariationLabel(product, variation, index = 0) {
     variation?.title,
     variation?.name,
     ...options,
+    product?.name,
   ];
 
   const mgLabel = possibleLabels.find((value) =>
@@ -561,6 +689,54 @@ function getVariationPrice(variation, product) {
     product?.price ||
     ""
   );
+}
+
+function buildVariationCartItem(
+  product,
+  variation,
+  format,
+  fallbackImage,
+  fallbackVariationId = "",
+) {
+  const labelParts = getVariationDisplayParts(
+    getVariationLabel(product, variation),
+  );
+  const cartFormatLabel =
+    format === PRODUCT_FORMATS.KIT ? "Kit ×10" : "Single vial";
+  const cartSelectionLabel = `${cartFormatLabel} / ${labelParts.strength}`;
+  const variationPrice = getVariationPrice(variation, product);
+  const variationImage =
+    getImageUrl(variation.image) ||
+    getImageUrl(variation.images?.[0]) ||
+    fallbackImage;
+  const variationId =
+    variation.id || variation.variation_id || fallbackVariationId;
+
+  return {
+    ...product,
+    ...variation,
+    id: variationId,
+    parent_id: product.id,
+    parentId: product.id,
+    product_id: product.id,
+    variation_id: variationId,
+    variationId,
+    type: "variation",
+    name: `${product.name} — ${cartSelectionLabel}`,
+    slug: product.slug,
+    price: variationPrice,
+    regular_price: variation.regular_price || variationPrice,
+    sale_price: variation.sale_price || "",
+    image: variationImage,
+    stock_status: variation.stock_status || product.stock_status,
+    stock_quantity: variation.stock_quantity ?? null,
+    attributes: variation.attributes || [],
+    selected_option: cartSelectionLabel,
+    selectedOptions: {
+      format: cartFormatLabel,
+      strength: labelParts.strength,
+    },
+  };
 }
 
 function getVariationGroupingText(product, variation, index = 0) {
@@ -636,21 +812,6 @@ function groupProductVariations(product, variations = []) {
   };
 }
 
-function getDefaultVariationSelection(product, variations = []) {
-  const groups = groupProductVariations(product, variations);
-  const view = groups.singles.length ? "singles" : "kits";
-  const items = groups[view];
-  const preferredItem =
-    items.find(({ variation }) => isVariationAvailable(variation)) || items[0];
-
-  return {
-    view,
-    key: preferredItem
-      ? getVariationKey(preferredItem.variation, preferredItem.index)
-      : "",
-  };
-}
-
 function getPaginationItems(currentPage, totalPages) {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -701,24 +862,6 @@ function SearchIcon() {
   );
 }
 
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
 function PlusIcon() {
   return (
     <svg
@@ -755,69 +898,42 @@ function ChevronIcon() {
 }
 
 function SortDropdown({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
-  const activeOption =
-    sortOptions.find((item) => item.value === value) || sortOptions[0];
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!wrapperRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    window.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   return (
-    <div ref={wrapperRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between gap-3 rounded-2xl border px-4 text-xs font-black uppercase tracking-[0.12em] transition ${
-          open
-            ? "border-red-500/55 bg-[#111] text-white"
-            : "border-white/10 bg-black/45 text-white/75 hover:border-red-500/35 hover:text-white"
-        }`}
-      >
-        <span>{activeOption.label}</span>
-        <span
-          className={`text-white/45 transition duration-300 ${
-            open ? "rotate-180 text-red-400" : ""
-          }`}
-        >
-          <ChevronIcon />
-        </span>
-      </button>
+    <label className="rgv-index-sort">
+      <span>Sort by</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {sortOptions.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+      <i aria-hidden="true">
+        <ChevronIcon />
+      </i>
+    </label>
+  );
+}
 
-      {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-full min-w-[190px] overflow-hidden rounded-2xl border border-white/10 bg-[#070707] p-1 shadow-[0_22px_70px_rgba(0,0,0,0.65)]">
-          {sortOptions.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => {
-                onChange(item.value);
-                setOpen(false);
-              }}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-xs font-black uppercase tracking-[0.1em] transition ${
-                value === item.value
-                  ? "bg-red-600 text-white"
-                  : "text-white/55 hover:bg-white/[0.06] hover:text-white"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+function CatalogDropdown({ label, value, onChange, options }) {
+  return (
+    <label className="rgv-catalog-status">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {options.map((item) => (
+          <option
+            key={item.value}
+            value={item.value}
+            disabled={item.disabled}
+          >
+            {item.label}
+          </option>
+        ))}
+      </select>
+      <i aria-hidden="true">
+        <ChevronIcon />
+      </i>
+    </label>
   );
 }
 
@@ -838,7 +954,7 @@ function ProductImage({ src, srcSet, alt, priority = false }) {
       fetchPriority={priority ? "high" : "auto"}
       width="600"
       height="600"
-      sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
+      sizes="(max-width: 899px) 46vw, (max-width: 1099px) 30vw, 320px"
       onError={() => {
         if (imageSrc !== FALLBACK_IMAGE) {
           setImageSrc(FALLBACK_IMAGE);
@@ -849,40 +965,63 @@ function ProductImage({ src, srcSet, alt, priority = false }) {
   );
 }
 
-function ProductCard({ product, priority = false }) {
+function getVariationSelectionForFormat(
+  product,
+  variations = [],
+  format = PRODUCT_FORMATS.SINGLE,
+  preferredVariationKey = "",
+) {
+  const groups = groupProductVariations(product, variations);
+  const items = groups[format] || [];
+  const requestedItem = preferredVariationKey
+    ? items.find(
+        ({ variation, index }) =>
+          getVariationKey(variation, index) === preferredVariationKey,
+      )
+    : null;
+  const preferredItem =
+    requestedItem ||
+    items.find(({ variation }) => isVariationAvailable(variation)) ||
+    items[0];
+
+  return {
+    key: preferredItem
+      ? getVariationKey(preferredItem.variation, preferredItem.index)
+      : "",
+    count: items.length,
+  };
+}
+
+function StrengthSheet({
+  product,
+  format,
+  preferredVariationKey = "",
+  onClose,
+}) {
   const { addItem } = useCart();
-  const initialVariations = getProductVariations(product);
-  const initialSelection = getDefaultVariationSelection(
-    product,
-    initialVariations,
-  );
-  const [optionsOpen, setOptionsOpen] = useState(false);
-  const [variationStatus, setVariationStatus] = useState(() =>
-    initialVariations.length ? "success" : "idle",
-  );
-  const [variations, setVariations] = useState(() => initialVariations);
-  const [variationView, setVariationView] = useState(initialSelection.view);
-  const [selectedVariationKey, setSelectedVariationKey] = useState(
-    initialSelection.key,
-  );
+  const dockRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  const mountedRef = useRef(true);
+  const isAddingRef = useRef(false);
+  const selectionTokenRef = useRef(0);
+  const [variationStatus, setVariationStatus] = useState("idle");
+  const [variations, setVariations] = useState([]);
+  const [selectedVariationKey, setSelectedVariationKey] = useState("");
+  const [justAdded, setJustAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isMobileDock, setIsMobileDock] = useState(false);
 
-  const image = getImageUrl(product.image) || FALLBACK_IMAGE;
-  const imageAlt = product.image_alt || product.name || "Product image";
-  const productUrl = getProductUrl(product);
-  const stockBadge = getStockBadge(product);
-  const category = getMainCategory(product);
-  const description = getDescription(product);
-  const price = getPriceLabel(product);
-  const loyaltyPoints = getProductLoyaltyPoints(product);
-
-  const isVariableProduct = product.type === "variable";
-  const canAddToCart = !isVariableProduct && isProductAvailable(product);
-  const discountSummary = getProductDiscountSummary(product, variations);
+  const isVariableProduct = product?.type === "variable";
+  const image =
+    getImageUrl(product?.images?.[0]) ||
+    getImageUrl(product?.image) ||
+    FALLBACK_IMAGE;
+  const productUrl = product ? getProductUrl(product) : "/shop";
   const variationGroups = useMemo(
     () => groupProductVariations(product, variations),
     [product, variations],
   );
-
+  const formatVariations = variationGroups[format] || [];
   const selectedVariation = useMemo(() => {
     if (!variations.length) return null;
 
@@ -890,579 +1029,712 @@ function ProductCard({ product, priority = false }) {
       variations.find(
         (variation, index) =>
           getVariationKey(variation, index) === selectedVariationKey,
-      ) ||
-      variations.find(isVariationAvailable) ||
-      variations[0]
+      ) || null
     );
   }, [selectedVariationKey, variations]);
 
   useEffect(() => {
-    const productVariations = getProductVariations(product);
-    const defaultSelection = getDefaultVariationSelection(
-      product,
-      productVariations,
-    );
-
-    setVariations(productVariations);
-    setVariationStatus(productVariations.length ? "success" : "idle");
-    setVariationView(defaultSelection.view);
-    setSelectedVariationKey(defaultSelection.key);
-    setOptionsOpen(false);
-  }, [product]);
-
-  useEffect(() => {
-    if (!optionsOpen || !isVariableProduct) return undefined;
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOptionsOpen(false);
-      }
-    }
-
-    window.addEventListener("keydown", handleEscape);
+    mountedRef.current = true;
 
     return () => {
-      window.removeEventListener("keydown", handleEscape);
+      mountedRef.current = false;
+      selectionTokenRef.current += 1;
+      isAddingRef.current = false;
     };
-  }, [optionsOpen, isVariableProduct]);
+  }, []);
 
   useEffect(() => {
-    if (!optionsOpen || !isVariableProduct || typeof document === "undefined") {
+    let active = true;
+
+    selectionTokenRef.current += 1;
+    isAddingRef.current = false;
+    setIsAdding(false);
+    setJustAdded(false);
+
+    if (!product) {
+      setVariations([]);
+      setVariationStatus("idle");
+      setSelectedVariationKey("");
       return undefined;
     }
+
+    const embeddedVariations = getProductVariations(product);
+    const embeddedSelection = getVariationSelectionForFormat(
+      product,
+      embeddedVariations,
+      format,
+      preferredVariationKey,
+    );
+
+    setVariations(embeddedVariations);
+    setSelectedVariationKey(embeddedSelection.key);
+
+    if (!isVariableProduct) {
+      setVariationStatus("success");
+      return undefined;
+    }
+
+    if (embeddedVariations.length) {
+      setVariationStatus(embeddedSelection.count ? "success" : "empty");
+      return undefined;
+    }
+
+    setVariationStatus("loading");
+
+    requestProductVariations(product)
+      .then((nextVariations) => {
+        if (!active) return;
+
+        const nextSelection = getVariationSelectionForFormat(
+          product,
+          nextVariations,
+          format,
+          preferredVariationKey,
+        );
+
+        setVariations(nextVariations);
+        setSelectedVariationKey(nextSelection.key);
+        setVariationStatus(nextSelection.count ? "success" : "empty");
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        setVariationStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product, format, isVariableProduct, preferredVariationKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const query = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobileDock(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!product || typeof window === "undefined") return undefined;
 
     const originalOverflow = document.body.style.overflow;
     const originalTouchAction = document.body.style.touchAction;
 
+    previousFocusRef.current = document.activeElement;
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
+    window.requestAnimationFrame(() => {
+      dockRef.current?.querySelector("[data-dock-close]")?.focus();
+    });
 
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.touchAction = originalTouchAction;
-    };
-  }, [optionsOpen, isVariableProduct]);
-
-  async function loadVariations() {
-    if (!isVariableProduct || variationStatus === "loading") return;
-    if (variations.length) return;
-
-    try {
-      setVariationStatus("loading");
-      const nextVariations = await requestProductVariations(product);
-      const defaultSelection = getDefaultVariationSelection(
-        product,
-        nextVariations,
-      );
-
-      setVariations(nextVariations);
-      setVariationView(defaultSelection.view);
-      setSelectedVariationKey(defaultSelection.key);
-      setVariationStatus(nextVariations.length ? "success" : "empty");
-    } catch (error) {
-      console.error(error);
-      setVariationStatus("error");
-    }
-  }
-
-  function handleToggleOptions() {
-    setOptionsOpen((current) => {
-      const nextState = !current;
-
-      if (nextState) {
-        loadVariations();
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+        return;
       }
 
-      return nextState;
-    });
-  }
+      if (event.key !== "Tab" || !dockRef.current) return;
 
-  function handleVariationViewChange(nextView) {
-    const nextItems = variationGroups[nextView] || [];
-
-    if (!nextItems.length) return;
-
-    const currentSelectionIsVisible = nextItems.some(
-      ({ variation, index }) =>
-        getVariationKey(variation, index) === selectedVariationKey,
-    );
-
-    if (!currentSelectionIsVisible) {
-      const preferredItem =
-        nextItems.find(({ variation }) => isVariationAvailable(variation)) ||
-        nextItems[0];
-
-      setSelectedVariationKey(
-        getVariationKey(preferredItem.variation, preferredItem.index),
+      const focusable = Array.from(
+        dockRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
       );
+
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
-    setVariationView(nextView);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+
+      if (previousFocusRef.current instanceof HTMLElement) {
+        previousFocusRef.current.focus({ preventScroll: true });
+      }
+    };
+  }, [product, onClose]);
+
+  function updateSelection(nextVariationKey) {
+    selectionTokenRef.current += 1;
+    setSelectedVariationKey(nextVariationKey);
+    setJustAdded(false);
   }
 
-  function handleAddVariation() {
-    if (!selectedVariation || !isVariationAvailable(selectedVariation)) return;
+  async function handleAddSelection() {
+    if (!product || isAddingRef.current || justAdded) return;
 
-    const label = getVariationLabel(product, selectedVariation);
-    const variationPrice = getVariationPrice(selectedVariation, product);
-    const variationImage =
-      getImageUrl(selectedVariation.image) ||
-      getImageUrl(selectedVariation.images?.[0]) ||
-      image;
-    const variationId =
-      selectedVariation.id ||
-      selectedVariation.variation_id ||
-      selectedVariationKey;
+    const requestToken = selectionTokenRef.current;
+    const canAddSimple = !isVariableProduct && isProductAvailable(product);
+    const canAddVariation =
+      isVariableProduct &&
+      variationStatus === "success" &&
+      selectedVariation &&
+      isVariationAvailable(selectedVariation);
 
-    addItem(
-      {
-        ...product,
-        ...selectedVariation,
-        id: variationId,
-        parent_id: product.id,
-        parentId: product.id,
-        product_id: product.id,
-        variation_id: variationId,
-        variationId,
-        type: "variation",
-        name: `${product.name} - ${label}`,
-        slug: product.slug,
-        price: variationPrice,
-        regular_price: selectedVariation.regular_price || variationPrice,
-        sale_price: selectedVariation.sale_price || "",
-        image: variationImage,
-        stock_status: selectedVariation.stock_status || product.stock_status,
-        stock_quantity: selectedVariation.stock_quantity ?? null,
-        attributes: selectedVariation.attributes || [],
-        selected_option: label,
-      },
-      1,
-    );
+    if (!canAddSimple && !canAddVariation) return;
 
-    setOptionsOpen(false);
+    isAddingRef.current = true;
+    setIsAdding(true);
+    setJustAdded(false);
+
+    try {
+      let result;
+
+      if (!isVariableProduct) {
+        result = await addItem(product, 1);
+      } else {
+        const label = getVariationLabel(product, selectedVariation);
+        const labelParts = getVariationDisplayParts(label);
+        const cartFormatLabel =
+          format === PRODUCT_FORMATS.KIT ? "Kit \u00d710" : "Single vial";
+        const cartSelectionLabel = `${cartFormatLabel} / ${labelParts.strength}`;
+        const variationPrice = getVariationPrice(selectedVariation, product);
+        const variationImage =
+          getImageUrl(selectedVariation.image) ||
+          getImageUrl(selectedVariation.images?.[0]) ||
+          image;
+        const variationId =
+          selectedVariation.id ||
+          selectedVariation.variation_id ||
+          selectedVariationKey;
+
+        result = await addItem(
+          {
+            ...product,
+            ...selectedVariation,
+            id: variationId,
+            parent_id: product.id,
+            parentId: product.id,
+            product_id: product.id,
+            variation_id: variationId,
+            variationId,
+            type: "variation",
+            name: `${product.name} \u2014 ${cartSelectionLabel}`,
+            slug: product.slug,
+            price: variationPrice,
+            regular_price: selectedVariation.regular_price || variationPrice,
+            sale_price: selectedVariation.sale_price || "",
+            image: variationImage,
+            stock_status:
+              selectedVariation.stock_status || product.stock_status,
+            stock_quantity: selectedVariation.stock_quantity ?? null,
+            attributes: selectedVariation.attributes || [],
+            selected_option: cartSelectionLabel,
+            selectedOptions: {
+              format: cartFormatLabel,
+              strength: labelParts.strength,
+            },
+          },
+          1,
+        );
+      }
+
+      if (!mountedRef.current || selectionTokenRef.current !== requestToken) {
+        return;
+      }
+
+      if (result?.valid) {
+        if (isMobileDock) onClose();
+        else setJustAdded(true);
+      }
+    } finally {
+      if (
+        mountedRef.current &&
+        selectionTokenRef.current === requestToken
+      ) {
+        isAddingRef.current = false;
+        setIsAdding(false);
+      }
+    }
   }
 
-  function VariationsPanel({ mode = "desktop" }) {
-    const isMobile = mode === "mobile";
-    const isDrawer = mode === "drawer";
+  if (!product) return null;
 
-    return (
-      <div
-        className={`rgv-variations-panel ${
-          isMobile
-            ? "rounded-t-[1.65rem] border-t border-white/10 bg-[#070707] p-4 shadow-[0_-24px_80px_rgba(0,0,0,0.75)]"
-            : isDrawer
-              ? "h-full overflow-y-auto border-l border-white/10 bg-[#070707] p-6 shadow-[-18px_0_60px_rgba(0,0,0,0.36)]"
-              : "rounded-3xl border border-red-500/20 bg-[#070707] p-5"
-        }`}
+  const selectedLabel = selectedVariation
+    ? getVariationDisplayParts(
+        getVariationLabel(
+          product,
+          selectedVariation,
+          variations.indexOf(selectedVariation),
+        ),
+      ).strength
+    : "";
+  const selectedPrice = selectedVariation
+    ? formatPrice(getVariationPrice(selectedVariation, product))
+    : getPriceLabel(product);
+  const selectionAvailable = isVariableProduct
+    ? variationStatus === "success" &&
+      Boolean(selectedVariation && isVariationAvailable(selectedVariation))
+    : isProductAvailable(product);
+  const formatValue = format === PRODUCT_FORMATS.KIT ? "Kit ×10" : "Single";
+  const formatMeta = getFormatMeta(formatValue);
+  const discount = selectedVariation
+    ? getDiscountDetails(selectedVariation)
+    : getDiscountDetails(product);
+
+  return (
+    <div className="rgv-order-dock-layer rgv-strength-sheet-layer">
+      <button
+        type="button"
+        className="rgv-order-dock-backdrop"
+        aria-label="Close strength selector"
+        onClick={onClose}
+      />
+      <aside
+        id="catalog-strength-sheet"
+        ref={dockRef}
+        className="rgv-order-dock rgv-order-dock--active rgv-strength-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="catalog-strength-title"
+        aria-busy={isAdding || variationStatus === "loading"}
       >
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-red-300">
-              Choose your format
-            </p>
-
-            <h3 className="mt-1 line-clamp-2 text-base font-black leading-tight text-white">
-              {product.name}
-            </h3>
+        <header className="rgv-order-dock__header">
+          <div>
+            <p>{formatMeta.label}</p>
+            <h2 id="catalog-strength-title">
+              {isVariableProduct ? "Choose a strength" : "Review your selection"}
+            </h2>
+            <span>{product.name}</span>
           </div>
+          <button
+            type="button"
+            data-dock-close
+            onClick={onClose}
+            aria-label="Close strength selector"
+          >
+            ×
+          </button>
+        </header>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <a
-              href={productUrl}
-              className="hidden text-[9px] font-black uppercase tracking-[0.12em] text-red-300 transition hover:text-white sm:inline-flex"
-            >
-              Details
-            </a>
-            <button
-              type="button"
-              onClick={() => setOptionsOpen(false)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-lg font-black text-white/60"
-              aria-label="Close options"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
+        <a className="rgv-order-dock__product" href={productUrl}>
+          <span className="rgv-order-dock__thumb">
+            <img src={image} alt="" loading="lazy" decoding="async" />
+          </span>
+          <span>
+            <small>{getMainCategory(product)}</small>
+            <strong>View product details</strong>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
 
         {variationStatus === "loading" && (
-          <div className="grid gap-2">
-            <div className="h-10 animate-pulse rounded-xl bg-white/[0.06]" />
-            <div className="h-10 animate-pulse rounded-xl bg-white/[0.04]" />
+          <div className="rgv-order-dock__loading" aria-live="polite">
+            <span />
+            Loading available options…
           </div>
         )}
 
         {variationStatus === "error" && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3">
-            <p className="text-[10px] font-bold leading-4 text-red-100">
-              Options could not load here.
-            </p>
-
-            <a
-              href={productUrl}
-              className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
-            >
-              Open product
-            </a>
+          <div className="rgv-order-dock__message" role="alert">
+            We could not load the strengths. <a href={productUrl}>View product</a>
           </div>
         )}
 
         {variationStatus === "empty" && (
-          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-            <p className="text-[10px] font-bold leading-4 text-white/55">
-              No inline options were found for this product.
-            </p>
-
-            <a
-              href={productUrl}
-              className="mt-2 inline-flex text-[9px] font-black uppercase tracking-[0.12em] text-white underline underline-offset-4"
-            >
-              Open product
-            </a>
+          <div className="rgv-order-dock__message">
+            No {formatMeta.label.toLowerCase()} strengths are available here.{" "}
+            <a href={productUrl}>View product</a>
           </div>
         )}
 
-        {variationStatus === "success" && variations.length > 0 && (
-          <>
-            <div
-              className={
-                isMobile
-                  ? "max-h-[52vh] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  : ""
-              }
-            >
-              <div
-                className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/40 p-1"
-                role="tablist"
-                aria-label="Product format"
-              >
-                {[
-                  {
-                    key: "singles",
-                    title: "Single Vials",
-                    description: "One vial",
-                    count: variationGroups.singles.length,
-                  },
-                  {
-                    key: "kits",
-                    title: "Kits",
-                    description: "Multi-vial packs",
-                    count: variationGroups.kits.length,
-                  },
-                ].map((tab) => {
-                  const active = variationView === tab.key;
-                  const disabled = tab.count === 0;
+        {variationStatus === "success" && (
+          <div className="rgv-order-dock__body">
+            {isVariableProduct && (
+              <fieldset className="rgv-order-dock__strengths">
+                <legend>Available strengths</legend>
+                <div>
+                  {formatVariations.map(
+                    ({ variation, index }) => {
+                      const variationKey = getVariationKey(variation, index);
+                      const label = getVariationDisplayParts(
+                        getVariationLabel(product, variation, index),
+                      );
+                      const price = formatPrice(
+                        getVariationPrice(variation, product),
+                      );
+                      const optionDiscount = getDiscountDetails(variation);
+                      const available = isVariationAvailable(variation);
+                      const active = variationKey === selectedVariationKey;
 
-                  return (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      disabled={disabled}
-                      onClick={() => handleVariationViewChange(tab.key)}
-                      className={`min-w-0 rounded-xl border px-2 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-30 ${
-                        active
-                          ? "border-red-500 bg-red-600 text-white shadow-[0_10px_26px_rgba(220,38,38,0.25)]"
-                          : "border-transparent bg-transparent text-white/55 hover:bg-white/[0.05] hover:text-white"
-                      }`}
-                    >
-                      <span className="flex items-center justify-between gap-1.5">
-                        <span className="truncate text-[10px] font-black uppercase tracking-[0.08em]">
-                          {tab.title}
-                        </span>
-                        <span
-                          className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[8px] font-black ${
-                            active ? "bg-white/20 text-white" : "bg-white/[0.06]"
-                          }`}
+                      return (
+                        <button
+                          key={variationKey}
+                          type="button"
+                          aria-pressed={active}
+                          disabled={!available || isAdding}
+                          onClick={() => updateSelection(variationKey)}
+                          className={active ? "is-active" : ""}
                         >
-                          {tab.count}
-                        </span>
-                      </span>
-                      <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.08em] opacity-60">
-                        {disabled ? "Not available" : tab.description}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mb-2 mt-3 flex items-center justify-between gap-3 px-1">
-                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/65">
-                  Select strength
-                </p>
-                <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-white/30">
-                  {variationGroups[variationView]?.length || 0} options
-                </p>
-              </div>
-
-              <div className={isMobile ? "grid gap-2" : "grid grid-cols-2 gap-2"}>
-                {(variationGroups[variationView] || []).map(
-                  ({ variation, index }) => {
-                    const variationKey = getVariationKey(variation, index);
-                    const label = getVariationLabel(product, variation, index);
-                    const displayParts = getVariationDisplayParts(label);
-                    const optionPrice = formatPrice(
-                      getVariationPrice(variation, product),
-                    );
-                    const optionDiscount = getDiscountDetails(variation);
-                    const available = isVariationAvailable(variation);
-                    const active = variationKey === selectedVariationKey;
-
-                    return (
-                      <button
-                        key={variationKey}
-                        type="button"
-                        aria-pressed={active}
-                        disabled={!available}
-                        onClick={() => setSelectedVariationKey(variationKey)}
-                        className={`min-w-0 overflow-hidden rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                          active
-                            ? "border-red-500 bg-red-600 text-white shadow-[0_14px_34px_rgba(220,38,38,0.22)]"
-                            : "border-white/10 bg-white/[0.035] text-white/65 hover:border-red-500/35 hover:text-white"
-                        }`}
-                      >
-                        <span className="block min-w-0 max-w-full">
-                          <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-                            <span className="min-w-0 break-words text-[13px] font-black uppercase leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]">
-                              {displayParts.strength}
-                            </span>
-
-                            <span className="flex max-w-[78px] shrink-0 flex-col items-end text-right leading-none">
-                              <span className="break-words text-[12px] font-black text-white [overflow-wrap:anywhere]">
-                                {optionPrice || "View"}
-                              </span>
-                              {optionDiscount && (
-                                <span className="mt-1 text-[9px] font-bold text-white/55 line-through decoration-white/45">
-                                  {formatPrice(optionDiscount.regularPrice)}
-                                </span>
-                              )}
-                            </span>
+                          <span>
+                            <strong>{label.strength}</strong>
+                            <small>{getVariationStockLabel(variation)}</small>
                           </span>
-
-                          {displayParts.presentation && (
-                            <span className="mt-2 block max-w-full break-words text-[9px] font-black uppercase leading-[1.35] tracking-[0.06em] text-white/80 [overflow-wrap:anywhere]">
-                              {displayParts.presentation}
-                            </span>
-                          )}
-
-                          <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                          <span>
+                            <strong>{price || "View price"}</strong>
                             {optionDiscount && (
-                              <span
-                                className={`rounded-full px-1.5 py-1 text-[8px] font-black uppercase leading-none tracking-[0.08em] ${
-                                  active
-                                    ? "bg-white text-red-700"
-                                    : "bg-red-500/15 text-red-300"
-                                }`}
-                              >
-                                {optionDiscount.percentage}% OFF
-                              </span>
+                              <small className="rgv-order-dock__saving">
+                                Save {optionDiscount.percentage}%
+                              </small>
                             )}
-                            <span className="flex min-w-0 items-center gap-1.5 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.1em] opacity-65">
-                              <span
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                                  available ? "bg-white" : "bg-red-300"
-                                }`}
-                              />
-                              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                                {getVariationStockLabel(variation)}
-                              </span>
-                            </span>
                           </span>
-                        </span>
-                      </button>
-                    );
-                  },
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </fieldset>
+            )}
+
+            <div className="rgv-order-dock__summary" aria-live="polite">
+              <div>
+                <small>Your selection</small>
+                <strong>
+                  {isVariableProduct
+                    ? `${formatMeta.label} · ${selectedLabel}`
+                    : product.name}
+                </strong>
+              </div>
+              <div>
+                {discount && (
+                  <del>{formatPrice(discount.regularPrice)}</del>
                 )}
+                <strong>{selectedPrice}</strong>
               </div>
             </div>
-
-            {selectedVariation && (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
-                <span className="min-w-0">
-                  <span className="block text-[8px] font-black uppercase tracking-[0.12em] text-white/35">
-                    Selected
-                  </span>
-                  <span className="mt-0.5 block truncate text-[10px] font-black text-white/80">
-                    {variationView === "kits" ? "Kit" : "Single"}{" · "}
-                    {getVariationDisplayParts(
-                      getVariationLabel(
-                        product,
-                        selectedVariation,
-                        variations.indexOf(selectedVariation),
-                      ),
-                    ).strength}
-                  </span>
-                </span>
-                <span className="shrink-0 text-sm font-black text-white">
-                  {formatPrice(getVariationPrice(selectedVariation, product))}
-                </span>
-              </div>
-            )}
 
             <button
               type="button"
-              disabled={
-                !selectedVariation || !isVariationAvailable(selectedVariation)
-              }
-              onClick={handleAddVariation}
-              className={`rgv-variation-add-button mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white font-black uppercase tracking-[0.12em] text-black transition hover:bg-red-500 hover:text-white disabled:pointer-events-none disabled:opacity-40 ${
-                isMobile ? "h-12 text-[10px]" : "h-10 text-[9px]"
-              }`}
+              className="rgv-order-dock__add rgv-variation-add-button"
+              disabled={!selectionAvailable || isAdding || justAdded}
+              onClick={handleAddSelection}
             >
+              <span>
+                {isAdding
+                  ? "Adding…"
+                  : justAdded
+                    ? "Added to cart"
+                    : "Add to cart"}
+              </span>
               <PlusIcon />
-              Add to Cart
             </button>
-          </>
+
+            <p className="rgv-order-dock__notice">
+              For research use only. Verify the selected format and strength
+              before checkout.
+            </p>
+          </div>
         )}
-      </div>
+      </aside>
+    </div>
+  );
+}
+
+export function ProductCard({
+  product,
+  priority = false,
+  active = false,
+  format = PRODUCT_FORMATS.SINGLE,
+  variations = [],
+  variationStatus = "idle",
+  onChoose,
+}) {
+  const { addItem } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const productImage =
+    getImageUrl(product?.images?.[0]) ||
+    getImageUrl(product?.image) ||
+    FALLBACK_IMAGE;
+  const imageAlt = product.image_alt || product.name || "Product image";
+  const productUrl = getProductUrl(product);
+  const isVariableProduct = product.type === "variable";
+  const category = getMainCategory(product);
+  const isKit = format === PRODUCT_FORMATS.KIT;
+  const cardVariations = variations.length
+    ? variations
+    : getProductVariations(product);
+  const variationGroups = useMemo(
+    () => groupProductVariations(product, cardVariations),
+    [product, cardVariations],
+  );
+  const formatVariations = variationGroups[format] || [];
+  const optionSignature = formatVariations
+    .map(({ variation, index }) => getVariationKey(variation, index))
+    .join("|");
+  const [selectedVariationKey, setSelectedVariationKey] = useState("");
+
+  const preferredVariationItem =
+    formatVariations.find(({ variation }) => isVariationAvailable(variation)) ||
+    formatVariations[0] ||
+    null;
+  const selectedVariationItem =
+    formatVariations.find(
+      ({ variation, index }) =>
+        getVariationKey(variation, index) === selectedVariationKey,
+    ) || preferredVariationItem;
+  const selectedVariation = selectedVariationItem?.variation || null;
+  const selectedVariationIndex = selectedVariationItem?.index ?? 0;
+  const effectiveSelectionKey = selectedVariation
+    ? getVariationKey(selectedVariation, selectedVariationIndex)
+    : "";
+  const selectedLabel = selectedVariation
+    ? getVariationDisplayParts(
+        getVariationLabel(product, selectedVariation, selectedVariationIndex),
+      ).strength
+    : "";
+  const selectedPrice = selectedVariation
+    ? formatPrice(getVariationPrice(selectedVariation, product))
+    : !isVariableProduct
+      ? getPriceLabel(product)
+      : null;
+  const discount = selectedVariation
+    ? getDiscountDetails(selectedVariation)
+    : !isVariableProduct
+      ? getDiscountDetails(product)
+      : null;
+  const discountBadge = discount
+    ? {
+        label: `Save ${discount.percentage}%`,
+        ariaLabel: `${discount.percentage}% product discount`,
+      }
+    : !isKit
+      ? {
+          label: "10% welcome",
+          ariaLabel: "10% welcome offer for eligible new customers",
+        }
+      : null;
+  const selectedImage =
+    getImageUrl(selectedVariation?.image) ||
+    getImageUrl(selectedVariation?.images?.[0]) ||
+    productImage;
+  const exactOptionsReady =
+    !isVariableProduct || variationStatus === "success" || cardVariations.length > 0;
+  const optionsLoading = isVariableProduct && !exactOptionsReady;
+  const allFormatOptionsSoldOut =
+    formatVariations.length > 0 &&
+    !formatVariations.some(({ variation }) => isVariationAvailable(variation));
+  const cardUnavailable = isVariableProduct
+    ? allFormatOptionsSoldOut
+    : !isProductAvailable(product);
+  const canAddDirectly = isVariableProduct
+    ? Boolean(selectedVariation && isVariationAvailable(selectedVariation))
+    : !cardUnavailable;
+  const cardStatus = (() => {
+    if (!isVariableProduct) return getStockBadge(product);
+    if (variationStatus === "error" && !cardVariations.length) {
+      return { label: "Check availability", status: "neutral", dot: null };
+    }
+    if (optionsLoading) {
+      return { label: "Loading options", status: "neutral", dot: null };
+    }
+    if (selectedVariation) return getStockBadge(selectedVariation);
+
+    return { label: "Check options", status: "neutral", dot: null };
+  })();
+  const fallbackStrengths = getCatalogStrengthOptions(product).slice(0, 6);
+  const formatLabel = isKit ? "Kit ×10" : "Single vial";
+  const priceContext = selectedLabel
+    ? `${formatLabel} · ${selectedLabel}`
+    : formatLabel;
+  const actionLabel = isVariableProduct
+    ? optionsLoading
+      ? "Loading…"
+      : canAddDirectly
+        ? isAdding
+          ? "Adding…"
+          : "Add to cart"
+        : "Review options"
+    : isAdding
+      ? "Adding…"
+      : "Add to cart";
+
+  useEffect(() => {
+    const nextSelection = getVariationSelectionForFormat(
+      product,
+      cardVariations,
+      format,
     );
+
+    setSelectedVariationKey(nextSelection.key);
+  }, [product, format, optionSignature]);
+
+  async function handleCardAction() {
+    if (isAdding) return;
+
+    if (!canAddDirectly) {
+      if (typeof onChoose === "function") {
+        onChoose(product, effectiveSelectionKey, cardVariations);
+      } else if (typeof window !== "undefined") {
+        window.location.assign(productUrl);
+      }
+      return;
+    }
+
+    setIsAdding(true);
+
+    try {
+      const itemToAdd = isVariableProduct
+        ? buildVariationCartItem(
+            product,
+            selectedVariation,
+            format,
+            productImage,
+            effectiveSelectionKey,
+          )
+        : product;
+
+      await addItem(itemToAdd, 1);
+    } finally {
+      setIsAdding(false);
+    }
   }
 
   return (
-    <>
-      <article className="rgv-product-card group flex h-full min-w-0 flex-col overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#080808] transition-colors duration-200 hover:border-red-500/40 hover:bg-[#0b0b0b] sm:rounded-3xl">
-        <a
-          href={productUrl}
-          className="rgv-product-media relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden border-b border-white/10 bg-[#101010]"
+    <article
+      className={`rgv-index-card rgv-product-card ${active ? "is-active" : ""} ${
+        cardUnavailable ? "is-sold-out" : ""
+      }`}
+    >
+      <a
+        href={productUrl}
+        className="rgv-index-card__media rgv-card-media"
+        aria-label={`View ${product.name}`}
+      >
+        <ProductImage
+          src={selectedImage}
+          srcSet={
+            selectedImage === productImage
+              ? product?.images?.[0]?.srcset
+              : undefined
+          }
+          alt={imageAlt}
+          priority={priority}
+        />
+        <span
+          className={`rgv-index-card__stock ${cardStatus.status}`}
+          aria-label={
+            `Availability: ${cardStatus.label}`
+          }
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.1),transparent_64%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.025] via-transparent to-black/20" />
-
-          <ProductImage
-            src={image}
-            srcSet={product?.images?.[0]?.srcset}
-            alt={imageAlt}
-            priority={priority}
-          />
-
-          <span
-            className={`absolute left-2 top-2 inline-flex max-w-[calc(100%-54px)] items-center gap-1 rounded-full border px-2 py-1 text-[7px] font-black uppercase tracking-[0.06em] backdrop-blur sm:left-4 sm:top-4 sm:gap-1.5 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${stockBadge.className}`}
-          >
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${stockBadge.dot}`}
-            />
-            {stockBadge.label}
-          </span>
-
-          {discountSummary && (
-            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/75 px-2 py-1.5 text-[8px] font-bold tracking-[0.02em] text-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md sm:bottom-4 sm:left-4 sm:gap-2 sm:px-2.5 sm:py-2 sm:text-[10px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]" />
-              Save {isVariableProduct ? "up to " : ""}
-              {discountSummary.percentage}%
-            </span>
+          {cardStatus.dot && (
+            <i className={cardStatus.dot} aria-hidden="true" />
           )}
-
-          <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white/75 backdrop-blur transition duration-300 group-hover:bg-red-600 group-hover:text-white sm:right-4 sm:top-4 sm:h-9 sm:w-9">
-            <EyeIcon />
+          {cardStatus.label}
+        </span>
+        {discountBadge && (
+          <span
+            className="rgv-card-sale-badge"
+            aria-label={discountBadge.ariaLabel}
+          >
+            {discountBadge.label}
           </span>
+        )}
+      </a>
+
+      <div className="rgv-index-card__content rgv-card-body">
+        <p className="rgv-index-card__category">{category}</p>
+        <a href={productUrl}>
+          <h3>{product.name}</h3>
         </a>
+        {isVariableProduct && (
+          <fieldset className="rgv-card-options">
+            <legend>Choose strength</legend>
+            <div>
+              {formatVariations.map(({ variation, index }) => {
+                const variationKey = getVariationKey(variation, index);
+                const label = getVariationDisplayParts(
+                  getVariationLabel(product, variation, index),
+                ).strength;
+                const available = isVariationAvailable(variation);
+                const selected = variationKey === effectiveSelectionKey;
 
-        <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-4">
-          <div className="flex-1">
-            <p className="mb-2 hidden line-clamp-1 text-[9px] font-black uppercase tracking-[0.14em] text-red-400/80 sm:block">
-              {category}
-            </p>
+                return (
+                  <button
+                    key={variationKey}
+                    type="button"
+                    className={selected ? "is-active" : ""}
+                    aria-pressed={selected}
+                    disabled={!available}
+                    title={available ? `${label} available` : `${label} sold out`}
+                    onClick={() => setSelectedVariationKey(variationKey)}
+                  >
+                    <span>{label}</span>
+                    {!available && <small>Sold out</small>}
+                  </button>
+                );
+              })}
 
-            <a href={productUrl}>
-              <h3 className="line-clamp-2 min-h-[30px] break-words text-[12px] font-black leading-[1.15] tracking-[-0.025em] text-white transition group-hover:text-red-100 [overflow-wrap:anywhere] sm:min-h-[42px] sm:text-base sm:leading-tight sm:tracking-[-0.035em]">
-                {product.name}
-              </h3>
-            </a>
+              {optionsLoading &&
+                (fallbackStrengths.length ? fallbackStrengths : ["Loading…"]).map(
+                  (label) => (
+                    <button key={label} type="button" disabled>
+                      <span>{label}</span>
+                    </button>
+                  ),
+                )}
 
-            <p className="mt-2 hidden line-clamp-1 min-h-4 text-[11px] leading-4 text-white/42 sm:block">
-              {description}
-            </p>
-          </div>
-
-          <div className="mt-2.5 grid min-w-0 gap-2.5 border-t border-white/10 pt-2.5 sm:mt-4 sm:gap-3 sm:pt-4">
-            <div className="flex min-w-0 items-end justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[7px] font-bold uppercase tracking-[0.1em] text-white/30 sm:text-[10px] sm:tracking-[0.14em]">
-                  {isVariableProduct ? "Starting at" : "Price"}
-                </p>
-
-                <p className="mt-0.5 truncate text-base font-black tracking-[-0.04em] text-white sm:mt-1 sm:text-xl sm:tracking-[-0.05em]">
-                  {price}
-                </p>
-              </div>
-              {loyaltyPoints > 0 && (
-                <span className="mb-0.5 hidden shrink-0 items-center gap-1 text-[8px] font-black uppercase tracking-[0.06em] text-white/35 sm:inline-flex">
-                  <span className="text-red-400" aria-hidden="true">&#9733;</span>
-                  Earn {formatPoints(loyaltyPoints)} pts
+              {!optionsLoading && !formatVariations.length && (
+                <span className="rgv-card-options__empty">
+                  Options available on product page
                 </span>
               )}
             </div>
+          </fieldset>
+        )}
 
-            {isVariableProduct ? (
-              <button
-                type="button"
-                onClick={handleToggleOptions}
-                aria-expanded={optionsOpen}
-                className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white transition sm:h-11 sm:gap-2 sm:px-3 sm:text-[10px] sm:tracking-[0.1em] ${
-                  optionsOpen
-                    ? "bg-red-700 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)] hover:bg-red-600"
-                    : "bg-red-600 text-white hover:bg-red-500"
-                }`}
-              >
-                <span className="whitespace-nowrap sm:hidden">Choose Options</span>
-                <span className="hidden whitespace-nowrap sm:inline">Select Format &amp; Strength</span>
-                <span
-                  className={`shrink-0 transition duration-300 ${
-                    optionsOpen ? "rotate-180" : ""
-                  }`}
-                >
-                  <ChevronIcon />
-                </span>
-              </button>
-            ) : canAddToCart ? (
-              <button
-                type="button"
-                onClick={() => addItem(product, 1)}
-                className="inline-flex h-9 w-full min-w-0 items-center justify-center gap-1 rounded-xl bg-red-600 px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white transition hover:bg-red-500 sm:h-11 sm:gap-2 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
-              >
-                <PlusIcon />
-                <span className="sm:hidden">Add</span>
-                <span className="hidden sm:inline">Add to Cart</span>
-              </button>
-            ) : (
-              <a
-                href={productUrl}
-                className="inline-flex h-9 w-full min-w-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-[8px] font-black uppercase tracking-[0.06em] text-white/45 sm:h-11 sm:px-5 sm:text-[10px] sm:tracking-[0.1em]"
-              >
-                View
-              </a>
-            )}
+        <footer className="rgv-index-card__footer rgv-card-footer">
+          <div className="rgv-card-price" aria-live="polite">
+            <small>{priceContext}</small>
+            <span>
+              <strong>{selectedPrice || (optionsLoading ? "Loading…" : "View price")}</strong>
+              {discount && <del>{formatPrice(discount.regularPrice)}</del>}
+            </span>
           </div>
-
-        </div>
-      </article>
-
-      {isVariableProduct && optionsOpen && (
-        <div
-          className="fixed inset-0 z-[80]"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Choose an option for ${product.name}`}
-        >
           <button
             type="button"
-            aria-label="Close options"
-            onClick={() => setOptionsOpen(false)}
-            className="absolute inset-0 bg-black/70 backdrop-blur-[2px] sm:bg-transparent sm:backdrop-blur-none"
-          />
-
-          <div className="absolute inset-x-0 bottom-0 sm:left-auto sm:right-0 sm:top-[114px] sm:w-[440px]">
-            <div className="sm:hidden">
-              <VariationsPanel mode="mobile" />
-            </div>
-            <div className="hidden h-full sm:block">
-              <VariationsPanel mode="drawer" />
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+            className="rgv-card-add"
+            disabled={cardUnavailable || optionsLoading || isAdding}
+            onClick={handleCardAction}
+            aria-label={
+              canAddDirectly
+                ? `Add ${priceContext} for ${product.name} to cart`
+                : `Review options for ${product.name}`
+            }
+            aria-busy={isAdding}
+            aria-controls={canAddDirectly ? undefined : "catalog-strength-sheet"}
+            aria-expanded={canAddDirectly ? undefined : active}
+          >
+            <span>{actionLabel}</span>
+            {canAddDirectly ? (
+              <span className="rgv-card-add__icon" aria-hidden="true">
+                <PlusIcon />
+              </span>
+            ) : (
+              <span aria-hidden="true">→</span>
+            )}
+          </button>
+        </footer>
+      </div>
+    </article>
   );
 }
 function Pagination({ currentPage, totalPages, onPageChange }) {
@@ -1471,68 +1743,66 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   const items = getPaginationItems(currentPage, totalPages);
 
   return (
-    <nav className="w-full sm:w-auto" aria-label="Product pagination">
-      <div className="flex w-full items-center justify-between gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 sm:w-auto sm:justify-center">
-        <button
-          type="button"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          className="inline-flex h-9 min-w-[68px] items-center justify-center rounded-xl border border-white/10 bg-black/35 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
-        >
-          Prev
-        </button>
+    <nav className="rgv-index-pagination" aria-label="Product pagination">
+      <button
+        type="button"
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+      >
+        <span aria-hidden="true">←</span> <span>Previous</span>
+      </button>
 
-        <div className="hidden items-center gap-1 sm:flex">
-          {items.map((item, index) =>
-            item === "..." ? (
-              <span
-                key={`dots-${index}`}
-                className="grid h-9 w-7 place-items-center text-xs font-black text-white/30"
-              >
-                ...
-              </span>
-            ) : (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onPageChange(item)}
-                className={`grid h-9 w-9 place-items-center rounded-xl text-[11px] font-black transition ${
-                  currentPage === item
-                    ? "bg-red-600 text-white shadow-[0_12px_34px_rgba(220,38,38,0.22)]"
-                    : "border border-white/10 bg-white/[0.035] text-white/50 hover:border-red-500/40 hover:text-white"
-                }`}
-              >
-                {item}
-              </button>
-            ),
-          )}
-        </div>
-
-        <div className="flex h-9 items-center gap-1 rounded-xl border border-white/10 bg-black/30 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/55 sm:hidden">
-          {currentPage} / {totalPages}
-        </div>
-
-        <button
-          type="button"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          className="inline-flex h-9 min-w-[68px] items-center justify-center rounded-xl border border-white/10 bg-black/35 px-3 text-[9px] font-black uppercase tracking-[0.12em] text-white/60 transition hover:border-red-500/40 hover:text-white disabled:pointer-events-none disabled:opacity-30"
-        >
-          Next
-        </button>
+      <div>
+        {items.map((item, index) =>
+          item === "..." ? (
+            <span key={`dots-${index}`}>...</span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              aria-current={currentPage === item ? "page" : undefined}
+              onClick={() => onPageChange(item)}
+            >
+              {item}
+            </button>
+          ),
+        )}
       </div>
+
+      <small>
+        Page {currentPage} of {totalPages}
+      </small>
+
+      <button
+        type="button"
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+      >
+        <span>Next</span> <span aria-hidden="true">→</span>
+      </button>
     </nav>
   );
 }
 
-export default function ProductCatalog() {
+export default function ProductCatalog({ initialProducts = [] }) {
   const catalogTopRef = useRef(null);
-  const [products, setProducts] = useState([]);
-  const [status, setStatus] = useState("loading");
+  const hasInitialProducts =
+    Array.isArray(initialProducts) && initialProducts.length > 0;
+  const [products, setProducts] = useState(() =>
+    hasInitialProducts ? initialProducts : [],
+  );
+  const [status, setStatus] = useState(
+    hasInitialProducts ? "success" : "loading",
+  );
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFormat, setActiveFormat] = useState(PRODUCT_FORMATS.SINGLE);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [currentPage, setCurrentPage] = useState(1);
+  const [configuredProduct, setConfiguredProduct] = useState(null);
+  const [variationSummaries, setVariationSummaries] = useState({});
+  const [variationSummaryStatus, setVariationSummaryStatus] = useState({});
   const [productsPerPage, setProductsPerPage] = useState(
     DESKTOP_PRODUCTS_PER_PAGE,
   );
@@ -1555,6 +1825,8 @@ export default function ProductCatalog() {
   }, []);
 
   useEffect(() => {
+    if (hasInitialProducts) return undefined;
+
     let active = true;
 
     async function loadProducts() {
@@ -1591,42 +1863,108 @@ export default function ProductCatalog() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [hasInitialProducts]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeFilter, sortBy, productsPerPage]);
+    setConfiguredProduct(null);
+  }, [
+    searchTerm,
+    activeFormat,
+    activeCategory,
+    availabilityFilter,
+    sortBy,
+    productsPerPage,
+  ]);
+
+  const formatProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        const formatSupport = getProductFormatSupport(product);
+
+        return activeFormat === PRODUCT_FORMATS.KIT
+          ? formatSupport.kits
+          : formatSupport.singles;
+      }),
+    [products, activeFormat],
+  );
+
+  const categoryOptions = useMemo(() => {
+    const categoryMap = new Map();
+
+    products.forEach((product) => {
+      getCatalogCategories(product).forEach((category) => {
+        if (!categoryMap.has(category.value)) {
+          categoryMap.set(category.value, category.label);
+        }
+      });
+    });
+
+    const options = [...categoryMap.entries()]
+      .map(([value, label]) => {
+        const count = formatProducts.filter((product) =>
+          productMatchesCategory(product, value),
+        ).length;
+
+        return {
+          value,
+          label,
+          disabled: count === 0,
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    return [
+      {
+        value: "all",
+        label: "All categories",
+        disabled: false,
+      },
+      ...options,
+    ];
+  }, [products, formatProducts]);
+
+  const availabilityOptions = useMemo(() => {
+    const relevantProducts = formatProducts.filter(
+      (product) =>
+        productMatchesSearch(product, searchTerm) &&
+        productMatchesCategory(product, activeCategory),
+    );
+    const availableCount = relevantProducts.filter((product) =>
+      isProductAvailable(product),
+    ).length;
+    const soldOutCount = relevantProducts.length - availableCount;
+
+    return [
+      { value: "all", label: "All stock" },
+      {
+        value: "available",
+        label: "Available",
+        disabled: availableCount === 0,
+      },
+      {
+        value: "soldout",
+        label: "Sold out",
+        disabled: soldOutCount === 0,
+      },
+    ];
+  }, [formatProducts, searchTerm, activeCategory]);
 
   const filteredProducts = useMemo(() => {
-    const result = products.filter((product) => {
+    const result = formatProducts.filter((product) => {
       const matchesSearch = productMatchesSearch(product, searchTerm);
+      const matchesCategory = productMatchesCategory(product, activeCategory);
+      const available = isProductAvailable(product);
+      const matchesAvailability =
+        availabilityFilter === "all" ||
+        (availabilityFilter === "available" && available) ||
+        (availabilityFilter === "soldout" && !available);
 
-      const stockBadge = getStockBadge(product);
-
-      const matchesFilter =
-        activeFilter === "all" ||
-        (activeFilter === "available" && isProductAvailable(product)) ||
-        (activeFilter === "low" &&
-          (stockBadge.status === "low" || stockBadge.status === "medium")) ||
-        (activeFilter === "sold-out" && !isProductAvailable(product));
-
-      return matchesSearch && matchesFilter;
+      return matchesSearch && matchesCategory && matchesAvailability;
     });
 
     return [...result].sort((a, b) => {
-      const priceA = Number(a.price || 0);
-      const priceB = Number(b.price || 0);
-
-      if (sortBy === "price-low") return priceA - priceB;
-      if (sortBy === "price-high") return priceB - priceA;
       if (sortBy === "name") return a.name.localeCompare(b.name);
-
-      if (sortBy === "stock") {
-        const stockA = Number(a.stock_quantity || 0);
-        const stockB = Number(b.stock_quantity || 0);
-
-        return stockB - stockA;
-      }
 
       const orderA = getCustomProductRank(a);
       const orderB = getCustomProductRank(b);
@@ -1637,7 +1975,24 @@ export default function ProductCatalog() {
 
       return a.name.localeCompare(b.name);
     });
-  }, [products, searchTerm, activeFilter, sortBy]);
+  }, [
+    formatProducts,
+    searchTerm,
+    activeCategory,
+    availabilityFilter,
+    sortBy,
+  ]);
+
+  useEffect(() => {
+    if (!configuredProduct) return;
+
+    const remainsVisible = filteredProducts.some(
+      (product) =>
+        String(product.id) === String(configuredProduct?.product?.id),
+    );
+
+    if (!remainsVisible) setConfiguredProduct(null);
+  }, [configuredProduct, filteredProducts]);
 
   const totalPages = Math.max(
     1,
@@ -1646,9 +2001,117 @@ export default function ProductCatalog() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * productsPerPage;
   const endIndex = startIndex + productsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+  const paginatedProducts = useMemo(
+    () => filteredProducts.slice(startIndex, endIndex),
+    [filteredProducts, startIndex, endIndex],
+  );
   const visibleStart = filteredProducts.length > 0 ? startIndex + 1 : 0;
   const visibleEnd = Math.min(endIndex, filteredProducts.length);
+  const visibleVariableIdsKey = useMemo(
+    () =>
+      paginatedProducts
+        .filter((product) => product.type === "variable")
+        .map((product) => String(product.id))
+        .join(","),
+    [paginatedProducts],
+  );
+
+  useEffect(() => {
+    if (!visibleVariableIdsKey) return undefined;
+
+    let active = true;
+    const productIds = visibleVariableIdsKey.split(",").filter(Boolean);
+    const localSummaries = {};
+    const requestIds = [];
+
+    productIds.forEach((productId) => {
+      const product = paginatedProducts.find(
+        (item) => String(item.id) === productId,
+      );
+      const embeddedVariations = getProductVariations(product);
+      const cachedVariations = getCachedVariationSummary(productId);
+      const variations = embeddedVariations.length
+        ? embeddedVariations
+        : cachedVariations;
+
+      if (variations) localSummaries[productId] = variations;
+      else requestIds.push(productId);
+    });
+
+    if (Object.keys(localSummaries).length) {
+      setVariationSummaries((current) => ({
+        ...current,
+        ...localSummaries,
+      }));
+      setVariationSummaryStatus((current) => {
+        const next = { ...current };
+        Object.keys(localSummaries).forEach((productId) => {
+          next[productId] = "success";
+        });
+        return next;
+      });
+    }
+
+    if (!requestIds.length) return undefined;
+
+    setVariationSummaryStatus((current) => {
+      const next = { ...current };
+      requestIds.forEach((productId) => {
+        next[productId] = "loading";
+      });
+      return next;
+    });
+
+    requestVariationSummaryBatch(requestIds)
+      .then(({ summaries, failedIds }) => {
+        if (!active) return;
+
+        const normalizedSummaries = {};
+        Object.entries(summaries || {}).forEach(([productId, variations]) => {
+          if (Array.isArray(variations)) {
+            normalizedSummaries[String(productId)] = variations;
+          }
+        });
+
+        if (Object.keys(normalizedSummaries).length) {
+          setVariationSummaries((current) => ({
+            ...current,
+            ...normalizedSummaries,
+          }));
+        }
+
+        setVariationSummaryStatus((current) => {
+          const next = { ...current };
+          const failedSet = new Set(failedIds.map(String));
+
+          requestIds.forEach((productId) => {
+            next[productId] =
+              failedSet.has(productId) ||
+              !Array.isArray(normalizedSummaries[productId])
+                ? "error"
+                : "success";
+          });
+
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (!active) return;
+
+        console.error("Product option summary load failed:", error);
+        setVariationSummaryStatus((current) => {
+          const next = { ...current };
+          requestIds.forEach((productId) => {
+            next[productId] = "error";
+          });
+          return next;
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [visibleVariableIdsKey]);
 
   function handlePageChange(page) {
     const nextPage = Math.min(Math.max(page, 1), totalPages);
@@ -1656,6 +2119,7 @@ export default function ProductCatalog() {
     if (nextPage === currentPage) return;
 
     setCurrentPage(nextPage);
+    setConfiguredProduct(null);
 
     window.requestAnimationFrame(() => {
       if (!catalogTopRef.current) return;
@@ -1672,170 +2136,220 @@ export default function ProductCatalog() {
     });
   }
 
+  function handleFormatChange(nextFormat) {
+    setActiveFormat(nextFormat);
+    setActiveCategory("all");
+    setAvailabilityFilter("all");
+  }
+
+  function clearCatalogFilters() {
+    setSearchTerm("");
+    setActiveCategory("all");
+    setAvailabilityFilter("all");
+    setSortBy("featured");
+  }
+
+  const handleChoose = useCallback((product, preferredVariationKey, variations) => {
+    setConfiguredProduct({
+      product:
+        Array.isArray(variations) && variations.length
+          ? { ...product, variations }
+          : product,
+      preferredVariationKey: preferredVariationKey || "",
+    });
+  }, []);
+
+  const handleCloseConfigurator = useCallback(() => {
+    setConfiguredProduct(null);
+  }, []);
+
   return (
-    <section className="relative bg-[#030303] pb-20 pt-[180px] text-white sm:pt-[192px] lg:pt-[205px]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_6%,rgba(220,38,38,0.1),transparent_30%)]" />
-
-      <div className="relative z-10 mx-auto max-w-[1320px] px-3 sm:px-5 lg:px-6">
-        <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
-              Shop RGVPRIME
-            </p>
-
-            <h1 className="text-4xl font-black uppercase leading-[0.88] tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
-              Research
-              <span className="block text-white/65">Catalog</span>
-            </h1>
-
-            <p className="mt-4 max-w-xl text-sm leading-6 text-white/45">
-              Browse research-use-only products with clear availability and easy
-              navigation.
-            </p>
-          </div>
-
-          <p className="text-xs font-semibold text-white/40">
-            Showing{" "}
-            <span className="font-black text-white">
-              {visibleStart}-{visibleEnd}
-            </span>{" "}
-            of{" "}
-            <span className="font-black text-white">
-              {filteredProducts.length}
-            </span>{" "}
-            products
-          </p>
+    <main id="research-catalog" className="rgv-catalog" ref={catalogTopRef}>
+      <header className="rgv-catalog-hero rgv-catalog-head">
+        <div className="rgv-catalog-hero__copy">
+          <h1>Research catalog</h1>
+          <p>Choose a format, compare strengths, and order in two steps.</p>
         </div>
+      </header>
 
+      <nav className="rgv-catalog-format-bar" aria-label="Shopping format">
+        <div className="rgv-catalog-format-bar__label">
+          <strong>Shopping format</strong>
+          <span>Switch at any time</span>
+        </div>
         <div
-          ref={catalogTopRef}
-          className="mb-4 rounded-3xl border border-white/10 bg-white/[0.03] p-3 sm:p-4"
+          className="rgv-catalog-modes__options rgv-format-switch"
+          role="group"
+          aria-label="Choose product format"
         >
-          <div className="grid gap-3 lg:grid-cols-[320px_1fr_190px] lg:items-center">
-            <label className="relative block">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
-                <SearchIcon />
-              </span>
+          {formatFilters.map((item) => {
+            const active = activeFormat === item.value;
 
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by name, SKU, or category..."
-                className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-white/25 focus:border-red-500/45"
-              />
-            </label>
-
-            <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {statusFilters.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setActiveFilter(item.value)}
-                  className={`shrink-0 rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] transition ${
-                    activeFilter === item.value
-                      ? "border-red-500 bg-red-600 text-white"
-                      : "border-white/10 bg-white/[0.035] text-white/45 hover:border-red-500/35 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <SortDropdown value={sortBy} onChange={setSortBy} />
-          </div>
-
-          <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-red-500/15 bg-red-500/[0.05] px-3 py-2.5 sm:items-center">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500 sm:mt-0" />
-            <p className="text-[10px] font-semibold leading-4 text-white/45">
-              Singles and kits stay separate. Open any product, choose a format,
-              then select the strength you need.
-            </p>
-          </div>
+            return (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={active}
+                aria-controls="catalog-product-grid"
+                className={active ? "is-active" : ""}
+                onClick={() => handleFormatChange(item.value)}
+              >
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </span>
+              </button>
+            );
+          })}
         </div>
+      </nav>
 
-        {status === "loading" && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: productsPerPage }).map((_, index) => (
+      <section
+        className="rgv-catalog-controls rgv-catalog-controls--facets"
+        aria-label="Catalog controls"
+      >
+        <label className="rgv-catalog-search">
+          <span aria-hidden="true">
+            <SearchIcon />
+          </span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search product or strength"
+            aria-label="Search products"
+          />
+        </label>
+
+        <CatalogDropdown
+          label="Category"
+          value={activeCategory}
+          onChange={setActiveCategory}
+          options={categoryOptions}
+        />
+
+        <CatalogDropdown
+          label="Availability"
+          value={availabilityFilter}
+          onChange={setAvailabilityFilter}
+          options={availabilityOptions}
+        />
+
+        <SortDropdown value={sortBy} onChange={setSortBy} />
+      </section>
+
+      {status === "success" && (
+        <div className="rgv-catalog-results-bar">
+          <p aria-live="polite">
+            Showing <strong>{visibleStart}–{visibleEnd}</strong> of{" "}
+            <strong>{filteredProducts.length}</strong>{" "}
+            {activeFormat === PRODUCT_FORMATS.KIT ? "kits" : "products"}
+          </p>
+          {(searchTerm ||
+            activeCategory !== "all" ||
+            availabilityFilter !== "all" ||
+            sortBy !== "featured") && (
+            <button type="button" onClick={clearCatalogFilters}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {status === "loading" && (
+        <div className="rgv-catalog-workbench">
+          <div
+            id="catalog-product-grid"
+            className="rgv-index-grid rgv-product-grid"
+            aria-label="Loading products"
+            aria-busy="true"
+          >
+            {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="h-[385px] animate-pulse rounded-[1.35rem] border border-white/10 bg-white/[0.035] sm:h-[470px] sm:rounded-3xl"
+                className="rgv-index-card rgv-product-card rgv-index-card--loading"
               />
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {status === "error" && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-center">
-            <p className="text-sm font-black text-white">
-              Products are not available right now.
-            </p>
+      {status === "error" && (
+        <div className="rgv-catalog-message" role="alert">
+          <h2>Products are temporarily unavailable.</h2>
+          <p>Please try again in a moment.</p>
+        </div>
+      )}
 
-            <p className="mt-1 text-xs leading-5 text-white/50">
-              Please try again in a moment.
-            </p>
-          </div>
-        )}
+      {status === "success" && filteredProducts.length === 0 && (
+        <div className="rgv-catalog-message">
+          <h2>No products found.</h2>
+          <p>Try another format or search term.</p>
+        </div>
+      )}
 
-        {status === "success" && filteredProducts.length === 0 && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-center">
-            <p className="text-sm font-black text-white">No products found.</p>
-
-            <p className="mt-1 text-xs leading-5 text-white/50">
-              Try changing your search or filter.
-            </p>
-          </div>
-        )}
-
-        {status === "success" && filteredProducts.length > 0 && (
-          <>
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center justify-between gap-4 px-1 sm:justify-start">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
-                  Page <span className="text-white/70">{safeCurrentPage}</span>{" "}
-                  of <span className="text-white/70">{totalPages}</span>
-                </p>
-
-                <p className="text-[10px] font-semibold text-white/35">
-                  {productsPerPage} products per page
-                </p>
-              </div>
-
-              <Pagination
-                currentPage={safeCurrentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      {status === "success" && filteredProducts.length > 0 && (
+        <>
+          <div className="rgv-catalog-workbench">
+            <section
+              id="catalog-product-grid"
+              className="rgv-index-grid rgv-product-grid"
+              aria-label="Products"
+            >
               {paginatedProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  priority={index < 4}
+                  priority={index === 0}
+                  active={
+                    String(configuredProduct?.product?.id || "") ===
+                    String(product.id)
+                  }
+                  format={activeFormat}
+                  variations={
+                    variationSummaries[String(product.id)] ||
+                    getProductVariations(product)
+                  }
+                  variationStatus={
+                    variationSummaryStatus[String(product.id)] ||
+                    (getProductVariations(product).length
+                      ? "success"
+                      : product.type === "variable"
+                        ? "loading"
+                        : "success")
+                  }
+                  onChoose={handleChoose}
                 />
               ))}
-            </div>
+            </section>
 
-            <div className="mt-5 flex w-full justify-center sm:justify-end">
-              <Pagination
-                currentPage={safeCurrentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
+            {configuredProduct && (
+              <StrengthSheet
+                product={configuredProduct.product}
+                format={activeFormat}
+                preferredVariationKey={configuredProduct.preferredVariationKey}
+                onClose={handleCloseConfigurator}
               />
-            </div>
-          </>
-        )}
+            )}
+          </div>
 
-        <p className="mx-auto mt-10 max-w-3xl text-center text-[10px] leading-5 text-white/30">
-          Products shown are intended strictly for laboratory research use only.
-          Not for human consumption, veterinary use, diagnostic use, therapeutic
-          use, cosmetic use, food use, dietary supplement use, or clinical
-          application.
+          <div className="rgv-catalog-pagination-bottom">
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        </>
+      )}
+
+      <footer className="rgv-catalog-disclaimer">
+        <strong>For research use only</strong>
+        <p>
+          Products are not intended for human consumption, diagnostic,
+          therapeutic, or clinical use.
         </p>
-      </div>
-    </section>
+      </footer>
+    </main>
   );
 }

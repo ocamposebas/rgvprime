@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import { useCart } from "./CartContext";
 
 function formatMoney(value) {
@@ -263,61 +263,24 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     };
   }, [isCartOpen, closeCart]);
 
-  return (
-    <AnimatePresence initial={false}>
-      {isCartOpen && (
-        <motion.div
-          key="cart-drawer-root"
-          className="fixed inset-0 z-[90]"
-          initial="closed"
-          animate="open"
-          exit="closed"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Shopping cart"
-        >
-          <motion.button
+  if (!isCartOpen || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[1000]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shopping cart"
+    >
+          <button
             type="button"
             aria-label="Close cart overlay"
             onClick={handleOverlayClose}
-            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
-            variants={{
-              closed: {
-                opacity: 0,
-              },
-              open: {
-                opacity: 1,
-              },
-            }}
-            transition={{
-              duration: 0.28,
-              ease: [0.16, 1, 0.3, 1],
-            }}
+            className="absolute inset-0 z-0 bg-black/70 backdrop-blur-sm"
           />
 
-          <motion.aside
-            initial={{
-              x: "110%",
-              opacity: 0,
-              scale: 0.99,
-            }}
-            animate={{
-              x: 0,
-              opacity: 1,
-              scale: 1,
-            }}
-            exit={{
-              x: "105%",
-              opacity: 0,
-              scale: 0.99,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 280,
-              damping: 34,
-              mass: 0.85,
-            }}
-            className="absolute right-0 top-0 flex h-[100dvh] w-full max-w-none transform-gpu flex-col overflow-hidden border-l border-white/10 bg-[#070707] text-white shadow-[0_0_90px_rgba(0,0,0,0.65)] will-change-transform sm:max-w-[440px]"
+          <aside
+            className="absolute right-0 top-0 z-10 flex h-[100dvh] w-[96vw] max-w-[440px] flex-col overflow-hidden rounded-l-2xl border-l border-white/10 bg-[#070707] text-white shadow-[0_0_90px_rgba(0,0,0,0.65)] sm:w-full sm:rounded-none"
           >
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(220,38,38,0.12),transparent_32%),radial-gradient(circle_at_15%_75%,rgba(127,29,29,0.12),transparent_34%)]" />
             <div className="pointer-events-none absolute left-0 top-0 h-full w-px bg-gradient-to-b from-red-500/35 via-white/10 to-transparent" />
@@ -348,14 +311,7 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
 
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
                 {!hasItems ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 14, scale: 0.99 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{
-                      delay: 0.08,
-                      duration: 0.35,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
+                  <div
                     className="flex min-h-full flex-col items-center justify-center py-10 text-center"
                   >
                     <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/65 shadow-[0_0_40px_rgba(220,38,38,0.08)]">
@@ -377,18 +333,9 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
                     >
                       Shop Products
                     </a>
-                  </motion.div>
+                  </div>
                 ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: 0.08,
-                      duration: 0.32,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    className="space-y-4"
-                  >
+                  <div className="space-y-4">
                     {safeItems.map((item) => (
                       <CartItem
                         key={item.id}
@@ -398,19 +345,12 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
                         updateQuantity={updateQuantity}
                       />
                     ))}
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
               {hasItems && (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    delay: 0.12,
-                    duration: 0.32,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
+                <div
                   className="shrink-0 border-t border-white/10 bg-black/45 px-4 py-4 sm:px-5 sm:py-5"
                   style={{
                     paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -460,13 +400,12 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
                     Products are intended strictly for laboratory research use
                     only. Not for human or animal use.
                   </p>
-                </motion.div>
+                </div>
               )}
             </div>
-          </motion.aside>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </aside>
+        </div>,
+    document.body,
   );
 }
 

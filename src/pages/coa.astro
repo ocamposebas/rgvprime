@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Navbar from "../components/nav/Navbar.jsx";
-import SiteFooter from "../components/footer/SiteFooter.jsx";
 import COASection from "../components/coa/COASection.jsx";
 ---
 
@@ -14,6 +13,4 @@ import COASection from "../components/coa/COASection.jsx";
   <main class="relative min-h-screen bg-black">
     <COASection client:load />
   </main>
-
-  <SiteFooter />
 </BaseLayout>

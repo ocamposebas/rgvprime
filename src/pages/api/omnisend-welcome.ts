@@ -5,10 +5,13 @@ export const prerender = false;
 const OMNISEND_API_URL = "https://api.omnisend.com";
 const OMNISEND_API_VERSION = "2026-03-15";
 
-const CONTACT_TAGS = [
-  "source:welcome-popup-10",
-  "offer:welcome-10-eligible",
-];
+const CONTACT_SOURCE_TAGS: Record<string, string> = {
+  "welcome-popup-10": "source:welcome-popup-10",
+  "access-gate-registration": "source:access-gate-registration",
+  "site-prefooter-10": "source:site-prefooter-10",
+};
+const DEFAULT_CONTACT_SOURCE = "welcome-popup-10";
+const WELCOME_OFFER_TAG = "offer:welcome-10-eligible";
 
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
@@ -58,6 +61,44 @@ function cleanText(
 
 function normalizeEmail(value: unknown): string {
   return cleanText(value, 254).toLowerCase();
+}
+
+function getContactTags(source: string): string[] {
+  return [
+    CONTACT_SOURCE_TAGS[source] ||
+      CONTACT_SOURCE_TAGS[DEFAULT_CONTACT_SOURCE],
+    WELCOME_OFFER_TAG,
+  ];
+}
+
+function getConsentSource(source: string): string {
+  if (source === "site-prefooter-10") {
+    return "RGVPRIME website research dispatch";
+  }
+
+  if (source === "access-gate-registration") {
+    return "RGVPRIME website access gate";
+  }
+
+  return "RGVPRIME website welcome popup";
+}
+
+function normalizeContactSource(value: unknown): string {
+  const source = cleanText(value, 100);
+
+  return Object.prototype.hasOwnProperty.call(CONTACT_SOURCE_TAGS, source)
+    ? source
+    : DEFAULT_CONTACT_SOURCE;
+}
+
+function normalizePagePath(value: unknown): string {
+  const pagePath = cleanText(value, 500).split(/[?#]/, 1)[0];
+
+  if (!pagePath.startsWith("/") || pagePath.startsWith("//")) {
+    return "/";
+  }
+
+  return pagePath || "/";
 }
 
 function isValidEmail(email: string): boolean {
@@ -240,6 +281,13 @@ function isAllowedOrigin(
     const normalizedOrigin =
       originUrl.origin.replace(/\/$/, "");
 
+    const requestOrigin =
+      new URL(request.url).origin.replace(/\/$/, "");
+
+    if (normalizedOrigin === requestOrigin) {
+      return true;
+    }
+
     const isAllowed =
       allowedOrigins.includes(
         normalizedOrigin,
@@ -271,6 +319,9 @@ async function omnisendRequest(
     `${OMNISEND_API_URL}${path}`,
     {
       ...init,
+      signal:
+        init.signal ||
+        AbortSignal.timeout(10_000),
       headers: {
         Authorization:
           `Omnisend-API-Key ${apiKey}`,
@@ -386,10 +437,22 @@ export const POST: APIRoute = async ({
       "content-type",
     ) || "";
 
-  if (
-    !contentType.includes(
+  const isJsonRequest =
+    contentType.includes(
       "application/json",
-    )
+    );
+
+  const isFormRequest =
+    contentType.includes(
+      "application/x-www-form-urlencoded",
+    ) ||
+    contentType.includes(
+      "multipart/form-data",
+    );
+
+  if (
+    !isJsonRequest &&
+    !isFormRequest
   ) {
     return json(
       {
@@ -436,8 +499,35 @@ export const POST: APIRoute = async ({
   >;
 
   try {
-    body =
-      await request.json();
+    if (isJsonRequest) {
+      body =
+        await request.json();
+    } else {
+      const formData =
+        await request.formData();
+
+      body =
+        Object.fromEntries(
+          formData.entries(),
+        );
+
+      body.consent =
+        ["true", "on", "1", "yes"].includes(
+          String(body.consent || "").toLowerCase(),
+        );
+
+      if (!body.pagePath) {
+        try {
+          body.pagePath =
+            new URL(
+              request.headers.get("referer") ||
+                request.url,
+            ).pathname;
+        } catch {
+          body.pagePath = "/";
+        }
+      }
+    }
   } catch {
     return json(
       {
@@ -470,17 +560,13 @@ export const POST: APIRoute = async ({
     );
 
   const source =
-    cleanText(
-      body.source ||
-        "welcome-popup-10",
-      100,
+    normalizeContactSource(
+      body.source,
     );
 
   const pagePath =
-    cleanText(
-      body.pagePath ||
-        "/",
-      500,
+    normalizePagePath(
+      body.pagePath,
     );
 
   /* ------------------------------------------------------------------------ */
@@ -543,7 +629,7 @@ export const POST: APIRoute = async ({
     string
   > = {
     source:
-      "RGVPRIME website welcome popup",
+      getConsentSource(source),
 
     createdAt: now,
   };
@@ -596,6 +682,9 @@ export const POST: APIRoute = async ({
         "10_percent",
 
       welcome_popup_source:
+        source,
+
+      signup_source:
         source,
 
       welcome_popup_page:
@@ -702,7 +791,7 @@ export const POST: APIRoute = async ({
             ],
 
             tags:
-              CONTACT_TAGS,
+              getContactTags(source),
           }),
         },
       );

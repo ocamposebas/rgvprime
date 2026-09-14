@@ -26,8 +26,8 @@ try {
     {
       headers: {
         Accept: "application/json",
-        "Cache-Control": "no-cache",
       },
+      signal: AbortSignal.timeout(7000),
     },
   );
 
@@ -118,16 +118,16 @@ const breadcrumbSchema = {
         <script
           slot="head"
           type="application/ld+json"
-          set:html={JSON.stringify(productSchema)}
+          set:html={JSON.stringify(productSchema).replace(/</g, "\\u003c")}
         />
         <script
           slot="head"
           type="application/ld+json"
-          set:html={JSON.stringify(breadcrumbSchema)}
+          set:html={JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c")}
         />
       </>
     )
   }
 
-  <SingleProductPage slug={routeSlug} client:load />
+  <SingleProductPage slug={routeSlug} initialProduct={product} client:load />
 </BaseLayout>

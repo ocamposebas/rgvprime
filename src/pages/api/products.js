@@ -14,6 +14,7 @@ export const prerender = false;
 const FALLBACK_IMAGE = "/logo.webp";
 const DEFAULT_CATALOG_LIMIT = 70;
 const MAX_CATALOG_LIMIT = 100;
+const MAX_VARIATION_SUMMARY_PRODUCTS = 14;
 const PRODUCT_CACHE_TTL_MS = 60 * 1000;
 const PRODUCT_STALE_TTL_MS = 15 * 60 * 1000;
 const productResponseCache = new Map();
@@ -113,6 +114,21 @@ function sanitizeLimit(value) {
   return Math.min(Math.max(Math.floor(number), 1), MAX_CATALOG_LIMIT);
 }
 
+function parseVariationSummaryIds(value) {
+  if (!value) return [];
+
+  return [
+    ...new Set(
+      String(value)
+        .split(",")
+        .map((item) => Number(item.trim()))
+        .filter((id) => Number.isInteger(id) && id > 0),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .slice(0, MAX_VARIATION_SUMMARY_PRODUCTS);
+}
+
 function normalizeBoolean(value) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -165,6 +181,46 @@ function withImageCacheBuster(src, version) {
     const separator = src.includes("?") ? "&" : "?";
     return `${src}${separator}v=${encodeURIComponent(cleanVersion)}`;
   }
+}
+
+function compactImageSrcset(value, version) {
+  const candidates = String(value || "")
+    .split(",")
+    .map((candidate) => {
+      const match = candidate.trim().match(/^(.*)\s+(\d+)w$/);
+
+      return match
+        ? { src: match[1].trim(), width: Number(match[2]) }
+        : null;
+    })
+    .filter(
+      (candidate) =>
+        candidate?.src && Number.isFinite(candidate.width) && candidate.width > 0,
+    )
+    .sort((a, b) => a.width - b.width);
+
+  if (!candidates.length) return undefined;
+
+  const selectedCandidates = [300, 600, 1024].map((targetWidth) =>
+    candidates.reduce((closest, candidate) =>
+      Math.abs(candidate.width - targetWidth) <
+      Math.abs(closest.width - targetWidth)
+        ? candidate
+        : closest,
+    ),
+  );
+  const uniqueCandidates = [
+    ...new Map(
+      selectedCandidates.map((candidate) => [candidate.width, candidate]),
+    ).values(),
+  ].sort((a, b) => a.width - b.width);
+
+  return uniqueCandidates
+    .map(
+      (candidate) =>
+        `${withImageCacheBuster(candidate.src, version)} ${candidate.width}w`,
+    )
+    .join(", ");
 }
 
 function getWooImage(product) {
@@ -226,34 +282,47 @@ function mapTaxonomyItem(item) {
 
 function mapProductForCatalog(product) {
   const imageAlt = getProductImageAlt(product);
+  const imageVersion = getImageVersion(product);
 
   return {
     id: product.id,
     name: product.name,
-    title: product.name,
     slug: getPublicProductSlug(product.slug),
     sku: product.sku,
     type: product.type,
     price: product.price,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
-    price_html: sanitizePriceHtml(product.price_html),
     short_description: removeUnverifiedPurityClaims(
       sanitizeProductDescription(product.short_description),
       product.slug,
     ),
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
-    image: getWooImage(product),
     image_alt: imageAlt,
     images: Array.isArray(product.images)
       ? product.images.slice(0, 1).map((image) => ({
-          src: image.src,
-          srcset: image.srcset,
+          src: withImageCacheBuster(image.src, imageVersion),
+          srcset: compactImageSrcset(image.srcset, imageVersion),
           sizes: image.sizes,
-          thumbnail: image.thumbnail,
+          thumbnail: image.thumbnail
+            ? withImageCacheBuster(image.thumbnail, imageVersion)
+            : undefined,
           alt: imageAlt,
         }))
+      : [],
+    attributes: Array.isArray(product.attributes)
+      ? product.attributes
+          .filter((attribute) => attribute?.variation === true)
+          .map((attribute) => ({
+            id: attribute.id,
+            name: attribute.name,
+            slug: attribute.slug,
+            variation: true,
+            options: Array.isArray(attribute.options)
+              ? attribute.options.filter(Boolean)
+              : [],
+          }))
       : [],
     stock_status: product.stock_status,
     stock_quantity: product.stock_quantity,
@@ -267,7 +336,6 @@ function mapProductForCatalog(product) {
     tags: Array.isArray(product.tags)
       ? product.tags.map(mapTaxonomyItem)
       : [],
-    permalink: product.permalink,
   };
 }
 
@@ -347,6 +415,23 @@ function mapVariationForDetail(variation) {
   };
 }
 
+function mapVariationForCatalogCard(variation) {
+  return {
+    id: variation.id,
+    sku: variation.sku,
+    purchasable: variation.purchasable,
+    price: variation.price,
+    regular_price: variation.regular_price,
+    sale_price: variation.sale_price,
+    image: variation?.image?.src || null,
+    attributes: Array.isArray(variation.attributes) ? variation.attributes : [],
+    stock_status: variation.stock_status,
+    stock_quantity: variation.stock_quantity,
+    manage_stock: variation.manage_stock,
+    backorders_allowed: variation.backorders_allowed,
+  };
+}
+
 function buildWooEndpoint({
   slug,
   wcUrl,
@@ -418,11 +503,11 @@ function buildWooEndpoint({
       "price",
       "regular_price",
       "sale_price",
-      "price_html",
       "short_description",
       "date_modified",
       "date_modified_gmt",
       "images",
+      "attributes",
       "stock_status",
       "stock_quantity",
       "manage_stock",
@@ -431,14 +516,18 @@ function buildWooEndpoint({
       "featured",
       "categories",
       "tags",
-      "permalink",
     ].join(",")
   );
 
   return endpoint;
 }
 
-function buildWooVariationEndpoint({ productId, wcUrl, refresh = false }) {
+function buildWooVariationEndpoint({
+  productId,
+  wcUrl,
+  refresh = false,
+  summary = false,
+}) {
   const cleanUrl = wcUrl.replace(/\/$/, "");
   const endpoint = new URL(
     `${cleanUrl}/wp-json/wc/v3/products/${productId}/variations`
@@ -451,30 +540,46 @@ function buildWooVariationEndpoint({ productId, wcUrl, refresh = false }) {
 
   endpoint.searchParams.set(
     "_fields",
-    [
-      "id",
-      "name",
-      "slug",
-      "sku",
-      "type",
-      "status",
-      "purchasable",
-      "price",
-      "regular_price",
-      "sale_price",
-      "price_html",
-      "description",
-      "date_modified",
-      "date_modified_gmt",
-      "image",
-      "attributes",
-      "stock_status",
-      "stock_quantity",
-      "manage_stock",
-      "backorders_allowed",
-      "weight",
-      "permalink",
-    ].join(",")
+    (summary
+      ? [
+          "id",
+          "sku",
+          "purchasable",
+          "price",
+          "regular_price",
+          "sale_price",
+          "image",
+          "attributes",
+          "stock_status",
+          "stock_quantity",
+          "manage_stock",
+          "backorders_allowed",
+        ]
+      : [
+          "id",
+          "name",
+          "slug",
+          "sku",
+          "type",
+          "status",
+          "purchasable",
+          "price",
+          "regular_price",
+          "sale_price",
+          "price_html",
+          "description",
+          "date_modified",
+          "date_modified_gmt",
+          "image",
+          "attributes",
+          "stock_status",
+          "stock_quantity",
+          "manage_stock",
+          "backorders_allowed",
+          "weight",
+          "permalink",
+        ]
+    ).join(",")
   );
 
   return endpoint;
@@ -559,30 +664,23 @@ async function parseWooProducts(response) {
 function productLooksVariable(rawProduct, product) {
   if (!rawProduct && !product) return false;
 
-  const type = rawProduct?.type || product?.type;
+  const type = String(rawProduct?.type || product?.type || "")
+    .trim()
+    .toLowerCase();
 
   if (type === "variable") return true;
 
-  if (Array.isArray(rawProduct?.variations) && rawProduct.variations.length > 0) {
-    return true;
-  }
+  const variationReferences = [
+    ...(Array.isArray(rawProduct?.variations) ? rawProduct.variations : []),
+    ...(Array.isArray(product?.variations) ? product.variations : []),
+  ];
 
-  if (Array.isArray(product?.variations) && product.variations.length > 0) {
-    return true;
-  }
+  return variationReferences.some((variation) => {
+    const variationId = Number(
+      variation && typeof variation === "object" ? variation.id : variation,
+    );
 
-  const attributes = Array.isArray(rawProduct?.attributes)
-    ? rawProduct.attributes
-    : Array.isArray(product?.attributes)
-      ? product.attributes
-      : [];
-
-  return attributes.some((attribute) => {
-    if (!attribute) return false;
-
-    if (attribute.variation === true) return true;
-
-    return Array.isArray(attribute.options) && attribute.options.length > 1;
+    return Number.isInteger(variationId) && variationId > 0;
   });
 }
 
@@ -593,14 +691,20 @@ async function fetchWooProductVariations({
   consumerSecret,
   signal,
   refresh = false,
+  summary = false,
 }) {
-  if (!productId) return [];
+  const numericProductId = Number(productId);
+
+  if (!Number.isInteger(numericProductId) || numericProductId <= 0) {
+    throw new Error("A valid product ID is required to load variations.");
+  }
 
   try {
     const variationEndpoint = buildWooVariationEndpoint({
-      productId,
+      productId: numericProductId,
       wcUrl,
       refresh,
+      summary,
     });
 
     const variationResponse = await fetchWooCommerce(
@@ -620,39 +724,73 @@ async function fetchWooProductVariations({
         details: variationResult.details,
       });
 
-      return [];
+      throw new Error("WooCommerce variations response was invalid.");
     }
 
-    return variationResult.products.map(mapVariationForDetail);
+    return variationResult.products.map(
+      summary ? mapVariationForCatalogCard : mapVariationForDetail,
+    );
   } catch (error) {
     if (error?.name === "AbortError") {
       throw error;
     }
 
     console.error("WooCommerce variations request failed:", error);
-    return [];
+    throw error;
   }
 }
 
-export async function GET({ request }) {
-  const rate = checkRateLimit(request, {
-    namespace: "products",
-    limit: 120,
-    windowMs: 60 * 1000,
-  });
+async function fetchVariationSummaryBatch({
+  productIds,
+  wcUrl,
+  consumerKey,
+  consumerSecret,
+  signal,
+  refresh,
+}) {
+  const summaries = {};
+  const failedIds = [];
+  let nextIndex = 0;
 
-  if (!rate.allowed) {
-    return requestSecurityResponse(
-      "Too many product requests. Please wait and try again.",
-      429,
-      rate.retryAfter,
-    );
+  async function worker() {
+    while (nextIndex < productIds.length) {
+      const productId = productIds[nextIndex];
+      nextIndex += 1;
+
+      try {
+        summaries[productId] = await fetchWooProductVariations({
+          productId,
+          wcUrl,
+          consumerKey,
+          consumerSecret,
+          signal,
+          refresh,
+          summary: true,
+        });
+      } catch {
+        failedIds.push(productId);
+      }
+    }
   }
 
+  await Promise.all(
+    Array.from(
+      { length: Math.min(4, productIds.length) },
+      () => worker(),
+    ),
+  );
+
+  return { summaries, failedIds };
+}
+
+export async function GET({ request }) {
   const requestUrl = new URL(request.url);
 
   const requestedSlug = requestUrl.searchParams.get("slug");
   const slug = requestedSlug ? getWooProductSlug(requestedSlug) : null;
+  const variationSummaryIds = parseVariationSummaryIds(
+    requestUrl.searchParams.get("option_ids"),
+  );
   const limit = sanitizeLimit(requestUrl.searchParams.get("limit"));
   const featured = normalizeBoolean(requestUrl.searchParams.get("featured"));
   const debug = shouldBypassCache(requestUrl.searchParams.get("debug"));
@@ -660,7 +798,17 @@ export async function GET({ request }) {
     shouldBypassCache(requestUrl.searchParams.get("refresh")) ||
     shouldBypassCache(request.headers.get("cache-control")) ||
     requestUrl.searchParams.has("_");
-  const cacheKey = JSON.stringify({ slug: slug || "", limit, featured });
+  const cacheKey = JSON.stringify({
+    mode: variationSummaryIds.length
+      ? "variation-summary"
+      : slug
+        ? "detail"
+        : "catalog",
+    variationSummaryIds,
+    slug: slug || "",
+    limit,
+    featured,
+  });
   const cached = productResponseCache.get(cacheKey);
   const cacheAge = cached
     ? Date.now() - cached.cachedAt
@@ -668,6 +816,24 @@ export async function GET({ request }) {
 
   if (!refresh && !debug && cached && cacheAge < PRODUCT_CACHE_TTL_MS) {
     return jsonResponse(cached.payload, 200, "HIT", true);
+  }
+
+  const rate = checkRateLimit(request, {
+    namespace: "products",
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    if (!refresh && !debug && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
+      return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
+    }
+
+    return requestSecurityResponse(
+      "Too many product requests. Please wait and try again.",
+      429,
+      rate.retryAfter,
+    );
   }
 
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
@@ -686,30 +852,61 @@ export async function GET({ request }) {
 
   const isDetailRequest = Boolean(slug);
 
-  const endpoint = buildWooEndpoint({
-    slug,
-    wcUrl,
-    limit,
-    featured,
-    refresh,
-  });
+  const endpoint = variationSummaryIds.length
+    ? null
+    : buildWooEndpoint({
+        slug,
+        wcUrl,
+        limit,
+        featured,
+        refresh,
+      });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeoutSignal = AbortSignal.timeout(6500);
+  const upstreamSignal = request.signal
+    ? AbortSignal.any([request.signal, timeoutSignal])
+    : timeoutSignal;
 
   try {
+    if (variationSummaryIds.length) {
+      const { summaries, failedIds } = await fetchVariationSummaryBatch({
+        productIds: variationSummaryIds,
+        wcUrl,
+        consumerKey,
+        consumerSecret,
+        signal: upstreamSignal,
+        refresh,
+      });
+      const payload = {
+        success: true,
+        count: Object.keys(summaries).length,
+        summaries,
+        failed_ids: failedIds,
+        cache: refresh ? "refresh" : "fresh",
+        updatedAt: new Date().toISOString(),
+      };
+      const complete = failedIds.length === 0;
+
+      if (!debug && complete) storeProductResponse(cacheKey, payload);
+
+      return jsonResponse(
+        payload,
+        200,
+        refresh ? "REFRESH" : "MISS",
+        complete && !refresh && !debug,
+      );
+    }
+
     const response = await fetchWooCommerce(
       endpoint,
       consumerKey,
       consumerSecret,
-      controller.signal
+      upstreamSignal
     );
 
     const result = await parseWooProducts(response);
 
     if (!result.ok) {
-      clearTimeout(timeout);
-
       if (!refresh && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
         return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
       }
@@ -733,8 +930,6 @@ export async function GET({ request }) {
       const product = rawProduct ? mapProductForDetail(rawProduct) : null;
 
       if (!product) {
-        clearTimeout(timeout);
-
         return jsonResponse(
           {
             success: false,
@@ -755,14 +950,12 @@ export async function GET({ request }) {
           wcUrl,
           consumerKey,
           consumerSecret,
-          signal: controller.signal,
+          signal: upstreamSignal,
           refresh,
         });
 
         product.variations = variationDetails;
       }
-
-      clearTimeout(timeout);
 
       const payload = {
         success: true,
@@ -801,8 +994,6 @@ export async function GET({ request }) {
       return jsonResponse(payload, 200, refresh ? "REFRESH" : "MISS", !refresh && !debug);
     }
 
-    clearTimeout(timeout);
-
     const mappedProducts = products.map(mapProductForCatalog);
 
     const payload = {
@@ -818,13 +1009,12 @@ export async function GET({ request }) {
     if (!debug) storeProductResponse(cacheKey, payload);
     return jsonResponse(payload, 200, refresh ? "REFRESH" : "MISS", !refresh && !debug);
   } catch (error) {
-    clearTimeout(timeout);
-
     if (!refresh && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
       return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
     }
 
-    const isTimeout = error.name === "AbortError";
+    const isTimeout =
+      error?.name === "AbortError" || error?.name === "TimeoutError";
 
     return jsonResponse(
       {

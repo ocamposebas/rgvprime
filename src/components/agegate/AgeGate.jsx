@@ -293,7 +293,7 @@ export default function AgeGate() {
           consent: true,
           company: "",
           source: "access-gate-registration",
-          pagePath: window.location.pathname + window.location.search,
+          pagePath: window.location.pathname,
         }),
       });
 

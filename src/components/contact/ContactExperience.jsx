@@ -3,7 +3,6 @@ import { CartProvider } from "../cart/CartContext";
 import LazyCartDrawer from "../cart/LazyCartDrawer";
 
 import Navbar from "../nav/Navbar";
-import SiteFooter from "../footer/SiteFooter";
 
 const supportEmail = "sales@rgvprimellc.com";
 
@@ -145,7 +144,6 @@ export default function ContactExperience() {
           </section>
         </main>
 
-        <SiteFooter />
         <LazyCartDrawer checkoutPath="/checkout" />
       </div>
     </CartProvider>

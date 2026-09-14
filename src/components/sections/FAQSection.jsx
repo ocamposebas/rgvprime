@@ -4,7 +4,6 @@ import { CartProvider } from "../cart/CartContext";
 import LazyCartDrawer from "../cart/LazyCartDrawer";
 
 import Navbar from "../nav/Navbar";
-import SiteFooter from "../footer/SiteFooter";
 
 const faqs = [
   {
@@ -176,7 +175,6 @@ export default function FAQExperience() {
           </section>
         </main>
 
-        <SiteFooter />
         <LazyCartDrawer checkoutPath="/checkout" />
       </div>
     </CartProvider>

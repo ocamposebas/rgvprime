@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Coins, FileCheck2, LockKeyhole, PackageCheck } from "lucide-react";
 import { useCart } from "../cart/CartContext";
+import {
+  getCachedVariationSummary,
+  getProductVariations as getCatalogProductVariations,
+  ProductCard as CatalogProductCard,
+  requestVariationSummaryBatch,
+} from "../catalog/ProductCatalog";
 import {
   formatPoints,
   getProductLoyaltyPoints,
@@ -9,8 +15,34 @@ import {
   getMaximumPurchasableQuantity,
   isProductAvailable,
 } from "../../lib/inventory";
+import {
+  getFormatMeta,
+  isKitFormatValue,
+  isPurchaseFormatAttribute,
+  PRODUCT_FORMATS,
+  sortPurchaseAttributes,
+} from "../../lib/productFormat";
+import "../../styles/storefront-v2.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
+
+const PURCHASE_ASSURANCES = [
+  {
+    title: "Protected packaging",
+    detail: "Prepared and sealed with care",
+    icon: PackageCheck,
+  },
+  {
+    title: "Secure checkout",
+    detail: "Protected payment process",
+    icon: LockKeyhole,
+  },
+  {
+    title: "COA documentation",
+    detail: "Searchable by product or lot",
+    icon: FileCheck2,
+  },
+];
 
 function getStockBadge(product) {
   const quantity =
@@ -85,6 +117,57 @@ function formatMoney(value, currency = "USD") {
     style: "currency",
     currency,
   }).format(number);
+}
+
+function getRawPrice(item) {
+  const candidates = [item?.price, item?.sale_price, item?.regular_price];
+
+  return (
+    candidates.find(
+      (value) => value !== null && value !== undefined && value !== "",
+    ) ?? null
+  );
+}
+
+function getPriceOffer(item) {
+  const currency = item?.currency || item?.currency_code || "USD";
+  const parsePrice = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+
+    const number = Number(
+      typeof value === "string" ? value.replace(/[^0-9.-]/g, "") : value,
+    );
+
+    return Number.isFinite(number) ? number : null;
+  };
+  const currentRaw =
+    [item?.sale_price, item?.price, item?.regular_price].find(
+      (value) => value !== null && value !== undefined && value !== "",
+    ) ?? null;
+  const currentPrice = parsePrice(currentRaw);
+  const regularPrice = parsePrice(item?.regular_price);
+  const hasDiscount =
+    currentPrice !== null &&
+    regularPrice !== null &&
+    regularPrice > 0 &&
+    currentPrice < regularPrice;
+  const savings = hasDiscount ? regularPrice - currentPrice : 0;
+
+  return {
+    currency,
+    currentPrice,
+    currentFormatted: formatMoney(currentPrice, currency),
+    regularPrice,
+    regularFormatted: hasDiscount
+      ? formatMoney(regularPrice, currency)
+      : null,
+    hasDiscount,
+    savings,
+    savingsFormatted: hasDiscount ? formatMoney(savings, currency) : null,
+    percentage: hasDiscount
+      ? Math.max(1, Math.round((savings / regularPrice) * 100))
+      : 0,
+  };
 }
 
 function normalizeVariantValue(value = "") {
@@ -178,6 +261,44 @@ function getVariationImage(variation) {
   return null;
 }
 
+function getVariationResponsiveImage(product, variation) {
+  const src = getVariationImage(variation);
+
+  if (!src) return null;
+
+  const variationImageObject =
+    variation?.image && typeof variation.image === "object"
+      ? variation.image
+      : {};
+  const variationImageData = {
+    ...variationImageObject,
+    ...(variation?.image_data && typeof variation.image_data === "object"
+      ? variation.image_data
+      : {}),
+  };
+  const parentImageData =
+    (Array.isArray(product?.images) && product.images[0]) ||
+    (product?.image && typeof product.image === "object"
+      ? product.image
+      : {});
+  const variationSrcset =
+    variationImageData.srcset || variationImageData.srcSet || undefined;
+  const parentSrcset =
+    parentImageData.srcset || parentImageData.srcSet || undefined;
+  const sharesParentSource =
+    Boolean(parentImageData.src) && String(parentImageData.src) === String(src);
+
+  return {
+    ...parentImageData,
+    ...variationImageData,
+    src,
+    srcset: variationSrcset || (sharesParentSource ? parentSrcset : undefined),
+    sizes:
+      variationImageData.sizes ||
+      (sharesParentSource ? parentImageData.sizes : undefined),
+  };
+}
+
 function getVariationAttributeOption(attribute) {
   return (
     attribute?.option ??
@@ -254,18 +375,80 @@ function getVariationList(product) {
     : [];
 }
 
+function getSelectableProductAttributes(product) {
+  const attributes = Array.isArray(product?.attributes)
+    ? product.attributes.filter(
+        (attribute) => attribute && typeof attribute === "object",
+      )
+    : [];
+  const hasVariationSignal = attributes.some((attribute) =>
+    Object.prototype.hasOwnProperty.call(attribute, "variation"),
+  );
+
+  // Modern Woo data explicitly identifies variation-driving attributes. If
+  // that signal exists, informational attributes must never enter selection
+  // matching. Older payloads without the signal retain the legacy behavior.
+  return hasVariationSignal
+    ? attributes.filter((attribute) => attribute.variation === true)
+    : attributes;
+}
+
+function getScopedVariantSelection(product, selectedVariants) {
+  const selectableNames = new Set(
+    getSelectableProductAttributes(product).map((attribute) =>
+      normalizeAttributeName(attribute?.name || attribute?.slug || ""),
+    ),
+  );
+
+  return Object.fromEntries(
+    Object.entries(selectedVariants || {}).filter(([name, value]) => {
+      return (
+        value !== null &&
+        value !== undefined &&
+        value !== "" &&
+        selectableNames.has(normalizeAttributeName(name))
+      );
+    }),
+  );
+}
+
+function isVariationPurchasable(variation) {
+  if (!variation) return false;
+
+  const explicitFlag = variation.purchasable ?? variation.is_purchasable;
+
+  if (
+    explicitFlag === false ||
+    explicitFlag === 0 ||
+    String(explicitFlag).toLowerCase() === "false"
+  ) {
+    return false;
+  }
+
+  return getRawPrice(variation) !== null && isProductAvailable(variation);
+}
+
 function getLowestAvailableVariation(product) {
   const variations = sortVariationsByStrength(getVariationList(product));
+  const availableVariations = variations.filter((variation) =>
+    isVariationPurchasable(variation),
+  );
+  const preferredSingle = availableVariations.find((variation) =>
+    getVariationOptionValues(variation).every(
+      (value) => !isKitFormatValue(value),
+    ),
+  );
 
   return (
-    variations.find((variation) => isProductAvailable(variation)) ||
+    preferredSingle ||
+    availableVariations[0] ||
     variations[0] ||
     null
   );
 }
 
 function getMatchingProductAttributeName(product, variationAttribute, option) {
-  const attributes = Array.isArray(product?.attributes) ? product.attributes : [];
+  const attributes = getSelectableProductAttributes(product);
   const variationName = normalizeAttributeName(
     variationAttribute?.name || variationAttribute?.slug || ""
   );
@@ -341,16 +524,17 @@ function variationMatchesSelection(variation, selectedVariants) {
 
 function getSelectedVariation(product, selectedVariants) {
   const variations = sortVariationsByStrength(getVariationList(product));
+  const scopedSelection = getScopedVariantSelection(product, selectedVariants);
 
   if (variations.length === 0) return null;
 
   const exactMatch = variations.find((variation) =>
-    variationMatchesSelection(variation, selectedVariants)
+    variationMatchesSelection(variation, scopedSelection)
   );
 
   if (exactMatch) return exactMatch;
 
-  const selectedValues = Object.values(selectedVariants || {}).filter(Boolean);
+  const selectedValues = Object.values(scopedSelection).filter(Boolean);
 
   if (selectedValues.length > 0) {
     const valueMatch = variations.find((variation) =>
@@ -363,51 +547,10 @@ function getSelectedVariation(product, selectedVariants) {
 
     if (valueMatch) return valueMatch;
 
-    const selectedStrength = selectedValues
-      .map((value) => getStrengthMatch(value))
-      .filter(Boolean)
-      .map((strength) => strength.sortValue)[0];
-
-    if (selectedStrength !== undefined) {
-      const strengthMatch = variations.find((variation) => {
-        const variationStrength = getVariationStrengthValue(variation);
-
-        return (
-          Number.isFinite(variationStrength) &&
-          Math.abs(variationStrength - selectedStrength) < 0.000001
-        );
-      });
-
-      if (strengthMatch) return strengthMatch;
-    }
-
-    const attributeEntries = Object.entries(selectedVariants || {}).filter(
-      ([, value]) => value !== null && value !== undefined && value !== ""
-    );
-
-    for (const [attributeName, selectedValue] of attributeEntries) {
-      const attribute = Array.isArray(product?.attributes)
-        ? product.attributes.find((item) =>
-            normalizeAttributeName(item?.name || item?.slug || "") ===
-              normalizeAttributeName(attributeName) ||
-            normalizeAttributeName(item?.name || item?.slug || "").includes(
-              normalizeAttributeName(attributeName)
-            ) ||
-            normalizeAttributeName(attributeName).includes(
-              normalizeAttributeName(item?.name || item?.slug || "")
-            )
-          )
-        : null;
-
-      const sortedOptions = sortVariantOptions(attribute?.options || []);
-      const selectedIndex = sortedOptions.findIndex((option) =>
-        valuesLookEquivalent(option, selectedValue)
-      );
-
-      if (selectedIndex >= 0 && variations[selectedIndex]) {
-        return variations[selectedIndex];
-      }
-    }
+    // A variable product must resolve every selected value to the same
+    // variation. Falling back by strength or array position can silently add
+    // the wrong format (for example, a single vial instead of a kit).
+    return null;
   }
 
   return getLowestAvailableVariation(product);
@@ -439,25 +582,106 @@ function getVariationStockLabel(variation, isAvailable) {
   return "Available";
 }
 
+function buildSelectionFromVariation(product, variation) {
+  if (!variation) return {};
+
+  const selection = {};
+  const variationValues = getVariationOptionValues(variation);
+
+  getSelectableProductAttributes(product).forEach((attribute) => {
+    if (!attribute?.name) return;
+
+    const options = sortVariantOptions(attribute.options || []);
+    const directVariationAttribute = Array.isArray(variation.attributes)
+      ? variation.attributes.find((variationAttribute) => {
+          const productName = normalizeAttributeName(
+            attribute.name || attribute.slug || "",
+          );
+          const variationName = normalizeAttributeName(
+            variationAttribute?.name || variationAttribute?.slug || "",
+          );
+
+          return (
+            productName &&
+            variationName &&
+            (productName === variationName ||
+              productName.includes(variationName) ||
+              variationName.includes(productName))
+          );
+        })
+      : null;
+    const directValue = getVariationAttributeOption(directVariationAttribute);
+    const matchingOption = options.find((option) => {
+      return (
+        valuesLookEquivalent(option, directValue) ||
+        variationValues.some((value) => valuesLookEquivalent(option, value))
+      );
+    });
+
+    if (matchingOption) {
+      selection[attribute.name] = matchingOption;
+    } else if (!options.length && directValue) {
+      selection[attribute.name] = directValue;
+    }
+  });
+
+  return selection;
+}
+
+function getAvailableVariationMatchingSelection(product, selectedVariants) {
+  const scopedSelection = getScopedVariantSelection(product, selectedVariants);
+
+  if (Object.keys(scopedSelection).length === 0) return null;
+
+  return (
+    sortVariationsByStrength(getVariationList(product)).find(
+      (variation) =>
+        isVariationPurchasable(variation) &&
+        variationMatchesSelection(variation, scopedSelection),
+    ) || null
+  );
+}
+
+function getAnyVariationMatchingSelection(product, selectedVariants) {
+  const scopedSelection = getScopedVariantSelection(product, selectedVariants);
+
+  if (Object.keys(scopedSelection).length === 0) return null;
+
+  return (
+    sortVariationsByStrength(getVariationList(product)).find((variation) =>
+      variationMatchesSelection(variation, scopedSelection),
+    ) || null
+  );
+}
+
 function getVariantPricePreview(product, selectedVariants, attributeName, option) {
   const currency = product?.currency || product?.currency_code || "USD";
-
+  const selectableAttributes = getSelectableProductAttributes(product);
+  const attribute = selectableAttributes.find(
+    (item) =>
+      normalizeAttributeName(item?.name || item?.slug || "") ===
+      normalizeAttributeName(attributeName),
+  );
   const previewSelection = {
-    ...(selectedVariants || {}),
+    ...getScopedVariantSelection(product, selectedVariants),
     [attributeName]: option,
   };
+  const compatibilitySelection = isPurchaseFormatAttribute(attribute)
+    ? { [attributeName]: option }
+    : previewSelection;
+  const availableVariation = getAvailableVariationMatchingSelection(
+    product,
+    compatibilitySelection,
+  );
+  const variation =
+    availableVariation ||
+    getAnyVariationMatchingSelection(product, compatibilitySelection);
 
-  const variation = getSelectedVariation(product, previewSelection);
-
-  const rawPrice =
-    variation?.price ??
-    variation?.sale_price ??
-    variation?.regular_price ??
-    null;
+  const rawPrice = getRawPrice(variation);
 
   const formattedPrice = formatMoney(rawPrice, currency);
 
-  const isAvailable = isProductAvailable(variation);
+  const isAvailable = isVariationPurchasable(variation);
 
   const stockLabel = getVariationStockLabel(variation, isAvailable);
 
@@ -466,7 +690,11 @@ function getVariantPricePreview(product, selectedVariants, attributeName, option
     formattedPrice,
     isAvailable,
     stockLabel,
-    label: formattedPrice || "Unavailable",
+    label: isAvailable && formattedPrice
+      ? formattedPrice
+      : variation
+        ? "Sold out"
+        : "Unavailable",
   };
 }
 
@@ -475,8 +703,10 @@ function buildInitialVariantSelection(product) {
   const preferredVariation = getLowestAvailableVariation(product);
   const preferredOptions = getVariationOptionValues(preferredVariation);
 
-  if (Array.isArray(product?.attributes) && product.attributes.length > 0) {
-    product.attributes.forEach((attr) => {
+  const selectableAttributes = getSelectableProductAttributes(product);
+
+  if (selectableAttributes.length > 0) {
+    selectableAttributes.forEach((attr) => {
       if (!attr?.name) return;
 
       const options = sortVariantOptions(attr.options || []);
@@ -513,7 +743,8 @@ function buildInitialVariantSelection(product) {
 function mergeProductWithVariation(product, variation) {
   if (!product || !variation) return product;
 
-  const variationImage = getVariationImage(variation);
+  const variationImage = getVariationResponsiveImage(product, variation);
+  const variationPrice = getRawPrice(variation);
 
   return {
     ...product,
@@ -521,13 +752,13 @@ function mergeProductWithVariation(product, variation) {
     variation_id: variation.id,
     variationId: variation.id,
     sku: variation.sku || product.sku,
-    price: variation.price || variation.sale_price || variation.regular_price || product.price,
+    price: variationPrice ?? product.price,
     regular_price: variation.regular_price || product.regular_price,
     sale_price: variation.sale_price || "",
     price_html: "",
-    image: variationImage || getProductImage(product),
+    image: variationImage?.src || getProductImage(product),
     images: variationImage
-      ? [{ src: variationImage }]
+      ? [variationImage]
       : Array.isArray(product.images)
         ? product.images
         : [],
@@ -553,8 +784,25 @@ function mergeProductWithVariation(product, variation) {
 }
 
 function renderProductPrice(product) {
-  const currency = product?.currency || product?.currency_code || "USD";
+  const offer = getPriceOffer(product);
   const isVariableParent = product?.type === "variable" && !product?.selectedVariationId;
+
+  if (offer.currentFormatted) {
+    if (offer.hasDiscount) {
+      return (
+        <div className="rgv-ticket-price rgv-ticket-price--sale">
+          <strong>{offer.currentFormatted}</strong>
+          <del>{offer.regularFormatted}</del>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rgv-ticket-price">
+        <strong>{offer.currentFormatted}</strong>
+      </div>
+    );
+  }
 
   if (
     !isVariableParent &&
@@ -563,46 +811,14 @@ function renderProductPrice(product) {
   ) {
     return (
       <div
-        className="product-price text-3xl font-black tracking-[-0.055em] text-white sm:text-4xl lg:text-[3.15rem] [&_.amount]:text-white [&_.woocommerce-Price-amount]:text-white [&>del]:mr-3 [&>del]:text-base [&>del]:text-white/25 [&>ins]:no-underline"
+        className="rgv-ticket-price product-price"
         dangerouslySetInnerHTML={{ __html: product.price_html }}
       />
     );
   }
 
-  if (product?.sale_price && product?.regular_price) {
-    const salePrice = formatMoney(product.sale_price, currency);
-    const regularPrice = formatMoney(product.regular_price, currency);
-
-    if (salePrice && regularPrice && salePrice !== regularPrice) {
-      return (
-        <div className="flex flex-wrap items-end gap-3">
-          <span className="text-3xl font-black tracking-[-0.055em] text-white sm:text-4xl lg:text-[3.15rem]">
-            {salePrice}
-          </span>
-
-          <span className="pb-2 text-xl font-black tracking-[-0.04em] text-white/24 line-through">
-            {regularPrice}
-          </span>
-        </div>
-      );
-    }
-  }
-
-  const singlePrice =
-    product?.price ?? product?.sale_price ?? product?.regular_price ?? null;
-
-  const formattedPrice = formatMoney(singlePrice, currency);
-
-  if (formattedPrice) {
-    return (
-      <div className="text-3xl font-black tracking-[-0.055em] text-white sm:text-4xl lg:text-[3.15rem]">
-        {formattedPrice}
-      </div>
-    );
-  }
-
   return (
-    <div className="text-2xl font-black tracking-[-0.04em] text-white/45 sm:text-3xl">
+    <div className="rgv-ticket-price is-empty">
       Select Variant
     </div>
   );
@@ -651,72 +867,6 @@ function IconBag() {
   );
 }
 
-function IconArrow() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M7 17L17 7" />
-      <path d="M8 7h9v9" />
-    </svg>
-  );
-}
-
-function TechnicalRow({ icon, label, value }) {
-  return (
-    <div className="group flex items-center justify-between gap-5 border-b border-white/[0.06] py-4 last:border-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.035] text-white/45 transition duration-300 group-hover:border-red-500/30 group-hover:bg-red-500/10 group-hover:text-red-300">
-          {icon}
-        </div>
-
-        <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-white/45 transition group-hover:text-white/70">
-          {label}
-        </p>
-      </div>
-
-      {typeof value === "string" ? (
-        <p className="shrink-0 text-right text-[13px] font-extrabold text-white/85">
-          {value}
-        </p>
-      ) : (
-        value
-      )}
-    </div>
-  );
-}
-
-function MiniTrustItem({ icon, title, text }) {
-  return (
-    <div className="group relative overflow-hidden rounded-[1.35rem] border border-white/[0.08] bg-white/[0.035] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-red-500/25 hover:bg-red-500/[0.045]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_36%)] opacity-70" />
-
-      <div className="relative flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/15 bg-red-500/10 text-red-300 transition duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-200">
-          {icon}
-        </div>
-
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/85">
-            {title}
-          </p>
-
-          <p className="mt-1 text-[12px] leading-relaxed text-white/42">
-            {text}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function BackInStockForm({
   notifyName,
   setNotifyName,
@@ -731,69 +881,56 @@ function BackInStockForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="relative overflow-hidden rounded-[1.7rem] border border-rose-400/15 bg-[linear-gradient(135deg,rgba(190,18,60,0.08),rgba(255,255,255,0.025))] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl"
+      className="rgv-pdp-notify border border-white/12 bg-white/[0.035] p-5"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(244,63,94,0.16),transparent_42%)]" />
-
-      <div className="relative mb-5 flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10 text-rose-200">
-          <svg
-            viewBox="0 0 24 24"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </div>
-
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-300">
-            Back In Stock Alert
-          </p>
-
-          <h3 className="mt-1 text-xl font-black tracking-[-0.04em] text-white">
-            Notify me when available
-          </h3>
-
-          <p className="mt-1.5 max-w-xl text-[12px] leading-relaxed text-white/45">
-            Leave your details and we&apos;ll send you a clean notification as
-            soon as this product is available again.
-          </p>
-        </div>
+      <div className="mb-5">
+        <h3 className="text-lg font-semibold tracking-[-0.02em] text-white">
+          Notify me when available
+        </h3>
+        <p className="mt-1.5 max-w-xl text-sm leading-6 text-white/50">
+          We&apos;ll email you when this exact selection is back in stock.
+        </p>
       </div>
 
-      <div className="relative space-y-3">
+      <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+            <label
+              htmlFor="back-in-stock-name"
+              className="mb-2 block text-xs font-medium text-white/55"
+            >
               Name
             </label>
 
             <input
+              id="back-in-stock-name"
+              name="name"
               type="text"
+              autoComplete="name"
               value={notifyName}
               onChange={(event) => setNotifyName(event.target.value)}
               placeholder="Your name"
-              className="h-[52px] w-full rounded-2xl border border-white/[0.08] bg-black/30 px-4 text-[13px] font-bold text-white outline-none transition placeholder:text-white/25 focus:border-rose-300/40 focus:bg-black/45"
+              className="h-12 w-full border border-white/15 bg-black/20 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/45"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+            <label
+              htmlFor="back-in-stock-email"
+              className="mb-2 block text-xs font-medium text-white/55"
+            >
               Email
             </label>
 
             <input
+              id="back-in-stock-email"
+              name="email"
               type="email"
+              autoComplete="email"
               value={notifyEmail}
               onChange={(event) => setNotifyEmail(event.target.value)}
               placeholder="you@email.com"
-              className="h-[52px] w-full rounded-2xl border border-white/[0.08] bg-black/30 px-4 text-[13px] font-bold text-white outline-none transition placeholder:text-white/25 focus:border-rose-300/40 focus:bg-black/45"
+              className="h-12 w-full border border-white/15 bg-black/20 px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/45"
               required
             />
           </div>
@@ -802,22 +939,20 @@ function BackInStockForm({
         <button
           type="submit"
           disabled={notifyStatus === "loading"}
-          className="group relative flex h-[52px] w-full items-center justify-center overflow-hidden rounded-2xl bg-rose-600 px-6 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_18px_45px_rgba(190,18,60,0.24)] transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-12 w-full items-center justify-center bg-red-700 px-6 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <span className="absolute inset-0 translate-x-[-120%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/20 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
-
-          <span className="relative z-10">
-            {notifyStatus === "loading" ? "Saving..." : "Notify Me"}
-          </span>
+          {notifyStatus === "loading" ? "Saving…" : "Notify me"}
         </button>
       </div>
 
       {notifyMessage && (
         <div
-          className={`relative mt-4 flex items-start gap-3 rounded-2xl border p-4 text-[12px] font-bold leading-relaxed ${
+          role="status"
+          aria-live="polite"
+          className={`mt-4 border p-4 text-sm leading-6 ${
             isSuccess
-              ? "border-rose-300/20 bg-rose-500/[0.08] text-rose-50"
-              : "border-red-400/20 bg-red-500/10 text-red-100"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              : "border-red-200 bg-red-50 text-red-950"
           }`}
         >
           <span>{notifyMessage}</span>
@@ -836,153 +971,45 @@ function isFeaturedProduct(product) {
   );
 }
 
-function getProductUrl(product) {
-  const cleanSlug = product?.slug
-    ? String(product.slug).replace(/^\/+|\/+$/g, "")
-    : "";
-
-  if (cleanSlug) {
-    return `/product/${cleanSlug}`;
-  }
-
-  return "/shop";
-}
-
-function stripProductHtml(html = "") {
-  return String(html).replace(/<[^>]*>?/gm, "").trim();
-}
-
-function getComplementDescription(product) {
-  const cleanDescription = stripProductHtml(product?.short_description || "");
-
-  if (!cleanDescription) {
-    return "Research-use-only product for laboratory use.";
-  }
-
-  if (cleanDescription.length > 82) {
-    return `${cleanDescription.slice(0, 82)}...`;
-  }
-
-  return cleanDescription;
-}
-
-function getComplementPrice(product) {
-  const currency = product?.currency || product?.currency_code || "USD";
-  const price = product?.price ?? product?.sale_price ?? product?.regular_price;
-
-  const formattedPrice = formatMoney(price, currency);
-
-  if (product?.type === "variable") {
-    return formattedPrice ? `From ${formattedPrice}` : "View Options";
-  }
-
-  return formattedPrice || "View";
-}
-
-function ComplementProductCard({ product }) {
-  const image = getProductImage(product);
-  const stockBadge = getStockBadge(product);
-  const productUrl = getProductUrl(product);
-  const description = getComplementDescription(product);
-  const price = getComplementPrice(product);
-  const isSoldOut = !isProductAvailable(product);
-
-  return (
-    <article className="group relative overflow-hidden rounded-[1.7rem] border border-white/[0.08] bg-[#080808] shadow-[0_24px_70px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_34px_95px_rgba(0,0,0,0.48)]">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.055),transparent_35%,rgba(220,38,38,0.045))]" />
-
-      <a
-        href={productUrl}
-        className="relative flex h-52 items-center justify-center overflow-hidden bg-[#101010] p-4"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(220,38,38,0.14),transparent_58%)] opacity-80 transition duration-300 group-hover:opacity-100" />
-        <div className="absolute inset-x-8 bottom-5 h-20 rounded-full bg-black/70 blur-3xl" />
-
-        <img
-          src={image}
-          srcSet={product?.images?.[0]?.srcset || undefined}
-          sizes="(max-width: 639px) 88vw, (max-width: 1023px) 45vw, 320px"
-          alt={product.image_alt || `${product.name} laboratory research product`}
-          loading="lazy"
-          decoding="async"
-          width="480"
-          height="320"
-          className={`relative h-full w-full object-contain drop-shadow-[0_22px_45px_rgba(0,0,0,0.55)] transition duration-500 group-hover:scale-[1.08] ${
-            isSoldOut ? "opacity-55 grayscale-[0.25]" : "opacity-100"
-          }`}
-        />
-
-        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] backdrop-blur ${stockBadge.className}`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${stockBadge.dot}`} />
-            {stockBadge.label}
-          </span>
-        </div>
-      </a>
-
-      <div className="relative p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-300/80">
-            Add-On
-          </p>
-
-          {isSoldOut && (
-            <p className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-red-200/80">
-              Waitlist
-            </p>
-          )}
-        </div>
-
-        <h3 className="line-clamp-2 min-h-[44px] text-lg font-black leading-tight tracking-[-0.035em] text-white">
-          {product.name}
-        </h3>
-
-        <p className="mt-2 line-clamp-2 min-h-[40px] text-xs leading-5 text-white/48">
-          {description}
-        </p>
-
-        <div className="mt-5 flex items-end justify-between gap-4 border-t border-white/[0.08] pt-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-white/30">
-              Price
-            </p>
-
-            <p className="mt-1 text-2xl font-black tracking-[-0.05em] text-white">
-              {price}
-            </p>
-          </div>
-
-          <a
-            href={productUrl}
-            className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-[10px] font-black uppercase tracking-[0.12em] transition active:scale-[0.98] ${
-              isSoldOut
-                ? "border border-red-400/20 bg-red-500/10 text-red-100 hover:bg-red-600 hover:text-white"
-                : "bg-red-600 text-white shadow-[0_18px_45px_rgba(220,38,38,0.22)] hover:bg-red-500"
-            }`}
-          >
-            {isSoldOut ? "Notify" : "View"}
-            <IconArrow />
-          </a>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function ProductComplements({ currentProductId }) {
+  const sectionRef = useRef(null);
   const [products, setProducts] = useState([]);
-  const [status, setStatus] = useState("loading");
+  const [status, setStatus] = useState("idle");
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [variationSummaries, setVariationSummaries] = useState({});
+  const [variationSummaryStatus, setVariationSummaryStatus] = useState({});
 
   useEffect(() => {
+    const section = sectionRef.current;
+
+    if (!section || typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setShouldLoad(true);
+        observer.disconnect();
+      },
+      { rootMargin: "420px 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoad) return undefined;
+
     let isMounted = true;
 
     async function loadComplements() {
       try {
         setStatus("loading");
 
-        const response = await fetch("/api/products");
+        const response = await fetch("/api/products?featured=true&limit=5");
         const data = await response.json();
 
         if (!response.ok || !data.success) {
@@ -1004,13 +1031,90 @@ function ProductComplements({ currentProductId }) {
 
                 return String(a.name || "").localeCompare(String(b.name || ""));
               })
-              .slice(0, 8)
+              .slice(0, 4)
           : [];
 
         if (!isMounted) return;
 
         setProducts(featuredProducts);
         setStatus("success");
+
+        const localSummaries = {};
+        const nextStatuses = {};
+        const requestIds = [];
+
+        featuredProducts.forEach((product) => {
+          const productId = String(product.id);
+
+          if (product?.type !== "variable") {
+            nextStatuses[productId] = "success";
+            return;
+          }
+
+          const embeddedVariations = getCatalogProductVariations(product);
+          const cachedVariations = getCachedVariationSummary(product.id);
+          const variations = embeddedVariations.length
+            ? embeddedVariations
+            : cachedVariations;
+
+          if (variations) {
+            localSummaries[productId] = variations;
+            nextStatuses[productId] = "success";
+          } else {
+            requestIds.push(product.id);
+            nextStatuses[productId] = "loading";
+          }
+        });
+
+        setVariationSummaries(localSummaries);
+        setVariationSummaryStatus(nextStatuses);
+
+        if (!requestIds.length) return;
+
+        try {
+          const { summaries, failedIds } =
+            await requestVariationSummaryBatch(requestIds);
+
+          if (!isMounted) return;
+
+          const failedSet = new Set((failedIds || []).map(String));
+          const normalizedSummaries = {};
+          const resolvedStatuses = {};
+
+          requestIds.forEach((productId) => {
+            const key = String(productId);
+            const variations = summaries?.[key];
+
+            if (Array.isArray(variations) && !failedSet.has(key)) {
+              normalizedSummaries[key] = variations;
+            }
+
+            // A missing summary must resolve to the product-page fallback,
+            // never leave an action labelled as permanently loading.
+            resolvedStatuses[key] = "success";
+          });
+
+          setVariationSummaries((current) => ({
+            ...current,
+            ...normalizedSummaries,
+          }));
+          setVariationSummaryStatus((current) => ({
+            ...current,
+            ...resolvedStatuses,
+          }));
+        } catch (error) {
+          console.error(error);
+
+          if (!isMounted) return;
+
+          setVariationSummaryStatus((current) => {
+            const next = { ...current };
+            requestIds.forEach((productId) => {
+              next[String(productId)] = "success";
+            });
+            return next;
+          });
+        }
       } catch (error) {
         console.error(error);
 
@@ -1025,119 +1129,373 @@ function ProductComplements({ currentProductId }) {
     return () => {
       isMounted = false;
     };
-  }, [currentProductId]);
+  }, [currentProductId, shouldLoad]);
 
   if (status === "success" && products.length === 0) {
     return null;
   }
 
   return (
-    <section className="mt-24 border-t border-white/[0.08] pt-14">
-      <div className="mx-auto mb-10 max-w-3xl text-center">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_14px_rgba(248,113,113,0.85)]" />
-          Add-Ons
+    <section
+      ref={sectionRef}
+      className="rgv-product-related rgv-pdp-related"
+    >
+      <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
+            Explore more
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+            Related products
+          </h2>
         </div>
-
-        <h2 className="text-4xl font-black leading-[0.92] tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
-          Recommended
-          <span className="block text-white/38">Add-Ons.</span>
-        </h2>
-
-        <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/52 sm:text-base">
-          Featured WooCommerce products that may complement this selection.
-          Sold out products stay visible so customers can review details or
-          join the notification list.
-        </p>
+        <a
+          href="/shop"
+          className="text-sm font-semibold text-black underline decoration-black/20 underline-offset-4"
+        >
+          View all products
+        </a>
       </div>
 
-      {status === "loading" && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {(status === "idle" || status === "loading") && (
+        <div className="rgv-product-grid rgv-product-grid--related">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div
+            <article
               key={index}
-              className="overflow-hidden rounded-[1.7rem] border border-white/10 bg-white/[0.035]"
+              className="rgv-index-card rgv-product-card rgv-index-card--loading"
             >
-              <div className="h-52 animate-pulse bg-white/[0.04]" />
-
-              <div className="space-y-3 p-4">
-                <div className="h-5 w-2/3 animate-pulse rounded bg-white/10" />
-                <div className="h-4 w-full animate-pulse rounded bg-white/[0.06]" />
-                <div className="h-4 w-4/5 animate-pulse rounded bg-white/[0.06]" />
-                <div className="h-12 w-full animate-pulse rounded-xl bg-white/10" />
+              <div className="rgv-card-media animate-pulse" />
+              <div className="rgv-card-body space-y-3">
+                <div className="h-5 w-2/3 animate-pulse bg-white/[0.07]" />
+                <div className="h-4 w-full animate-pulse bg-white/[0.05]" />
+                <div className="h-11 w-full animate-pulse bg-white/[0.07]" />
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
 
       {status === "error" && (
-        <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-6 text-center">
-          <p className="text-sm font-black text-white">
-            Add-Ons are not available right now.
+        <div className="border border-black/10 bg-white p-6 text-center">
+          <p className="text-sm font-medium text-black/60">
+            Related products are unavailable right now.
           </p>
         </div>
       )}
 
       {status === "success" && products.length > 0 && (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((item) => (
-              <ComplementProductCard key={item.id} product={item} />
-            ))}
-          </div>
-
-          <div className="mt-9 flex justify-center">
-            <a
-              href="/shop"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.04] px-8 text-xs font-black uppercase tracking-[0.12em] text-white/70 transition hover:border-red-500/35 hover:bg-red-600 hover:text-white"
-            >
-              View Catalog
-            </a>
-          </div>
-        </>
+        <div className="rgv-product-grid rgv-product-grid--related">
+          {products.map((item) => (
+            <CatalogProductCard
+              key={item.id}
+              product={item}
+              format={PRODUCT_FORMATS.SINGLE}
+              variations={
+                variationSummaries[String(item.id)] ||
+                getCatalogProductVariations(item)
+              }
+              variationStatus={
+                variationSummaryStatus[String(item.id)] ||
+                (item.type === "variable" ? "loading" : "success")
+              }
+            />
+          ))}
+        </div>
       )}
     </section>
   );
 }
 
-export default function ProductDetails({ slug }) {
-  const { addItem } = useCart();
-  const shouldReduceMotion = useReducedMotion();
+function formatCertificateDate(value) {
+  if (!value) return "Not listed";
 
-  const [product, setProduct] = useState(null);
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function certificateMatchesVariation(certificate, variation) {
+  const variationId = String(
+    variation?.id || variation?.variation_id || variation?.variationId || "",
+  ).trim();
+
+  if (!variationId) return true;
+
+  const certificateIds = [
+    certificate?.variation_id,
+    certificate?.variationId,
+    ...(Array.isArray(certificate?.product_ids)
+      ? certificate.product_ids
+      : []),
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  if (certificateIds.includes(variationId)) return true;
+
+  const normalizeSku = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+  const variationSku = normalizeSku(variation?.sku);
+  const certificateSku = normalizeSku(certificate?.sku);
+
+  return Boolean(variationSku && certificateSku && variationSku === certificateSku);
+}
+
+function ProductVerification({ product, variation }) {
   const [status, setStatus] = useState("loading");
+  const [certificate, setCertificate] = useState(null);
+  const variationId = variation?.id || variation?.variation_id || 0;
+  const requiresVariation = product?.type === "variable";
+
+  useEffect(() => {
+    if (!product?.id || (requiresVariation && !variationId)) {
+      setStatus(requiresVariation ? "selection" : "empty");
+      setCertificate(null);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    async function loadCertificate() {
+      try {
+        setStatus("loading");
+        setCertificate(null);
+
+        const params = new URLSearchParams({
+          product_id: String(product.id),
+        });
+
+        if (variationId) params.set("variation_id", String(variationId));
+
+        const response = await fetch(`/api/coas?${params.toString()}`, {
+          headers: { Accept: "application/json" },
+          cache: "default",
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) throw new Error("Certificate lookup failed.");
+
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        const matchingItems = variationId
+          ? items.filter((item) => certificateMatchesVariation(item, variation))
+          : items;
+        const current =
+          matchingItems.find((item) => item?.is_current) ||
+          matchingItems[0] ||
+          null;
+
+        setCertificate(current);
+        setStatus(current ? "success" : "empty");
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        console.error(error);
+        setStatus("error");
+      }
+    }
+
+    loadCertificate();
+    return () => controller.abort();
+  }, [product?.id, requiresVariation, variationId, variation?.sku]);
+
+  const archiveUrl = `/coa?product=${encodeURIComponent(product?.name || "")}`;
+
+  return (
+    <section
+      className="rgv-verification-strip rgv-pdp-verification mt-16 border-y border-black/10 py-10"
+      aria-labelledby="verification-title"
+    >
+      <header className="flex flex-wrap items-start justify-between gap-5">
+        <div>
+          <p className="rgv-kicker text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
+            Quality documentation
+          </p>
+          <h2
+            id="verification-title"
+            className="mt-2 text-2xl font-semibold tracking-[-0.025em]"
+          >
+            Certificate of analysis
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-black/55">
+            The certificate shown matches the exact format and strength you
+            selected.
+          </p>
+        </div>
+        <span
+          className={`rgv-verification-strip__state is-${status} text-xs font-medium text-black/55`}
+          aria-live="polite"
+        >
+          {status === "loading"
+            ? "Checking documentation…"
+            : status === "success"
+              ? "Certificate matched"
+              : status === "selection"
+                ? "Select a variation"
+              : status === "empty"
+                ? "Search the archive"
+                : "Documentation unavailable"}
+        </span>
+      </header>
+
+      {status === "success" && certificate ? (
+        <div className="mt-8 grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
+          <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="border-l border-black/15 pl-4">
+              <dt className="text-xs text-black/45">Purity</dt>
+              <dd className="mt-1 text-sm font-semibold">
+                {certificate.purity || "See certificate"}
+              </dd>
+            </div>
+            <div className="border-l border-black/15 pl-4">
+              <dt className="text-xs text-black/45">Lot</dt>
+              <dd className="mt-1 text-sm font-semibold">
+                {certificate.lot || certificate.batch || "See certificate"}
+              </dd>
+            </div>
+            <div className="border-l border-black/15 pl-4">
+              <dt className="text-xs text-black/45">Laboratory</dt>
+              <dd className="mt-1 text-sm font-semibold">
+                {certificate.lab || certificate.lab_name || "Independent lab"}
+              </dd>
+            </div>
+            <div className="border-l border-black/15 pl-4">
+              <dt className="text-xs text-black/45">Report date</dt>
+              <dd className="mt-1 text-sm font-semibold">
+                {formatCertificateDate(
+                  certificate.report_date || certificate.test_date,
+                )}
+              </dd>
+            </div>
+          </dl>
+          <div className="rgv-verification-strip__actions flex flex-wrap gap-3 text-sm font-semibold">
+            {(certificate.url || certificate.pdf_url) && (
+              <a
+                href={certificate.url || certificate.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="is-primary border border-black bg-black px-5 py-3 text-white transition hover:bg-black/80"
+              >
+                View certificate
+              </a>
+            )}
+            <a
+              href={archiveUrl}
+              className="border border-black/20 bg-white px-5 py-3 text-black transition hover:border-black"
+            >
+              View batch history
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="rgv-verification-strip__fallback mt-7 flex flex-wrap items-center justify-between gap-4 bg-white p-5 text-sm text-black/60">
+          <p className="max-w-2xl leading-6">
+            {status === "loading"
+              ? "Checking the certificate for your selection."
+              : status === "selection"
+                ? "Choose a format and strength to see its certificate."
+                : "No exact certificate match is available here. You can search the full archive by product, SKU, or lot."}
+          </p>
+          {status !== "loading" && status !== "selection" && (
+            <a
+              href={archiveUrl}
+              className="font-semibold text-red-700 underline decoration-red-700/25 underline-offset-4"
+            >
+              Search certificate archive
+            </a>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default function ProductDetails({ slug, initialProduct = null }) {
+  const { addItem } = useCart();
+  const purchaseRef = useRef(null);
+  const hasInitialProduct = Boolean(initialProduct?.id);
+
+  const [product, setProduct] = useState(() => initialProduct || null);
+  const [status, setStatus] = useState(
+    hasInitialProduct ? "success" : "loading",
+  );
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariants, setSelectedVariants] = useState({});
+  const [selectedVariants, setSelectedVariants] = useState(() =>
+    hasInitialProduct ? buildInitialVariantSelection(initialProduct) : {},
+  );
   const [justAdded, setJustAdded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [notifyName, setNotifyName] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState("idle");
   const [notifyMessage, setNotifyMessage] = useState("");
+  const [purchasePanelVisible, setPurchasePanelVisible] = useState(false);
+  const [variationLoadStatus, setVariationLoadStatus] = useState(() =>
+    initialProduct?.type === "variable" &&
+    getVariationList(initialProduct).length === 0
+      ? "loading"
+      : "ready",
+  );
+  const [variationRetryKey, setVariationRetryKey] = useState(0);
 
   useEffect(() => {
+    const suppliedSlug = String(initialProduct?.slug || "").trim();
+    const cleanSlug = String(slug || "").trim();
+
+    const canUseInitialProduct =
+      initialProduct?.id &&
+      (!cleanSlug || !suppliedSlug || suppliedSlug === cleanSlug);
+    const initialNeedsVariations =
+      canUseInitialProduct &&
+      initialProduct?.type === "variable" &&
+      getVariationList(initialProduct).length === 0;
+
+    if (canUseInitialProduct) {
+      setProduct(initialProduct);
+      setSelectedVariants(buildInitialVariantSelection(initialProduct));
+      setStatus("success");
+
+      if (!initialNeedsVariations && variationRetryKey === 0) {
+        setVariationLoadStatus("ready");
+        return undefined;
+      }
+    }
+
     let isMounted = true;
 
     async function loadProduct() {
       try {
-        setStatus("loading");
-        setQuantity(1);
-        setSelectedVariants({});
-        setNotifyName("");
-        setNotifyEmail("");
-        setNotifyStatus("idle");
-        setNotifyMessage("");
-        const cleanSlug = String(slug || "").trim();
+        if (canUseInitialProduct) {
+          setVariationLoadStatus("loading");
+        } else {
+          setStatus("loading");
+          setQuantity(1);
+          setSelectedVariants({});
+          setNotifyName("");
+          setNotifyEmail("");
+          setNotifyStatus("idle");
+          setNotifyMessage("");
+        }
 
         if (!cleanSlug) {
           throw new Error("Missing product slug.");
         }
 
+        const shouldRefresh = initialNeedsVariations || variationRetryKey > 0;
         const response = await fetch(
-          `/api/products?slug=${encodeURIComponent(cleanSlug)}&refresh=1&_=${Date.now()}`,
+          `/api/products?slug=${encodeURIComponent(cleanSlug)}${
+            shouldRefresh ? "&refresh=1" : ""
+          }`,
           {
-            cache: "no-store",
+            cache: shouldRefresh ? "no-store" : "default",
           }
         );
 
@@ -1156,11 +1514,21 @@ export default function ProductDetails({ slug }) {
         setProduct(foundProduct);
         setSelectedVariants(buildInitialVariantSelection(foundProduct));
         setStatus("success");
+        setVariationLoadStatus(
+          foundProduct?.type === "variable" &&
+            getVariationList(foundProduct).length === 0
+            ? "unavailable"
+            : "ready",
+        );
       } catch (error) {
         console.error(error);
 
         if (isMounted) {
-          setStatus("error");
+          if (canUseInitialProduct) {
+            setVariationLoadStatus("error");
+          } else {
+            setStatus("error");
+          }
         }
       }
     }
@@ -1170,7 +1538,32 @@ export default function ProductDetails({ slug }) {
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [slug, initialProduct, variationRetryKey]);
+
+  useEffect(() => {
+    const panel = purchaseRef.current;
+
+    if (
+      status !== "success" ||
+      !panel ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      setPurchasePanelVisible(false);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setPurchasePanelVisible(
+          Boolean(entry?.isIntersecting && entry.intersectionRatio >= 0.12),
+        );
+      },
+      { threshold: [0, 0.12, 0.5] },
+    );
+
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [status, product?.id]);
 
   const selectedVariation = useMemo(() => {
     return getSelectedVariation(product, selectedVariants);
@@ -1182,28 +1575,61 @@ export default function ProductDetails({ slug }) {
       : product;
   }, [product, selectedVariation]);
 
-  const image = displayProduct ? getProductImage(displayProduct) : FALLBACK_IMAGE;
+  const selectedVariationImage = useMemo(
+    () => getVariationResponsiveImage(product, selectedVariation),
+    [product, selectedVariation],
+  );
+  const image =
+    selectedVariationImage?.src ||
+    (displayProduct ? getProductImage(displayProduct) : FALLBACK_IMAGE);
+  const heroImageData =
+    selectedVariationImage || displayProduct?.images?.[0] || {};
   const stockBadge = displayProduct ? getStockBadge(displayProduct) : null;
 
   const category = product?.categories?.[0]?.name || "Research Compound";
-  const hasVariants = product?.attributes && product.attributes.length > 0;
+  const isVariableProduct = product?.type === "variable";
+  const selectableAttributes = useMemo(
+    () => getSelectableProductAttributes(product),
+    [product?.attributes],
+  );
+  const hasVariants = selectableAttributes.length > 0;
   const hasVariationData = getVariationList(product).length > 0;
-
-  const selectedConfigLabel =
+  const orderedAttributes = useMemo(
+    () => sortPurchaseAttributes(selectableAttributes),
+    [selectableAttributes],
+  );
+  const formatAttribute = orderedAttributes.find(isPurchaseFormatAttribute);
+  const strengthAttributes = orderedAttributes.filter(
+    (attribute) => !isPurchaseFormatAttribute(attribute),
+  );
+  const selectedFormatValue =
+    (formatAttribute?.name && selectedVariants[formatAttribute.name]) || "Single";
+  const selectedFormatMeta = getFormatMeta(selectedFormatValue);
+  const selectedStrengthLabel =
     Object.entries(selectedVariants || {})
+      .filter(([name, value]) => value && !isPurchaseFormatAttribute(name))
       .map(([, value]) => value)
-      .filter(Boolean)
-      .join(" · ") || "Base configuration";
+      .join(" / ") || "Standard";
+  const selectedConfigLabel = `${selectedFormatMeta.label} / ${selectedStrengthLabel}`;
 
   const isInstock = isProductAvailable(displayProduct);
+  const variationOptionsReady = !isVariableProduct || hasVariationData;
+  const selectedVariationPurchasable = isVariableProduct
+    ? isVariationPurchasable(selectedVariation)
+    : true;
 
   const canAddToCart =
-    isInstock && (!hasVariants || !hasVariationData || Boolean(selectedVariation));
+    variationOptionsReady &&
+    isInstock &&
+    selectedVariationPurchasable;
 
   const sku = displayProduct?.sku ? displayProduct.sku : "N/A";
-  const productType = selectedVariation
-    ? "Selected Variation"
-    : product?.type || "Simple Compound";
+  const productType =
+    selectedFormatMeta.kind === "kits"
+      ? selectedFormatMeta.packSize
+        ? `Kit of ${selectedFormatMeta.packSize} vials`
+        : "Multi-vial kit"
+      : "Single vial";
 
   const maxQuantity = useMemo(() => {
     return getMaximumPurchasableQuantity(displayProduct, 99);
@@ -1217,36 +1643,95 @@ export default function ProductDetails({ slug }) {
       : "Available";
 
   const purchasePoints = getProductLoyaltyPoints(displayProduct, quantity);
-  const selectionTransition = shouldReduceMotion
-    ? { duration: 0 }
-    : { duration: 0.28, ease: [0.22, 1, 0.36, 1] };
-  const priceTransitionKey = [
-    selectedVariation?.id || "base",
-    displayProduct?.price || "",
-    displayProduct?.sale_price || "",
-    displayProduct?.regular_price || "",
-  ].join(":");
+  const purchaseOffer = getPriceOffer(displayProduct);
+  const mobilePrice =
+    formatMoney(
+      displayProduct?.price ??
+        displayProduct?.sale_price ??
+        displayProduct?.regular_price,
+      displayProduct?.currency || displayProduct?.currency_code || "USD",
+    ) || "Select variant";
 
-  const handleVariantChange = (attributeName, value) => {
-    setSelectedVariants((prev) => ({
-      ...prev,
-      [attributeName]: value,
-    }));
+  const handleVariantChange = (attributeName, value, preferredVariation = null) => {
+    if (isAdding) return;
+
+    setSelectedVariants((previousSelection) => {
+      const nextSelection = {
+        ...getScopedVariantSelection(product, previousSelection),
+        [attributeName]: value,
+      };
+      let matchingVariation = preferredVariation;
+
+      if (!matchingVariation) {
+        matchingVariation = getAvailableVariationMatchingSelection(
+          product,
+          nextSelection,
+        );
+      }
+
+      if (!matchingVariation) {
+        const changedAttribute = orderedAttributes.find(
+          (attribute) =>
+            normalizeAttributeName(attribute?.name || attribute?.slug || "") ===
+            normalizeAttributeName(attributeName),
+        );
+        const compatibilitySelection = isPurchaseFormatAttribute(
+          changedAttribute,
+        )
+          ? { [attributeName]: value }
+          : {
+              ...(formatAttribute?.name &&
+              nextSelection[formatAttribute.name]
+                ? {
+                    [formatAttribute.name]:
+                      nextSelection[formatAttribute.name],
+                  }
+                : {}),
+              [attributeName]: value,
+            };
+
+        matchingVariation =
+          getAvailableVariationMatchingSelection(
+            product,
+            compatibilitySelection,
+          ) ||
+          getAnyVariationMatchingSelection(product, compatibilitySelection);
+      }
+
+      return matchingVariation
+        ? {
+            ...nextSelection,
+            ...buildSelectionFromVariation(product, matchingVariation),
+          }
+        : nextSelection;
+    });
 
     setQuantity(1);
     setJustAdded(false);
   };
 
   const handleAddToCart = async () => {
-    if (!product || !displayProduct || !canAddToCart || isAdding) return;
+    if (
+      !product ||
+      !displayProduct ||
+      !canAddToCart ||
+      isAdding ||
+      justAdded
+    ) {
+      return;
+    }
 
     const itemToAdd = {
       ...displayProduct,
+      name: isVariableProduct
+        ? `${product.name} \u2014 ${selectedConfigLabel}`
+        : product.name,
       parent_id: product.id,
       product_id: product.id,
       variation_id: selectedVariation?.id || 0,
       variationId: selectedVariation?.id || 0,
       selectedOptions: selectedVariants,
+      selected_option: isVariableProduct ? selectedConfigLabel : "",
       cartKey: selectedVariation
         ? `${product.id}:${selectedVariation.id}`
         : String(product.id),
@@ -1328,28 +1813,30 @@ export default function ProductDetails({ slug }) {
   };
 
   const decreaseQuantity = () => {
+    if (isAdding) return;
     setQuantity((q) => Math.max(1, q - 1));
   };
 
   const increaseQuantity = () => {
+    if (isAdding) return;
     setQuantity((q) => Math.min(maxQuantity, q + 1));
   };
 
   if (status === "loading") {
     return (
-      <section className="relative min-h-screen overflow-hidden bg-[#030303] px-6 pb-20 pt-[150px] text-white sm:px-8 sm:pt-[170px] md:px-10 lg:px-14 xl:px-20">
-        <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12">
-          <div className="h-[430px] animate-pulse rounded-[2.3rem] border border-white/[0.06] bg-white/[0.035] lg:h-[620px]" />
+      <section className="min-h-screen bg-[#050505] px-5 pb-20 pt-[148px] text-white sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-[1320px] overflow-hidden border border-white/10 lg:grid-cols-[minmax(0,1.55fr)_minmax(390px,0.85fr)]">
+          <div className="h-[560px] animate-pulse border-b border-white/10 bg-white/[0.04] lg:h-[720px] lg:border-b-0 lg:border-r" />
 
-          <div className="flex flex-col justify-center">
-            <div className="mb-5 h-4 w-44 animate-pulse rounded-full bg-white/[0.06]" />
-            <div className="mb-5 h-16 w-full animate-pulse rounded-2xl bg-white/[0.06]" />
-            <div className="mb-8 h-12 w-64 animate-pulse rounded-2xl bg-white/[0.06]" />
+          <div className="flex min-h-[560px] flex-col justify-center p-7 lg:min-h-[720px]">
+            <div className="mb-5 h-3 w-36 animate-pulse bg-white/[0.08]" />
+            <div className="mb-5 h-16 w-full animate-pulse bg-white/[0.08]" />
+            <div className="mb-8 h-12 w-56 animate-pulse bg-white/[0.08]" />
 
             <div className="space-y-3">
-              <div className="h-3 w-full animate-pulse rounded bg-white/[0.06]" />
-              <div className="h-3 w-5/6 animate-pulse rounded bg-white/[0.06]" />
-              <div className="h-3 w-4/6 animate-pulse rounded bg-white/[0.06]" />
+              <div className="h-3 w-full animate-pulse bg-white/[0.06]" />
+              <div className="h-3 w-5/6 animate-pulse bg-white/[0.06]" />
+              <div className="h-3 w-4/6 animate-pulse bg-white/[0.06]" />
             </div>
           </div>
         </div>
@@ -1359,289 +1846,299 @@ export default function ProductDetails({ slug }) {
 
   if (status === "error" || !product) {
     return (
-      <section className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-[#030303] px-4 pt-[150px] text-center text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.08),transparent_45%)]" />
-
-        <div className="relative max-w-md rounded-[2rem] border border-white/[0.08] bg-[#090909]/90 p-10 shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-          <p className="mb-3 text-[10px] font-black uppercase tracking-[0.25em] text-red-400">
-            Product Error
+      <section className="flex min-h-[70vh] items-center justify-center bg-[#050505] px-5 pt-[140px] text-center text-white">
+        <div className="max-w-md border border-white/12 bg-[#0a0a0a] p-10">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-red-500">
+            Product unavailable
           </p>
 
-          <h2 className="text-3xl font-black tracking-[-0.04em] text-white">
-            Product Unavailable
+          <h2 className="text-3xl font-semibold tracking-[-0.035em]">
+            We couldn&apos;t load this product
           </h2>
 
-          <p className="mt-3 text-sm leading-relaxed text-white/45">
-            This product could not be loaded right now.
+          <p className="mt-3 text-sm leading-6 text-white/50">
+            Please return to the shop and try again in a moment.
           </p>
 
           <a
             href="/shop"
-            className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-red-600 px-8 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-red-500"
+            className="mt-7 inline-flex h-12 items-center justify-center bg-red-700 px-7 text-sm font-semibold text-white transition hover:bg-red-600"
           >
-            Return to Catalog
+            Return to shop
           </a>
         </div>
       </section>
     );
   }
 
+  const formatOptions = formatAttribute
+    ? sortVariantOptions(formatAttribute.options || []).sort(
+        (left, right) =>
+          Number(isKitFormatValue(left)) - Number(isKitFormatValue(right)),
+      )
+    : [];
+
   return (
-    <section className="relative w-full min-w-0 overflow-x-clip bg-[#030303] pb-24 pt-[138px] text-white sm:pt-[158px] lg:pt-[170px]">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute right-[-16%] top-[-18%] h-[620px] w-[620px] rounded-full bg-red-600/10 blur-[135px]" />
-        <div className="absolute left-[-18%] top-[18%] h-[620px] w-[620px] rounded-full bg-red-950/24 blur-[145px]" />
-        <div className="absolute bottom-[-18%] right-[18%] h-[500px] w-[500px] rounded-full bg-white/[0.035] blur-[130px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.035),transparent_22%,transparent_70%,rgba(220,38,38,0.035))]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.12]" />
-      </div>
+    <main className="rgv-product-page min-h-screen overflow-x-clip bg-[#070506] pb-0 pt-[132px] text-white sm:pt-[148px]">
+      <div className="mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12">
+        <nav
+          className="rgv-product-breadcrumb mb-5 flex items-center gap-2 text-xs text-white/45"
+          aria-label="Breadcrumb"
+        >
+          <a href="/shop" className="transition hover:text-white">
+            Shop
+          </a>
+          <span aria-hidden="true">/</span>
+          <span className="truncate text-white/70">{product.name}</span>
+        </nav>
 
-      <div className="relative z-10 mx-auto w-full min-w-0 max-w-[1320px] px-6 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-24">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-            <a href="/shop" className="transition hover:text-white">
-              Shop
-            </a>
+        <section className="rgv-product-stage grid min-w-0 overflow-hidden border border-white/12 bg-[#0a0a0a] lg:min-h-[720px] lg:grid-cols-[minmax(0,1.55fr)_minmax(390px,0.85fr)]">
+          <div className="rgv-product-showcase min-w-0">
+            <div className="rgv-stage-media relative flex min-h-[520px] min-w-0 flex-col bg-[#111] p-5 sm:min-h-[620px] sm:p-7 lg:min-h-0">
+              <header className="rgv-stage-identity">
+                <p className="rgv-stage-overline">
+                  <span>RGV Prime</span>
+                  <span>{category}</span>
+                </p>
+                <h1 className="rgv-product-title">{product.name}</h1>
+              </header>
 
-            <span className="h-1 w-1 rounded-full bg-red-500/70" />
+              <div className="rgv-stage-image flex min-h-0 flex-1 items-center justify-center py-7">
+                <img
+                  key={`${selectedVariation?.id || product.id}:${image}`}
+                  src={image}
+                  srcSet={
+                    heroImageData?.srcset ||
+                    heroImageData?.srcSet ||
+                    undefined
+                  }
+                  sizes={
+                    heroImageData?.sizes ||
+                    "(max-width: 639px) 92vw, (max-width: 1023px) 680px, 760px"
+                  }
+                  width="680"
+                  height="680"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  alt={
+                    displayProduct.image_alt ||
+                    product.image_alt ||
+                    `${product.name} laboratory research product`
+                  }
+                  className="max-h-[460px] w-full max-w-[660px] object-contain sm:max-h-[540px] lg:max-h-[560px]"
+                />
+              </div>
 
-            <span className="text-red-400">Product Details</span>
-          </div>
-
-          <div className="hidden items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/35 backdrop-blur-xl sm:inline-flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_16px_rgba(248,113,113,0.9)]" />
-            Live Variant Console
-          </div>
-        </div>
-
-        <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12 xl:gap-16">
-          <div className="min-w-0 lg:sticky lg:top-28 lg:self-start">
-            <div className="relative overflow-hidden rounded-[2.4rem] border border-white/[0.08] bg-[#070707] shadow-[0_45px_130px_rgba(0,0,0,0.72)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(220,38,38,0.22),transparent_38%),linear-gradient(145deg,rgba(255,255,255,0.09),transparent_28%,rgba(255,255,255,0.025)_70%,rgba(220,38,38,0.08))]" />
-              <div className="pointer-events-none absolute left-1/2 top-[50%] h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
-              <div className="pointer-events-none absolute left-1/2 top-[50%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.025]" />
-
-              <div className="relative flex min-h-[520px] flex-col justify-between p-5 sm:min-h-[640px] sm:p-7 lg:h-[calc(100svh-8rem)] lg:min-h-[560px] lg:max-h-[760px]">
-                <div className="z-20 flex items-start justify-between gap-4">
-                  {stockBadge && (
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.14em] backdrop-blur-xl ${stockBadge.className}`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full shadow-[0_0_12px_currentColor] ${stockBadge.dot}`}
-                      />
-                      {stockBadge.label}
-                    </span>
-                  )}
-
-                  <span className="rounded-full border border-white/[0.08] bg-black/35 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/45 backdrop-blur-xl">
-                    {category}
-                  </span>
-                </div>
-
-                <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center py-8">
-                  <div className="pointer-events-none absolute bottom-[18%] left-1/2 h-28 w-[68%] -translate-x-1/2 rounded-full bg-black/80 blur-[42px]" />
-
-                  <AnimatePresence initial={false} mode="popLayout">
-                    <motion.img
-                      key={image}
-                      src={image}
-                      srcSet={displayProduct?.images?.[0]?.srcset || undefined}
-                      sizes="(max-width: 639px) 88vw, (max-width: 1023px) 470px, 500px"
-                      width="500"
-                      height="500"
-                      loading="eager"
-                      decoding="async"
-                      fetchPriority="high"
-                      alt={
-                        displayProduct.image_alt ||
-                        product.image_alt ||
-                        `${product.name} laboratory research product`
-                      }
-                      initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.975 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 1.015 }}
-                      transition={selectionTransition}
-                      className="relative max-h-[390px] w-full max-w-[390px] object-contain drop-shadow-[0_34px_70px_rgba(0,0,0,0.7)] hover:scale-[1.025] sm:max-h-[470px] sm:max-w-[470px] lg:max-h-[500px]"
-                    />
-                  </AnimatePresence>
-                </div>
-
-                <div className="relative z-20 grid gap-3 rounded-[1.8rem] border border-white/[0.08] bg-black/35 p-4 backdrop-blur-xl sm:grid-cols-3">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/28">
-                      Selected
-                    </p>
-                    <p className="mt-1 truncate text-[12px] font-black text-white/80">
-                      {selectedConfigLabel}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/28">
-                      SKU
-                    </p>
-                    <p className="mt-1 truncate text-[12px] font-black text-white/80">
-                      {sku}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/28">
-                      Status
-                    </p>
-                    <p className="mt-1 truncate text-[12px] font-black text-white/80">
-                      {stockQuantity}
-                    </p>
-                  </div>
-                </div>
+              <div className="rgv-stage-media-status flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-2 text-white/65">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      isInstock && variationOptionsReady
+                        ? "bg-emerald-400"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  {variationOptionsReady
+                    ? stockBadge?.label || "Availability pending"
+                    : "Options unavailable"}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="min-w-0 flex flex-col justify-start lg:pt-3">
-            <div>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-                RGV Prime
-                <span className="text-white/30">/</span>
-                <span className="text-white/50">{category}</span>
+          <aside
+            ref={purchaseRef}
+            className="rgv-stage-buy rgv-purchase-ticket flex min-w-0 flex-col bg-[#0a0a0a] p-6 sm:p-8 lg:p-7 xl:p-9"
+          >
+            <div className="rgv-stage-buy-head border-b border-white/10 pb-6">
+              <div className="rgv-purchase-heading">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-red-500">
+                    Order configuration
+                  </p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em] text-white">
+                    Build your selection
+                  </h2>
+                </div>
               </div>
 
-              <h1 className="max-w-3xl bg-gradient-to-br from-white via-white to-white/42 bg-clip-text pb-1 pr-2 text-[2.45rem] font-black leading-[1.06] tracking-[-0.045em] text-transparent sm:text-[3.15rem] lg:text-[3.45rem] xl:text-[3.85rem]">
-                {product.name}
-              </h1>
-
-              <div className="mt-7 overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.022))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
-                      Selected Configuration
-                    </p>
-                    <p className="mt-1 text-[12px] font-bold text-white/38">
-                      Price updates with the selected variant.
-                    </p>
-                  </div>
-
-                  <div className="max-w-full truncate rounded-full border border-white/[0.08] bg-black/30 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 sm:max-w-[55%]">
-                    {selectedConfigLabel}
-                  </div>
+              <div className="rgv-price-offer">
+                <div className="rgv-price-offer__top">
+                  <span>Your price</span>
+                  {variationOptionsReady && purchaseOffer.hasDiscount && (
+                    <strong>
+                      Save {purchaseOffer.percentage}%
+                    </strong>
+                  )}
                 </div>
 
-                <AnimatePresence initial={false} mode="wait">
-                  <motion.div
-                    key={priceTransitionKey}
-                    initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
-                    transition={selectionTransition}
-                    className="min-h-[52px]"
-                  >
-                    {renderProductPrice(displayProduct)}
-                  </motion.div>
-                </AnimatePresence>
-                {purchasePoints > 0 && (
-                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.09em] text-red-100/70">
-                    <span className="text-red-400" aria-hidden="true">★</span>
-                    +{formatPoints(purchasePoints)} points
-                  </div>
+                <div
+                  key={`price-${selectedVariation?.id || product.id}`}
+                  className="rgv-price-ledger"
+                  aria-live="polite"
+                >
+                  {variationOptionsReady ? (
+                    renderProductPrice(displayProduct)
+                  ) : (
+                    <div className="rgv-ticket-price is-empty">
+                      Options unavailable
+                    </div>
+                  )}
+                </div>
+
+                {variationOptionsReady && purchaseOffer.hasDiscount && (
+                  <p className="rgv-price-offer__saving">
+                    You save {purchaseOffer.savingsFormatted} per unit
+                  </p>
                 )}
               </div>
 
-              {product.short_description && (
+              {variationOptionsReady && purchasePoints > 0 && (
                 <div
-                  className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/52 [&>p]:mb-0 [&_a]:text-red-300 [&_strong]:text-white/80"
-                  dangerouslySetInnerHTML={{
-                    __html: product.short_description,
-                  }}
-                />
+                  key={`points-${selectedVariation?.id || product.id}-${quantity}`}
+                  className="rgv-points-credit"
+                  aria-live="polite"
+                >
+                  <span className="rgv-points-credit__icon" aria-hidden="true">
+                    <Coins size={19} strokeWidth={1.9} />
+                  </span>
+                  <span className="rgv-points-credit__copy">
+                    <small>RGV rewards</small>
+                    <strong>+{formatPoints(purchasePoints)} points</strong>
+                  </span>
+                  <span className="rgv-points-credit__note">
+                    earned with this order
+                  </span>
+                </div>
               )}
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                <MiniTrustItem
-                  title="Secure"
-                  text="Protected checkout"
-                  icon={
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect x="3" y="11" width="18" height="11" rx="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  }
-                />
-
-                <MiniTrustItem
-                  title="Shipping"
-                  text="Discreet handling"
-                  icon={
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 7h11v10H3z" />
-                      <path d="M14 10h4l3 3v4h-7z" />
-                      <circle cx="7" cy="19" r="2" />
-                      <circle cx="17" cy="19" r="2" />
-                    </svg>
-                  }
-                />
-              </div>
             </div>
 
-            <motion.div
-              layout
-              transition={selectionTransition}
-              className="relative mt-8 overflow-hidden rounded-[2.2rem] border border-white/[0.08] bg-[#080808]/85 p-5 shadow-[0_28px_95px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 lg:sticky lg:top-28 lg:max-h-[calc(100svh-8rem)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-gutter:stable]"
-            >
-              <div className="pointer-events-none absolute inset-0" />
-
-              <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-400">
-                    Order Console
-                  </p>
-
-                  <h2 className="mt-1 text-2xl font-black tracking-[-0.045em] text-white">
-                    Configure Selection
-                  </h2>
-                </div>
-
-                <div className="hidden rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/45 sm:block">
-                  SKU: {sku}
-                </div>
+            {isVariableProduct && !variationOptionsReady ? (
+              <div
+                className="rgv-pdp-variation-state my-6 border border-white/12 bg-white/[0.035] p-5"
+                role="status"
+                aria-live="polite"
+              >
+                <h2 className="text-base font-semibold text-white">
+                  {variationLoadStatus === "loading"
+                    ? "Loading available options"
+                    : "Product options are temporarily unavailable"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-white/48">
+                  {variationLoadStatus === "loading"
+                    ? "Checking current prices and availability."
+                    : "We couldn’t load the available choices. Try again before adding this product."}
+                </p>
+                {variationLoadStatus !== "loading" && (
+                  <button
+                    type="button"
+                    onClick={() => setVariationRetryKey((key) => key + 1)}
+                    className="mt-4 min-h-11 border border-white/20 px-5 text-sm font-semibold text-white transition hover:border-white/50"
+                  >
+                    Try again
+                  </button>
+                )}
               </div>
+            ) : (
+              <>
+                {formatAttribute && (
+                  <div className="rgv-buy-format mt-6">
+                    <label className="sr-only" aria-hidden="true">
+                      {formatAttribute.name}
+                    </label>
+                    <div className="mb-3 flex items-end justify-between gap-4">
+                      <p className="rgv-config-label text-sm font-semibold text-white">
+                        <span>01</span>
+                        Format
+                      </p>
+                      <span className="text-[11px] text-white/38">
+                        Single vial or kit of 10
+                      </span>
+                    </div>
 
-              {hasVariants && (
-                <div className="mb-6 space-y-5">
-                  {product.attributes.map((attribute) => (
-                    <div key={attribute.name} className="space-y-3">
-                      <label className="flex items-center justify-between gap-4 text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
-                        <span>{attribute.name}</span>
-                        <span className="text-red-300/70">Live Pricing</span>
-                      </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {formatOptions.map((option) => {
+                        const isSelected =
+                          selectedVariants[formatAttribute.name] === option;
+                        const optionPrice = getVariantPricePreview(
+                          product,
+                          selectedVariants,
+                          formatAttribute.name,
+                          option,
+                        );
+                        const formatMeta = getFormatMeta(option);
 
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {sortVariantOptions(attribute.options).map((option) => {
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            aria-pressed={isSelected}
+                            disabled={isAdding || !optionPrice.variation}
+                            onClick={() =>
+                              handleVariantChange(
+                                formatAttribute.name,
+                                option,
+                                optionPrice.variation,
+                              )
+                            }
+                            className={`rgv-variant-option min-h-[92px] border p-4 text-left transition ${
+                              isSelected
+                                ? "is-active border-red-600 bg-red-700 text-white"
+                                : "border-white/14 bg-white/[0.035] text-white hover:border-white/35"
+                            }`}
+                          >
+                            <strong className="block text-base font-semibold">
+                              {option}
+                            </strong>
+                            <small
+                              className={`mt-1 block text-[11px] leading-4 ${
+                                isSelected ? "text-white/70" : "text-white/42"
+                              }`}
+                            >
+                              {formatMeta.packSize === 1
+                                ? "1 vial"
+                                : `${formatMeta.packSize || 10} vials`}
+                            </small>
+                            <span className="mt-3 block text-sm font-semibold">
+                              {optionPrice.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {strengthAttributes.map((attribute, attributeIndex) => (
+                  <div key={attribute.name} className="rgv-buy-strengths mt-6">
+                    <label className="sr-only" aria-hidden="true">
+                      {attribute.name}
+                    </label>
+                    <div className="mb-3 flex items-end justify-between gap-4">
+                      <p className="rgv-config-label text-sm font-semibold text-white">
+                        <span>
+                          {String(
+                            attributeIndex + (formatAttribute ? 2 : 1),
+                          ).padStart(2, "0")}
+                        </span>
+                        Strength
+                      </p>
+                      <span className="text-[11px] text-white/38">
+                        Amount per vial
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+                      {sortVariantOptions(attribute.options || []).map(
+                        (option) => {
                           const isSelected =
                             selectedVariants[attribute.name] === option;
-
                           const optionPrice = getVariantPricePreview(
                             product,
                             selectedVariants,
                             attribute.name,
-                            option
+                            option,
                           );
 
                           return (
@@ -1649,164 +2146,103 @@ export default function ProductDetails({ slug }) {
                               key={option}
                               type="button"
                               aria-pressed={isSelected}
+                              disabled={isAdding || !optionPrice.variation}
                               onClick={() =>
-                                handleVariantChange(attribute.name, option)
+                                handleVariantChange(
+                                  attribute.name,
+                                  option,
+                                  optionPrice.variation,
+                                )
                               }
-                              className={`group relative min-h-16 overflow-hidden rounded-2xl border px-4 py-3 text-left transition duration-300 active:scale-[0.98] ${
+                              className={`rgv-variant-option min-h-[64px] border px-3 py-2 text-left transition ${
                                 isSelected
-                                  ? "border-red-400/55 bg-red-500/[0.13] text-white shadow-[0_0_34px_rgba(220,38,38,0.14)]"
-                                  : "border-white/[0.07] bg-white/[0.025] text-white/48 hover:border-white/15 hover:bg-white/[0.045] hover:text-white"
+                                  ? "is-active border-white bg-white text-black"
+                                  : "border-white/14 bg-transparent text-white hover:border-white/35"
                               }`}
                             >
-                              <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_42%)] opacity-0 transition group-hover:opacity-100" />
-
-                              <span className="relative flex items-center justify-between gap-4">
-                                <span className="min-w-0">
-                                  <span className="block text-[15px] font-black leading-none text-white">
-                                    {option}
-                                  </span>
-
-                                  <span
-                                    className={`mt-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] ${
-                                      optionPrice.isAvailable
-                                        ? "text-emerald-300/60"
-                                        : "text-red-300/55"
-                                    }`}
-                                  >
-                                    {optionPrice.stockLabel}
-                                  </span>
-                                </span>
-
-                                <span className="flex shrink-0 items-center gap-3">
-                                  <span className="text-right">
-                                    <span
-                                      className={`block text-[15px] font-black leading-none tracking-[-0.03em] ${
-                                        optionPrice.formattedPrice
-                                          ? isSelected
-                                            ? "text-white"
-                                            : "text-white/75"
-                                          : "text-white/30"
-                                      }`}
-                                    >
-                                      {optionPrice.label}
-                                    </span>
-
-                                    <span
-                                      className={`mt-1 block text-[8px] font-black uppercase tracking-[0.13em] ${
-                                        optionPrice.isAvailable
-                                          ? "text-emerald-300/65"
-                                          : "text-red-300/55"
-                                      }`}
-                                    >
-                                      {optionPrice.isAvailable
-                                        ? "In stock"
-                                        : "Not ready"}
-                                    </span>
-                                  </span>
-
-                                  <span
-                                    className={`flex h-7 w-7 items-center justify-center rounded-full border transition ${
-                                      isSelected
-                                        ? "border-red-300 bg-red-500 text-white"
-                                        : "border-white/10 text-transparent group-hover:border-white/30"
-                                    }`}
-                                  >
-                                    <svg
-                                      viewBox="0 0 24 24"
-                                      className="h-3.5 w-3.5"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="3"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                  </span>
-                                </span>
-                              </span>
+                              <strong className="block text-sm font-semibold">
+                                {option}
+                              </strong>
+                              <small
+                                className={`mt-1 block text-[10px] ${
+                                  isSelected ? "text-black/55" : "text-white/38"
+                                }`}
+                              >
+                                {optionPrice.label}
+                              </small>
                             </button>
                           );
-                        })}
-                      </div>
+                        },
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
 
-              {hasVariants && hasVariationData && !selectedVariation && (
-                <div className="mb-5 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 text-[12px] font-bold leading-relaxed text-yellow-100">
-                  Please select a valid combination to see the correct price,
-                  image, stock, and SKU.
-                </div>
-              )}
+                {hasVariants && hasVariationData && !selectedVariation && (
+                  <div className="rgv-pdp-selection-alert mt-5 border border-amber-400/35 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+                    This combination is unavailable. Choose another format or
+                    strength to continue.
+                  </div>
+                )}
 
-              <AnimatePresence initial={false} mode="wait">
+                <div className="rgv-stage-selection mt-6 flex items-center justify-between gap-4 border-y border-white/10 py-4 text-xs">
+                  <span className="text-white/38">Your selection</span>
+                  <strong className="text-right font-medium text-white/85">
+                    {selectedConfigLabel} · {mobilePrice}
+                  </strong>
+                </div>
+
                 {isInstock ? (
-                  <motion.div
-                    key="purchase-controls"
-                    initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
-                    transition={selectionTransition}
-                    className="grid gap-3 sm:grid-cols-[150px_1fr]"
-                  >
-                  <div className="flex h-14 items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] px-2">
+                  <div className="rgv-purchase-actions mt-5 grid gap-2 sm:grid-cols-[112px_1fr] lg:grid-cols-1 xl:grid-cols-[112px_1fr]">
+                    <div className="rgv-quantity-control flex h-14 items-center justify-between border border-white/16 px-1">
+                      <button
+                        type="button"
+                        onClick={decreaseQuantity}
+                        disabled={isAdding}
+                        className="flex h-11 w-9 items-center justify-center text-xl text-white/45 transition hover:text-white"
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <span className="text-base font-semibold text-white">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={increaseQuantity}
+                        disabled={isAdding}
+                        className="flex h-11 w-9 items-center justify-center text-xl text-white/45 transition hover:text-white"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={decreaseQuantity}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl text-xl font-light text-white/45 transition hover:bg-white/10 hover:text-white active:scale-95"
-                      aria-label="Decrease quantity"
+                      onClick={handleAddToCart}
+                      disabled={!canAddToCart || isAdding || justAdded}
+                      aria-busy={isAdding}
+                      className={`rgv-product-add-button flex h-14 items-center justify-center gap-3 px-6 text-sm font-semibold transition ${
+                        canAddToCart && !justAdded
+                          ? "bg-red-700 text-white hover:bg-red-600"
+                          : "cursor-not-allowed bg-white/10 text-white/35"
+                      }`}
                     >
-                      −
-                    </button>
-
-                    <span className="text-lg font-black text-white">
-                      {quantity}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={increaseQuantity}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl text-xl font-light text-white/45 transition hover:bg-white/10 hover:text-white active:scale-95"
-                      aria-label="Increase quantity"
-                    >
-                      +
+                      {hasVariants && !selectedVariation
+                        ? "Choose a valid option"
+                        : isVariableProduct && !selectedVariationPurchasable
+                          ? "Unavailable"
+                        : justAdded
+                          ? "Added to cart"
+                          : isAdding
+                            ? "Adding…"
+                            : "Add to cart"}
+                      <IconBag />
                     </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    disabled={!canAddToCart || isAdding}
-                    aria-busy={isAdding}
-                    className={`rgv-product-add-button group relative flex h-14 items-center justify-center overflow-hidden rounded-2xl px-8 text-white shadow-[0_18px_45px_rgba(220,38,38,0.28)] transition active:scale-[0.985] ${
-                      canAddToCart
-                        ? "bg-red-600 hover:bg-red-500"
-                        : "cursor-not-allowed bg-white/10 text-white/40 shadow-none"
-                    }`}
-                  >
-                    <span className="absolute inset-0 translate-x-[-120%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
-
-                    <span className="relative z-10 flex items-center gap-3 text-[12px] font-black uppercase tracking-[0.18em]">
-                      {hasVariants && hasVariationData && !selectedVariation
-                        ? "Select Options"
-                        : justAdded
-                          ? "Added to Cart"
-                          : "Add to Cart"}
-
-                      <IconBag />
-                    </span>
-                  </button>
-                  </motion.div>
                 ) : (
-                  <motion.div
-                    key="back-in-stock-controls"
-                    initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
-                    transition={selectionTransition}
-                  >
+                  <div className="mt-5">
                     <BackInStockForm
                       notifyName={notifyName}
                       setNotifyName={setNotifyName}
@@ -1816,187 +2252,164 @@ export default function ProductDetails({ slug }) {
                       notifyMessage={notifyMessage}
                       onSubmit={handleBackInStockSubmit}
                     />
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+              </>
+            )}
 
-              <div className="mt-6 rounded-2xl border border-red-500/15 bg-[linear-gradient(135deg,rgba(220,38,38,0.08),rgba(255,255,255,0.025))] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-300">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                  </div>
+            <ul className="rgv-stage-assurances mt-6 grid text-white/50">
+              {PURCHASE_ASSURANCES.map(
+                ({ title, detail, icon: AssuranceIcon }) => (
+                  <li key={title} className="rgv-assurance-chip">
+                    <span className="rgv-assurance-icon" aria-hidden="true">
+                      <AssuranceIcon size={18} strokeWidth={1.9} />
+                    </span>
+                    <span className="rgv-assurance-copy">
+                      <strong>{title}</strong>
+                      <small>{detail}</small>
+                    </span>
+                  </li>
+                ),
+              )}
+            </ul>
+          </aside>
+        </section>
+      </div>
 
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-red-200">
-                      Final Sale Notice
-                    </p>
+      <div className="rgv-product-after mt-0 bg-[#070506] py-0 text-white">
+        <div className="mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12">
+          <ProductVerification product={product} variation={selectedVariation} />
 
-                    <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
-                      Please review your selected options, quantity, and
-                      shipping details before placing the order.
-                      <strong className="text-white/75">
-                        {" "}
-                        All sales are final
-                      </strong>{" "}
-                      once checkout is completed. Returns, refunds, or exchanges
-                      are not accepted after confirmation.
-                    </p>
-                  </div>
+          <section
+            className="rgv-product-evidence rgv-pdp-info mt-20 border-t border-white/10 pt-14"
+            aria-labelledby="product-information-title"
+          >
+            <div className="rgv-pdp-info-head mb-10 max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
+                Product record
+              </p>
+              <h2
+                id="product-information-title"
+                className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl"
+              >
+                About {product.name}
+              </h2>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-white/52">
+                Product information and the current purchasable configuration.
+              </p>
+            </div>
+
+            <div className="rgv-pdp-info-grid grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
+              <div className="rgv-product-description rgv-pdp-description min-w-0">
+                <div
+                  className="max-w-3xl space-y-5 text-[15px] leading-7 text-black/65 [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:text-black [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:text-black [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-black [&_a]:text-red-700 [&_strong]:font-semibold [&_strong]:text-black [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      product.description ||
+                      product.short_description ||
+                      "Product information is currently being updated.",
+                  }}
+                />
+
+                <div className="rgv-research-notice mt-10 border-l-2 border-red-700 pl-5 text-xs leading-6 text-white/50">
+                  <strong className="font-semibold text-white/75">
+                    Research use only.
+                  </strong>{" "}
+                  Not intended for human consumption, veterinary use,
+                  diagnosis, treatment, cure, or prevention of disease.
                 </div>
               </div>
-            </motion.div>
-          </div>
-        </div>
 
-        <div className="mt-20 grid min-w-0 gap-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
-          <div className="relative min-w-0">
-            <div className="mb-8">
-              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-red-400">
-                Compound Profile
-              </p>
-
-              <h2 className="max-w-3xl text-4xl font-black tracking-[-0.055em] text-white sm:text-5xl lg:text-6xl">
-                Detailed Analysis
-              </h2>
-            </div>
-
-            <div
-              className="max-w-4xl space-y-5 text-[15px] leading-relaxed text-white/55 sm:text-[16px] [&>h1]:text-white [&>h2]:text-white [&>h3]:text-white [&>p]:mb-0 [&>strong]:text-white/80 [&>ul]:list-none [&>ul]:space-y-3 [&>ul>li]:relative [&>ul>li]:pl-6 [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[10px] [&>ul>li]:before:h-1.5 [&>ul>li]:before:w-1.5 [&>ul>li]:before:rounded-full [&>ul>li]:before:bg-red-500"
-              dangerouslySetInnerHTML={{
-                __html:
-                  product.description ||
-                  product.short_description ||
-                  "Detailed specifications are currently being updated.",
-              }}
-            />
-
-            <div className="mt-10 max-w-4xl border-t border-white/[0.08] pt-7">
-              <div className="flex items-start gap-3">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-
-                <p className="text-[12px] leading-relaxed text-white/32">
-                  <strong className="text-white/55">Disclaimer:</strong>{" "}
-                  Research compounds shown are strictly for laboratory research
-                  use only. They are not intended for human consumption,
-                  veterinary use, diagnosis, treatment, cure, or prevention of
-                  any disease. Purchase signifies agreement to limit usage to
-                  recognized laboratory and research procedures.
+              <aside className="rgv-product-specs rgv-pdp-specs">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-red-500">
+                  Current configuration
                 </p>
-              </div>
+                <h3 className="mt-2 text-xl font-semibold">Selection details</h3>
+                <dl className="mt-5 divide-y divide-white/10 border-y border-white/10">
+                  <div className="flex justify-between gap-5 py-4 text-sm">
+                    <dt className="text-white/50">SKU</dt>
+                    <dd className="text-right font-medium">{sku}</dd>
+                  </div>
+                  <div className="flex justify-between gap-5 py-4 text-sm">
+                    <dt className="text-white/50">Format</dt>
+                    <dd className="text-right font-medium">{productType}</dd>
+                  </div>
+                  {selectedStrengthLabel !== "Standard" && (
+                    <div className="flex justify-between gap-5 py-4 text-sm">
+                      <dt className="text-white/50">Strength</dt>
+                      <dd className="text-right font-medium">
+                        {selectedStrengthLabel}
+                      </dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-5 py-4 text-sm">
+                    <dt className="text-white/50">Category</dt>
+                    <dd className="text-right font-medium">{category}</dd>
+                  </div>
+                  <div className="flex justify-between gap-5 py-4 text-sm">
+                    <dt className="text-white/50">Availability</dt>
+                    <dd className="text-right font-medium">{stockQuantity}</dd>
+                  </div>
+                  {displayProduct?.weight && (
+                    <div className="flex justify-between gap-5 py-4 text-sm">
+                      <dt className="text-white/50">Shipping weight</dt>
+                      <dd className="text-right font-medium">
+                        {displayProduct.weight} kg
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </aside>
             </div>
-          </div>
+          </section>
 
-          <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="mb-7">
-              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                Specs
-              </p>
-
-              <h3 className="text-3xl font-black tracking-[-0.05em] text-white">
-                Technical Profile
-              </h3>
-            </div>
-
-            <div className="overflow-hidden rounded-[2rem] border border-white/[0.08] bg-white/[0.025] px-5 py-3 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-              <TechnicalRow
-                icon={
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                }
-                label="Compound SKU"
-                value={sku}
-              />
-
-              <TechnicalRow
-                icon={
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="M12 2v20M2 12h20" />
-                    <circle cx="12" cy="12" r="10" />
-                  </svg>
-                }
-                label="Molecular Type"
-                value={productType}
-              />
-
-              {displayProduct?.weight && (
-                <TechnicalRow
-                  icon={
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                    >
-                      <rect x="3" y="6" width="18" height="12" rx="2" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 10h18M11 14h2" />
-                    </svg>
-                  }
-                  label="Compound Weight"
-                  value={`${displayProduct.weight} kg`}
-                />
-              )}
-
-              <TechnicalRow
-                icon={
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
-                  </svg>
-                }
-                label="In-Stock Units"
-                value={stockQuantity}
-              />
-
-            </div>
-          </aside>
+          <ProductComplements currentProductId={product.id} />
         </div>
-
-        <ProductComplements currentProductId={product.id} />
       </div>
-    </section>
+
+      {!purchasePanelVisible && (
+        <div
+          className="rgv-mobile-purchase-bar rgv-pdp-mobile-purchase"
+          aria-label="Purchase controls"
+        >
+          <div>
+            <small>{selectedConfigLabel}</small>
+            <strong>{mobilePrice}</strong>
+          </div>
+          <button
+            type="button"
+            disabled={isAdding || justAdded}
+            aria-busy={isAdding}
+            onClick={() => {
+              if (canAddToCart) {
+                handleAddToCart();
+                return;
+              }
+
+              purchaseRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }}
+          >
+            {justAdded
+              ? "Added to cart"
+              : isAdding
+                ? "Adding…"
+                : canAddToCart
+                ? "Add to cart"
+                : !variationOptionsReady
+                  ? variationLoadStatus === "loading"
+                    ? "Loading options"
+                    : "Review options"
+                  : isVariableProduct && !selectedVariationPurchasable
+                    ? "Unavailable"
+                  : isInstock
+                    ? "Select options"
+                    : "Notify me"}
+          </button>
+        </div>
+      )}
+    </main>
   );
 }
