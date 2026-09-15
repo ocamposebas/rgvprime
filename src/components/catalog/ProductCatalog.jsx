@@ -24,7 +24,7 @@ const formatFilters = [
     description: "1 vial",
   },
   {
-    label: "Kit ×10",
+    label: "10 Vial Kits",
     value: PRODUCT_FORMATS.KIT,
     description: "10 vials",
   },
@@ -702,7 +702,7 @@ function buildVariationCartItem(
     getVariationLabel(product, variation),
   );
   const cartFormatLabel =
-    format === PRODUCT_FORMATS.KIT ? "Kit ×10" : "Single vial";
+    format === PRODUCT_FORMATS.KIT ? "10 Vial Kits" : "Single vial";
   const cartSelectionLabel = `${cartFormatLabel} / ${labelParts.strength}`;
   const variationPrice = getVariationPrice(variation, product);
   const variationImage =
@@ -1442,7 +1442,8 @@ function StrengthSheet({
     ? variationStatus === "success" &&
       Boolean(selectedVariation && isVariationAvailable(selectedVariation))
     : isProductAvailable(product);
-  const formatValue = format === PRODUCT_FORMATS.KIT ? "Kit ×10" : "Single";
+  const formatValue =
+    format === PRODUCT_FORMATS.KIT ? "10 Vial Kits" : "Single";
   const formatMeta = getFormatMeta(formatValue);
   const discount = selectedVariation
     ? getDiscountDetails(selectedVariation)
@@ -1709,7 +1710,7 @@ export function ProductCard({
     return { label: "Check options", status: "neutral", dot: null };
   })();
   const fallbackStrengths = getCatalogStrengthOptions(product).slice(0, 6);
-  const formatLabel = isKit ? "Kit ×10" : "Single vial";
+  const formatLabel = isKit ? "10 Vial Kits" : "Single vial";
   const priceContext = selectedLabel
     ? `${formatLabel} · ${selectedLabel}`
     : formatLabel;
@@ -1781,7 +1782,7 @@ export function ProductCard({
           RGV/{String(sequence).padStart(2, "0")}
         </span>
         <span className="rgv-card-format-code" aria-hidden="true">
-          {isKit ? "KIT / 10" : "SINGLE / 01"}
+          {isKit ? "10 VIAL KITS" : "SINGLE / 01"}
         </span>
         <ProductImage
           src={selectedImage}

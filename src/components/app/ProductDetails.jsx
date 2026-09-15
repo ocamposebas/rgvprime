@@ -2105,7 +2105,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                             }`}
                           >
                             <strong className="block text-base font-semibold">
-                              {option}
+                              {formatMeta.label}
                             </strong>
                             <small
                               className={`mt-1 block text-[11px] leading-4 ${

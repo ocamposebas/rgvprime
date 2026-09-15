@@ -62,7 +62,7 @@ export function getFormatMeta(value = "") {
   if (kit) {
     return {
       kind: PRODUCT_FORMATS.KIT,
-      label: packSize ? `Kit ×${packSize}` : "Kit",
+      label: packSize ? `${packSize} Vial Kits` : "Vial Kits",
       eyebrow: "Multi-vial format",
       description: packSize
         ? `${packSize} sealed vials in one order`
