@@ -4043,3 +4043,19 @@
     opacity: 0.24;
   }
 }
+
+/* Keep the selected strength visibly latched after a touch interaction. */
+
+.rgv-catalog .rgv-card-options button.is-active:not(:disabled),
+.rgv-catalog .rgv-card-options button[aria-pressed="true"]:not(:disabled) {
+  color: #fff !important;
+  border-color: #f87171 !important;
+  background: #dc2626 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 0 1.15rem rgba(220, 38, 38, 0.28) !important;
+}
+
+.rgv-catalog .rgv-card-options button[aria-pressed="true"]:not(:disabled) span {
+  color: #fff !important;
+}
