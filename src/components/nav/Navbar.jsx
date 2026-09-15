@@ -1573,6 +1573,11 @@ export default function Navbar({ transparent = false }) {
       header.style.setProperty("--rgv-shadow", String(0.32 * progress));
     };
 
+    if (!transparent) {
+      setNavProgress(1);
+      return undefined;
+    }
+
     const applyProgress = () => {
       const progress = menuOpen || supportMenuOpen || !transparent
         ? 1
@@ -1901,7 +1906,9 @@ export default function Navbar({ transparent = false }) {
     <>
       <header
         ref={headerRef}
-        className="fixed left-0 top-0 z-[90] w-full text-white will-change-transform"
+        className={`fixed left-0 top-0 z-[90] w-full text-white${
+          transparent ? " will-change-transform" : ""
+        }`}
         style={{
           "--rgv-nav-progress": String(initialNavProgress),
           "--rgv-header-bg": String(0.94 * initialNavProgress),
@@ -1909,8 +1916,8 @@ export default function Navbar({ transparent = false }) {
           "--rgv-shadow": String(0.32 * initialNavProgress),
           background:
             "rgba(7,7,8,var(--rgv-header-bg))",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
+          backdropFilter: transparent ? "blur(18px)" : "none",
+          WebkitBackdropFilter: transparent ? "blur(18px)" : "none",
           boxShadow: "0 16px 42px rgba(0,0,0,var(--rgv-shadow))",
           transform: "translate3d(0,0,0)",
         }}

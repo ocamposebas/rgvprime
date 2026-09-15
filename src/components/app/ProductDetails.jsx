@@ -1862,7 +1862,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
 
           <a
             href="/shop"
-            className="mt-7 inline-flex h-12 items-center justify-center bg-red-700 px-7 text-sm font-semibold text-white transition hover:bg-red-600"
+            className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-red-700 px-7 text-sm font-semibold text-white transition hover:bg-red-600"
           >
             Return to shop
           </a>

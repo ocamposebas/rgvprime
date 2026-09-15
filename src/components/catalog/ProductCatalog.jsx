@@ -2457,7 +2457,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  priority={index === 0}
+                  priority={index < 4}
                   active={
                     String(configuredProduct?.product?.id || "") ===
                     String(product.id)
