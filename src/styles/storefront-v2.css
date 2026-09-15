@@ -4094,3 +4094,102 @@
     filter: brightness(1.1);
   }
 }
+
+/* Interaction signal: a red trace follows the card edge without moving it. */
+
+.rgv-product-grid .rgv-product-card::after {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+      100deg,
+      transparent 18%,
+      #991b1b 40%,
+      #ef4444 48%,
+      rgba(255, 255, 255, 0.9) 50%,
+      #dc2626 52%,
+      transparent 82%
+    )
+    border-box;
+  background-position: 120% 0;
+  background-size: 280% 100%;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rgv-card-border-trace 1.8s linear infinite paused;
+}
+
+.rgv-product-grid .rgv-product-card:is(:hover, :focus-within, .is-active)::after {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+/* Discount tags use a moving red signal instead of a static neon glow. */
+
+.rgv-card-sale-badge,
+.rgv-price-offer__top > strong {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #fff;
+  border-color: rgba(248, 113, 113, 0.45);
+  background: linear-gradient(90deg, #7f1d1d 0%, #dc2626 52%, #991b1b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0.45rem 1.15rem rgba(220, 38, 38, 0.22);
+}
+
+.rgv-card-sale-badge::after,
+.rgv-price-offer__top > strong::after {
+  position: absolute;
+  z-index: 1;
+  top: -70%;
+  bottom: -70%;
+  left: -45%;
+  width: 28%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.48),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+  transform: translate3d(0, 0, 0) rotate(16deg);
+  animation: rgv-label-sweep 4.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes rgv-card-border-trace {
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes rgv-label-sweep {
+  0%,
+  58% {
+    transform: translate3d(0, 0, 0) rotate(16deg);
+  }
+
+  82%,
+  100% {
+    transform: translate3d(560%, 0, 0) rotate(16deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rgv-product-grid .rgv-product-card::after,
+  .rgv-card-sale-badge::after,
+  .rgv-price-offer__top > strong::after {
+    animation: none;
+  }
+}
