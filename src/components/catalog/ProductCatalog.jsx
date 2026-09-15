@@ -1608,6 +1608,7 @@ function StrengthSheet({
 
 export function ProductCard({
   product,
+  sequence = 1,
   priority = false,
   active = false,
   format = PRODUCT_FORMATS.SINGLE,
@@ -1776,6 +1777,12 @@ export function ProductCard({
         className="rgv-index-card__media rgv-card-media"
         aria-label={`View ${product.name}`}
       >
+        <span className="rgv-card-tech-id" aria-hidden="true">
+          RGV/{String(sequence).padStart(2, "0")}
+        </span>
+        <span className="rgv-card-format-code" aria-hidden="true">
+          {isKit ? "KIT / 10" : "SINGLE / 01"}
+        </span>
         <ProductImage
           src={selectedImage}
           srcSet={
@@ -2323,9 +2330,23 @@ export default function ProductCatalog({ initialProducts = [] }) {
   return (
     <main id="research-catalog" className="rgv-catalog" ref={catalogTopRef}>
       <header className="rgv-catalog-hero rgv-catalog-head">
+        <div className="rgv-catalog-techline" aria-hidden="true">
+          <span>RGV / RESEARCH INDEX</span>
+          <span><i /> LIVE INVENTORY</span>
+        </div>
         <div className="rgv-catalog-hero__copy">
           <h1>Research catalog</h1>
           <p>Choose a format, compare strengths, and order in two steps.</p>
+          <div
+            className="rgv-catalog-protocol"
+            aria-label="Ordering path: choose format, select strength, add to cart"
+          >
+            <span><b>01</b> FORMAT</span>
+            <i aria-hidden="true" />
+            <span><b>02</b> STRENGTH</span>
+            <i aria-hidden="true" />
+            <span><b>03</b> ADD TO CART</span>
+          </div>
         </div>
       </header>
 
@@ -2333,6 +2354,9 @@ export default function ProductCatalog({ initialProducts = [] }) {
         <div className="rgv-catalog-format-bar__label">
           <strong>Shopping format</strong>
           <span>Switch at any time</span>
+          <span className="rgv-format-live" aria-hidden="true">
+            <i /> CONFIG ACTIVE
+          </span>
         </div>
         <div
           className="rgv-catalog-modes__options rgv-format-switch"
@@ -2457,6 +2481,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  sequence={visibleStart + index}
                   priority={index < 4}
                   active={
                     String(configuredProduct?.product?.id || "") ===

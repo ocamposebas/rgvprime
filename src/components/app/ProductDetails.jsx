@@ -1903,6 +1903,22 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                 <h1 className="rgv-product-title">{product.name}</h1>
               </header>
 
+              <div className="rgv-stage-coordinate" aria-hidden="true">
+                <span>SPECIMEN / ACTIVE</span>
+                <strong>
+                  REF.{String(selectedVariation?.id || product.id).slice(-6).toUpperCase()}
+                </strong>
+                <small>{selectedConfigLabel}</small>
+              </div>
+
+              <div className="rgv-stage-scale" aria-hidden="true">
+                <span>00</span>
+                <span>25</span>
+                <span>50</span>
+                <span>75</span>
+                <span>100</span>
+              </div>
+
               <div className="rgv-stage-image flex min-h-0 flex-1 items-center justify-center py-7">
                 <img
                   key={`${selectedVariation?.id || product.id}:${image}`}
