@@ -2812,10 +2812,6 @@
 }
 
 @media (max-width: 639px) {
-  .rgv-product-grid {
-    gap: 0.38rem;
-  }
-
   .rgv-catalog-head {
     gap: 0.8rem;
     padding: 1rem;
@@ -3998,14 +3994,6 @@
     font-size: 0.46rem;
   }
 
-  .rgv-card-sale-badge {
-    top: 0.38rem;
-    right: 0.38rem;
-    min-height: 1.22rem;
-    padding: 0.18rem 0.32rem;
-    font-size: 0.44rem;
-  }
-
   .rgv-card-format-code {
     right: 0.62rem;
     bottom: 0.62rem;
@@ -4230,12 +4218,12 @@
 
   .rgv-product-grid .rgv-product-card {
     border-color: #38393d;
-    border-radius: 0.62rem;
+    border-radius: 0.72rem;
     background: #0d0e10;
   }
 
   .rgv-product-grid .rgv-card-media {
-    aspect-ratio: 1 / 0.62;
+    aspect-ratio: 1 / 0.72;
     border-bottom: 0;
     background-size: 1.45rem 1.45rem, 1.45rem 1.45rem, 100% 100%;
   }
@@ -4248,18 +4236,18 @@
 
   .rgv-catalog .rgv-product-grid .rgv-card-media img,
   .rgv-catalog .rgv-product-grid .rgv-product-card:hover .rgv-card-media img {
-    transform: translate3d(0, 0, 0) scale(1.14);
+    transform: translate3d(0, 0, 0) scale(1.22);
   }
 
   .rgv-card-tech-id {
-    top: 0.55rem;
-    left: 0.55rem;
-    font-size: 0.42rem;
-    letter-spacing: 0.08em;
+    top: 0.72rem;
+    left: 0.72rem;
+    font-size: 0.48rem;
+    letter-spacing: 0.1em;
   }
 
   .rgv-product-grid .rgv-card-body {
-    padding: 0.55rem;
+    padding: 0.72rem;
     background: #0d0e10;
   }
 
@@ -4272,7 +4260,7 @@
     min-width: 0;
     align-items: center;
     justify-content: space-between;
-    gap: 0.3rem;
+    gap: 0.45rem;
   }
 
   .rgv-card-title-row > a {
@@ -4284,7 +4272,7 @@
     min-height: 0;
     overflow: hidden;
     font-family: var(--rgv-mono);
-    font-size: 0.82rem;
+    font-size: 0.96rem;
     font-weight: 850;
     letter-spacing: 0.01em;
     line-height: 1.05;
@@ -4306,7 +4294,7 @@
     border-radius: 0;
     background: transparent;
     font-family: var(--rgv-mono);
-    font-size: 0.39rem;
+    font-size: 0.45rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-overflow: ellipsis;
@@ -4318,48 +4306,48 @@
   }
 
   .rgv-card-options {
-    margin-top: 0.42rem;
+    margin-top: 0.65rem;
     padding-top: 0;
     border-top: 0;
   }
 
   .rgv-card-options legend {
-    font-size: 0.42rem;
+    font-size: 0.49rem;
     letter-spacing: 0.11em;
   }
 
   .rgv-card-options > div {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.2rem;
-    margin-top: 0.28rem;
+    gap: 0.28rem;
+    margin-top: 0.38rem;
   }
 
   .rgv-card-options button {
     width: auto;
     min-width: 0;
-    min-height: 1.7rem;
-    flex: 0 0 calc(33.333% - 0.14rem);
-    padding: 0.12rem 0.1rem;
+    min-height: 2.15rem;
+    flex: 0 0 calc(33.333% - 0.19rem);
+    padding: 0.2rem 0.16rem;
     border-color: #48494f;
-    border-radius: 0.52rem;
+    border-radius: 0.68rem;
     background: #151619;
     font-family: var(--rgv-mono);
-    font-size: 0.46rem;
-    letter-spacing: 0.025em;
+    font-size: 0.55rem;
+    letter-spacing: 0.035em;
   }
 
   .rgv-card-options > div:has(> button:only-child) > button,
   .rgv-card-options > div:has(> button:nth-child(2):last-child) > button,
   .rgv-card-options > div:has(> button:nth-child(4):last-child) > button {
-    flex-basis: calc(50% - 0.1rem);
+    flex-basis: calc(50% - 0.14rem);
   }
 
   .rgv-card-options button.is-sold-out {
     display: inline-flex;
-    min-height: 1.92rem;
+    min-height: 2.35rem;
     flex-direction: column;
-    gap: 0.08rem;
+    gap: 0.12rem;
     color: #81777b;
     border-color: #38393d;
     background: #111214;
@@ -4378,7 +4366,7 @@
     margin: 0;
     color: #f87171;
     font-family: var(--rgv-mono);
-    font-size: 0.31rem;
+    font-size: 0.38rem;
     font-weight: 800;
     letter-spacing: 0.09em;
     line-height: 1;
@@ -4387,17 +4375,14 @@
 
   .rgv-catalog .rgv-card-options button.is-active:not(:disabled),
   .rgv-catalog .rgv-card-options button[aria-pressed="true"]:not(:disabled) {
-    border-radius: 0.52rem;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.2),
-      0 0 0.65rem rgba(220, 38, 38, 0.2) !important;
+    border-radius: 0.68rem;
   }
 
   .rgv-product-grid .rgv-card-footer {
     grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
     align-items: center;
-    gap: 0.28rem;
-    padding-top: 0.48rem;
+    gap: 0.42rem;
+    padding-top: 0.72rem;
   }
 
   .rgv-product-grid .rgv-card-price > small {
@@ -4412,7 +4397,7 @@
   .rgv-product-grid .rgv-card-price > span strong {
     overflow: hidden;
     font-family: var(--rgv-mono);
-    font-size: clamp(0.86rem, 4.2vw, 1.08rem);
+    font-size: clamp(0.98rem, 4.8vw, 1.28rem);
     letter-spacing: -0.055em;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -4425,32 +4410,26 @@
   .rgv-product-grid .rgv-card-footer > .rgv-card-add {
     width: 100%;
     min-width: 0;
-    min-height: 2.05rem;
+    min-height: 2.65rem;
     justify-content: space-between;
-    padding: 0 0.38rem 0 0.48rem;
-    border-radius: 0.52rem;
+    padding: 0 0.65rem 0 0.8rem;
+    border-radius: 0.68rem;
     font-family: var(--rgv-mono);
-    font-size: 0.45rem;
+    font-size: 0.55rem;
     font-weight: 800;
-    letter-spacing: 0.055em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
   }
 
   .rgv-card-add__icon {
-    width: 0.72rem;
-    height: 0.72rem;
+    width: 1rem;
+    height: 1rem;
     border: 0;
     background: transparent;
   }
 
   .rgv-card-add__icon svg {
-    width: 0.68rem;
-    height: 0.68rem;
-  }
-
-  .rgv-card-options__empty {
-    min-height: 1.7rem;
-    padding: 0.22rem 0.38rem;
-    font-size: 0.46rem;
+    width: 0.9rem;
+    height: 0.9rem;
   }
 }
