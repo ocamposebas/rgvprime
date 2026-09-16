@@ -1847,7 +1847,9 @@ export function ProductCard({
                   <button
                     key={variationKey}
                     type="button"
-                    className={selected ? "is-active" : ""}
+                    className={`${selected ? "is-active" : ""} ${
+                      !available ? "is-sold-out" : ""
+                    }`.trim()}
                     aria-pressed={selected}
                     disabled={!available}
                     title={available ? `${label} available` : `${label} sold out`}

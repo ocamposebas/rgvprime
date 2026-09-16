@@ -4327,7 +4327,7 @@
     width: auto;
     min-width: 0;
     min-height: 2.15rem;
-    flex: 1 1 calc(33.333% - 0.28rem);
+    flex: 0 0 calc(33.333% - 0.19rem);
     padding: 0.2rem 0.16rem;
     border-color: #48494f;
     border-radius: 0.68rem;
@@ -4335,6 +4335,42 @@
     font-family: var(--rgv-mono);
     font-size: 0.55rem;
     letter-spacing: 0.035em;
+  }
+
+  .rgv-card-options > div:has(> button:only-child) > button,
+  .rgv-card-options > div:has(> button:nth-child(2):last-child) > button,
+  .rgv-card-options > div:has(> button:nth-child(4):last-child) > button {
+    flex-basis: calc(50% - 0.14rem);
+  }
+
+  .rgv-card-options button.is-sold-out {
+    display: inline-flex;
+    min-height: 2.35rem;
+    flex-direction: column;
+    gap: 0.12rem;
+    color: #81777b;
+    border-color: #38393d;
+    background: #111214;
+    opacity: 1;
+  }
+
+  .rgv-card-options button.is-sold-out > span {
+    color: #8c8386;
+    text-decoration: line-through;
+    text-decoration-color: rgba(248, 113, 113, 0.72);
+    text-decoration-thickness: 1px;
+  }
+
+  .rgv-card-options button.is-sold-out > small {
+    display: block;
+    margin: 0;
+    color: #f87171;
+    font-family: var(--rgv-mono);
+    font-size: 0.38rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    line-height: 1;
+    text-transform: uppercase;
   }
 
   .rgv-catalog .rgv-card-options button.is-active:not(:disabled),
