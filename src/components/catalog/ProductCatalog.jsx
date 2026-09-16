@@ -19,7 +19,7 @@ const variationSummaryRequestCache = new Map();
 
 const formatFilters = [
   {
-    label: "Single",
+    label: "Single Vials",
     value: PRODUCT_FORMATS.SINGLE,
     description: "1 vial",
   },
@@ -1779,7 +1779,7 @@ export function ProductCard({
         aria-label={`View ${product.name}`}
       >
         <span className="rgv-card-tech-id" aria-hidden="true">
-          RGV/{String(sequence).padStart(2, "0")}
+          RGV / {String(sequence).padStart(2, "0")}
         </span>
         <span className="rgv-card-format-code" aria-hidden="true">
           {isKit ? "10 VIAL KITS" : "SINGLE / 01"}
@@ -1817,9 +1817,20 @@ export function ProductCard({
 
       <div className="rgv-index-card__content rgv-card-body">
         <p className="rgv-index-card__category">{category}</p>
-        <a href={productUrl}>
-          <h3>{product.name}</h3>
-        </a>
+        <div className="rgv-card-title-row">
+          <a href={productUrl}>
+            <h3>{product.name}</h3>
+          </a>
+          <span
+            className={`rgv-card-inline-stock rgv-index-card__stock ${cardStatus.status}`}
+            aria-label={`Availability: ${cardStatus.label}`}
+          >
+            {cardStatus.dot && (
+              <i className={cardStatus.dot} aria-hidden="true" />
+            )}
+            {cardStatus.label}
+          </span>
+        </div>
         {isVariableProduct && (
           <fieldset className="rgv-card-options">
             <legend>Choose strength</legend>
