@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Coins, FileCheck2, LockKeyhole, PackageCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Coins,
+  FileCheck2,
+  FlaskConical,
+  LockKeyhole,
+  Package,
+  PackageCheck,
+} from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import {
   getCachedVariationSummary,
@@ -17,12 +26,13 @@ import {
 } from "../../lib/inventory";
 import {
   getFormatMeta,
+  isApparelProduct,
   isKitFormatValue,
   isPurchaseFormatAttribute,
   PRODUCT_FORMATS,
   sortPurchaseAttributes,
 } from "../../lib/productFormat";
-import "../../styles/storefront-v2.css";
+import "../../styles/storefront.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
 
@@ -158,9 +168,7 @@ function getPriceOffer(item) {
     currentPrice,
     currentFormatted: formatMoney(currentPrice, currency),
     regularPrice,
-    regularFormatted: hasDiscount
-      ? formatMoney(regularPrice, currency)
-      : null,
+    regularFormatted: hasDiscount ? formatMoney(regularPrice, currency) : null,
     hasDiscount,
     savings,
     savingsFormatted: hasDiscount ? formatMoney(savings, currency) : null,
@@ -246,7 +254,9 @@ function compareVariantValues(a = "", b = "") {
 }
 
 function sortVariantOptions(options = []) {
-  return [...(Array.isArray(options) ? options : [])].sort(compareVariantValues);
+  return [...(Array.isArray(options) ? options : [])].sort(
+    compareVariantValues,
+  );
 }
 
 function getVariationImage(variation) {
@@ -278,9 +288,7 @@ function getVariationResponsiveImage(product, variation) {
   };
   const parentImageData =
     (Array.isArray(product?.images) && product.images[0]) ||
-    (product?.image && typeof product.image === "object"
-      ? product.image
-      : {});
+    (product?.image && typeof product.image === "object" ? product.image : {});
   const variationSrcset =
     variationImageData.srcset || variationImageData.srcSet || undefined;
   const parentSrcset =
@@ -300,12 +308,7 @@ function getVariationResponsiveImage(product, variation) {
 }
 
 function getVariationAttributeOption(attribute) {
-  return (
-    attribute?.option ??
-    attribute?.value ??
-    attribute?.slug ??
-    ""
-  );
+  return attribute?.option ?? attribute?.value ?? attribute?.slug ?? "";
 }
 
 function getVariationOptionValues(variation) {
@@ -361,7 +364,7 @@ function sortVariationsByStrength(variations = []) {
     return String(a?.sku || a?.id || "").localeCompare(
       String(b?.sku || b?.id || ""),
       undefined,
-      { numeric: true, sensitivity: "base" }
+      { numeric: true, sensitivity: "base" },
     );
   });
 }
@@ -370,7 +373,9 @@ function getVariationList(product) {
   return Array.isArray(product?.variations)
     ? product.variations.filter(
         (variation) =>
-          variation && typeof variation === "object" && !Array.isArray(variation)
+          variation &&
+          typeof variation === "object" &&
+          !Array.isArray(variation),
       )
     : [];
 }
@@ -439,27 +444,26 @@ function getLowestAvailableVariation(product) {
     ),
   );
 
-  return (
-    preferredSingle ||
-    availableVariations[0] ||
-    variations[0] ||
-    null
-  );
+  return preferredSingle || availableVariations[0] || variations[0] || null;
 }
 
 function getMatchingProductAttributeName(product, variationAttribute, option) {
   const attributes = getSelectableProductAttributes(product);
   const variationName = normalizeAttributeName(
-    variationAttribute?.name || variationAttribute?.slug || ""
+    variationAttribute?.name || variationAttribute?.slug || "",
   );
 
   const directAttribute = attributes.find((attribute) => {
-    const attrName = normalizeAttributeName(attribute?.name || attribute?.slug || "");
+    const attrName = normalizeAttributeName(
+      attribute?.name || attribute?.slug || "",
+    );
 
     return (
       attrName &&
       variationName &&
-      (attrName === variationName || attrName.includes(variationName) || variationName.includes(attrName))
+      (attrName === variationName ||
+        attrName.includes(variationName) ||
+        variationName.includes(attrName))
     );
   });
 
@@ -468,10 +472,15 @@ function getMatchingProductAttributeName(product, variationAttribute, option) {
   const optionAttribute = attributes.find(
     (attribute) =>
       Array.isArray(attribute?.options) &&
-      attribute.options.some((item) => valuesLookEquivalent(item, option))
+      attribute.options.some((item) => valuesLookEquivalent(item, option)),
   );
 
-  return optionAttribute?.name || variationAttribute?.name || variationAttribute?.slug || "Option";
+  return (
+    optionAttribute?.name ||
+    variationAttribute?.name ||
+    variationAttribute?.slug ||
+    "Option"
+  );
 }
 
 function variationMatchesSelection(variation, selectedVariants) {
@@ -482,7 +491,7 @@ function variationMatchesSelection(variation, selectedVariants) {
     : [];
 
   const selectedEntries = Object.entries(selectedVariants || {}).filter(
-    ([, value]) => value !== null && value !== undefined && value !== ""
+    ([, value]) => value !== null && value !== undefined && value !== "",
   );
 
   if (selectedEntries.length === 0 || variationAttributes.length === 0) {
@@ -496,8 +505,12 @@ function variationMatchesSelection(variation, selectedVariants) {
     const cleanSelectedValue = normalizeVariantValue(selectedValue);
 
     const directMatch = variationAttributes.some((attribute) => {
-      const attrName = normalizeAttributeName(attribute?.name || attribute?.slug);
-      const attrOption = normalizeVariantValue(getVariationAttributeOption(attribute));
+      const attrName = normalizeAttributeName(
+        attribute?.name || attribute?.slug,
+      );
+      const attrOption = normalizeVariantValue(
+        getVariationAttributeOption(attribute),
+      );
 
       const nameMatches =
         !attrName ||
@@ -517,7 +530,7 @@ function variationMatchesSelection(variation, selectedVariants) {
     if (directMatch) return true;
 
     return allVariationValues.some((value) =>
-      valuesLookEquivalent(value, cleanSelectedValue)
+      valuesLookEquivalent(value, cleanSelectedValue),
     );
   });
 }
@@ -529,7 +542,7 @@ function getSelectedVariation(product, selectedVariants) {
   if (variations.length === 0) return null;
 
   const exactMatch = variations.find((variation) =>
-    variationMatchesSelection(variation, scopedSelection)
+    variationMatchesSelection(variation, scopedSelection),
   );
 
   if (exactMatch) return exactMatch;
@@ -540,9 +553,9 @@ function getSelectedVariation(product, selectedVariants) {
     const valueMatch = variations.find((variation) =>
       selectedValues.every((selectedValue) =>
         getVariationOptionValues(variation).some((variationValue) =>
-          valuesLookEquivalent(variationValue, selectedValue)
-        )
-      )
+          valuesLookEquivalent(variationValue, selectedValue),
+        ),
+      ),
     );
 
     if (valueMatch) return valueMatch;
@@ -654,7 +667,12 @@ function getAnyVariationMatchingSelection(product, selectedVariants) {
   );
 }
 
-function getVariantPricePreview(product, selectedVariants, attributeName, option) {
+function getVariantPricePreview(
+  product,
+  selectedVariants,
+  attributeName,
+  option,
+) {
   const currency = product?.currency || product?.currency_code || "USD";
   const selectableAttributes = getSelectableProductAttributes(product);
   const attribute = selectableAttributes.find(
@@ -690,11 +708,12 @@ function getVariantPricePreview(product, selectedVariants, attributeName, option
     formattedPrice,
     isAvailable,
     stockLabel,
-    label: isAvailable && formattedPrice
-      ? formattedPrice
-      : variation
-        ? "Sold out"
-        : "Unavailable",
+    label:
+      isAvailable && formattedPrice
+        ? formattedPrice
+        : variation
+          ? "Sold out"
+          : "Unavailable",
   };
 }
 
@@ -712,8 +731,8 @@ function buildInitialVariantSelection(product) {
       const options = sortVariantOptions(attr.options || []);
       const matchingPreferredOption = options.find((option) =>
         preferredOptions.some((preferredOption) =>
-          valuesLookEquivalent(option, preferredOption)
-        )
+          valuesLookEquivalent(option, preferredOption),
+        ),
       );
 
       if (matchingPreferredOption || options[0]) {
@@ -729,7 +748,11 @@ function buildInitialVariantSelection(product) {
   ) {
     preferredVariation.attributes.forEach((attribute) => {
       const option = getVariationAttributeOption(attribute);
-      const attributeName = getMatchingProductAttributeName(product, attribute, option);
+      const attributeName = getMatchingProductAttributeName(
+        product,
+        attribute,
+        option,
+      );
 
       if (attributeName && option) {
         initialVariants[attributeName] = option;
@@ -785,7 +808,8 @@ function mergeProductWithVariation(product, variation) {
 
 function renderProductPrice(product) {
   const offer = getPriceOffer(product);
-  const isVariableParent = product?.type === "variable" && !product?.selectedVariationId;
+  const isVariableParent =
+    product?.type === "variable" && !product?.selectedVariationId;
 
   if (offer.currentFormatted) {
     if (offer.hasDiscount) {
@@ -817,11 +841,7 @@ function renderProductPrice(product) {
     );
   }
 
-  return (
-    <div className="rgv-ticket-price is-empty">
-      Select Variant
-    </div>
-  );
+  return <div className="rgv-ticket-price is-empty">Select Variant</div>;
 }
 
 function isValidEmail(email) {
@@ -1020,7 +1040,7 @@ function ProductComplements({ currentProductId }) {
           ? data.products
               .filter((item) => isFeaturedProduct(item))
               .filter(
-                (item) => String(item.id) !== String(currentProductId || "")
+                (item) => String(item.id) !== String(currentProductId || ""),
               )
               .sort((a, b) => {
                 const aInStock = a.stock_status === "instock";
@@ -1136,10 +1156,7 @@ function ProductComplements({ currentProductId }) {
   }
 
   return (
-    <section
-      ref={sectionRef}
-      className="rgv-product-related rgv-pdp-related"
-    >
+    <section ref={sectionRef} className="rgv-product-related rgv-pdp-related">
       <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
@@ -1230,9 +1247,7 @@ function certificateMatchesVariation(certificate, variation) {
   const certificateIds = [
     certificate?.variation_id,
     certificate?.variationId,
-    ...(Array.isArray(certificate?.product_ids)
-      ? certificate.product_ids
-      : []),
+    ...(Array.isArray(certificate?.product_ids) ? certificate.product_ids : []),
   ]
     .map((value) => String(value || "").trim())
     .filter(Boolean);
@@ -1247,7 +1262,9 @@ function certificateMatchesVariation(certificate, variation) {
   const variationSku = normalizeSku(variation?.sku);
   const certificateSku = normalizeSku(certificate?.sku);
 
-  return Boolean(variationSku && certificateSku && variationSku === certificateSku);
+  return Boolean(
+    variationSku && certificateSku && variationSku === certificateSku,
+  );
 }
 
 function ProductVerification({ product, variation }) {
@@ -1340,9 +1357,9 @@ function ProductVerification({ product, variation }) {
               ? "Certificate matched"
               : status === "selection"
                 ? "Select a variation"
-              : status === "empty"
-                ? "Search the archive"
-                : "Documentation unavailable"}
+                : status === "empty"
+                  ? "Search the archive"
+                  : "Documentation unavailable"}
         </span>
       </header>
 
@@ -1496,7 +1513,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
           }`,
           {
             cache: shouldRefresh ? "no-store" : "default",
-          }
+          },
         );
 
         const data = await response.json().catch(() => null);
@@ -1587,6 +1604,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
   const stockBadge = displayProduct ? getStockBadge(displayProduct) : null;
 
   const category = product?.categories?.[0]?.name || "Research Compound";
+  const isApparel = isApparelProduct(product);
   const isVariableProduct = product?.type === "variable";
   const selectableAttributes = useMemo(
     () => getSelectableProductAttributes(product),
@@ -1603,14 +1621,17 @@ export default function ProductDetails({ slug, initialProduct = null }) {
     (attribute) => !isPurchaseFormatAttribute(attribute),
   );
   const selectedFormatValue =
-    (formatAttribute?.name && selectedVariants[formatAttribute.name]) || "Single";
+    (formatAttribute?.name && selectedVariants[formatAttribute.name]) ||
+    "Single";
   const selectedFormatMeta = getFormatMeta(selectedFormatValue);
   const selectedStrengthLabel =
     Object.entries(selectedVariants || {})
       .filter(([name, value]) => value && !isPurchaseFormatAttribute(name))
       .map(([, value]) => value)
       .join(" / ") || "Standard";
-  const selectedConfigLabel = `${selectedFormatMeta.label} / ${selectedStrengthLabel}`;
+  const selectedConfigLabel = isApparel
+    ? selectedStrengthLabel
+    : `${selectedFormatMeta.label} / ${selectedStrengthLabel}`;
 
   const isInstock = isProductAvailable(displayProduct);
   const variationOptionsReady = !isVariableProduct || hasVariationData;
@@ -1619,13 +1640,12 @@ export default function ProductDetails({ slug, initialProduct = null }) {
     : true;
 
   const canAddToCart =
-    variationOptionsReady &&
-    isInstock &&
-    selectedVariationPurchasable;
+    variationOptionsReady && isInstock && selectedVariationPurchasable;
 
   const sku = displayProduct?.sku ? displayProduct.sku : "N/A";
-  const productType =
-    selectedFormatMeta.kind === "kits"
+  const productType = isApparel
+    ? "Apparel"
+    : selectedFormatMeta.kind === "kits"
       ? selectedFormatMeta.packSize
         ? `Kit of ${selectedFormatMeta.packSize} vials`
         : "Multi-vial kit"
@@ -1652,7 +1672,11 @@ export default function ProductDetails({ slug, initialProduct = null }) {
       displayProduct?.currency || displayProduct?.currency_code || "USD",
     ) || "Select variant";
 
-  const handleVariantChange = (attributeName, value, preferredVariation = null) => {
+  const handleVariantChange = (
+    attributeName,
+    value,
+    preferredVariation = null,
+  ) => {
     if (isAdding) return;
 
     setSelectedVariants((previousSelection) => {
@@ -1680,11 +1704,9 @@ export default function ProductDetails({ slug, initialProduct = null }) {
         )
           ? { [attributeName]: value }
           : {
-              ...(formatAttribute?.name &&
-              nextSelection[formatAttribute.name]
+              ...(formatAttribute?.name && nextSelection[formatAttribute.name]
                 ? {
-                    [formatAttribute.name]:
-                      nextSelection[formatAttribute.name],
+                    [formatAttribute.name]: nextSelection[formatAttribute.name],
                   }
                 : {}),
               [attributeName]: value,
@@ -1711,13 +1733,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
   };
 
   const handleAddToCart = async () => {
-    if (
-      !product ||
-      !displayProduct ||
-      !canAddToCart ||
-      isAdding ||
-      justAdded
-    ) {
+    if (!product || !displayProduct || !canAddToCart || isAdding || justAdded) {
       return;
     }
 
@@ -1795,8 +1811,8 @@ export default function ProductDetails({ slug, initialProduct = null }) {
         throw new Error(
           cleanNotifierMessage(
             data?.message || "Could not save your notification request.",
-            "error"
-          )
+            "error",
+          ),
         );
       }
 
@@ -1879,54 +1895,69 @@ export default function ProductDetails({ slug, initialProduct = null }) {
     : [];
 
   return (
-    <main className="rgv-product-page min-h-screen overflow-x-clip bg-[#070506] pb-0 pt-[132px] text-white sm:pt-[148px]">
+    <main className="rgv-product-page min-h-screen overflow-x-clip">
       <div className="mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12">
-        <nav
-          className="rgv-product-breadcrumb mb-5 flex items-center gap-2 text-xs text-white/45"
-          aria-label="Breadcrumb"
-        >
-          <a href="/shop" className="transition hover:text-white">
-            Shop
+        <div className="rgv-product-navigation">
+          <nav
+            className="rgv-product-breadcrumb flex items-center gap-2 text-xs text-white/45"
+            aria-label="Breadcrumb"
+          >
+            <a href="/" className="transition hover:text-white">
+              Home
+            </a>
+            <span aria-hidden="true">/</span>
+            <a href="/shop" className="transition hover:text-white">
+              Catalog
+            </a>
+            <span aria-hidden="true">/</span>
+            <span className="truncate text-white/70">{product.name}</span>
+          </nav>
+          <a className="rgv-back-to-collection" href="/shop">
+            <ArrowLeft size={15} aria-hidden="true" /> Back to collection
           </a>
-          <span aria-hidden="true">/</span>
-          <span className="truncate text-white/70">{product.name}</span>
-        </nav>
+        </div>
 
-        <section className="rgv-product-stage grid min-w-0 overflow-hidden border border-white/12 bg-[#0a0a0a] lg:min-h-[720px] lg:grid-cols-[minmax(0,1.55fr)_minmax(390px,0.85fr)]">
-          <div className="rgv-product-showcase min-w-0">
-            <div className="rgv-stage-media relative flex min-h-[520px] min-w-0 flex-col bg-[#111] p-5 sm:min-h-[620px] sm:p-7 lg:min-h-0">
-              <header className="rgv-stage-identity">
-                <p className="rgv-stage-overline">
-                  <span>RGV Prime</span>
-                  <span>{category}</span>
-                </p>
-                <h1 className="rgv-product-title">{product.name}</h1>
-              </header>
-
-              <div className="rgv-stage-coordinate" aria-hidden="true">
-                <span>SPECIMEN / ACTIVE</span>
-                <strong>
-                  REF.{String(selectedVariation?.id || product.id).slice(-6).toUpperCase()}
-                </strong>
-                <small>{selectedConfigLabel}</small>
+        <section className="rgv-product-stage">
+          <header className="rgv-product-heading">
+            <p className="rgv-kicker">{category}</p>
+            <h1 className="rgv-product-title">{product.name}</h1>
+            <p className="rgv-product-intro">
+              {isApparel
+                ? "Explore the RGV Prime collection. Select your preferred size and review product details below."
+                : "Choose the format and strength that suit your research. Explore product information and certificates below."}
+            </p>
+            <div className="rgv-product-heading__meta">
+              <span
+                className={`rgv-product-availability ${canAddToCart ? "is-available" : "is-unavailable"}`}
+              >
+                <i aria-hidden="true" />
+                {variationOptionsReady
+                  ? stockBadge?.label || "Availability pending"
+                  : "Checking options"}
+              </span>
+              <span>
+                SKU: <span className="rgv-product-sku">{sku}</span>
+              </span>
+            </div>
+          </header>
+          <div className="rgv-product-showcase">
+            <div className="rgv-stage-media">
+              <div className="rgv-gallery-label" aria-hidden="true">
+                <span>RGV PRIME</span>
+                <span>
+                  {isApparel ? "Brand collection" : "Research collection"}
+                </span>
               </div>
+              <span className="rgv-gallery-wordmark" aria-hidden="true">
+                RGV
+              </span>
 
-              <div className="rgv-stage-scale" aria-hidden="true">
-                <span>00</span>
-                <span>25</span>
-                <span>50</span>
-                <span>75</span>
-                <span>100</span>
-              </div>
-
-              <div className="rgv-stage-image flex min-h-0 flex-1 items-center justify-center py-7">
+              <div className="rgv-stage-image">
                 <img
                   key={`${selectedVariation?.id || product.id}:${image}`}
                   src={image}
                   srcSet={
-                    heroImageData?.srcset ||
-                    heroImageData?.srcSet ||
-                    undefined
+                    heroImageData?.srcset || heroImageData?.srcSet || undefined
                   }
                   sizes={
                     heroImageData?.sizes ||
@@ -1942,22 +1973,16 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                     product.image_alt ||
                     `${product.name} laboratory research product`
                   }
-                  className="max-h-[460px] w-full max-w-[660px] object-contain sm:max-h-[540px] lg:max-h-[560px]"
+                  className="rgv-product-image"
                 />
               </div>
 
-              <div className="rgv-stage-media-status flex items-center gap-2 text-xs">
-                <span className="inline-flex items-center gap-2 text-white/65">
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      isInstock && variationOptionsReady
-                        ? "bg-emerald-400"
-                        : "bg-red-500"
-                    }`}
-                  />
-                  {variationOptionsReady
-                    ? stockBadge?.label || "Availability pending"
-                    : "Options unavailable"}
+              <div className="rgv-gallery-caption">
+                <span>{isApparel ? "Apparel" : selectedFormatMeta.label}</span>
+                <span>
+                  {selectedStrengthLabel === "Standard"
+                    ? "For research use only"
+                    : selectedStrengthLabel}
                 </span>
               </div>
             </div>
@@ -1965,27 +1990,25 @@ export default function ProductDetails({ slug, initialProduct = null }) {
 
           <aside
             ref={purchaseRef}
-            className="rgv-stage-buy rgv-purchase-ticket flex min-w-0 flex-col bg-[#0a0a0a] p-6 sm:p-8 lg:p-7 xl:p-9"
+            className="rgv-stage-buy rgv-purchase-ticket"
           >
+            <div className="rgv-purchase-panel-label">
+              <span>Your selection</span>
+              <span>RGV PRIME</span>
+            </div>
             <div className="rgv-stage-buy-head border-b border-white/10 pb-6">
-              <div className="rgv-purchase-heading">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-red-500">
-                    Order configuration
-                  </p>
-                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em] text-white">
-                    Build your selection
-                  </h2>
-                </div>
-              </div>
-
               <div className="rgv-price-offer">
                 <div className="rgv-price-offer__top">
-                  <span>Your price</span>
+                  <span>
+                    Price per{" "}
+                    {isApparel
+                      ? "item"
+                      : selectedFormatMeta.kind === "kits"
+                        ? "kit"
+                        : "vial"}
+                  </span>
                   {variationOptionsReady && purchaseOffer.hasDiscount && (
-                    <strong>
-                      Save {purchaseOffer.percentage}%
-                    </strong>
+                    <strong>Save {purchaseOffer.percentage}%</strong>
                   )}
                 </div>
 
@@ -2064,8 +2087,10 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       {formatAttribute.name}
                     </label>
                     <div className="mb-3 flex items-end justify-between gap-4">
-                      <p className="rgv-config-label text-sm font-semibold text-white">
-                        <span>01</span>
+                      <p
+                        id="product-format-label"
+                        className="rgv-config-label text-sm font-semibold text-white"
+                      >
                         Format
                       </p>
                       <span className="text-[11px] text-white/38">
@@ -2073,7 +2098,11 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div
+                      className="grid grid-cols-2 gap-2"
+                      role="group"
+                      aria-labelledby="product-format-label"
+                    >
                       {formatOptions.map((option) => {
                         const isSelected =
                           selectedVariants[formatAttribute.name] === option;
@@ -2098,12 +2127,26 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                                 optionPrice.variation,
                               )
                             }
-                            className={`rgv-variant-option min-h-[92px] border p-4 text-left transition ${
-                              isSelected
-                                ? "is-active border-red-600 bg-red-700 text-white"
-                                : "border-white/14 bg-white/[0.035] text-white hover:border-white/35"
-                            }`}
+                            className={`rgv-variant-option text-left ${isSelected ? "is-active" : ""}`}
                           >
+                            <span
+                              className="rgv-format-symbol"
+                              aria-hidden="true"
+                            >
+                              {formatMeta.packSize === 1 ? (
+                                <FlaskConical size={19} strokeWidth={1.6} />
+                              ) : (
+                                <Package size={19} strokeWidth={1.6} />
+                              )}
+                            </span>
+                            {isSelected && (
+                              <span
+                                className="rgv-format-check"
+                                aria-hidden="true"
+                              >
+                                <Check size={12} strokeWidth={2.4} />
+                              </span>
+                            )}
                             <strong className="block text-base font-semibold">
                               {formatMeta.label}
                             </strong>
@@ -2116,7 +2159,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                                 ? "1 vial"
                                 : `${formatMeta.packSize || 10} vials`}
                             </small>
-                            <span className="mt-3 block text-sm font-semibold">
+                            <span className="rgv-format-price mt-3 block text-sm font-semibold">
                               {optionPrice.label}
                             </span>
                           </button>
@@ -2132,20 +2175,26 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       {attribute.name}
                     </label>
                     <div className="mb-3 flex items-end justify-between gap-4">
-                      <p className="rgv-config-label text-sm font-semibold text-white">
-                        <span>
-                          {String(
-                            attributeIndex + (formatAttribute ? 2 : 1),
-                          ).padStart(2, "0")}
-                        </span>
-                        Strength
+                      <p
+                        id={`product-strength-label-${attributeIndex}`}
+                        className="rgv-config-label text-sm font-semibold text-white"
+                      >
+                        {isApparel
+                          ? "Size"
+                          : strengthAttributes.length > 1
+                            ? attribute.name
+                            : "Strength"}
                       </p>
                       <span className="text-[11px] text-white/38">
-                        Amount per vial
+                        {isApparel ? "Choose your size" : "Amount per vial"}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+                    <div
+                      className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3"
+                      role="group"
+                      aria-labelledby={`product-strength-label-${attributeIndex}`}
+                    >
                       {sortVariantOptions(attribute.options || []).map(
                         (option) => {
                           const isSelected =
@@ -2170,11 +2219,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                                   optionPrice.variation,
                                 )
                               }
-                              className={`rgv-variant-option min-h-[64px] border px-3 py-2 text-left transition ${
-                                isSelected
-                                  ? "is-active border-white bg-white text-black"
-                                  : "border-white/14 bg-transparent text-white hover:border-white/35"
-                              }`}
+                              className={`rgv-variant-option text-left ${isSelected ? "is-active" : ""}`}
                             >
                               <strong className="block text-sm font-semibold">
                                 {option}
@@ -2214,7 +2259,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       <button
                         type="button"
                         onClick={decreaseQuantity}
-                        disabled={isAdding}
+                        disabled={isAdding || quantity <= 1}
                         className="flex h-11 w-9 items-center justify-center text-xl text-white/45 transition hover:text-white"
                         aria-label="Decrease quantity"
                       >
@@ -2226,7 +2271,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       <button
                         type="button"
                         onClick={increaseQuantity}
-                        disabled={isAdding}
+                        disabled={isAdding || quantity >= maxQuantity}
                         className="flex h-11 w-9 items-center justify-center text-xl text-white/45 transition hover:text-white"
                         aria-label="Increase quantity"
                       >
@@ -2239,21 +2284,17 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                       onClick={handleAddToCart}
                       disabled={!canAddToCart || isAdding || justAdded}
                       aria-busy={isAdding}
-                      className={`rgv-product-add-button flex h-14 items-center justify-center gap-3 px-6 text-sm font-semibold transition ${
-                        canAddToCart && !justAdded
-                          ? "bg-red-700 text-white hover:bg-red-600"
-                          : "cursor-not-allowed bg-white/10 text-white/35"
-                      }`}
+                      className="rgv-product-add-button flex items-center justify-center gap-3 transition"
                     >
                       {hasVariants && !selectedVariation
                         ? "Choose a valid option"
                         : isVariableProduct && !selectedVariationPurchasable
                           ? "Unavailable"
-                        : justAdded
-                          ? "Added to cart"
-                          : isAdding
-                            ? "Adding…"
-                            : "Add to cart"}
+                          : justAdded
+                            ? "Added to cart"
+                            : isAdding
+                              ? "Adding…"
+                              : "Add to cart"}
                       <IconBag />
                     </button>
                   </div>
@@ -2274,27 +2315,32 @@ export default function ProductDetails({ slug, initialProduct = null }) {
             )}
 
             <ul className="rgv-stage-assurances mt-6 grid text-white/50">
-              {PURCHASE_ASSURANCES.map(
-                ({ title, detail, icon: AssuranceIcon }) => (
-                  <li key={title} className="rgv-assurance-chip">
-                    <span className="rgv-assurance-icon" aria-hidden="true">
-                      <AssuranceIcon size={18} strokeWidth={1.9} />
-                    </span>
-                    <span className="rgv-assurance-copy">
-                      <strong>{title}</strong>
-                      <small>{detail}</small>
-                    </span>
-                  </li>
-                ),
-              )}
+              {PURCHASE_ASSURANCES.filter(
+                ({ icon }) => !isApparel || icon !== FileCheck2,
+              ).map(({ title, detail, icon: AssuranceIcon }) => (
+                <li key={title} className="rgv-assurance-chip">
+                  <span className="rgv-assurance-icon" aria-hidden="true">
+                    <AssuranceIcon size={18} strokeWidth={1.9} />
+                  </span>
+                  <span className="rgv-assurance-copy">
+                    <strong>{title}</strong>
+                    <small>{detail}</small>
+                  </span>
+                </li>
+              ))}
             </ul>
           </aside>
         </section>
       </div>
 
-      <div className="rgv-product-after mt-0 bg-[#070506] py-0 text-white">
+      <div className="rgv-product-after">
         <div className="mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12">
-          <ProductVerification product={product} variation={selectedVariation} />
+          {!isApparel && (
+            <ProductVerification
+              product={product}
+              variation={selectedVariation}
+            />
+          )}
 
           <section
             className="rgv-product-evidence rgv-pdp-info mt-20 border-t border-white/10 pt-14"
@@ -2327,20 +2373,24 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                   }}
                 />
 
-                <div className="rgv-research-notice mt-10 border-l-2 border-red-700 pl-5 text-xs leading-6 text-white/50">
-                  <strong className="font-semibold text-white/75">
-                    Research use only.
-                  </strong>{" "}
-                  Not intended for human consumption, veterinary use,
-                  diagnosis, treatment, cure, or prevention of disease.
-                </div>
+                {!isApparel && (
+                  <div className="rgv-research-notice mt-10 border-l-2 border-red-700 pl-5 text-xs leading-6 text-white/50">
+                    <strong className="font-semibold text-white/75">
+                      Research use only.
+                    </strong>{" "}
+                    Not intended for human consumption, veterinary use,
+                    diagnosis, treatment, cure, or prevention of disease.
+                  </div>
+                )}
               </div>
 
               <aside className="rgv-product-specs rgv-pdp-specs">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-red-500">
                   Current configuration
                 </p>
-                <h3 className="mt-2 text-xl font-semibold">Selection details</h3>
+                <h3 className="mt-2 text-xl font-semibold">
+                  Selection details
+                </h3>
                 <dl className="mt-5 divide-y divide-white/10 border-y border-white/10">
                   <div className="flex justify-between gap-5 py-4 text-sm">
                     <dt className="text-white/50">SKU</dt>
@@ -2352,7 +2402,9 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                   </div>
                   {selectedStrengthLabel !== "Standard" && (
                     <div className="flex justify-between gap-5 py-4 text-sm">
-                      <dt className="text-white/50">Strength</dt>
+                      <dt className="text-white/50">
+                        {isApparel ? "Size" : "Strength"}
+                      </dt>
                       <dd className="text-right font-medium">
                         {selectedStrengthLabel}
                       </dd>
@@ -2413,16 +2465,16 @@ export default function ProductDetails({ slug, initialProduct = null }) {
               : isAdding
                 ? "Adding…"
                 : canAddToCart
-                ? "Add to cart"
-                : !variationOptionsReady
-                  ? variationLoadStatus === "loading"
-                    ? "Loading options"
-                    : "Review options"
-                  : isVariableProduct && !selectedVariationPurchasable
-                    ? "Unavailable"
-                  : isInstock
-                    ? "Select options"
-                    : "Notify me"}
+                  ? "Add to cart"
+                  : !variationOptionsReady
+                    ? variationLoadStatus === "loading"
+                      ? "Loading options"
+                      : "Review options"
+                    : isVariableProduct && !selectedVariationPurchasable
+                      ? "Unavailable"
+                      : isInstock
+                        ? "Select options"
+                        : "Notify me"}
           </button>
         </div>
       )}

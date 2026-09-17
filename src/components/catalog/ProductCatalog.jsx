@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUpRight, FileCheck2, FlaskConical, Package } from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { isProductAvailable } from "../../lib/inventory";
 import {
   getFormatMeta,
   getProductFormatSupport,
+  isApparelProduct,
   isPurchaseFormatAttribute,
   PRODUCT_FORMATS,
 } from "../../lib/productFormat";
-import "../../styles/storefront-v2.css";
+import "../../styles/storefront.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const DESKTOP_PRODUCTS_PER_PAGE = 12;
@@ -137,17 +139,7 @@ function normalizeOrderText(value = "") {
 
 function getProductOrderText(product) {
   return normalizeOrderText(
-    [
-      product?.name,
-      product?.slug,
-      product?.sku,
-      product?.short_description,
-      product?.description,
-      ...(product?.categories || []).map((item) => item?.name),
-      ...(product?.categories || []).map((item) => item?.slug),
-    ]
-      .filter(Boolean)
-      .join(" "),
+    [product?.name, product?.slug, product?.sku].filter(Boolean).join(" "),
   );
 }
 
@@ -156,6 +148,7 @@ function matchesOrderTerm(text, compactText, term) {
   const compactTerm = cleanTerm.replace(/\s+/g, "");
 
   if (!cleanTerm) return false;
+  if (cleanTerm.length <= 3) return text.split(" ").includes(cleanTerm);
   if (text.includes(cleanTerm)) return true;
   if (compactTerm.length >= 4 && compactText.includes(compactTerm)) return true;
 
@@ -205,7 +198,10 @@ function getProductSearchText(product) {
       product?.sku,
       product?.short_description,
       product?.description,
-      ...(product?.categories || []).flatMap((item) => [item?.name, item?.slug]),
+      ...(product?.categories || []).flatMap((item) => [
+        item?.name,
+        item?.slug,
+      ]),
       ...(product?.tags || []).flatMap((item) => [item?.name, item?.slug]),
     ]
       .filter(Boolean)
@@ -505,9 +501,12 @@ async function requestProductVariations(product) {
     variationRequestCache.delete(cacheKey);
   }
 
-  const request = fetch(`/api/products?slug=${encodeURIComponent(product.slug)}`, {
-    cache: "default",
-  })
+  const request = fetch(
+    `/api/products?slug=${encodeURIComponent(product.slug)}`,
+    {
+      cache: "default",
+    },
+  )
     .then(async (response) => {
       const data = await response.json();
 
@@ -797,10 +796,21 @@ function isVariationAvailable(variation) {
 }
 
 function groupProductVariations(product, variations = []) {
-  const indexedVariations = variations.map((variation, index) => ({
-    variation,
-    index,
-  }));
+  const indexedVariations = variations
+    .map((variation, index) => ({
+      variation,
+      index,
+    }))
+    .sort((left, right) => {
+      if (isApparelProduct(product)) return 0;
+      const leftLabel = getVariationDisplayParts(
+        getVariationLabel(product, left.variation, left.index),
+      ).strength;
+      const rightLabel = getVariationDisplayParts(
+        getVariationLabel(product, right.variation, right.index),
+      ).strength;
+      return leftLabel.localeCompare(rightLabel, undefined, { numeric: true });
+    });
 
   return {
     singles: indexedVariations.filter(
@@ -1035,7 +1045,9 @@ function CatalogDropdown({
         onKeyDown={handleTriggerKeyDown}
       >
         <span id={`${idBase}-label`}>{label}</span>
-        <strong id={`${idBase}-value`}>{selectedOption?.label || "Select"}</strong>
+        <strong id={`${idBase}-value`}>
+          {selectedOption?.label || "Select"}
+        </strong>
         <i aria-hidden="true">
           <ChevronIcon />
         </i>
@@ -1105,7 +1117,7 @@ function ProductImage({ src, srcSet, alt, priority = false }) {
     <img
       src={imageSrc}
       srcSet={imageSrc === FALLBACK_IMAGE ? undefined : srcSet || undefined}
-      alt={alt || "Product image"}
+      alt={alt ?? "Product image"}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       fetchPriority={priority ? "high" : "auto"}
@@ -1117,7 +1129,7 @@ function ProductImage({ src, srcSet, alt, priority = false }) {
           setImageSrc(FALLBACK_IMAGE);
         }
       }}
-      className="relative h-full w-full object-cover object-center opacity-100 transition-transform duration-200 group-hover:scale-[1.025]"
+      className="rgv-product-image"
     />
   );
 }
@@ -1414,10 +1426,7 @@ function StrengthSheet({
         else setJustAdded(true);
       }
     } finally {
-      if (
-        mountedRef.current &&
-        selectionTokenRef.current === requestToken
-      ) {
+      if (mountedRef.current && selectionTokenRef.current === requestToken) {
         isAddingRef.current = false;
         setIsAdding(false);
       }
@@ -1470,7 +1479,9 @@ function StrengthSheet({
           <div>
             <p>{formatMeta.label}</p>
             <h2 id="catalog-strength-title">
-              {isVariableProduct ? "Choose a strength" : "Review your selection"}
+              {isVariableProduct
+                ? "Choose a strength"
+                : "Review your selection"}
             </h2>
             <span>{product.name}</span>
           </div>
@@ -1504,7 +1515,8 @@ function StrengthSheet({
 
         {variationStatus === "error" && (
           <div className="rgv-order-dock__message" role="alert">
-            We could not load the strengths. <a href={productUrl}>View product</a>
+            We could not load the strengths.{" "}
+            <a href={productUrl}>View product</a>
           </div>
         )}
 
@@ -1521,44 +1533,42 @@ function StrengthSheet({
               <fieldset className="rgv-order-dock__strengths">
                 <legend>Available strengths</legend>
                 <div>
-                  {formatVariations.map(
-                    ({ variation, index }) => {
-                      const variationKey = getVariationKey(variation, index);
-                      const label = getVariationDisplayParts(
-                        getVariationLabel(product, variation, index),
-                      );
-                      const price = formatPrice(
-                        getVariationPrice(variation, product),
-                      );
-                      const optionDiscount = getDiscountDetails(variation);
-                      const available = isVariationAvailable(variation);
-                      const active = variationKey === selectedVariationKey;
+                  {formatVariations.map(({ variation, index }) => {
+                    const variationKey = getVariationKey(variation, index);
+                    const label = getVariationDisplayParts(
+                      getVariationLabel(product, variation, index),
+                    );
+                    const price = formatPrice(
+                      getVariationPrice(variation, product),
+                    );
+                    const optionDiscount = getDiscountDetails(variation);
+                    const available = isVariationAvailable(variation);
+                    const active = variationKey === selectedVariationKey;
 
-                      return (
-                        <button
-                          key={variationKey}
-                          type="button"
-                          aria-pressed={active}
-                          disabled={!available || isAdding}
-                          onClick={() => updateSelection(variationKey)}
-                          className={active ? "is-active" : ""}
-                        >
-                          <span>
-                            <strong>{label.strength}</strong>
-                            <small>{getVariationStockLabel(variation)}</small>
-                          </span>
-                          <span>
-                            <strong>{price || "View price"}</strong>
-                            {optionDiscount && (
-                              <small className="rgv-order-dock__saving">
-                                Save {optionDiscount.percentage}%
-                              </small>
-                            )}
-                          </span>
-                        </button>
-                      );
-                    },
-                  )}
+                    return (
+                      <button
+                        key={variationKey}
+                        type="button"
+                        aria-pressed={active}
+                        disabled={!available || isAdding}
+                        onClick={() => updateSelection(variationKey)}
+                        className={active ? "is-active" : ""}
+                      >
+                        <span>
+                          <strong>{label.strength}</strong>
+                          <small>{getVariationStockLabel(variation)}</small>
+                        </span>
+                        <span>
+                          <strong>{price || "View price"}</strong>
+                          {optionDiscount && (
+                            <small className="rgv-order-dock__saving">
+                              Save {optionDiscount.percentage}%
+                            </small>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </fieldset>
             )}
@@ -1573,9 +1583,7 @@ function StrengthSheet({
                 </strong>
               </div>
               <div>
-                {discount && (
-                  <del>{formatPrice(discount.regularPrice)}</del>
-                )}
+                {discount && <del>{formatPrice(discount.regularPrice)}</del>}
                 <strong>{selectedPrice}</strong>
               </div>
             </div>
@@ -1609,7 +1617,6 @@ function StrengthSheet({
 
 export function ProductCard({
   product,
-  sequence = 1,
   priority = false,
   active = false,
   format = PRODUCT_FORMATS.SINGLE,
@@ -1627,6 +1634,7 @@ export function ProductCard({
   const productUrl = getProductUrl(product);
   const isVariableProduct = product.type === "variable";
   const category = getMainCategory(product);
+  const isApparel = isApparelProduct(product);
   const isKit = format === PRODUCT_FORMATS.KIT;
   const cardVariations = variations.length
     ? variations
@@ -1675,18 +1683,15 @@ export function ProductCard({
         label: `Save ${discount.percentage}%`,
         ariaLabel: `${discount.percentage}% product discount`,
       }
-    : !isKit
-      ? {
-          label: "10% welcome",
-          ariaLabel: "10% welcome offer for eligible new customers",
-        }
-      : null;
+    : null;
   const selectedImage =
     getImageUrl(selectedVariation?.image) ||
     getImageUrl(selectedVariation?.images?.[0]) ||
     productImage;
   const exactOptionsReady =
-    !isVariableProduct || variationStatus === "success" || cardVariations.length > 0;
+    !isVariableProduct ||
+    variationStatus === "success" ||
+    cardVariations.length > 0;
   const optionsLoading = isVariableProduct && !exactOptionsReady;
   const allFormatOptionsSoldOut =
     formatVariations.length > 0 &&
@@ -1710,7 +1715,11 @@ export function ProductCard({
     return { label: "Check options", status: "neutral", dot: null };
   })();
   const fallbackStrengths = getCatalogStrengthOptions(product).slice(0, 6);
-  const formatLabel = isKit ? "10 Vial Kits" : "Single vial";
+  const formatLabel = isApparel
+    ? "Apparel"
+    : isKit
+      ? "10 vial kit"
+      : "Single vial";
   const priceContext = selectedLabel
     ? `${formatLabel} · ${selectedLabel}`
     : formatLabel;
@@ -1778,12 +1787,6 @@ export function ProductCard({
         className="rgv-index-card__media rgv-card-media"
         aria-label={`View ${product.name}`}
       >
-        <span className="rgv-card-tech-id" aria-hidden="true">
-          RGV / {String(sequence).padStart(2, "0")}
-        </span>
-        <span className="rgv-card-format-code" aria-hidden="true">
-          {isKit ? "10 VIAL KITS" : "SINGLE / 01"}
-        </span>
         <ProductImage
           src={selectedImage}
           srcSet={
@@ -1794,16 +1797,8 @@ export function ProductCard({
           alt={imageAlt}
           priority={priority}
         />
-        <span
-          className={`rgv-index-card__stock ${cardStatus.status}`}
-          aria-label={
-            `Availability: ${cardStatus.label}`
-          }
-        >
-          {cardStatus.dot && (
-            <i className={cardStatus.dot} aria-hidden="true" />
-          )}
-          {cardStatus.label}
+        <span className="rgv-card-view" aria-hidden="true">
+          <ArrowUpRight size={18} strokeWidth={1.6} />
         </span>
         {discountBadge && (
           <span
@@ -1821,6 +1816,9 @@ export function ProductCard({
           <a href={productUrl}>
             <h3>{product.name}</h3>
           </a>
+        </div>
+        <div className="rgv-card-meta">
+          <span>{formatLabel}</span>
           <span
             className={`rgv-card-inline-stock rgv-index-card__stock ${cardStatus.status}`}
             aria-label={`Availability: ${cardStatus.label}`}
@@ -1833,7 +1831,7 @@ export function ProductCard({
         </div>
         {isVariableProduct && (
           <fieldset className="rgv-card-options">
-            <legend>Choose strength</legend>
+            <legend>{isApparel ? "Size" : "Strength"}</legend>
             <div>
               {formatVariations.map(({ variation, index }) => {
                 const variationKey = getVariationKey(variation, index);
@@ -1852,7 +1850,9 @@ export function ProductCard({
                     }`.trim()}
                     aria-pressed={selected}
                     disabled={!available}
-                    title={available ? `${label} available` : `${label} sold out`}
+                    title={
+                      available ? `${label} available` : `${label} sold out`
+                    }
                     onClick={() => setSelectedVariationKey(variationKey)}
                   >
                     <span>{label}</span>
@@ -1862,13 +1862,14 @@ export function ProductCard({
               })}
 
               {optionsLoading &&
-                (fallbackStrengths.length ? fallbackStrengths : ["Loading…"]).map(
-                  (label) => (
-                    <button key={label} type="button" disabled>
-                      <span>{label}</span>
-                    </button>
-                  ),
-                )}
+                (fallbackStrengths.length
+                  ? fallbackStrengths
+                  : ["Loading…"]
+                ).map((label) => (
+                  <button key={label} type="button" disabled>
+                    <span>{label}</span>
+                  </button>
+                ))}
 
               {!optionsLoading && !formatVariations.length && (
                 <span className="rgv-card-options__empty">
@@ -1883,7 +1884,9 @@ export function ProductCard({
           <div className="rgv-card-price" aria-live="polite">
             <small>{priceContext}</small>
             <span>
-              <strong>{selectedPrice || (optionsLoading ? "Loading…" : "View price")}</strong>
+              <strong>
+                {selectedPrice || (optionsLoading ? "Loading…" : "View price")}
+              </strong>
               {discount && <del>{formatPrice(discount.regularPrice)}</del>}
             </span>
           </div>
@@ -1898,7 +1901,9 @@ export function ProductCard({
                 : `Review options for ${product.name}`
             }
             aria-busy={isAdding}
-            aria-controls={canAddDirectly ? undefined : "catalog-strength-sheet"}
+            aria-controls={
+              canAddDirectly ? undefined : "catalog-strength-sheet"
+            }
             aria-expanded={canAddDirectly ? undefined : active}
           >
             <span>{actionLabel}</span>
@@ -1911,6 +1916,9 @@ export function ProductCard({
             )}
           </button>
         </footer>
+        <a className="rgv-card-details" href={productUrl}>
+          Product details <ArrowUpRight size={14} aria-hidden="true" />
+        </a>
       </div>
     </article>
   );
@@ -2153,13 +2161,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
 
       return a.name.localeCompare(b.name);
     });
-  }, [
-    formatProducts,
-    searchTerm,
-    activeCategory,
-    availabilityFilter,
-    sortBy,
-  ]);
+  }, [formatProducts, searchTerm, activeCategory, availabilityFilter, sortBy]);
 
   useEffect(() => {
     if (!configuredProduct) return;
@@ -2327,117 +2329,169 @@ export default function ProductCatalog({ initialProducts = [] }) {
     setSortBy("featured");
   }
 
-  const handleChoose = useCallback((product, preferredVariationKey, variations) => {
-    setConfiguredProduct({
-      product:
-        Array.isArray(variations) && variations.length
-          ? { ...product, variations }
-          : product,
-      preferredVariationKey: preferredVariationKey || "",
-    });
-  }, []);
+  const handleChoose = useCallback(
+    (product, preferredVariationKey, variations) => {
+      setConfiguredProduct({
+        product:
+          Array.isArray(variations) && variations.length
+            ? { ...product, variations }
+            : product,
+        preferredVariationKey: preferredVariationKey || "",
+      });
+    },
+    [],
+  );
 
   const handleCloseConfigurator = useCallback(() => {
     setConfiguredProduct(null);
   }, []);
 
+  const collectionHighlights = useMemo(
+    () =>
+      products
+        .filter(
+          (product) =>
+            !isApparelProduct(product) && isProductAvailable(product),
+        )
+        .sort(
+          (left, right) =>
+            getCustomProductRank(left) - getCustomProductRank(right),
+        )
+        .slice(0, 3),
+    [products],
+  );
+
   return (
     <main id="research-catalog" className="rgv-catalog" ref={catalogTopRef}>
       <header className="rgv-catalog-hero rgv-catalog-head">
-        <div className="rgv-catalog-techline" aria-hidden="true">
-          <span>RGV / RESEARCH INDEX</span>
-          <span><i /> LIVE INVENTORY</span>
-        </div>
         <div className="rgv-catalog-hero__copy">
-          <h1>Research catalog</h1>
-          <p>Choose a format, compare strengths, and order in two steps.</p>
-          <div
-            className="rgv-catalog-protocol"
-            aria-label="Ordering path: choose format, select strength, add to cart"
-          >
-            <span><b>01</b> FORMAT</span>
-            <i aria-hidden="true" />
-            <span><b>02</b> STRENGTH</span>
-            <i aria-hidden="true" />
-            <span><b>03</b> ADD TO CART</span>
-          </div>
+          <p className="rgv-kicker rgv-collection-eyebrow">
+            <i aria-hidden="true" /> RGV Prime / The collection
+          </p>
+          <h1>
+            The research <span>collection.</span>
+          </h1>
+          <p className="rgv-collection-description">
+            Your research. Your format. Explore single vials and complete kits
+            from the RGV Prime collection.
+          </p>
+          <a className="rgv-catalog-documentation" href="/coa">
+            <FileCheck2 size={17} strokeWidth={1.6} aria-hidden="true" />
+            <span>Explore our certificates</span>
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+        </div>
+        <div className="rgv-collection-art" aria-hidden="true">
+          <span className="rgv-collection-wordmark">RGV</span>
+          <span className="rgv-collection-orbit" />
+          {collectionHighlights.map((product, index) => (
+            <span
+              key={product.id}
+              className={`rgv-collection-vial rgv-collection-vial--${index + 1}`}
+            >
+              <ProductImage
+                src={
+                  getImageUrl(product.images?.[0]) ||
+                  getImageUrl(product.image) ||
+                  FALLBACK_IMAGE
+                }
+                srcSet={product.images?.[0]?.srcset}
+                alt=""
+                priority
+              />
+            </span>
+          ))}
+          <span className="rgv-collection-signature">
+            A collection by <b>RGV PRIME</b>
+          </span>
         </div>
       </header>
 
-      <nav className="rgv-catalog-format-bar" aria-label="Shopping format">
-        <div className="rgv-catalog-format-bar__label">
-          <strong>Shopping format</strong>
-          <span>Switch at any time</span>
-          <span className="rgv-format-live" aria-hidden="true">
-            <i /> CONFIG ACTIVE
-          </span>
-        </div>
-        <div
-          className="rgv-catalog-modes__options rgv-format-switch"
-          role="group"
-          aria-label="Choose product format"
+      <div className="rgv-catalog-browse">
+        <nav className="rgv-catalog-format-bar" aria-label="Shopping format">
+          <div className="rgv-catalog-format-bar__label">
+            <strong>Choose your format</strong>
+            <span>The same collection. Two ways to shop.</span>
+          </div>
+          <div
+            className="rgv-catalog-modes__options rgv-format-switch"
+            role="group"
+            aria-label="Choose product format"
+          >
+            {formatFilters.map((item) => {
+              const active = activeFormat === item.value;
+
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={active}
+                  aria-controls="catalog-product-grid"
+                  className={active ? "is-active" : ""}
+                  onClick={() => handleFormatChange(item.value)}
+                >
+                  {item.value === PRODUCT_FORMATS.KIT ? (
+                    <Package size={21} strokeWidth={1.5} aria-hidden="true" />
+                  ) : (
+                    <FlaskConical
+                      size={21}
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <section
+          className="rgv-catalog-controls rgv-catalog-controls--facets"
+          aria-label="Catalog controls"
         >
-          {formatFilters.map((item) => {
-            const active = activeFormat === item.value;
+          <label className="rgv-catalog-search">
+            <span aria-hidden="true">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search product or strength"
+              aria-label="Search products"
+            />
+          </label>
 
-            return (
-              <button
-                key={item.value}
-                type="button"
-                aria-pressed={active}
-                aria-controls="catalog-product-grid"
-                className={active ? "is-active" : ""}
-                onClick={() => handleFormatChange(item.value)}
-              >
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.description}</small>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      <section
-        className="rgv-catalog-controls rgv-catalog-controls--facets"
-        aria-label="Catalog controls"
-      >
-        <label className="rgv-catalog-search">
-          <span aria-hidden="true">
-            <SearchIcon />
-          </span>
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search product or strength"
-            aria-label="Search products"
+          <CatalogDropdown
+            label="Category"
+            value={activeCategory}
+            onChange={setActiveCategory}
+            options={categoryOptions}
           />
-        </label>
 
-        <CatalogDropdown
-          label="Category"
-          value={activeCategory}
-          onChange={setActiveCategory}
-          options={categoryOptions}
-        />
+          <CatalogDropdown
+            label="Availability"
+            value={availabilityFilter}
+            onChange={setAvailabilityFilter}
+            options={availabilityOptions}
+          />
 
-        <CatalogDropdown
-          label="Availability"
-          value={availabilityFilter}
-          onChange={setAvailabilityFilter}
-          options={availabilityOptions}
-        />
-
-        <SortDropdown value={sortBy} onChange={setSortBy} />
-      </section>
+          <SortDropdown value={sortBy} onChange={setSortBy} />
+        </section>
+      </div>
 
       {status === "success" && (
         <div className="rgv-catalog-results-bar">
           <p aria-live="polite">
-            Showing <strong>{visibleStart}–{visibleEnd}</strong> of{" "}
-            <strong>{filteredProducts.length}</strong>{" "}
+            Showing{" "}
+            <strong>
+              {visibleStart}–{visibleEnd}
+            </strong>{" "}
+            of <strong>{filteredProducts.length}</strong>{" "}
             {activeFormat === PRODUCT_FORMATS.KIT ? "kits" : "products"}
           </p>
           {(searchTerm ||
@@ -2479,7 +2533,10 @@ export default function ProductCatalog({ initialProducts = [] }) {
       {status === "success" && filteredProducts.length === 0 && (
         <div className="rgv-catalog-message">
           <h2>No products found.</h2>
-          <p>Try another format or search term.</p>
+          <p>Try another format or search term, or clear your filters.</p>
+          <button type="button" onClick={clearCatalogFilters}>
+            Clear filters
+          </button>
         </div>
       )}
 
@@ -2495,7 +2552,6 @@ export default function ProductCatalog({ initialProducts = [] }) {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  sequence={visibleStart + index}
                   priority={index < 4}
                   active={
                     String(configuredProduct?.product?.id || "") ===

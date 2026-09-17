@@ -35,7 +35,8 @@ export function isPurchaseFormatAttribute(attributeOrName) {
       ? attributeOrName
       : attributeOrName?.name || attributeOrName?.slug || "";
   const options =
-    typeof attributeOrName === "object" && Array.isArray(attributeOrName?.options)
+    typeof attributeOrName === "object" &&
+    Array.isArray(attributeOrName?.options)
       ? attributeOrName.options
       : [];
 
@@ -84,6 +85,20 @@ export function findPurchaseFormatAttribute(attributes = []) {
   if (!Array.isArray(attributes)) return null;
 
   return attributes.find(isPurchaseFormatAttribute) || null;
+}
+
+export function isApparelProduct(product = {}) {
+  return (
+    /\bt[\s-]?shirt\b/i.test(String(product?.name || "")) ||
+    (product?.categories || []).some((category) =>
+      /\b(shirts?|apparel|clothing)\b/i.test(
+        `${category.name || ""} ${category.slug || ""}`,
+      ),
+    ) ||
+    (product?.attributes || []).some((attribute) =>
+      /\bsize\b/i.test(String(attribute.name || "")),
+    )
+  );
 }
 
 export function getProductFormatSupport(product = {}) {
