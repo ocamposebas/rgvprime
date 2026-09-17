@@ -1904,7 +1904,7 @@
     padding: 12px;
   }
   .rgv-card-title-row h3 {
-    font-size: 1.06rem;
+    font-size: 0.875rem;
   }
   .rgv-card-title-row {
     gap: 5px 7px;
@@ -1924,7 +1924,7 @@
     flex: 0 0 auto;
     min-height: 36px;
     padding: 6px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     border-radius: 11px;
   }
   .rgv-card-footer {
@@ -1936,14 +1936,14 @@
     gap: 7px;
   }
   .rgv-card-price strong {
-    font-size: 1.65rem;
+    font-size: 1.25rem;
   }
   .rgv-card-add {
     width: 100%;
     min-height: 44px;
     padding: 7px 8px 7px 12px;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
+    font-size: 0.625rem;
+    letter-spacing: 0.045em;
     border-radius: 12px;
   }
   .rgv-card-add__icon {
@@ -2166,7 +2166,6 @@
   }
   .rgv-card-options button {
     padding-inline: 4px;
-    font-size: 0.67rem;
   }
   .rgv-card-add {
     gap: 4px;
