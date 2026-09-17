@@ -1202,10 +1202,11 @@ function ProductComplements({ currentProductId }) {
 
       {status === "success" && products.length > 0 && (
         <div className="rgv-product-grid rgv-product-grid--related">
-          {products.map((item) => (
+          {products.map((item, index) => (
             <CatalogProductCard
               key={item.id}
               product={item}
+              sequence={index + 1}
               format={PRODUCT_FORMATS.SINGLE}
               variations={
                 variationSummaries[String(item.id)] ||

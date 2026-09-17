@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, FileCheck2, FlaskConical, Package } from "lucide-react";
+import {
+  ArrowUpRight,
+  FileCheck2,
+  FlaskConical,
+  Package,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { isProductAvailable } from "../../lib/inventory";
 import {
@@ -12,7 +18,7 @@ import {
 import "../../styles/storefront.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
-const DESKTOP_PRODUCTS_PER_PAGE = 12;
+const DESKTOP_PRODUCTS_PER_PAGE = 16;
 const MOBILE_PRODUCTS_PER_PAGE = 14;
 const VARIATION_CACHE_TTL_MS = 60 * 1000;
 const variationRequestCache = new Map();
@@ -549,7 +555,7 @@ export async function requestVariationSummaryBatch(productIds = []) {
         .map((productId) => Number(productId))
         .filter((productId) => Number.isInteger(productId) && productId > 0),
     ),
-  ].slice(0, MOBILE_PRODUCTS_PER_PAGE);
+  ].slice(0, Math.max(DESKTOP_PRODUCTS_PER_PAGE, MOBILE_PRODUCTS_PER_PAGE));
   const summaries = {};
   const missingIds = [];
 
@@ -1123,7 +1129,7 @@ function ProductImage({ src, srcSet, alt, priority = false }) {
       fetchPriority={priority ? "high" : "auto"}
       width="600"
       height="600"
-      sizes="(max-width: 899px) 46vw, (max-width: 1099px) 30vw, 320px"
+      sizes="(max-width: 767px) 60vw, (max-width: 1100px) 58vw, 480px"
       onError={() => {
         if (imageSrc !== FALLBACK_IMAGE) {
           setImageSrc(FALLBACK_IMAGE);
@@ -1617,6 +1623,7 @@ function StrengthSheet({
 
 export function ProductCard({
   product,
+  sequence = 1,
   priority = false,
   active = false,
   format = PRODUCT_FORMATS.SINGLE,
@@ -1633,7 +1640,6 @@ export function ProductCard({
   const imageAlt = product.image_alt || product.name || "Product image";
   const productUrl = getProductUrl(product);
   const isVariableProduct = product.type === "variable";
-  const category = getMainCategory(product);
   const isApparel = isApparelProduct(product);
   const isKit = format === PRODUCT_FORMATS.KIT;
   const cardVariations = variations.length
@@ -1723,6 +1729,9 @@ export function ProductCard({
   const priceContext = selectedLabel
     ? `${formatLabel} · ${selectedLabel}`
     : formatLabel;
+  const stockLabel = ["high", "medium", "low"].includes(cardStatus.status)
+    ? "In stock"
+    : cardStatus.label;
   const actionLabel = isVariableProduct
     ? optionsLoading
       ? "Loading…"
@@ -1780,13 +1789,16 @@ export function ProductCard({
     <article
       className={`rgv-index-card rgv-product-card ${active ? "is-active" : ""} ${
         cardUnavailable ? "is-sold-out" : ""
-      }`}
+      } ${isApparel ? "is-apparel" : ""} ${isKit ? "is-kit" : ""}`}
     >
       <a
         href={productUrl}
         className="rgv-index-card__media rgv-card-media"
         aria-label={`View ${product.name}`}
       >
+        <span className="rgv-card-reference" aria-hidden="true">
+          <i /> RGV <b>/</b> {String(sequence).padStart(2, "0")}
+        </span>
         <ProductImage
           src={selectedImage}
           srcSet={
@@ -1811,24 +1823,22 @@ export function ProductCard({
       </a>
 
       <div className="rgv-index-card__content rgv-card-body">
-        <p className="rgv-index-card__category">{category}</p>
         <div className="rgv-card-title-row">
           <a href={productUrl}>
             <h3>{product.name}</h3>
           </a>
-        </div>
-        <div className="rgv-card-meta">
-          <span>{formatLabel}</span>
           <span
             className={`rgv-card-inline-stock rgv-index-card__stock ${cardStatus.status}`}
             aria-label={`Availability: ${cardStatus.label}`}
+            title={cardStatus.label}
           >
             {cardStatus.dot && (
               <i className={cardStatus.dot} aria-hidden="true" />
             )}
-            {cardStatus.label}
+            {stockLabel}
           </span>
         </div>
+        <p className="rgv-card-meta">{formatLabel}</p>
         {isVariableProduct && (
           <fieldset className="rgv-card-options">
             <legend>{isApparel ? "Size" : "Strength"}</legend>
@@ -1881,7 +1891,10 @@ export function ProductCard({
         )}
 
         <footer className="rgv-index-card__footer rgv-card-footer">
-          <div className="rgv-card-price" aria-live="polite">
+          <div
+            className={`rgv-card-price ${selectedPrice ? "" : "is-empty"}`}
+            aria-live="polite"
+          >
             <small>{priceContext}</small>
             <span>
               <strong>
@@ -1916,9 +1929,6 @@ export function ProductCard({
             )}
           </button>
         </footer>
-        <a className="rgv-card-details" href={productUrl}>
-          Product details <ArrowUpRight size={14} aria-hidden="true" />
-        </a>
       </div>
     </article>
   );
@@ -1985,6 +1995,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
+  const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [configuredProduct, setConfiguredProduct] = useState(null);
   const [variationSummaries, setVariationSummaries] = useState({});
@@ -2345,114 +2356,76 @@ export default function ProductCatalog({ initialProducts = [] }) {
   const handleCloseConfigurator = useCallback(() => {
     setConfiguredProduct(null);
   }, []);
-
-  const collectionHighlights = useMemo(
-    () =>
-      products
-        .filter(
-          (product) =>
-            !isApparelProduct(product) && isProductAvailable(product),
-        )
-        .sort(
-          (left, right) =>
-            getCustomProductRank(left) - getCustomProductRank(right),
-        )
-        .slice(0, 3),
-    [products],
-  );
+  const activeFacetCount =
+    Number(activeCategory !== "all") +
+    Number(availabilityFilter !== "all") +
+    Number(sortBy !== "featured");
 
   return (
     <main id="research-catalog" className="rgv-catalog" ref={catalogTopRef}>
       <header className="rgv-catalog-hero rgv-catalog-head">
         <div className="rgv-catalog-hero__copy">
           <p className="rgv-kicker rgv-collection-eyebrow">
-            <i aria-hidden="true" /> RGV Prime / The collection
+            <i aria-hidden="true" /> RGV Prime / Research use only
           </p>
-          <h1>
-            The research <span>collection.</span>
-          </h1>
-          <p className="rgv-collection-description">
-            Your research. Your format. Explore single vials and complete kits
-            from the RGV Prime collection.
-          </p>
-          <a className="rgv-catalog-documentation" href="/coa">
-            <FileCheck2 size={17} strokeWidth={1.6} aria-hidden="true" />
-            <span>Explore our certificates</span>
-            <ArrowUpRight size={16} aria-hidden="true" />
-          </a>
+          <h1>Research collection</h1>
         </div>
-        <div className="rgv-collection-art" aria-hidden="true">
-          <span className="rgv-collection-wordmark">RGV</span>
-          <span className="rgv-collection-orbit" />
-          {collectionHighlights.map((product, index) => (
-            <span
-              key={product.id}
-              className={`rgv-collection-vial rgv-collection-vial--${index + 1}`}
-            >
-              <ProductImage
-                src={
-                  getImageUrl(product.images?.[0]) ||
-                  getImageUrl(product.image) ||
-                  FALLBACK_IMAGE
-                }
-                srcSet={product.images?.[0]?.srcset}
-                alt=""
-                priority
-              />
-            </span>
-          ))}
-          <span className="rgv-collection-signature">
-            A collection by <b>RGV PRIME</b>
+        <a
+          className="rgv-catalog-documentation"
+          href="/coa"
+          aria-label="Product certificates"
+        >
+          <span className="rgv-catalog-documentation__icon" aria-hidden="true">
+            <FileCheck2 size={18} strokeWidth={1.6} />
           </span>
-        </div>
+          <span className="rgv-catalog-documentation__copy">
+            <strong>Certificates</strong>
+            <small>Product documentation</small>
+          </span>
+          <ArrowUpRight size={16} aria-hidden="true" />
+        </a>
       </header>
 
       <div className="rgv-catalog-browse">
-        <nav className="rgv-catalog-format-bar" aria-label="Shopping format">
-          <div className="rgv-catalog-format-bar__label">
-            <strong>Choose your format</strong>
-            <span>The same collection. Two ways to shop.</span>
-          </div>
-          <div
-            className="rgv-catalog-modes__options rgv-format-switch"
-            role="group"
-            aria-label="Choose product format"
-          >
-            {formatFilters.map((item) => {
-              const active = activeFormat === item.value;
-
-              return (
-                <button
-                  key={item.value}
-                  type="button"
-                  aria-pressed={active}
-                  aria-controls="catalog-product-grid"
-                  className={active ? "is-active" : ""}
-                  onClick={() => handleFormatChange(item.value)}
-                >
-                  {item.value === PRODUCT_FORMATS.KIT ? (
-                    <Package size={21} strokeWidth={1.5} aria-hidden="true" />
-                  ) : (
-                    <FlaskConical
-                      size={21}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
         <section
-          className="rgv-catalog-controls rgv-catalog-controls--facets"
+          className={`rgv-catalog-controls ${showFilters ? "is-expanded" : ""}`}
           aria-label="Catalog controls"
         >
+          <nav className="rgv-catalog-format-bar" aria-label="Shopping format">
+            <div
+              className="rgv-catalog-modes__options rgv-format-switch"
+              role="group"
+              aria-label="Choose product format"
+            >
+              {formatFilters.map((item) => {
+                const active = activeFormat === item.value;
+
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    aria-pressed={active}
+                    aria-controls="catalog-product-grid"
+                    className={active ? "is-active" : ""}
+                    onClick={() => handleFormatChange(item.value)}
+                    title={item.description}
+                  >
+                    {item.value === PRODUCT_FORMATS.KIT ? (
+                      <Package size={18} strokeWidth={1.6} aria-hidden="true" />
+                    ) : (
+                      <FlaskConical
+                        size={18}
+                        strokeWidth={1.6}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <strong>{item.label}</strong>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
           <label className="rgv-catalog-search">
             <span aria-hidden="true">
               <SearchIcon />
@@ -2461,26 +2434,38 @@ export default function ProductCatalog({ initialProducts = [] }) {
               type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search product or strength"
+              placeholder="Search products"
               aria-label="Search products"
             />
           </label>
 
-          <CatalogDropdown
-            label="Category"
-            value={activeCategory}
-            onChange={setActiveCategory}
-            options={categoryOptions}
-          />
-
-          <CatalogDropdown
-            label="Availability"
-            value={availabilityFilter}
-            onChange={setAvailabilityFilter}
-            options={availabilityOptions}
-          />
-
-          <SortDropdown value={sortBy} onChange={setSortBy} />
+          <button
+            type="button"
+            className={`rgv-catalog-facet-toggle ${activeFacetCount ? "has-filters" : ""}`}
+            aria-label="Catalog filters"
+            aria-expanded={showFilters}
+            aria-controls="catalog-facets"
+            onClick={() => setShowFilters((value) => !value)}
+          >
+            <SlidersHorizontal size={18} aria-hidden="true" />
+            <span>Filters</span>
+            {activeFacetCount > 0 && <b>{activeFacetCount}</b>}
+          </button>
+          <div id="catalog-facets" className="rgv-catalog-facets">
+            <CatalogDropdown
+              label="Category"
+              value={activeCategory}
+              onChange={setActiveCategory}
+              options={categoryOptions}
+            />
+            <CatalogDropdown
+              label="Availability"
+              value={availabilityFilter}
+              onChange={setAvailabilityFilter}
+              options={availabilityOptions}
+            />
+            <SortDropdown value={sortBy} onChange={setSortBy} />
+          </div>
         </section>
       </div>
 
@@ -2552,6 +2537,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  sequence={visibleStart + index}
                   priority={index < 4}
                   active={
                     String(configuredProduct?.product?.id || "") ===
