@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Check,
+  ArrowUpRight,
   Coins,
   FileCheck2,
   FlaskConical,
@@ -1329,24 +1329,31 @@ function ProductVerification({ product, variation }) {
 
   return (
     <section
+      id="product-documentation"
       className="rgv-verification-strip rgv-pdp-verification mt-16 border-y border-black/10 py-10"
       aria-labelledby="verification-title"
     >
       <header className="flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <p className="rgv-kicker text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
-            Quality documentation
-          </p>
-          <h2
-            id="verification-title"
-            className="mt-2 text-2xl font-semibold tracking-[-0.025em]"
-          >
-            Certificate of analysis
-          </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-black/55">
-            The certificate shown matches the exact format and strength you
-            selected.
-          </p>
+        <div className="rgv-verification-strip__heading">
+          <span className="rgv-verification-strip__icon" aria-hidden="true">
+            <FileCheck2 size={21} strokeWidth={1.6} />
+          </span>
+          <div>
+            <p className="rgv-kicker text-xs font-semibold uppercase tracking-[0.14em] text-red-700">
+              Quality documentation
+            </p>
+            <h2
+              id="verification-title"
+              className="mt-2 text-2xl font-semibold tracking-[-0.025em]"
+            >
+              Certificate of analysis
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-black/55">
+              {status === "success"
+                ? "Documentation matched to your selected format and strength."
+                : "Find supporting documentation by product, SKU, or lot."}
+            </p>
+          </div>
         </div>
         <span
           className={`rgv-verification-strip__state is-${status} text-xs font-medium text-black/55`}
@@ -1403,6 +1410,7 @@ function ProductVerification({ product, variation }) {
                 className="is-primary border border-black bg-black px-5 py-3 text-white transition hover:bg-black/80"
               >
                 View certificate
+                <ArrowUpRight size={15} aria-hidden="true" />
               </a>
             )}
             <a
@@ -1922,11 +1930,6 @@ export default function ProductDetails({ slug, initialProduct = null }) {
           <header className="rgv-product-heading">
             <p className="rgv-kicker">{category}</p>
             <h1 className="rgv-product-title">{product.name}</h1>
-            <p className="rgv-product-intro">
-              {isApparel
-                ? "Explore the RGV Prime collection. Select your preferred size and review product details below."
-                : "Choose the format and strength that suit your research. Explore product information and certificates below."}
-            </p>
             <div className="rgv-product-heading__meta">
               <span
                 className={`rgv-product-availability ${canAddToCart ? "is-available" : "is-unavailable"}`}
@@ -1940,8 +1943,20 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                 SKU: <span className="rgv-product-sku">{sku}</span>
               </span>
             </div>
+            <div className="rgv-product-heading__links">
+              {!isApparel && (
+                <a href="#product-documentation">
+                  <FileCheck2 size={15} strokeWidth={1.6} aria-hidden="true" />
+                  Certificates & documentation
+                  <ArrowUpRight size={13} aria-hidden="true" />
+                </a>
+              )}
+              <a href="#product-information-title">Product details</a>
+            </div>
           </header>
-          <div className="rgv-product-showcase">
+          <div
+            className={`rgv-product-showcase ${isApparel ? "is-apparel" : ""}`}
+          >
             <div className="rgv-stage-media">
               <div className="rgv-gallery-label" aria-hidden="true">
                 <span>RGV PRIME</span>
@@ -1994,8 +2009,7 @@ export default function ProductDetails({ slug, initialProduct = null }) {
             className="rgv-stage-buy rgv-purchase-ticket"
           >
             <div className="rgv-purchase-panel-label">
-              <span>Your selection</span>
-              <span>RGV PRIME</span>
+              <span>Purchase configuration</span>
             </div>
             <div className="rgv-stage-buy-head border-b border-white/10 pb-6">
               <div className="rgv-price-offer">
@@ -2140,26 +2154,20 @@ export default function ProductDetails({ slug, initialProduct = null }) {
                                 <Package size={19} strokeWidth={1.6} />
                               )}
                             </span>
-                            {isSelected && (
-                              <span
-                                className="rgv-format-check"
-                                aria-hidden="true"
+                            <span className="rgv-format-copy">
+                              <strong className="block text-base font-semibold">
+                                {formatMeta.label}
+                              </strong>
+                              <small
+                                className={`mt-1 block text-[11px] leading-4 ${
+                                  isSelected ? "text-white/70" : "text-white/42"
+                                }`}
                               >
-                                <Check size={12} strokeWidth={2.4} />
-                              </span>
-                            )}
-                            <strong className="block text-base font-semibold">
-                              {formatMeta.label}
-                            </strong>
-                            <small
-                              className={`mt-1 block text-[11px] leading-4 ${
-                                isSelected ? "text-white/70" : "text-white/42"
-                              }`}
-                            >
-                              {formatMeta.packSize === 1
-                                ? "1 vial"
-                                : `${formatMeta.packSize || 10} vials`}
-                            </small>
+                                {formatMeta.packSize === 1
+                                  ? "1 vial"
+                                  : `${formatMeta.packSize || 10} vials`}
+                              </small>
+                            </span>
                             <span className="rgv-format-price mt-3 block text-sm font-semibold">
                               {optionPrice.label}
                             </span>

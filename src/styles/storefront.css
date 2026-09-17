@@ -1,11 +1,4 @@
 /* Shared catalog, product, and quick-order design system. */
-@font-face {
-  font-family: "RGV Display";
-  src: url("/fonts/chakra-petch/ChakraPetch-Bold.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-}
 .rgv-catalog,
 .rgv-product-page {
   --rgv-bg: #0c0c0e;
@@ -948,6 +941,31 @@
   font-size: 0.67rem;
   line-height: 1.7;
 }
+.rgv-product-heading__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.rgv-product-heading__links a {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  color: var(--rgv-copy);
+  border: 1px solid #35353b;
+  border-radius: var(--rgv-pill);
+  background: var(--rgv-bg-soft);
+  font-size: 0.67rem;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease;
+}
+.rgv-product-heading__links a:hover {
+  color: #fff;
+  border-color: #85858f;
+}
 .rgv-product-sku {
   overflow-wrap: anywhere;
 }
@@ -1035,8 +1053,11 @@
   max-width: 100%;
   max-height: 550px;
   object-fit: contain;
-  transform: none;
+  transform: scale(1.5);
   animation: none;
+}
+.rgv-product-showcase.is-apparel .rgv-stage-image img {
+  transform: none;
 }
 .rgv-gallery-caption {
   padding-top: 16px;
@@ -1057,7 +1078,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--rgv-copy);
   font-size: 0.61rem;
   font-weight: 550;
@@ -1069,6 +1090,10 @@
   font-size: 0.57rem;
 }
 .rgv-stage-buy-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--rgv-line);
 }
@@ -1101,7 +1126,7 @@
   gap: 12px;
   color: var(--rgv-text);
   font-family: var(--rgv-display);
-  font-size: 2.7rem;
+  font-size: 2.4rem;
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.15;
@@ -1131,40 +1156,33 @@
 .rgv-points-credit {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--rgv-line);
-  border-radius: 14px;
-  background: #1b1a19;
+  gap: 8px;
+  margin-top: 0;
+  padding: 8px 0;
 }
 .rgv-points-credit__icon {
   display: flex;
   color: #d5b67e;
 }
 .rgv-points-credit__copy {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
+  display: grid;
+  gap: 4px;
 }
 .rgv-points-credit__copy small {
   color: var(--rgv-copy);
-  font-size: 0.7rem;
+  font-size: 0.62rem;
 }
 .rgv-points-credit__copy strong {
   color: #e4c792;
-  font-size: 0.76rem;
+  font-size: 0.69rem;
   font-weight: 550;
 }
 .rgv-points-credit__note {
-  margin-left: auto;
-  color: var(--rgv-muted);
-  font-size: 0.6rem;
+  display: none;
 }
 .rgv-buy-format,
 .rgv-buy-strengths {
-  margin-top: 20px;
+  margin-top: 18px;
 }
 .rgv-config-label {
   margin: 0;
@@ -1187,42 +1205,43 @@
 }
 .rgv-buy-format .rgv-variant-option {
   position: relative;
-  min-height: 123px;
-  padding: 15px;
+  display: grid;
+  min-height: 94px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-content: center;
+  align-items: start;
+  gap: 6px 10px;
+  padding: 14px;
   color: var(--rgv-copy);
   background: #101012;
 }
 .rgv-format-symbol {
   display: flex;
   width: fit-content;
-  margin-bottom: 7px;
+  grid-column: 1;
+  grid-row: 1;
   color: var(--rgv-muted);
 }
 .rgv-buy-format .is-active .rgv-format-symbol {
   color: #f49d9d;
 }
-.rgv-format-check {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: grid;
-  width: 19px;
-  height: 19px;
-  place-items: center;
-  color: #fff;
-  border-radius: 50%;
-  background: #b95155;
+.rgv-format-copy {
+  grid-column: 2;
+  min-width: 0;
 }
 .rgv-buy-format .rgv-variant-option strong {
-  font-size: 0.9rem;
-  font-weight: 550;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 .rgv-buy-format .rgv-variant-option small {
-  margin-top: 5px;
+  margin-top: 3px;
   color: var(--rgv-muted);
+  font-size: 0.62rem;
 }
 .rgv-buy-format .rgv-format-price {
-  margin-top: 12px;
+  grid-column: 2;
+  margin-top: 0;
   color: var(--rgv-text);
   font-size: 0.8rem;
   font-weight: 550;
@@ -1241,8 +1260,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .rgv-buy-strengths .rgv-variant-option {
-  min-height: 67px;
-  padding: 12px;
+  display: flex;
+  min-height: 56px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 8px;
+  padding: 10px 12px;
   color: var(--rgv-copy);
   border-radius: 14px;
 }
@@ -1257,8 +1281,10 @@
   color: inherit;
   font-size: 0.82rem;
   font-weight: 550;
+  overflow-wrap: anywhere;
 }
 .rgv-buy-strengths .rgv-variant-option small {
+  margin: 0;
   color: var(--rgv-muted);
   font-size: 0.66rem;
 }
@@ -1317,20 +1343,24 @@
   border-color: var(--rgv-line);
   background: #242428;
 }
+.rgv-product-add-button svg {
+  flex-shrink: 0;
+}
 .rgv-stage-assurances {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  margin: 26px 0 0;
-  padding: 0;
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--rgv-line);
   list-style: none;
 }
 .rgv-assurance-chip {
   display: flex;
   min-width: 0;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 9px;
+  gap: 8px;
 }
 .rgv-assurance-icon {
   display: flex;
@@ -1384,15 +1414,41 @@
   border: 1px solid var(--rgv-line);
   border-radius: var(--rgv-radius);
   background: var(--rgv-bg-soft);
+  scroll-margin-top: 142px;
 }
 .rgv-verification-strip > header {
   align-items: center;
 }
 .rgv-verification-strip .rgv-kicker {
   color: #f07575;
+  font-size: 0.59rem;
+}
+.rgv-verification-strip__heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 14px;
+}
+.rgv-verification-strip__heading > div {
+  min-width: 0;
+}
+.rgv-verification-strip__icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  color: #f1909a;
+  border: 1px solid #593037;
+  border-radius: 14px;
+  background: #32191d;
+}
+.rgv-verification-strip__heading p:last-child {
+  font-size: 0.76rem;
+  line-height: 1.7;
 }
 .rgv-verification-strip h2 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-family: var(--rgv-display);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1412,7 +1468,10 @@
 }
 .rgv-verification-strip dl > div {
   min-width: 0;
-  border-color: #424249;
+  padding: 12px;
+  border: 1px solid #36363d;
+  border-radius: 12px;
+  background: #101012;
 }
 .rgv-verification-strip dd {
   overflow-wrap: anywhere;
@@ -1421,6 +1480,9 @@
   color: var(--rgv-muted);
 }
 .rgv-verification-strip__actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 44px;
   padding: 12px 16px;
   color: var(--rgv-copy);
@@ -1461,6 +1523,7 @@
   font-size: clamp(1.7rem, 2.5vw, 2.25rem);
   font-weight: 550;
   letter-spacing: -0.035em;
+  scroll-margin-top: 142px;
 }
 .rgv-pdp-info-grid {
   grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
@@ -1803,6 +1866,12 @@
   .rgv-product-title {
     font-size: 2.5rem;
   }
+  .rgv-product-add-button {
+    gap: 8px;
+    padding-inline: 12px;
+    font-size: 0.75rem;
+    letter-spacing: 0.045em;
+  }
   .rgv-points-credit__note {
     display: none;
   }
@@ -2066,7 +2135,7 @@
   }
   .rgv-product-title {
     margin: 10px 0 12px;
-    font-size: 2.25rem;
+    font-size: 1.75rem;
   }
   .rgv-product-intro {
     font-size: 0.8rem;
@@ -2103,14 +2172,15 @@
     scroll-margin-top: 120px;
   }
   .rgv-ticket-price {
-    font-size: 2.25rem;
+    font-size: 1.8rem;
   }
   .rgv-points-credit__note {
     display: none;
   }
   .rgv-buy-format .rgv-variant-option {
-    min-height: 120px;
-    padding: 12px;
+    min-height: 88px;
+    gap: 6px;
+    padding: 10px;
   }
   .rgv-purchase-actions {
     grid-template-columns: 100px minmax(0, 1fr);
@@ -2119,8 +2189,8 @@
   .rgv-product-add-button {
     padding-inline: 10px;
     gap: 9px;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
   }
   .rgv-product-after {
     margin-top: 36px;
@@ -2239,6 +2309,9 @@
   }
   .rgv-stage-assurances {
     gap: 10px;
+  }
+  .rgv-assurance-chip {
+    flex-direction: column;
   }
   .rgv-buy-strengths > div[role="group"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
