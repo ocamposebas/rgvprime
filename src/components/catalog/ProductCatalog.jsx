@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
   FileCheck2,
   FlaskConical,
   Package,
@@ -828,7 +830,14 @@ function groupProductVariations(product, variations = []) {
   };
 }
 
-function getPaginationItems(currentPage, totalPages) {
+function getPaginationItems(currentPage, totalPages, compact = false) {
+  if (compact && totalPages > 4) {
+    if (currentPage <= 2) return [1, 2, "...", totalPages];
+    if (currentPage >= totalPages - 1)
+      return [1, "...", totalPages - 1, totalPages];
+    return [1, "...", currentPage, "...", totalPages];
+  }
+
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
@@ -1937,32 +1946,43 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
 
   const items = getPaginationItems(currentPage, totalPages);
+  const mobileItems = getPaginationItems(currentPage, totalPages, true);
+  const renderPageItems = (pageItems) =>
+    pageItems.map((item, index) =>
+      item === "..." ? (
+        <span key={`dots-${index}`} aria-hidden="true">
+          …
+        </span>
+      ) : (
+        <button
+          key={item}
+          type="button"
+          aria-label={`Page ${item}`}
+          aria-current={currentPage === item ? "page" : undefined}
+          onClick={() => onPageChange(item)}
+        >
+          {item}
+        </button>
+      ),
+    );
 
   return (
     <nav className="rgv-index-pagination" aria-label="Product pagination">
       <button
+        className="rgv-index-pagination__previous rgv-index-pagination__direction"
         type="button"
+        aria-label="Previous page"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        <span aria-hidden="true">←</span> <span>Previous</span>
+        <ChevronLeft size={18} aria-hidden="true" /> <span>Previous</span>
       </button>
 
-      <div>
-        {items.map((item, index) =>
-          item === "..." ? (
-            <span key={`dots-${index}`}>...</span>
-          ) : (
-            <button
-              key={item}
-              type="button"
-              aria-current={currentPage === item ? "page" : undefined}
-              onClick={() => onPageChange(item)}
-            >
-              {item}
-            </button>
-          ),
-        )}
+      <div className="rgv-index-pagination__pages rgv-index-pagination__pages--desktop">
+        {renderPageItems(items)}
+      </div>
+      <div className="rgv-index-pagination__pages rgv-index-pagination__pages--mobile">
+        {renderPageItems(mobileItems)}
       </div>
 
       <small>
@@ -1970,11 +1990,13 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       </small>
 
       <button
+        className="rgv-index-pagination__next rgv-index-pagination__direction"
         type="button"
+        aria-label="Next page"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        <span>Next</span> <span aria-hidden="true">→</span>
+        <span>Next</span> <ChevronRight size={18} aria-hidden="true" />
       </button>
     </nav>
   );

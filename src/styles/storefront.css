@@ -781,6 +781,9 @@
   display: flex;
   gap: 5px;
 }
+.rgv-index-pagination > .rgv-index-pagination__pages--mobile {
+  display: none;
+}
 .rgv-index-pagination button,
 .rgv-index-pagination > div > span {
   display: grid;
@@ -796,6 +799,12 @@
 }
 .rgv-index-pagination button {
   cursor: pointer;
+}
+.rgv-index-pagination .rgv-index-pagination__direction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .rgv-index-pagination button:hover:not(:disabled) {
   color: #fff;
@@ -1968,17 +1977,66 @@
     margin-top: 35px;
   }
   .rgv-index-pagination {
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    width: min(100%, 400px);
+    gap: 12px 8px;
+    margin-inline: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--rgv-line);
   }
   .rgv-index-pagination button,
   .rgv-index-pagination > div > span {
-    min-width: 36px;
-    min-height: 40px;
-    padding: 8px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
     font-size: 0.7rem;
   }
+  .rgv-index-pagination > .rgv-index-pagination__pages--desktop {
+    display: none;
+  }
+  .rgv-index-pagination > .rgv-index-pagination__pages--mobile {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: center;
+    min-width: 0;
+    gap: 4px;
+  }
+  .rgv-index-pagination__pages--mobile button {
+    flex-shrink: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+  .rgv-index-pagination__pages--mobile button[aria-current="page"] {
+    border-color: #f0434a;
+    background: linear-gradient(120deg, #e11728, #be0920);
+  }
+  .rgv-index-pagination > .rgv-index-pagination__pages--mobile > span {
+    width: 16px;
+    min-width: 16px;
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+  }
+  .rgv-index-pagination .rgv-index-pagination__direction {
+    grid-row: 1;
+    border-radius: 14px;
+  }
+  .rgv-index-pagination__previous {
+    grid-column: 1;
+  }
+  .rgv-index-pagination__next {
+    grid-column: 3;
+  }
+  .rgv-index-pagination__direction > span {
+    display: none;
+  }
   .rgv-index-pagination > small {
-    width: 100%;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 0.65rem;
     text-align: center;
   }
   .rgv-product-page {
