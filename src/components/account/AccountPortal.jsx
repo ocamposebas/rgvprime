@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
+import "../../styles/experience.css";
+import "./AccountPortal.css";
 
 const WP_URL = String(
   import.meta.env.PUBLIC_WP_SITE_URL ||
@@ -202,7 +204,7 @@ function getPasswordChecks(password = "") {
       valid: password.length >= 10,
     },
     {
-      label: "One uppercase letter",
+      label: "One normal-case letter",
       valid: /[A-Z]/.test(password),
     },
     {
@@ -395,7 +397,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
+      <span className="mb-2 block text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
         {label}
       </span>
 
@@ -406,7 +408,7 @@ function Field({
         autoComplete={autoComplete}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="h-[52px] w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-white/24 focus:border-red-500/60 focus:bg-black/55 focus:shadow-[0_0_0_4px_rgba(220,38,38,0.12)]"
+        className="h-[48px] w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-medium text-white outline-none transition placeholder:text-[#9698a1] focus:border-[#aa3943]/60 focus:bg-black/55 focus:shadow-none"
       />
     </label>
   );
@@ -426,7 +428,7 @@ function PasswordField({
   return (
     <div>
       <label className="block">
-        <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
+        <span className="mb-2 block text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
           {label}
         </span>
 
@@ -438,13 +440,13 @@ function PasswordField({
             autoComplete={autoComplete}
             placeholder={placeholder}
             onChange={(event) => onChange(event.target.value)}
-            className="h-[52px] w-full rounded-2xl border border-white/10 bg-black/35 px-4 pr-13 text-sm font-bold text-white outline-none transition placeholder:text-white/24 focus:border-red-500/60 focus:bg-black/55 focus:shadow-[0_0_0_4px_rgba(220,38,38,0.12)]"
+            className="h-[48px] w-full rounded-2xl border border-white/10 bg-black/35 px-4 pr-13 text-sm font-medium text-white outline-none transition placeholder:text-[#9698a1] focus:border-[#aa3943]/60 focus:bg-black/55 focus:shadow-none"
           />
 
           <button
             type="button"
             onClick={() => setVisible((current) => !current)}
-            className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-white/40 transition hover:bg-white/[0.06] hover:text-white"
+            className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-[#9698a1] transition hover:bg-white/[0.06] hover:text-white"
             aria-label={visible ? "Hide password" : "Show password"}
           >
             <Icon name={visible ? "eyeOff" : "eye"} className="h-[18px] w-[18px]" />
@@ -455,17 +457,17 @@ function PasswordField({
       {showMeter && (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/38">
+            <span className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
               Password strength
             </span>
-            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-red-200">
+            <span className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
               {strength.label}
             </span>
           </div>
 
           <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
             <motion.div
-              className="h-full rounded-full bg-red-500"
+              className="h-full rounded-full bg-[#8f1d27]"
               initial={false}
               animate={{ width: `${strength.score}%` }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
@@ -477,17 +479,17 @@ function PasswordField({
               <div
                 key={item.label}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-bold transition",
+                  "flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-medium transition",
                   item.valid
-                    ? "bg-red-500/10 text-red-100"
-                    : "bg-white/[0.025] text-white/34"
+                    ? "bg-[#8f1d27]/10 text-[#cf928b]"
+                    : "bg-white/[0.025] text-[#9698a1]"
                 )}
               >
                 <span
                   className={cn(
                     "grid h-4 w-4 shrink-0 place-items-center rounded-full border",
                     item.valid
-                      ? "border-red-400 bg-red-500 text-white"
+                      ? "border-[#aa3943] bg-[#8f1d27] text-white"
                       : "border-white/15 text-transparent"
                   )}
                 >
@@ -509,9 +511,9 @@ function ActionButton({ children, loading, variant = "primary", ...props }) {
       {...props}
       disabled={loading || props.disabled}
       className={cn(
-        "group relative flex min-h-[52px] w-full items-center justify-center overflow-hidden rounded-2xl px-5 text-xs font-black uppercase tracking-[0.16em] transition disabled:cursor-not-allowed disabled:opacity-50",
+        "group relative flex min-h-[48px] w-full items-center justify-center overflow-hidden rounded-2xl px-5 text-xs font-semibold normal-case tracking-normal transition disabled:cursor-not-allowed disabled:opacity-50",
         variant === "primary" &&
-          "bg-red-600 text-white shadow-[0_24px_70px_rgba(220,38,38,0.28)] hover:bg-red-500",
+          "bg-[#8f1d27] text-white shadow-none hover:bg-[#8f1d27]",
         variant === "ghost" &&
           "border border-white/10 bg-white/[0.035] text-white/72 hover:bg-white/[0.07] hover:text-white"
       )}
@@ -531,9 +533,9 @@ function Message({ type, children }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border px-4 py-3 text-sm font-bold leading-6",
+        "rounded-2xl border px-4 py-3 text-sm font-medium leading-6",
         type === "error"
-          ? "border-red-500/25 bg-red-500/10 text-red-100"
+          ? "border-[#aa3943]/25 bg-[#8f1d27]/10 text-[#cf928b]"
           : "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
       )}
     >
@@ -665,48 +667,48 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
 
   const title =
     mode === "register"
-      ? "Create your private portal"
+      ? "Create your account"
       : mode === "forgot"
-        ? "Recover your access"
+        ? "Reset your password"
         : mode === "reset"
           ? "Set a new password"
-          : "Enter your private portal";
+          : "Welcome back";
 
   const subtitle =
     mode === "register"
-      ? "Create a secure customer profile connected to your private account."
+      ? "Create an account to manage your orders and details."
       : mode === "forgot"
         ? "Enter your email and we will send a secure reset link."
         : mode === "reset"
           ? "Choose a stronger password before returning to your account."
-          : "Access orders, profile details, and account tools from one clean space.";
+          : "Sign in to review orders and manage your details.";
 
   return (
-    <section className="mx-auto flex w-full max-w-[620px] items-center justify-center">
+    <section className="rgv-account-auth">
       <motion.div
         initial={{ opacity: 0, y: 18, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full overflow-hidden rounded-[2.2rem] border border-white/10 bg-[#080808]/94 p-4 shadow-[0_35px_140px_rgba(0,0,0,0.66)] backdrop-blur-xl sm:p-6 lg:p-7"
+        className="rgv-account-auth__panel relative w-full overflow-hidden rounded-[20px] border border-white/10 bg-[#101114] p-4 shadow-none backdrop-blur-none sm:p-6 lg:p-7"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.19),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(127,29,29,0.18),transparent_38%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/65 to-transparent" />
 
         <div className="relative">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-100 shadow-[0_18px_44px_rgba(220,38,38,0.18)]">
+          <div className="rgv-account-auth__heading mb-6">
+            <div className="rgv-account-auth__symbol mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b] shadow-none">
               <Icon name="shield" />
             </div>
 
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-300">
-              Secure Customer Portal
+            <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
+              Account access
             </p>
 
-            <h2 className="mx-auto mt-3 max-w-md text-3xl font-black tracking-[-0.065em] text-white sm:text-4xl">
+            <h2 className="mx-auto mt-3 max-w-md text-3xl font-semibold tracking-normal text-white sm:text-4xl">
               {title}
             </h2>
 
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/45">
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#9698a1]">
               {subtitle}
             </p>
           </div>
@@ -720,10 +722,10 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
                 setNotice("");
               }}
               className={cn(
-                "rounded-xl px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition",
+                "rounded-xl px-4 py-3 text-xs font-semibold normal-case tracking-normal transition",
                 mode === "login"
-                  ? "bg-red-600 text-white shadow-[0_12px_34px_rgba(220,38,38,0.28)]"
-                  : "text-white/45 hover:bg-white/[0.06] hover:text-white"
+                  ? "bg-[#8f1d27] text-white shadow-none"
+                  : "text-[#9698a1] hover:bg-white/[0.06] hover:text-white"
               )}
             >
               Sign in
@@ -737,10 +739,10 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
                 setNotice("");
               }}
               className={cn(
-                "rounded-xl px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition",
+                "rounded-xl px-4 py-3 text-xs font-semibold normal-case tracking-normal transition",
                 mode === "register"
-                  ? "bg-red-600 text-white shadow-[0_12px_34px_rgba(220,38,38,0.28)]"
-                  : "text-white/45 hover:bg-white/[0.06] hover:text-white"
+                  ? "bg-[#8f1d27] text-white shadow-none"
+                  : "text-[#9698a1] hover:bg-white/[0.06] hover:text-white"
               )}
             >
               Create
@@ -788,13 +790,13 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
                       setError("");
                       setNotice("");
                     }}
-                    className="text-xs font-black uppercase tracking-[0.14em] text-red-300 transition hover:text-white"
+                    className="text-xs font-semibold normal-case tracking-normal text-[#cf928b] transition hover:text-white"
                   >
                     Forgot password?
                   </button>
                 </div>
 
-                <ActionButton loading={loading}>Enter Portal</ActionButton>
+                <ActionButton loading={loading}>Sign in</ActionButton>
               </motion.form>
             )}
 
@@ -848,7 +850,7 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
                 />
 
                 <ActionButton loading={loading} disabled={!passwordStrength.canSubmit}>
-                  Create Secure Account
+                  Create account
                 </ActionButton>
               </motion.form>
             )}
@@ -922,20 +924,20 @@ function AuthPanel({ mode, setMode, onAuthSuccess, resetKey, resetLogin }) {
 
 function MetricCard({ label, value, icon }) {
   return (
-    <div className="relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5">
+    <div className="relative overflow-hidden rounded-[16px] border border-white/10 bg-white/[0.035] p-5">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.12),transparent_45%)]" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             {label}
           </p>
-          <p className="mt-3 text-4xl font-black tracking-[-0.06em] text-white">
+          <p className="mt-3 text-4xl font-semibold tracking-normal text-white">
             {value}
           </p>
         </div>
 
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-100">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b]">
           <Icon name={icon} className="h-5 w-5" />
         </div>
       </div>
@@ -950,10 +952,10 @@ function NavButton({ active, icon, label, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "flex min-h-[52px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-[11px] font-black uppercase leading-[1.25] tracking-[0.16em] shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 sm:text-xs",
+        "flex min-h-[48px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-[11px] font-semibold normal-case leading-[1.25] tracking-normal shadow-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c87875]/70 sm:text-xs",
         active
-          ? "border-red-400/70 bg-red-600 text-white shadow-[0_18px_44px_rgba(220,38,38,0.28)]"
-          : "border-white/15 bg-white/[0.055] text-white/80 hover:border-red-400/45 hover:bg-red-500/15 hover:text-white"
+          ? "border-[#aa3943]/70 bg-[#8f1d27] text-white shadow-none"
+          : "border-white/15 bg-white/[0.055] text-white/80 hover:border-[#aa3943]/45 hover:bg-[#8f1d27]/15 hover:text-white"
       )}
     >
       <span
@@ -961,7 +963,7 @@ function NavButton({ active, icon, label, onClick }) {
           "grid h-8 w-8 shrink-0 place-items-center rounded-xl border transition",
           active
             ? "border-white/20 bg-white/15 text-white"
-            : "border-white/10 bg-black/25 text-red-200"
+            : "border-white/10 bg-black/25 text-[#cf928b]"
         )}
       >
         <Icon name={icon} className="h-[17px] w-[17px]" />
@@ -1056,25 +1058,25 @@ function TrackingPreview({ order }) {
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             Shipment
           </p>
 
-          <p className="mt-1 truncate text-xs font-bold text-white/70">
+          <p className="mt-1 truncate text-xs font-medium text-white/70">
             {tracking.number
               ? `${tracking.carrier || "Carrier pending"} · ${tracking.number}`
               : tracking.carrier || "Carrier pending"}
           </p>
 
           {tracking.status && (
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.13em] text-red-200/70">
+            <p className="mt-1 text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]/70">
               {tracking.status}
             </p>
           )}
         </div>
 
         {tracking.eta && (
-          <span className="shrink-0 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.13em] text-white/55">
+          <span className="shrink-0 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-white/55">
             ETA {tracking.eta}
           </span>
         )}
@@ -1098,28 +1100,28 @@ function InlineTrackingDetails({ order, loading, error }) {
       <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-white/[0.025] p-4">
         <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
+            <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
               Tracking
             </p>
 
-            <p className="mt-1 text-sm font-black text-white">
+            <p className="mt-1 text-sm font-semibold text-white">
               Order #{order.number}
             </p>
           </div>
 
-          <span className="w-fit rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100">
+          <span className="w-fit rounded-full border border-[#aa3943]/20 bg-[#8f1d27]/10 px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
             {statusLabel(order.status)}
           </span>
         </div>
 
         {loading && (
-          <div className="mb-4 rounded-2xl border border-white/10 bg-black/25 p-3 text-xs font-bold text-white/45">
+          <div className="mb-4 rounded-2xl border border-white/10 bg-black/25 p-3 text-xs font-medium text-[#9698a1]">
             Loading latest tracking details...
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/10 p-3 text-xs font-bold leading-5 text-red-100">
+          <div className="mb-4 rounded-2xl border border-[#aa3943]/25 bg-[#8f1d27]/10 p-3 text-xs font-medium leading-5 text-[#cf928b]">
             {error}
           </div>
         )}
@@ -1127,16 +1129,16 @@ function InlineTrackingDetails({ order, loading, error }) {
         <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
           <div className="grid gap-2">
             <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+              <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                 Carrier
               </p>
-              <p className="mt-1 text-sm font-bold text-white/72">
+              <p className="mt-1 text-sm font-medium text-white/72">
                 {tracking.carrier || "Carrier pending"}
               </p>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+              <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                 Tracking number
               </p>
               {tracking.number && tracking.url ? (
@@ -1144,32 +1146,32 @@ function InlineTrackingDetails({ order, loading, error }) {
                   href={tracking.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 block break-all text-sm font-bold text-red-100 underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
+                  className="mt-1 block break-all text-sm font-medium text-[#cf928b] underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
                 >
                   {tracking.number}
                 </a>
               ) : (
-                <p className="mt-1 break-all text-sm font-bold text-white/72">
+                <p className="mt-1 break-all text-sm font-medium text-white/72">
                   {tracking.number || "Tracking not assigned yet"}
                 </p>
               )}
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+              <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                 Shipment status
               </p>
-              <p className="mt-1 text-sm font-bold text-white/72">
+              <p className="mt-1 text-sm font-medium text-white/72">
                 {tracking.status || (tracking.number ? "Shipped" : "Pending")}
               </p>
             </div>
 
             {tracking.eta && (
               <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+                <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                   Estimated delivery
                 </p>
-                <p className="mt-1 text-sm font-bold text-white/72">
+                <p className="mt-1 text-sm font-medium text-white/72">
                   {tracking.eta}
                 </p>
               </div>
@@ -1180,7 +1182,7 @@ function InlineTrackingDetails({ order, loading, error }) {
                 href={tracking.url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/62 transition hover:bg-white/[0.07] hover:text-white"
+                className="mt-1 flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-[10px] font-semibold normal-case tracking-normal text-white/62 transition hover:bg-white/[0.07] hover:text-white"
               >
                 {tracking.carrier.toLowerCase().includes("usps")
                   ? "Check live status on USPS"
@@ -1191,7 +1193,7 @@ function InlineTrackingDetails({ order, loading, error }) {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-[0.16em] text-white/32">
+            <p className="mb-4 text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
               Order progress
             </p>
 
@@ -1201,11 +1203,11 @@ function InlineTrackingDetails({ order, loading, error }) {
                   <div className="flex flex-col items-center">
                     <span
                       className={cn(
-                        "grid h-7 w-7 place-items-center rounded-full border text-[10px] font-black",
+                        "grid h-7 w-7 place-items-center rounded-full border text-[10px] font-semibold",
                         state === "done" &&
-                          "border-red-400/45 bg-red-600 text-white",
+                          "border-[#aa3943]/45 bg-[#8f1d27] text-white",
                         state === "current" &&
-                          "border-red-300/40 bg-red-500/10 text-red-100",
+                          "border-[#aa3943]/40 bg-[#8f1d27]/10 text-[#cf928b]",
                         state === "idle" &&
                           "border-white/10 bg-white/[0.035] text-white/25"
                       )}
@@ -1225,14 +1227,14 @@ function InlineTrackingDetails({ order, loading, error }) {
                   <div>
                     <p
                       className={cn(
-                        "text-sm font-black",
-                        state === "idle" ? "text-white/35" : "text-white/76"
+                        "text-sm font-semibold",
+                        state === "idle" ? "text-[#9698a1]" : "text-white/76"
                       )}
                     >
                       {label}
                     </p>
 
-                    <p className="mt-0.5 text-xs font-bold text-white/30">
+                    <p className="mt-0.5 text-xs font-medium text-[#9698a1]">
                       {state === "done"
                         ? "Completed"
                         : state === "current"
@@ -1247,7 +1249,7 @@ function InlineTrackingDetails({ order, loading, error }) {
         </div>
 
         {!tracking.number && !tracking.url && (
-          <p className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs font-bold leading-5 text-white/34">
+          <p className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs font-medium leading-5 text-[#9698a1]">
             Tracking details will appear here once the shipment is assigned.
           </p>
         )}
@@ -1483,24 +1485,24 @@ function ZelleReceiptPanel({
   }
 
   return (
-    <div className="mt-4 rounded-[1.25rem] border border-red-400/20 bg-red-500/[0.045] p-3 sm:p-4">
+    <div className="mt-4 rounded-[1.25rem] border border-[#aa3943]/20 bg-[#8f1d27]/[0.045] p-3 sm:p-4">
       <div className="flex items-start gap-3">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-300/20 bg-red-500/10 text-red-100">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b]">
           <Icon name="alert" className="h-4.5 w-4.5" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-200">
+            <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
               Action required
             </p>
 
-            <span className="rounded-full border border-red-300/20 bg-red-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-red-100">
+            <span className="rounded-full border border-[#aa3943]/20 bg-[#8f1d27]/10 px-2 py-1 text-[9px] font-semibold normal-case tracking-normal text-[#cf928b]">
               Receipt missing
             </span>
           </div>
 
-          <h3 className="mt-1 text-[15px] font-black tracking-[-0.025em] text-white sm:text-base">
+          <h3 className="mt-1 text-[15px] font-semibold tracking-normal text-white sm:text-base">
             Upload your Zelle receipt
           </h3>
 
@@ -1511,7 +1513,7 @@ function ZelleReceiptPanel({
       </div>
 
       <div className="mt-3 rounded-[1rem] border border-white/10 bg-black/25 p-2.5">
-        <label className="group flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[0.85rem] border border-dashed border-white/14 bg-white/[0.025] px-3 py-2.5 transition hover:border-red-300/30 hover:bg-red-500/[0.04]">
+        <label className="group flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[0.85rem] border border-dashed border-white/14 bg-white/[0.025] px-3 py-2.5 transition hover:border-[#aa3943]/30 hover:bg-[#8f1d27]/[0.04]">
           <input
             type="file"
             className="sr-only"
@@ -1520,22 +1522,22 @@ function ZelleReceiptPanel({
             disabled={uploading}
           />
 
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/48 transition group-hover:border-red-300/20 group-hover:bg-red-500/10 group-hover:text-red-100">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-white/48 transition group-hover:border-[#aa3943]/20 group-hover:bg-[#8f1d27]/10 group-hover:text-[#cf928b]">
             <Icon name={file ? "file" : "upload"} className="h-4 w-4" />
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-black text-white sm:text-sm">
+            <p className="truncate text-xs font-semibold text-white sm:text-sm">
               {file ? file.name : "Select payment receipt"}
             </p>
-            <p className="mt-0.5 text-[10px] font-bold leading-4 text-white/32 sm:text-xs">
+            <p className="mt-0.5 text-[10px] font-medium leading-4 text-[#9698a1] sm:text-xs">
               {file
                 ? `${(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload`
                 : "JPG, PNG, WEBP or PDF · Max 10MB"}
             </p>
           </div>
 
-          <span className="hidden shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-white/48 sm:inline-flex">
+          <span className="hidden shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[9px] font-semibold normal-case tracking-normal text-white/48 sm:inline-flex">
             Browse
           </span>
         </label>
@@ -1544,7 +1546,7 @@ function ZelleReceiptPanel({
           type="button"
           onClick={uploadReceipt}
           disabled={!file || uploading}
-          className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-[0.85rem] bg-red-600 px-4 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-[0_14px_34px_rgba(220,38,38,0.2)] transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/25 disabled:shadow-none"
+          className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-[0.85rem] bg-[#8f1d27] px-4 text-[10px] font-semibold normal-case tracking-normal text-white shadow-none transition hover:bg-[#8f1d27] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/25 disabled:shadow-none"
         >
           <Icon name="upload" className="h-4 w-4" />
           {uploading ? "Uploading..." : "Upload receipt"}
@@ -1553,21 +1555,21 @@ function ZelleReceiptPanel({
 
       {receiptState.payment_reference && (
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2.5">
-          <span className="text-[10px] font-bold text-white/32">Zelle memo</span>
-          <strong className="break-all text-[10px] font-black tracking-[0.1em] text-white/62 sm:text-xs">
+          <span className="text-[10px] font-medium text-[#9698a1]">Zelle memo</span>
+          <strong className="break-all text-[10px] font-semibold tracking-normal text-white/62 sm:text-xs">
             {receiptState.payment_reference}
           </strong>
         </div>
       )}
 
       {checking && (
-        <p className="mt-2.5 text-[10px] font-bold text-white/30">
+        <p className="mt-2.5 text-[10px] font-medium text-[#9698a1]">
           Checking receipt status...
         </p>
       )}
 
       {error && (
-        <p className="mt-2.5 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-xs font-bold leading-5 text-red-100">
+        <p className="mt-2.5 rounded-xl border border-[#aa3943]/25 bg-[#8f1d27]/10 px-3 py-2.5 text-xs font-medium leading-5 text-[#cf928b]">
           {error}
         </p>
       )}
@@ -1655,11 +1657,11 @@ function OrderCard({ order, customerEmail = "" }) {
   }
 
   return (
-    <div className="rounded-[1.4rem] border border-white/10 bg-black/28 p-4 transition hover:border-red-500/30 hover:bg-white/[0.04]">
+    <div className="rounded-[1.4rem] border border-white/10 bg-black/28 p-4 transition hover:border-[#aa3943]/30 hover:bg-white/[0.04]">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <p className="text-sm font-black text-white">Order #{order.number}</p>
-          <p className="mt-1 text-xs text-white/35">
+          <p className="text-sm font-semibold text-white">Order #{order.number}</p>
+          <p className="mt-1 text-xs text-[#9698a1]">
             {order.date || "No date"}
           </p>
         </div>
@@ -1668,7 +1670,7 @@ function OrderCard({ order, customerEmail = "" }) {
           {zelleReceiptState.is_zelle && receiptUploaded && (
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.13em]",
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[9px] font-semibold normal-case tracking-normal",
                 receiptApproved
                   ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-100"
                   : "border-amber-200/20 bg-amber-200/10 text-amber-100"
@@ -1679,11 +1681,11 @@ function OrderCard({ order, customerEmail = "" }) {
             </span>
           )}
 
-          <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100">
+          <span className="rounded-full border border-[#aa3943]/20 bg-[#8f1d27]/10 px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
             {statusLabel(order.status)}
           </span>
 
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/60">
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-white/60">
             {formatMoney(order.total, order.currency)}
           </span>
         </div>
@@ -1696,10 +1698,10 @@ function OrderCard({ order, customerEmail = "" }) {
               key={`${order.id}-${item.name}-${index}`}
               className="flex justify-between gap-4 rounded-xl bg-white/[0.025] px-3 py-2 text-xs"
             >
-              <span className="line-clamp-1 font-bold text-white/65">
+              <span className="line-clamp-1 font-medium text-white/65">
                 {item.name}
               </span>
-              <span className="shrink-0 text-white/35">
+              <span className="shrink-0 text-[#9698a1]">
                 Qty {item.quantity}
               </span>
             </div>
@@ -1720,10 +1722,10 @@ function OrderCard({ order, customerEmail = "" }) {
           type="button"
           onClick={handleTrackOrder}
           className={cn(
-            "group flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-black uppercase tracking-[0.16em] transition",
+            "group flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-[10px] font-semibold normal-case tracking-normal transition",
             trackingOpen
               ? "border border-white/10 bg-white/[0.04] text-white/64 hover:bg-white/[0.07] hover:text-white"
-              : "bg-red-600 text-white shadow-[0_18px_46px_rgba(220,38,38,0.24)] hover:bg-red-500"
+              : "bg-[#8f1d27] text-white shadow-none hover:bg-[#8f1d27]"
           )}
         >
           <Icon name="truck" className="h-4 w-4" />
@@ -1746,13 +1748,13 @@ function OrderCard({ order, customerEmail = "" }) {
 
 function EmptyState({ title, text }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-7 text-center">
-      <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-100">
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.035] p-7 text-center">
+      <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b]">
         <Icon name="box" />
       </div>
 
-      <p className="text-sm font-black text-white">{title}</p>
-      <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/40">
+      <p className="text-sm font-semibold text-white">{title}</p>
+      <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-[#9698a1]">
         {text}
       </p>
     </div>
@@ -1824,32 +1826,32 @@ function LoyaltyPanel({ initialLoyalty }) {
       transition={{ duration: 0.22 }}
       className="grid gap-5"
     >
-      <div className="overflow-hidden rounded-[2rem] border border-red-400/20 bg-[#080808]/95 shadow-[0_30px_120px_rgba(0,0,0,0.42)]">
+      <div className="overflow-hidden rounded-[18px] border border-[#aa3943]/20 bg-[#080808]/95 shadow-none">
         <div className="relative p-5 sm:p-7">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.25),transparent_45%)]" />
           <div className="relative">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-300">
+            <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
               Loyalty Program
             </p>
             <div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <p className="text-5xl font-black tracking-[-0.07em] text-white">
+                <p className="text-5xl font-semibold tracking-normal text-white">
                   {points.toLocaleString()}
                 </p>
-                <p className="mt-1 text-sm font-bold text-white/45">available points</p>
+                <p className="mt-1 text-sm font-medium text-[#9698a1]">available points</p>
               </div>
               <div className="sm:text-right">
-                <p className="text-sm font-black text-white">
+                <p className="text-sm font-semibold text-white">
                   {rewardPoints.toLocaleString()} points = {formatMoney(rewardValue)}
                 </p>
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-[#9698a1]">
                   Earn 1 point for every $1 in eligible purchases.
                 </p>
               </div>
             </div>
 
             <div className="mt-6">
-              <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+              <div className="mb-2 flex justify-between text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                 <span>{loyalty.can_redeem ? "Reward unlocked" : "Progress to unlock"}</span>
                 <span>{progress}%</span>
               </div>
@@ -1859,7 +1861,7 @@ function LoyaltyPanel({ initialLoyalty }) {
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-3 text-xs leading-5 text-white/45">
+              <p className="mt-3 text-xs leading-5 text-[#9698a1]">
                 {loyalty.can_redeem
                   ? `You can redeem ${redeemablePoints.toLocaleString()} points for ${formatMoney(loyalty.redeemable_credit)} in store credit.`
                   : `${Number(loyalty.points_to_unlock || minimum).toLocaleString()} more points needed. Redemption unlocks at ${minimum.toLocaleString()} points.`}
@@ -1883,12 +1885,12 @@ function LoyaltyPanel({ initialLoyalty }) {
                 <button
                   type="button"
                   onClick={copyCoupon}
-                  className="rounded-2xl border border-red-400/25 bg-red-500/10 px-5 py-4 text-center"
+                  className="rounded-2xl border border-[#aa3943]/25 bg-[#8f1d27]/10 px-5 py-4 text-center"
                 >
-                  <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-red-200">
+                  <span className="block text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
                     Store-credit code — tap to copy
                   </span>
-                  <strong className="mt-1 block text-xl tracking-[0.12em] text-white">{coupon}</strong>
+                  <strong className="mt-1 block text-xl tracking-normal text-white">{coupon}</strong>
                 </button>
               )}
             </div>
@@ -1896,19 +1898,19 @@ function LoyaltyPanel({ initialLoyalty }) {
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 sm:p-6">
-        <h2 className="text-xl font-black tracking-[-0.04em] text-white">Points history</h2>
+      <div className="rounded-[18px] border border-white/10 bg-[#101114] p-5 sm:p-6">
+        <h2 className="text-xl font-semibold tracking-normal text-white">Points history</h2>
         <div className="mt-4 grid gap-2">
           {(loyalty.history || []).length ? (
             loyalty.history.map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
                 <div>
-                  <p className="text-sm font-bold text-white/75">{item.description}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/30">
+                  <p className="text-sm font-medium text-white/75">{item.description}</p>
+                  <p className="mt-1 text-[10px] normal-case tracking-normal text-[#9698a1]">
                     {new Date(`${item.date}Z`).toLocaleDateString()}
                   </p>
                 </div>
-                <strong className={Number(item.points) >= 0 ? "text-emerald-300" : "text-red-300"}>
+                <strong className={Number(item.points) >= 0 ? "text-emerald-300" : "text-[#cf928b]"}>
                   {Number(item.points) >= 0 ? "+" : ""}{Number(item.points).toLocaleString()}
                 </strong>
               </div>
@@ -2030,28 +2032,28 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="mx-auto w-full max-w-[1240px]"
+      className="rgv-account-dashboard"
     >
       <div className="mb-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-300">
-            Private Client Console
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
+            Your account
           </p>
 
-          <h1 className="mt-3 text-4xl font-black tracking-[-0.075em] text-white sm:text-5xl lg:text-6xl">
-            Private portal,
-            <span className="block text-white/52">built around you.</span>
+          <h1 className="mt-3 text-4xl font-semibold tracking-normal text-white sm:text-5xl lg:text-6xl">
+            Welcome back,
+            <span className="block text-[#9698a1]">{user?.first_name || user?.display_name || "Customer"}.</span>
           </h1>
 
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/42">
-            A cleaner customer space for order history, account details, and secure access management.
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#9698a1]">
+            Review your orders, manage your profile, and keep your account up to date.
           </p>
         </div>
 
         <button
           type="button"
           onClick={onLogout}
-          className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-5 text-xs font-black uppercase tracking-[0.16em] text-white/65 transition hover:bg-red-600 hover:text-white"
+          className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-5 text-xs font-semibold normal-case tracking-normal text-white/65 transition hover:bg-[#8f1d27] hover:text-white"
         >
           <Icon name="logout" className="h-4 w-4" />
           Sign Out
@@ -2059,24 +2061,24 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#080808]/92 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.45)] lg:sticky lg:top-32 lg:h-fit">
+        <aside className="rgv-account-sidebar relative overflow-hidden rounded-[18px] border border-white/10 bg-[#101114] p-4 shadow-none lg:sticky lg:top-32 lg:h-fit">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.16),transparent_42%)]" />
 
           <div className="relative">
-            <div className="mb-5 flex items-center gap-3 rounded-[1.35rem] border border-white/10 bg-black/28 p-3">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-600 text-sm font-black text-white shadow-[0_18px_40px_rgba(220,38,38,0.28)]">
+            <div className="mb-5 flex items-center gap-3 rounded-[14px] border border-white/10 bg-black/28 p-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#8f1d27] text-sm font-semibold text-white shadow-none">
                 {initialsFromUser(user)}
               </div>
 
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-white">
+                <p className="truncate text-sm font-semibold text-white">
                   {user?.first_name || user?.display_name || "Customer"}
                 </p>
-                <p className="truncate text-xs text-white/38">{user?.email}</p>
+                <p className="truncate text-xs text-[#9698a1]">{user?.email}</p>
               </div>
             </div>
 
-            <div className="hidden gap-2 lg:grid">
+            <div className="rgv-account-tabs is-desktop hidden gap-2 lg:grid">
               {navItems.map(([id, label, icon]) => (
                 <NavButton
                   key={id}
@@ -2088,7 +2090,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:hidden">
+            <div className="rgv-account-tabs is-mobile grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:hidden">
               {navItems.map(([id, label, icon]) => (
                 <NavButton
                   key={id}
@@ -2120,21 +2122,21 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 </div>
 
                 <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-                  <div className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.42)] sm:p-6">
+                  <div className="rounded-[18px] border border-white/10 bg-[#101114] p-5 shadow-none sm:p-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
-                          Client Timeline
+                        <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
+                          Order activity
                         </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
-                          Latest Movement
+                        <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">
+                          Latest order
                         </h2>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setActiveTab("orders")}
-                        className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-white/45 transition hover:bg-red-600 hover:text-white"
+                        className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[#9698a1] transition hover:bg-[#8f1d27] hover:text-white"
                       >
                         <Icon name="arrow" className="h-4 w-4" />
                       </button>
@@ -2150,12 +2152,12 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                     )}
                   </div>
 
-                  <div className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.42)] sm:p-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
+                  <div className="rounded-[18px] border border-white/10 bg-[#101114] p-5 shadow-none sm:p-6">
+                    <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
                       Account Status
                     </p>
 
-                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
+                    <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">
                       Account ready
                     </h2>
 
@@ -2169,10 +2171,10 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                           key={label}
                           className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"
                         >
-                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                             {label}
                           </p>
-                          <p className="mt-1 text-sm font-bold text-white/70">
+                          <p className="mt-1 text-sm font-medium text-white/70">
                             {value}
                           </p>
                         </div>
@@ -2190,13 +2192,13 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.22 }}
-                className="rounded-[2rem] border border-white/10 bg-[#080808]/92 shadow-[0_30px_120px_rgba(0,0,0,0.42)]"
+                className="rounded-[18px] border border-white/10 bg-[#101114] shadow-none"
               >
                 <div className="border-b border-white/10 p-5 sm:p-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
+                  <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
                     Orders
                   </p>
-                  <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
+                  <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">
                     Purchase history
                   </h2>
                 </div>
@@ -2227,14 +2229,14 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.22 }}
-                className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.42)] sm:p-6"
+                className="rounded-[18px] border border-white/10 bg-[#101114] p-5 shadow-none sm:p-6"
               >
                 <div className="mb-5 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
+                    <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
                       Profile
                     </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
+                    <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">
                       Customer details
                     </h2>
                   </div>
@@ -2242,7 +2244,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                   <button
                     type="button"
                     onClick={() => setEditing((current) => !current)}
-                    className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/55 transition hover:bg-white/[0.07] hover:text-white"
+                    className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-[10px] font-semibold normal-case tracking-normal text-white/55 transition hover:bg-white/[0.07] hover:text-white"
                   >
                     {editing ? "Cancel" : "Edit"}
                   </button>
@@ -2269,10 +2271,10 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                         key={label}
                         className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"
                       >
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                        <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
                           {label}
                         </p>
-                        <p className="mt-1 text-sm font-bold text-white/75">
+                        <p className="mt-1 text-sm font-medium text-white/75">
                           {value}
                         </p>
                       </div>
@@ -2355,41 +2357,41 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.22 }}
-                className="rounded-[2rem] border border-white/10 bg-[#080808]/92 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.42)] sm:p-6"
+                className="rounded-[18px] border border-white/10 bg-[#101114] p-5 shadow-none sm:p-6"
               >
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
+                <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
                   Security
                 </p>
 
-                <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white">
+                <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">
                   Account protection
                 </h2>
 
                 <div className="mt-5 grid gap-3">
-                  <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
-                    <div className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-100">
+                  <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-5">
+                    <div className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b]">
                       <Icon name="lock" />
                     </div>
 
-                    <p className="text-sm font-black text-white">
+                    <p className="text-sm font-semibold text-white">
                       Password recovery is enabled
                     </p>
 
-                    <p className="mt-2 text-sm leading-6 text-white/42">
+                    <p className="mt-2 text-sm leading-6 text-[#9698a1]">
                       Customers can reset their password through a private, time-sensitive email link.
                     </p>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
-                    <div className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-100">
+                  <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-5">
+                    <div className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-[#aa3943]/20 bg-[#8f1d27]/10 text-[#cf928b]">
                       <Icon name="shield" />
                     </div>
 
-                    <p className="text-sm font-black text-white">
+                    <p className="text-sm font-semibold text-white">
                       Session protected
                     </p>
 
-                    <p className="mt-2 text-sm leading-6 text-white/42">
+                    <p className="mt-2 text-sm leading-6 text-[#9698a1]">
                       Your session is protected through a private server-side flow designed to keep access details away from the browser.
                     </p>
                   </div>
@@ -2540,34 +2542,46 @@ export default function AccountPortal() {
   }
   if (booting) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-44 text-white sm:px-6 sm:pt-48 lg:px-8 lg:pt-52">
+      <main className="rgv-experience rgv-account">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.18),transparent_35%),radial-gradient(circle_at_bottom,rgba(127,29,29,0.16),transparent_42%)]" />
-        <div className="relative mx-auto h-[560px] max-w-[1240px] animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.035]" />
+        <div className="relative mx-auto h-[560px] max-w-[1240px] animate-pulse rounded-[18px] border border-white/10 bg-white/[0.035]" />
       </main>
     );
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-44 text-white sm:px-6 sm:pt-48 lg:px-8 lg:pt-52">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(220,38,38,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(127,29,29,0.18),transparent_42%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[linear-gradient(180deg,rgba(127,29,29,0.20),transparent)]" />
-
-      <div className="relative">
+    <main className="rgv-experience rgv-account">
+      <div className="rgv-experience-shell">
         {user ? (
-          <Dashboard
-            user={user}
-            orders={orders}
-            onLogout={handleLogout}
-            onProfileUpdate={setUser}
-          />
+          <Dashboard user={user} orders={orders} onLogout={handleLogout} onProfileUpdate={setUser} />
         ) : (
-          <AuthPanel
-            mode={mode}
-            setMode={setMode}
-            onAuthSuccess={handleAuthSuccess}
-            resetKey={resetParams.key}
-            resetLogin={resetParams.login}
-          />
+          <div className="rgv-account-access">
+            <section className="rgv-account-intro" aria-labelledby="rgv-account-title">
+              <p className="rgv-experience-kicker">RGVPRIME / YOUR ACCOUNT</p>
+              <h1 id="rgv-account-title" className="rgv-experience-title">
+                Everything you need.<br /><span>In one place.</span>
+              </h1>
+              <p className="rgv-experience-description">
+                Your orders, account details, and rewards. A simple way to stay connected to your research collection.
+              </p>
+              <div className="rgv-account-intro__features">
+                {[
+                  ["01", "Order history", "Review purchases and available shipment updates."],
+                  ["02", "Your details", "Keep contact and billing information up to date."],
+                  ["03", "Rewards", "View points and available account benefits."],
+                ].map(([number, title, text]) => (
+                  <div key={number}>
+                    <span>{number}</span>
+                    <div><h2>{title}</h2><p>{text}</p></div>
+                  </div>
+                ))}
+              </div>
+              <a className="rgv-experience-link" href="/track-order">
+                Track an order without signing in <Icon name="arrow" />
+              </a>
+            </section>
+            <AuthPanel mode={mode} setMode={setMode} onAuthSuccess={handleAuthSuccess} resetKey={resetParams.key} resetLogin={resetParams.login} />
+          </div>
         )}
       </div>
     </main>

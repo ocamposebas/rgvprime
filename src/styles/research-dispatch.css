@@ -1,8 +1,9 @@
 .rgv-dispatch {
   padding: 24px 0 32px;
-  color: #202024;
-  background: #0c0c0e;
-  color-scheme: light;
+  color: #ededeb;
+  background: #090a0c;
+  color-scheme: dark;
+  font-family: "RGV Sora", ui-sans-serif, system-ui, sans-serif;
   scroll-margin-top: 142px;
 }
 .rgv-dispatch *,
@@ -16,9 +17,9 @@
   grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr);
   overflow: hidden;
   margin-inline: auto;
-  border: 1px solid #e3e3e5;
-  border-radius: 24px;
-  background: #fff;
+  border: 1px solid #ffffff24;
+  border-radius: 18px;
+  background: #131313;
 }
 .rgv-dispatch__offer {
   position: relative;
@@ -29,7 +30,7 @@
   justify-content: center;
   padding: 36px;
   color: #fff;
-  background: linear-gradient(130deg, #e11728, #b9081c);
+  background: #581316;
 }
 .rgv-dispatch__reference {
   position: absolute;
@@ -44,9 +45,9 @@
 .rgv-dispatch__offer-value {
   margin: 0;
   color: #fff;
-  font-family: "RGV Display", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: inherit;
   font-size: clamp(6rem, 11vw, 10rem);
-  font-weight: 700;
+  font-weight: 450;
   letter-spacing: -0.06em;
   line-height: 0.95;
 }
@@ -76,7 +77,7 @@
 }
 .rgv-dispatch__eyebrow {
   margin: 0;
-  color: #b9182c;
+  color: #b97774;
   font-size: 0.61rem;
   font-weight: 650;
   letter-spacing: 0.14em;
@@ -85,17 +86,17 @@
 }
 .rgv-dispatch__newsletter h2 {
   margin: 10px 0 0;
-  color: #202024;
-  font-family: "RGV Display", Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #e9e3d9;
+  font-family: inherit;
   font-size: clamp(1.7rem, 3vw, 2.35rem);
-  font-weight: 700;
+  font-weight: 450;
   letter-spacing: -0.025em;
   line-height: 1.15;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .rgv-dispatch__newsletter-copy > p:last-child {
   margin: 12px 0 0;
-  color: #67676f;
+  color: #a49d91;
   font-size: 0.8rem;
   line-height: 1.7;
 }
@@ -109,20 +110,20 @@
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   overflow: hidden;
-  border: 1px solid #d6d6db;
-  border-radius: 999px;
-  background: #f7f7f6;
+  border: 1px solid #ffffff32;
+  border-radius: 11px;
+  background: #0d0d0d;
   transition: border-color 160ms ease;
 }
 .rgv-dispatch__form-row:focus-within {
-  border-color: #b9182c;
+  border-color: #b97774;
 }
 .rgv-dispatch__form-row input[type="email"] {
   width: 100%;
   min-width: 0;
   min-height: 52px;
   padding: 0 18px;
-  color: #202024;
+  color: #f0e8dc;
   border: 0;
   outline: 0;
   background: transparent;
@@ -140,11 +141,11 @@
   margin: 3px;
   padding: 10px 18px;
   color: #fff;
-  border: 1px solid #f0434a;
-  border-radius: 999px;
-  background: linear-gradient(120deg, #e11728, #be0920);
+  border: 1px solid #a43e40;
+  border-radius: 11px;
+  background: #822629;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 160ms ease;
@@ -153,7 +154,7 @@
   flex-shrink: 0;
 }
 .rgv-dispatch__form-row button:hover:not(:disabled) {
-  background: #ef3535;
+  background: #942f32;
 }
 .rgv-dispatch__form-row button:disabled {
   cursor: wait;
@@ -176,7 +177,7 @@
   align-items: start;
   gap: 8px;
   margin: 12px 0 0 4px;
-  color: #67676f;
+  color: #a49d91;
   cursor: pointer;
 }
 .rgv-dispatch__consent input {
@@ -194,7 +195,7 @@
   place-items: center;
   border: 1px solid #a4a4ad;
   border-radius: 4px;
-  background: #fff;
+  background: #131313;
 }
 .rgv-dispatch__consent > span::after {
   width: 8px;
@@ -206,14 +207,14 @@
   transform: translateY(-1px) rotate(-45deg);
 }
 .rgv-dispatch__consent input:checked + span {
-  border-color: #f0434a;
-  background: #dc2626;
+  border-color: #a43e40;
+  background: #822629;
 }
 .rgv-dispatch__consent input:checked + span::after {
   opacity: 1;
 }
 .rgv-dispatch__consent input:focus-visible + span {
-  outline: 2px solid #b9182c;
+  outline: 2px solid #b97774;
   outline-offset: 3px;
 }
 .rgv-dispatch__consent small {
@@ -229,7 +230,7 @@
 }
 .rgv-dispatch__status {
   margin: 10px 0 0 4px;
-  color: #67676f;
+  color: #a49d91;
   font-size: 0.72rem;
   line-height: 1.6;
 }
@@ -237,10 +238,10 @@
   color: #155f36;
 }
 .rgv-dispatch__status[data-kind="error"] {
-  color: #b9182c;
+  color: #b97774;
 }
 .rgv-dispatch :where(button, input):focus-visible {
-  outline: 2px solid #b9182c;
+  outline: 2px solid #b97774;
   outline-offset: 3px;
 }
 @media (max-width: 1100px) {
@@ -319,12 +320,12 @@
     background: transparent;
   }
   .rgv-dispatch__form-row input[type="email"] {
-    border: 1px solid #d6d6db;
-    border-radius: 999px;
-    background: #f7f7f6;
+    border: 1px solid #ffffff32;
+    border-radius: 11px;
+    background: #0d0d0d;
   }
   .rgv-dispatch__form-row input[type="email"]:focus {
-    border-color: #b9182c;
+    border-color: #b97774;
   }
   .rgv-dispatch__form-row button {
     width: 100%;

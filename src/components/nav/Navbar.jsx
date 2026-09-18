@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "../cart/CartContext";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
+import "./Navbar.css";
 
 const announcementItems = [
   "Same day / Next day shipping",
@@ -16,9 +17,6 @@ const navLinks = [
   { label: "FAQ", href: "/faq" },
   { label: "Support", href: "#support" },
 ];
-
-const desktopNavItemClass =
-  "relative inline-flex min-h-11 items-center justify-center whitespace-nowrap px-2 text-[12px] font-extrabold uppercase leading-none tracking-[0.17em] text-white/62 transition-colors duration-200 after:absolute after:inset-x-2 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-red-500 after:transition-transform after:duration-200 hover:text-white hover:after:scale-x-100 lg:px-3";
 
 const FALLBACK_IMAGE = "/logo.webp";
 const SUPPORT_PHONE = "+19565408538";
@@ -435,14 +433,13 @@ function AccountDropdown({
   onClose,
   onToggle,
   onLogout,
-  glassStyle,
 }) {
   const isLoggedIn = Boolean(user);
   const loading = status === "loading";
 
   return (
     <div
-      className="relative hidden pb-5 -mb-5 sm:block"
+      className="rgv-nav-account relative hidden pb-5 -mb-5 sm:block"
       onMouseEnter={onOpen}
       onMouseLeave={onClose}
     >
@@ -451,8 +448,7 @@ function AccountDropdown({
         onClick={onToggle}
         aria-label="Account menu"
         aria-expanded={open}
-        className="group relative flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border px-0 text-white/68 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white md:h-11 md:min-w-11"
-        style={glassStyle}
+        className="rgv-nav-control"
       >
         {isLoggedIn ? (
           <span className="grid h-7 min-w-7 place-items-center rounded-full bg-red-600 px-2 text-[10px] font-black text-white shadow-[0_0_22px_rgba(220,38,38,0.45)]">
@@ -465,7 +461,7 @@ function AccountDropdown({
 
       {open && (
         <div
-          className="rgv-pop-in absolute right-0 top-[calc(100%+0.45rem)] z-[120] w-[285px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#070707]/96 p-3 text-white shadow-[0_30px_100px_rgba(0,0,0,0.72)] backdrop-blur-xl"
+          className="rgv-nav-popover rgv-pop-in absolute right-0 top-[calc(100%+0.45rem)] z-[120] w-[285px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[#070707]/96 p-3 text-white shadow-[0_30px_100px_rgba(0,0,0,0.72)] backdrop-blur-xl"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.18),transparent_38%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
@@ -486,7 +482,7 @@ function AccountDropdown({
                     <LockIcon />
                   </div>
                   <p className="text-sm font-black tracking-[-0.02em] text-white">
-                    Private account access
+                    Your account
                   </p>
                   <p className="mt-1 text-xs leading-5 text-white/42">
                     Sign in to review orders, update details, and manage your profile.
@@ -496,7 +492,7 @@ function AccountDropdown({
                 <div className="mt-3 grid gap-2">
                   <a
                     href="/account?mode=login"
-                    className="flex min-h-11 items-center justify-between rounded-2xl bg-red-600 px-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-500"
+                    className="rgv-nav-menu-action"
                   >
                     Sign In
                     <ArrowIcon />
@@ -534,7 +530,7 @@ function AccountDropdown({
                 <div className="mt-3 grid gap-2">
                   <a
                     href="/account"
-                    className="flex min-h-11 items-center justify-between rounded-2xl bg-red-600 px-4 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-500"
+                    className="rgv-nav-menu-action"
                   >
                     View Profile
                     <ArrowIcon />
@@ -558,199 +554,65 @@ function AccountDropdown({
   );
 }
 
-function AnnouncementItem({ text }) {
-  return (
-    <div className="rgv-announcement-item">
-      <span>{text}</span>
-      <span className="rgv-announcement-dot" aria-hidden="true" />
-    </div>
-  );
-}
+function AnnouncementMarquee({ items, repeats = 2, className = "" }) {
+  const trackRef = useRef(null);
+  const groupRef = useRef(null);
+  const contentKey = items.join("|");
 
-function AnnouncementSequence({ measureRef }) {
-  return (
-    <div className="rgv-announcement-sequence" ref={measureRef}>
-      {announcementItems.map((text) => (
-        <AnnouncementItem key={text} text={text} />
-      ))}
-    </div>
-  );
-}
+  useEffect(() => {
+    const track = trackRef.current;
+    const group = groupRef.current;
+    if (!track || !group) return undefined;
+    let active = true;
 
-function AnnouncementGroup({ ariaHidden = false, repeats, measureRef }) {
+    function measure() {
+      if (!active) return;
+      track.style.setProperty("--rgv-announcement-width", `${track.parentElement.clientWidth}px`);
+      const distance = group.getBoundingClientRect().width;
+      if (distance > 0) track.style.setProperty("--rgv-announcement-duration", `${distance / 32}s`);
+    }
+
+    function updateVisibility() {
+      track.style.animationPlayState = document.hidden ? "paused" : "running";
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(group);
+    observer.observe(track.parentElement);
+    measure();
+    document.fonts?.ready.then(measure);
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+
+    return () => {
+      active = false;
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, [contentKey, repeats]);
+
   return (
-    <div
-      className="rgv-announcement-group"
-      aria-hidden={ariaHidden ? "true" : undefined}
-    >
-      {Array.from({ length: repeats }, (_, index) => (
-        <AnnouncementSequence
-          key={index}
-          measureRef={index === 0 && !ariaHidden ? measureRef : undefined}
-        />
-      ))}
+    <div className={`rgv-announcement-marquee ${className}`}>
+      <span className="sr-only">{items.join(". ")}</span>
+      <div ref={trackRef} className="rgv-announcement-marquee__track" aria-hidden="true">
+        {[0, 1].map((copy) => (
+          <div key={copy} ref={copy === 0 ? groupRef : undefined} className="rgv-announcement-marquee__group">
+            {Array.from({ length: repeats }, (_, repeat) => items.map((text, index) => (
+              <span key={`${repeat}-${index}`} className="rgv-announcement-marquee__item">
+                <i />{text}
+              </span>
+            )))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function DefaultAnnouncementTrack() {
-  const wrapRef = useRef(null);
-  const sequenceRef = useRef(null);
-  const [repeats, setRepeats] = useState(8);
-  const [duration, setDuration] = useState(240);
-
-  useEffect(() => {
-    const wrap = wrapRef.current;
-    const sequence = sequenceRef.current;
-
-    if (!wrap || !sequence) return undefined;
-
-    function fillTrack() {
-      const wrapWidth = wrap.getBoundingClientRect().width;
-      const sequenceWidth = sequence.getBoundingClientRect().width;
-
-      if (!wrapWidth || !sequenceWidth) return;
-
-      // Each half of the track must be wider than the viewport so the next
-      // identical half is already visible before the animation loops.
-      const nextRepeats = Math.max(2, Math.ceil(wrapWidth / sequenceWidth) + 2);
-
-      setRepeats(nextRepeats);
-      setDuration(Math.max(46, (sequenceWidth * nextRepeats) / 16));
-    }
-
-    fillTrack();
-
-    const observer = new ResizeObserver(fillTrack);
-    observer.observe(wrap);
-    observer.observe(sequence);
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <div className="rgv-announcement-wrap" ref={wrapRef}>
-      <div
-        className="rgv-announcement-track"
-        style={{ animationDuration: `${duration}s` }}
-      >
-        <AnnouncementGroup repeats={repeats} measureRef={sequenceRef} />
-        <AnnouncementGroup repeats={repeats} ariaHidden />
-      </div>
-
-      <style>{`
-        @keyframes rgvAnnouncementScroll {
-          from {
-            transform: translate3d(0, 0, 0);
-          }
-
-          to {
-            transform: translate3d(-50%, 0, 0);
-          }
-        }
-
-        .rgv-announcement-wrap {
-          position: relative;
-          height: 100%;
-          width: 100%;
-          overflow: hidden;
-          mask-image: linear-gradient(
-            90deg,
-            transparent 0%,
-            #000 8%,
-            #000 92%,
-            transparent 100%
-          );
-          -webkit-mask-image: linear-gradient(
-            90deg,
-            transparent 0%,
-            #000 8%,
-            #000 92%,
-            transparent 100%
-          );
-        }
-
-        .rgv-announcement-track {
-          display: flex;
-          align-items: center;
-          height: 100%;
-          width: max-content;
-          min-width: max-content;
-          white-space: nowrap;
-          transform: translate3d(0, 0, 0);
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
-          will-change: transform;
-          animation: rgvAnnouncementScroll 46s linear infinite;
-        }
-
-        .rgv-announcement-group {
-          display: flex;
-          flex: 0 0 auto;
-          align-items: center;
-          height: 100%;
-          min-width: max-content;
-          white-space: nowrap;
-        }
-
-        .rgv-announcement-sequence {
-          display: flex;
-          flex: 0 0 auto;
-          align-items: center;
-          height: 100%;
-          white-space: nowrap;
-        }
-
-        .rgv-announcement-item {
-          display: inline-flex;
-          flex: 0 0 auto;
-          align-items: center;
-          gap: 34px;
-          padding: 0 34px;
-          color: rgba(255, 255, 255, 0.82);
-          font-size: 11px;
-          font-weight: 900;
-          line-height: 1;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          transform: translate3d(0, 0, 0);
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
-          -webkit-font-smoothing: antialiased;
-          text-rendering: geometricPrecision;
-        }
-
-        .rgv-announcement-dot {
-          display: block;
-          height: 6px;
-          width: 6px;
-          flex: 0 0 auto;
-          border-radius: 999px;
-          background: rgb(239, 68, 68);
-          box-shadow: 0 0 16px rgba(239, 68, 68, 0.85);
-        }
-
-        @media (max-width: 640px) {
-          .rgv-announcement-item {
-            gap: 22px;
-            padding: 0 22px;
-            font-size: 9px;
-            letter-spacing: 0.18em;
-          }
-
-          .rgv-announcement-dot {
-            height: 5px;
-            width: 5px;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .rgv-announcement-track {
-            animation: none;
-            transform: translate3d(0, 0, 0);
-          }
-        }
-      `}</style>
+    <div className="rgv-announcement-wrap rgv-nav-assurance">
+      <AnnouncementMarquee items={announcementItems} />
     </div>
   );
 }
@@ -834,7 +696,7 @@ function SearchModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/78 px-3 py-4 text-white backdrop-blur-md sm:px-5">
+    <div className="rgv-nav-search-overlay fixed inset-0 z-[100] bg-black/78 px-3 py-4 text-white backdrop-blur-md sm:px-5">
       <button
         type="button"
         aria-label="Close search"
@@ -843,7 +705,10 @@ function SearchModal({
       />
 
       <div
-        className="rgv-pop-in rgv-pop-in-from-top relative z-10 mx-auto mt-20 w-full max-w-[780px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#070707] shadow-[0_30px_120px_rgba(0,0,0,0.72)] sm:mt-24"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rgv-nav-search-title"
+        className="rgv-nav-search-dialog rgv-pop-in rgv-pop-in-from-top relative z-10 mx-auto mt-20 w-full max-w-[780px] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#070707] shadow-[0_30px_120px_rgba(0,0,0,0.72)] sm:mt-24"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.14),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
@@ -851,17 +716,18 @@ function SearchModal({
         <div className="relative p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3 px-1">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
+              <p id="rgv-nav-search-title" className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
                 Product Search
               </p>
               <p className="mt-1 text-xs text-white/40">
-                Search by name, SKU, category, or close spelling.
+                Find a product by name, SKU, or category.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close product search"
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-white/65 transition hover:bg-red-600 hover:text-white"
             >
               <CloseIcon />
@@ -993,7 +859,7 @@ function SearchModal({
 function SupportMenuCard({ mobile = false }) {
   return (
     <div className={cn(
-      "relative overflow-hidden border border-white/10 bg-[#070707]/98 text-white shadow-[0_28px_80px_rgba(0,0,0,0.7)]",
+      "rgv-nav-popover relative overflow-hidden border border-white/10 bg-[#070707]/98 text-white shadow-[0_28px_80px_rgba(0,0,0,0.7)]",
       mobile ? "rounded-2xl p-4" : "w-[330px] rounded-[1.4rem] p-5 backdrop-blur-xl",
     )}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.2),transparent_48%)]" />
@@ -1014,7 +880,7 @@ function SupportMenuCard({ mobile = false }) {
         </div>
         <a
           href={`sms:${SUPPORT_PHONE}`}
-          className="mt-4 flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-[10px] font-black uppercase tracking-[0.15em] text-white transition hover:bg-red-500"
+          className="rgv-nav-menu-action mt-4"
         >
           Send a message
         </a>
@@ -1142,7 +1008,7 @@ function PromotionAnnouncement() {
             <i aria-hidden="true" />
             {campaign.eyebrow}
           </span>
-          <strong>{campaign.headline}</strong>
+          <AnnouncementMarquee items={[campaign.headline]} className="is-promotion" />
         </div>
 
         <div className="rgv-campaign-bar__action">
@@ -1447,11 +1313,64 @@ export default function Navbar({ transparent = false }) {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountStatus, setAccountStatus] = useState("guest");
   const [accountUser, setAccountUser] = useState(null);
+  const [currentPath, setCurrentPath] = useState("");
+  const mobileMenuRef = useRef(null);
+  const menuToggleRef = useRef(null);
+  const searchReturnFocusRef = useRef(null);
   const supportMenuRef = useRef(null);
   const accountMenuTimerRef = useRef(null);
   const accountCheckedRef = useRef(false);
 
   const { openCart, itemCount } = useCart();
+
+  useEffect(() => {
+    const updatePath = () => setCurrentPath(window.location.pathname.replace(/\/+$/, "") || "/");
+    updatePath();
+    window.addEventListener("popstate", updatePath);
+    document.addEventListener("astro:page-load", updatePath);
+    return () => {
+      window.removeEventListener("popstate", updatePath);
+      document.removeEventListener("astro:page-load", updatePath);
+    };
+  }, []);
+
+  function isActiveLink(link) {
+    return currentPath === link.href ||
+      (link.href === "/shop" && currentPath.startsWith("/product/"));
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    mobileMenuRef.current?.querySelector("button")?.focus({ preventScroll: true });
+
+    const closeOnDesktop = () => {
+      if (window.innerWidth >= 1024) setMenuOpen(false);
+    };
+    const keepFocusInMenu = (event) => {
+      if (event.key !== "Tab") return;
+      const controls = [...headerRef.current.querySelectorAll("a[href], button:not(:disabled):not([tabindex='-1'])")]
+        .filter((node) => node.getClientRects().length);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if ((event.shiftKey && document.activeElement === first) ||
+          (!event.shiftKey && document.activeElement === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      }
+    };
+    window.addEventListener("resize", closeOnDesktop, { passive: true });
+    document.addEventListener("keydown", keepFocusInMenu);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("resize", closeOnDesktop);
+      document.removeEventListener("keydown", keepFocusInMenu);
+      if (menuToggleRef.current?.getClientRects().length) {
+        menuToggleRef.current.focus({ preventScroll: true });
+      }
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     let active = true;
@@ -1614,10 +1533,15 @@ export default function Navbar({ transparent = false }) {
     function handleOutsidePointer(event) {
       if (headerRef.current?.contains(event.target)) return;
       setSupportMenuOpen(false);
+      setAccountMenuOpen(false);
     }
 
     function handleEscape(event) {
-      if (event.key === "Escape") setSupportMenuOpen(false);
+      if (event.key !== "Escape") return;
+      headerRef.current?.querySelector("button[aria-expanded='true']")?.focus({ preventScroll: true });
+      setSupportMenuOpen(false);
+      setAccountMenuOpen(false);
+      setMenuOpen(false);
     }
 
     document.addEventListener("pointerdown", handleOutsidePointer);
@@ -1815,14 +1739,24 @@ export default function Navbar({ transparent = false }) {
   }
 
   function openSearchModal() {
+    searchReturnFocusRef.current = document.activeElement;
     setMenuOpen(false);
     setSupportMenuOpen(false);
     setAccountMenuOpen(false);
     setSearchOpen(true);
   }
 
+  function closeSearchModal() {
+    setSearchOpen(false);
+    const returnFocus = searchReturnFocusRef.current?.isConnected
+      ? searchReturnFocusRef.current
+      : menuToggleRef.current;
+    returnFocus?.focus({ preventScroll: true });
+  }
+
   function openAccountMenu() {
     window.clearTimeout(accountMenuTimerRef.current);
+    setSupportMenuOpen(false);
     setAccountMenuOpen(true);
     loadAccountOnDemand();
   }
@@ -1837,6 +1771,7 @@ export default function Navbar({ transparent = false }) {
   function toggleAccountMenu() {
     window.clearTimeout(accountMenuTimerRef.current);
     setMenuOpen(false);
+    setSupportMenuOpen(false);
 
     const next = !accountMenuOpen;
     setAccountMenuOpen(next);
@@ -1895,89 +1830,44 @@ export default function Navbar({ transparent = false }) {
 
   const initialNavProgress = menuOpen || supportMenuOpen || !transparent ? 1 : 0.82;
 
-  const glassStyle = {
-    background: "rgba(255,255,255,0.035)",
-    borderColor: "rgba(255,255,255,0.10)",
-    backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
-  };
-
   return (
     <>
       <header
         ref={headerRef}
-        className={`fixed left-0 top-0 z-[90] w-full text-white${
-          transparent ? " will-change-transform" : ""
-        }`}
+        className={cn("rgv-site-header fixed left-0 top-0 z-[90] w-full", transparent && "is-overlay")}
         style={{
           "--rgv-nav-progress": String(initialNavProgress),
           "--rgv-header-bg": String(0.94 * initialNavProgress),
           "--rgv-border": String(0.11 * initialNavProgress),
           "--rgv-shadow": String(0.32 * initialNavProgress),
-          background:
-            "rgba(7,7,8,var(--rgv-header-bg))",
-          backdropFilter: transparent ? "blur(18px)" : "none",
-          WebkitBackdropFilter: transparent ? "blur(18px)" : "none",
-          boxShadow: "0 16px 42px rgba(0,0,0,var(--rgv-shadow))",
-          transform: "translate3d(0,0,0)",
         }}
       >
-        <div
-          className="relative h-11 w-full overflow-hidden sm:h-10"
-        >
+        <div className="rgv-nav-announcement">
           <PromotionAnnouncement />
         </div>
 
-        <nav
-          className="relative w-full overflow-visible border-b"
-          style={{
-            background:
-              "linear-gradient(90deg, rgba(28,5,8,0.97) 0%, rgba(7,7,8,0.97) 22%, rgba(7,7,8,0.97) 78%, rgba(24,4,7,0.97) 100%)",
-            borderColor: "rgba(255,255,255,var(--rgv-border))",
-          }}
-        >
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-[280px] bg-[radial-gradient(circle_at_left,rgba(239,68,68,0.12),transparent_70%)]" />
-
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/35 to-transparent"
-            style={{ opacity: "var(--rgv-nav-progress)" }}
-          />
-
-          <div className="relative z-10 mx-auto flex h-16 max-w-[1392px] items-center justify-between px-3 sm:h-[74px] sm:px-6 lg:px-8">
-            <a
-              href="/"
-              aria-label="RGVPRIME Home"
-              className="relative flex min-w-0 shrink-0 items-center opacity-95 transition-opacity after:absolute after:-bottom-2 after:left-0 after:h-px after:w-10 after:bg-gradient-to-r after:from-red-500 after:to-transparent hover:opacity-100 sm:after:-bottom-2.5"
-            >
-              <img
-                src="/logo.webp"
-                alt="RGVPRIME"
-                className="h-10 w-auto shrink-0 object-contain sm:h-[54px]"
-              />
+        <nav className="rgv-nav-main" aria-label="Main navigation">
+          <div className="rgv-nav-shell rgv-nav-row">
+            <a href="/" aria-label="RGVPRIME Home" className="rgv-nav-brand">
+              <img src="/logo.webp" alt="RGVPRIME" width="336" height="168" />
             </a>
 
-            <div
-              className="hidden items-center gap-3 lg:flex lg:gap-5"
-            >
+            <div className="rgv-nav-links">
               {navLinks.map((link) => link.label === "Support" ? (
-                <div key={link.label} ref={supportMenuRef} className="relative">
+                <div key={link.label} ref={supportMenuRef} className="rgv-nav-support">
                   <button
                     type="button"
                     onClick={(event) => handleNavClick(event, link)}
                     aria-expanded={supportMenuOpen}
+                    aria-controls="rgv-desktop-support"
                     aria-haspopup="dialog"
-                    className={cn(
-                      desktopNavItemClass,
-                      "appearance-none gap-1.5 border-0 bg-transparent",
-                    )}
+                    className={cn("rgv-nav-link", supportMenuOpen && "is-active")}
                   >
                     {link.label}
-                    <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
+                    <span className={cn("rgv-nav-chevron", supportMenuOpen && "is-open")} aria-hidden="true">⌄</span>
                   </button>
                   {supportMenuOpen && (
-                    <div
-                      className="rgv-pop-in absolute right-0 top-[calc(100%+0.8rem)] z-[120]"
-                    >
+                    <div id="rgv-desktop-support" role="dialog" aria-label="Text support" className="rgv-nav-support-panel rgv-pop-in">
                       <SupportMenuCard />
                     </div>
                   )}
@@ -1987,32 +1877,21 @@ export default function Navbar({ transparent = false }) {
                   key={link.label}
                   href={link.href}
                   onClick={(event) => handleNavClick(event, link)}
-                  className={desktopNavItemClass}
+                  aria-current={isActiveLink(link) ? (currentPath === link.href ? "page" : "location") : undefined}
+                  className={cn("rgv-nav-link", isActiveLink(link) && "is-active")}
                 >
                   {link.label}
                 </a>
               ))}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:border-l lg:border-white/10 lg:pl-5">
-              <a
-                href="/shop"
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.065] px-3 text-[10px] font-black uppercase tracking-[0.13em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:hidden"
-              >
-                Shop
-                <ArrowIcon />
+            <div className="rgv-nav-actions">
+              <a href="/shop" className="rgv-nav-shop">
+                Shop <ArrowIcon />
               </a>
-
-              <button
-                type="button"
-                onClick={openSearchModal}
-                aria-label="Search products"
-                className="hidden h-10 w-10 items-center justify-center rounded-xl border text-white/68 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white sm:flex md:h-11 md:w-11"
-                style={glassStyle}
-              >
+              <button type="button" onClick={openSearchModal} aria-label="Search products" className="rgv-nav-control rgv-nav-search-trigger">
                 <SearchIcon />
               </button>
-
               <AccountDropdown
                 open={accountMenuOpen}
                 user={accountUser}
@@ -2021,36 +1900,38 @@ export default function Navbar({ transparent = false }) {
                 onClose={closeAccountMenu}
                 onToggle={toggleAccountMenu}
                 onLogout={handleAccountLogout}
-                glassStyle={glassStyle}
               />
-
               <button
                 type="button"
-                onClick={openCart}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setAccountMenuOpen(false);
+                  setSupportMenuOpen(false);
+                  openCart();
+                }}
                 aria-label="Open cart"
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl border text-white/78 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white md:h-11 md:w-11"
-                style={glassStyle}
+                className="rgv-nav-cart"
               >
                 <CartIcon />
-
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#070708] bg-red-600 px-1 text-[10px] font-black text-white">
+                <span className="rgv-nav-cart-label">Cart</span>
+                <span id="rgv-nav-cart-count" className={cn("rgv-nav-cart-count", !itemCount && "is-empty")} aria-live="polite">
                   {itemCount}
                 </span>
               </button>
-
               <button
+                ref={menuToggleRef}
                 type="button"
-                 onClick={() => {
-                   const next = !menuOpen;
-                   setMenuOpen(next);
-                   if (!next) setSupportMenuOpen(false);
-
-                  if (next) {
-                    loadAccountOnDemand();
-                  }
+                onClick={() => {
+                  const next = !menuOpen;
+                  setMenuOpen(next);
+                  setSupportMenuOpen(false);
+                  setAccountMenuOpen(false);
+                  if (next) loadAccountOnDemand();
                 }}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-red-300/30 bg-gradient-to-br from-red-500 to-red-700 text-white shadow-[0_10px_24px_rgba(220,38,38,0.28),inset_0_1px_0_rgba(255,255,255,0.24)] transition hover:brightness-110 lg:hidden"
+                aria-expanded={menuOpen}
+                aria-controls="rgv-mobile-navigation"
+                className="rgv-nav-toggle"
               >
                 {menuOpen ? <CloseIcon /> : <MenuIcon />}
               </button>
@@ -2059,109 +1940,73 @@ export default function Navbar({ transparent = false }) {
         </nav>
 
         {menuOpen && (
-          <div
-            className="rgv-pop-in rgv-pop-in-from-top max-h-[calc(100svh-108px)] overflow-y-auto border-b border-white/10 bg-[#070708]/98 px-3 pb-5 pt-3 shadow-[0_28px_70px_rgba(0,0,0,0.72)] backdrop-blur-2xl sm:max-h-[calc(100svh-114px)] sm:px-5 lg:hidden"
-          >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.2),transparent_56%)]" />
+          <>
+            <button className="rgv-nav-menu-scrim" type="button" tabIndex={-1} aria-hidden="true" onClick={() => setMenuOpen(false)} />
+            <div ref={mobileMenuRef} id="rgv-mobile-navigation" className="rgv-nav-mobile rgv-pop-in rgv-pop-in-from-top">
+              <div className="rgv-nav-mobile__inner">
+                <p className="rgv-nav-mobile__eyebrow">Explore RGVPRIME</p>
+                <button type="button" onClick={openSearchModal} className="rgv-nav-mobile__search">
+                  <SearchIcon /> <span>Search the collection</span> <ArrowIcon />
+                </button>
 
-            <div className="relative mx-auto w-full max-w-[560px]">
-            <button
-              type="button"
-              onClick={openSearchModal}
-              className="mb-3 flex min-h-12 w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] px-4 text-left text-sm font-bold text-white/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:border-red-400/30 hover:bg-white/[0.08] hover:text-white"
-            >
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-black/30 text-red-300"><SearchIcon /></span>
-              Search products
-            </button>
-
-            <div className="grid grid-cols-2 gap-2">
-              {navLinks.map((link) => link.label === "Support" ? (
-                <div key={link.label} className="col-span-2">
-                  <button
-                    type="button"
-                    onClick={(event) => handleNavClick(event, link)}
-                    aria-expanded={supportMenuOpen}
-                    className="flex min-h-14 w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-[12px] font-black uppercase tracking-[0.14em] text-white/75 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-white"
-                  >
-                    {link.label}
-                    <span className={cn("text-current opacity-60 transition-transform", supportMenuOpen && "rotate-180")} aria-hidden="true">⌄</span>
-                  </button>
-                  {supportMenuOpen && <div className="mt-2"><SupportMenuCard mobile /></div>}
+                <div className="rgv-nav-mobile__links">
+                  {navLinks.map((link) => link.label === "Support" ? (
+                    <div key={link.label}>
+                      <button
+                        id="rgv-mobile-support-trigger"
+                        type="button"
+                        onClick={(event) => handleNavClick(event, link)}
+                        aria-expanded={supportMenuOpen}
+                        aria-controls="rgv-mobile-support"
+                        className="rgv-nav-mobile__link"
+                      >
+                        <span>{link.label}</span>
+                        <span className={cn("rgv-nav-chevron", supportMenuOpen && "is-open")} aria-hidden="true">⌄</span>
+                      </button>
+                      {supportMenuOpen && (
+                        <div id="rgv-mobile-support" role="group" aria-labelledby="rgv-mobile-support-trigger" className="rgv-nav-mobile__support">
+                          <SupportMenuCard mobile />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      onClick={(event) => handleNavClick(event, link)}
+                      aria-current={isActiveLink(link) ? (currentPath === link.href ? "page" : "location") : undefined}
+                      className={cn("rgv-nav-mobile__link", isActiveLink(link) && "is-active")}
+                    >
+                      <span>{link.label}</span><ArrowIcon />
+                    </a>
+                  ))}
                 </div>
-              ) : (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={(event) => handleNavClick(event, link)}
-                  className={cn(
-                    "flex min-h-14 items-center justify-between rounded-2xl border px-4 text-[12px] font-black uppercase tracking-[0.13em] transition",
-                    link.label === "Shop"
-                      ? "border-red-300/25 bg-gradient-to-br from-red-500 to-red-700 text-white shadow-[0_12px_28px_rgba(220,38,38,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]"
-                      : "border-white/10 bg-white/[0.04] text-white/75 hover:border-red-400/25 hover:bg-red-500/10 hover:text-white",
+
+                <div className="rgv-nav-mobile__account">
+                  <p>Your account</p>
+                  {accountStatus === "loading" ? (
+                    <span className="rgv-nav-mobile__checking" role="status">Checking account…</span>
+                  ) : accountUser ? (
+                    <div>
+                      <a href="/account" onClick={() => setMenuOpen(false)}><UserIcon /> Profile</a>
+                      <button type="button" onClick={handleAccountLogout}><LogoutIcon /> Sign out</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <a href="/account?mode=login" onClick={() => setMenuOpen(false)}><UserIcon /> Sign in</a>
+                      <a href="/account?mode=register" onClick={() => setMenuOpen(false)} className="is-primary"><ArrowIcon /> Register</a>
+                    </div>
                   )}
-                >
-                  {link.label}
-                  <ArrowIcon />
-                </a>
-              ))}
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-2 border-t border-white/8 pt-3 sm:grid-cols-2">
-              {accountStatus === "loading" ? (
-                <div className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/60 sm:col-span-2">
-                  <UserIcon />
-                  Checking Account
                 </div>
-              ) : accountUser ? (
-                <>
-                  <a
-                    href="/account"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <UserIcon />
-                    Profile
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handleAccountLogout}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-red-600 hover:text-white sm:col-span-2"
-                  >
-                    <LogoutIcon />
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <a
-                    href="/account?mode=login"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white/80 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    <UserIcon />
-                    Sign In
-                  </a>
-
-                  <a
-                    href="/account?mode=register"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-red-300/25 bg-red-600 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-red-500 sm:col-span-2"
-                  >
-                    <LockIcon />
-                    Register
-                  </a>
-                </>
-              )}
+              </div>
             </div>
-            </div>
-          </div>
+          </>
         )}
       </header>
 
       <SearchModal
         open={searchOpen}
-        onClose={() => setSearchOpen(false)}
+        onClose={closeSearchModal}
         products={products}
         status={productsStatus}
         query={searchTerm}

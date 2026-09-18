@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import "../../styles/experience.css";
+import "./TrackOrder.css";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -392,13 +394,13 @@ function Field({
   required = false,
 }) {
   return (
-    <label className="group block">
-      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/36 transition group-focus-within:text-red-200">
+    <label className="rgv-tracking-field group block">
+      <span className="mb-2 block text-[10px] font-semibold normal-case tracking-normal text-[#9698a1] transition group-focus-within:text-[#cf928b]">
         {label}
       </span>
 
       <div className="relative">
-        <div className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-white/26 transition group-focus-within:text-red-200">
+        <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9698a1] transition group-focus-within:text-[#cf928b]">
           <Icon name={icon} className="h-4 w-4" />
         </div>
 
@@ -409,7 +411,7 @@ function Field({
           autoComplete={autoComplete}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="h-[52px] w-full border-0 border-b border-white/[0.11] bg-transparent pl-7 pr-2 text-sm font-bold text-white outline-none transition placeholder:text-white/22 focus:border-red-300/70"
+          className="rgv-tracking-field__input"
         />
       </div>
     </label>
@@ -423,7 +425,8 @@ function ErrorMessage({ children }) {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-sm font-bold leading-6 text-red-100"
+      role="alert"
+      className="flex items-start gap-3 rounded-xl border border-[#aa3943]/20 bg-[#8f1d27]/[0.08] px-4 py-3 text-sm font-medium leading-6 text-[#cf928b]"
     >
       <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{children}</span>
@@ -433,8 +436,8 @@ function ErrorMessage({ children }) {
 
 function StatusPill({ status }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-red-400/18 bg-red-500/[0.08] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-red-100">
-      <span className="h-1.5 w-1.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.9)]" />
+    <span className="inline-flex items-center gap-2 rounded-full border border-[#aa3943]/18 bg-[#8f1d27]/[0.08] px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]">
+      <span className="h-1.5 w-1.5 rounded-full bg-red-300 shadow-none" />
       {statusLabel(status)}
     </span>
   );
@@ -479,13 +482,13 @@ function ProgressRail({ status, tracking }) {
               <div key={step.label}>
                 <div
                   className={cn(
-                    "grid h-8 w-8 place-items-center rounded-full border text-[10px] font-black transition",
+                    "grid h-8 w-8 place-items-center rounded-full border text-[10px] font-semibold transition",
                     step.state === "done" &&
-                      "border-red-300 bg-red-600 text-white shadow-[0_0_24px_rgba(220,38,38,0.28)]",
+                      "border-[#aa3943] bg-[#8f1d27] text-white shadow-none",
                     step.state === "current" &&
-                      "border-red-200/50 bg-red-500/[0.10] text-red-100",
+                      "border-[#aa3943]/50 bg-[#8f1d27]/[0.10] text-[#cf928b]",
                     step.state === "idle" &&
-                      "border-white/[0.10] bg-white/[0.025] text-white/22",
+                      "border-white/[0.10] bg-white/[0.025] text-[#9698a1]",
                   )}
                 >
                   {step.state === "done" ? (
@@ -497,8 +500,8 @@ function ProgressRail({ status, tracking }) {
 
                 <p
                   className={cn(
-                    "mt-3 text-[10px] font-black uppercase tracking-[0.13em]",
-                    active ? "text-white/72" : "text-white/24",
+                    "mt-3 text-[10px] font-semibold normal-case tracking-normal",
+                    active ? "text-white/72" : "text-[#9698a1]",
                   )}
                 >
                   {step.label}
@@ -514,73 +517,17 @@ function ProgressRail({ status, tracking }) {
 
 function EmptyTracking() {
   return (
-    <motion.div
-      key="empty"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.28 }}
-      className="relative min-h-[420px]"
-    >
-      <div className="flex h-full flex-col justify-between">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-200/68">
-            Tracking Console
-          </p>
-
-          <h2 className="mt-3 max-w-xl text-4xl font-black leading-[0.95] tracking-[-0.075em] text-white sm:text-5xl">
-            Your order details will appear here.
-          </h2>
-
-          <p className="mt-4 max-w-lg text-sm font-medium leading-7 text-white/36">
-            Enter your checkout email and confirmation number to reveal the
-            current order status, shipment movement, and carrier information.
-          </p>
-        </div>
-
-        <div className="mt-10">
-          <div className="mb-6 flex items-center justify-between gap-4 border-b border-white/[0.07] pb-5">
-            <div>
-              <div className="h-3 w-28 rounded-full bg-white/[0.08]" />
-              <div className="mt-3 h-8 w-44 rounded-full bg-white/[0.045]" />
-            </div>
-
-            <div className="h-8 w-28 rounded-full bg-red-500/[0.055]" />
-          </div>
-
-          <div className="relative">
-            <div className="absolute left-0 right-0 top-4 h-px bg-white/[0.08]" />
-
-            <div className="relative grid grid-cols-3 gap-3">
-              {["Received", "Preparing", "Shipped"].map(
-                (label, index) => (
-                  <div key={label}>
-                    <div
-                      className={cn(
-                        "grid h-8 w-8 place-items-center rounded-full border text-[10px] font-black",
-                        index === 0
-                          ? "border-red-300/40 bg-red-500/[0.08] text-red-100"
-                          : "border-white/[0.10] bg-white/[0.02] text-white/22",
-                      )}
-                    >
-                      {index + 1}
-                    </div>
-
-                    <p
-                      className={cn(
-                        "mt-3 text-[10px] font-black uppercase tracking-[0.13em]",
-                        index === 0 ? "text-white/58" : "text-white/24",
-                      )}
-                    >
-                      {label}
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-        </div>
+    <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rgv-tracking-empty">
+      <div className="rgv-tracking-empty__icon"><Icon name="truck" /></div>
+      <p className="rgv-experience-kicker">ORDER STATUS</p>
+      <h2>Your order, at a glance.</h2>
+      <p>Enter your details to view the current status and available carrier tracking information.</p>
+      <div className="rgv-tracking-empty__steps" aria-hidden="true">
+        {["Order received", "Preparing", "Shipped"].map((label, index) => (
+          <div key={label}><span>0{index + 1}</span><p>{label}</p></div>
+        ))}
       </div>
+      <span className="rgv-tracking-empty__waiting">Awaiting your order details</span>
     </motion.div>
   );
 }
@@ -595,19 +542,19 @@ function TrackingResult({ result }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -14 }}
       transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-      className="relative"
+      className="rgv-tracking-result relative"
     >
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-200/70">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#cf928b]/70">
             Order Verified
           </p>
 
-          <h2 className="mt-3 text-5xl font-black tracking-[-0.085em] text-white sm:text-6xl">
+          <h2 className="mt-3 text-5xl font-semibold tracking-normal text-white sm:text-6xl">
             #{result.number}
           </h2>
 
-          <p className="mt-3 text-sm font-medium text-white/36">
+          <p className="mt-3 text-sm font-medium text-[#9698a1]">
             {result.date || "Date pending"}
           </p>
         </div>
@@ -615,7 +562,7 @@ function TrackingResult({ result }) {
         <div className="flex flex-wrap gap-2 sm:justify-end">
           <StatusPill status={result.status} />
 
-          <span className="rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
+          <span className="rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-1.5 text-[10px] font-semibold normal-case tracking-normal text-white/55">
             {formatMoney(result.total, result.currency)}
           </span>
         </div>
@@ -625,17 +572,17 @@ function TrackingResult({ result }) {
 
       <div className="mt-10 grid gap-6 border-t border-white/[0.07] pt-6 sm:grid-cols-2 xl:grid-cols-4">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             Carrier
           </p>
 
-          <p className="mt-2 text-sm font-bold leading-6 text-white/72">
+          <p className="mt-2 text-sm font-medium leading-6 text-white/72">
             {tracking.carrier || "Carrier pending"}
           </p>
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             Tracking Number
           </p>
 
@@ -644,41 +591,41 @@ function TrackingResult({ result }) {
               href={tracking.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 block break-words text-sm font-bold leading-6 text-red-100 underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
+              className="mt-2 block break-words text-sm font-medium leading-6 text-[#cf928b] underline decoration-red-300/30 underline-offset-4 transition hover:text-white"
             >
               {tracking.number}
             </a>
           ) : (
-            <p className="mt-2 break-words text-sm font-bold leading-6 text-white/72">
+            <p className="mt-2 break-words text-sm font-medium leading-6 text-white/72">
               {tracking.number || "Tracking not assigned yet"}
             </p>
           )}
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+          <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             Shipment Status
           </p>
 
-          <p className="mt-2 text-sm font-bold leading-6 text-white/72">
+          <p className="mt-2 text-sm font-medium leading-6 text-white/72">
             {tracking.status || "Pending"}
           </p>
         </div>
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+            <p className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
               Estimated Delivery
             </p>
 
             {tracking.live && tracking.eta && (
-              <span className="rounded-full border border-red-400/20 bg-red-500/[0.08] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-red-100/80">
+              <span className="rounded-full border border-[#aa3943]/20 bg-[#8f1d27]/[0.08] px-2 py-0.5 text-[8px] font-semibold normal-case tracking-normal text-[#cf928b]/80">
                 Live USPS
               </span>
             )}
           </div>
 
-          <p className="mt-2 text-sm font-bold leading-6 text-white/72">
+          <p className="mt-2 text-sm font-medium leading-6 text-white/72">
             {tracking.eta || "Pending"}
           </p>
         </div>
@@ -690,7 +637,7 @@ function TrackingResult({ result }) {
             href={tracking.url}
             target="_blank"
             rel="noreferrer"
-            className="group inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition hover:bg-red-600 hover:text-white"
+            className="group inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 text-[10px] font-semibold normal-case tracking-normal text-white/62 transition hover:bg-[#8f1d27] hover:text-white"
           >
             {String(tracking.carrier).toLowerCase().includes("usps")
               ? "Check live status on USPS"
@@ -701,7 +648,7 @@ function TrackingResult({ result }) {
             />
           </a>
         ) : (
-          <p className="text-xs font-bold leading-6 text-white/32">
+          <p className="text-xs font-medium leading-6 text-[#9698a1]">
             {tracking.number
               ? "The carrier page will be available once its tracking link is recognized."
               : "Carrier tracking will appear once the shipment is assigned."}
@@ -709,7 +656,7 @@ function TrackingResult({ result }) {
         )}
 
         {result.items?.length > 0 && (
-          <span className="text-[10px] font-black uppercase tracking-[0.17em] text-white/28">
+          <span className="text-[10px] font-semibold normal-case tracking-normal text-[#9698a1]">
             {result.items.length} item{result.items.length === 1 ? "" : "s"} in
             order
           </span>
@@ -724,11 +671,11 @@ function TrackingResult({ result }) {
                 key={`${item.name}-${index}`}
                 className="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-3 text-sm last:border-b-0 last:pb-0"
               >
-                <span className="min-w-0 truncate font-bold text-white/60">
+                <span className="min-w-0 truncate font-medium text-white/60">
                   {item.name}
                 </span>
 
-                <span className="shrink-0 text-xs font-black uppercase tracking-[0.14em] text-white/32">
+                <span className="shrink-0 text-xs font-semibold normal-case tracking-normal text-[#9698a1]">
                   Qty {item.quantity}
                 </span>
               </div>
@@ -808,156 +755,43 @@ export default function TrackOrder() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030000] px-4 pb-20 pt-[8.5rem] text-white sm:px-6 sm:pt-40 lg:px-8 lg:pt-44">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(220,38,38,0.18),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(127,29,29,0.13),transparent_30%),linear-gradient(180deg,#060000_0%,#030000_48%,#080101_100%)]" />
-      <div className="pointer-events-none absolute left-1/2 top-20 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-red-600/[0.08] blur-[130px]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-200/40 to-transparent" />
+    <main className="rgv-experience rgv-tracking">
+      <div className="rgv-experience-shell">
+        <header className="rgv-experience-heading">
+          <p className="rgv-experience-kicker">RGVPRIME / ORDER TRACKING</p>
+          <h1 className="rgv-experience-title">Track your order<span>.</span></h1>
+          <p className="rgv-experience-description">
+            From confirmation to shipment. Enter your billing email and order number to see the latest available updates.
+          </p>
+        </header>
 
-      <div className="relative mx-auto w-full max-w-[1160px]">
-        <section className="mb-10 grid gap-8 lg:grid-cols-[0.9fr_0.7fr] lg:items-end">
-          <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-300/12 bg-red-500/[0.07] px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-100">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.8)]" />
-              RGVPRIME ORDER TRACKING
+        <div className="rgv-tracking-panel">
+          <section className="rgv-tracking-lookup" aria-labelledby="rgv-tracking-lookup-title">
+            <div className="rgv-tracking-lookup__heading">
+              <h2 id="rgv-tracking-lookup-title">Find your order</h2>
+              <Icon name="search" />
             </div>
-
-            <h1 className="max-w-4xl text-5xl font-black leading-[0.92] tracking-[-0.085em] text-white sm:text-6xl lg:text-7xl">
-              Track your order
-              <span className="block bg-gradient-to-r from-white via-white/70 to-red-200 bg-clip-text text-transparent">
-                with confidence.
-              </span>
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-sm font-medium leading-7 text-white/40 sm:text-base">
-              Enter your billing email and confirmation number to view your
-              latest order status, shipment movement, and carrier details.
-            </p>
-          </div>
-
-          <div className="hidden justify-end lg:flex">
-            <div className="relative h-56 w-56">
-              <div className="absolute inset-0 rounded-full border border-white/[0.07]" />
-              <div className="absolute inset-8 rounded-full border border-red-300/[0.08]" />
-              <div className="absolute inset-16 rounded-full border border-white/[0.07]" />
-
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-4 rounded-full border border-transparent border-t-red-300/35"
-              />
-
-              <motion.div
-                animate={{ y: [-5, 5, -5] }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="absolute left-1/2 top-1/2 grid h-24 w-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[1.7rem] border border-red-300/16 bg-red-500/[0.055] text-red-100 shadow-[0_22px_70px_rgba(220,38,38,0.16)] backdrop-blur-xl"
-              >
-                <Icon name="truck" className="h-9 w-9" />
-              </motion.div>
+            <p>Use the details from your confirmation email.</p>
+            <form onSubmit={handleSubmit} className="rgv-tracking-form" aria-busy={loading}>
+              <Field icon="mail" label="Billing email" type="email" value={email} onChange={setEmail} placeholder="you@email.com" autoComplete="email" required />
+              <Field icon="hash" label="Confirmation number" value={orderNumber} onChange={setOrderNumber} placeholder="Example: 1042" autoComplete="off" required />
+              <AnimatePresence mode="wait">{error && <ErrorMessage key="error">{error}</ErrorMessage>}</AnimatePresence>
+              <button type="submit" disabled={loading} className="rgv-experience-button">
+                {loading ? "Checking your order…" : "Track order"}
+                {!loading && <Icon name="arrow" />}
+              </button>
+            </form>
+            <div className="rgv-tracking-privacy">
+              <Icon name="lock" />
+              <p>Your billing email must match the order number to view its details.</p>
             </div>
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-white/[0.025] shadow-[0_28px_100px_rgba(0,0,0,0.38)] backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_90%_0%,rgba(220,38,38,0.12),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.035),transparent_30%)]" />
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-red-200/42 to-transparent" />
-
-          <div className="relative grid lg:grid-cols-[390px_minmax(0,1fr)]">
-            <aside className="border-b border-white/[0.08] p-5 sm:p-7 lg:border-b-0 lg:border-r lg:border-white/[0.08]">
-              <div className="mb-7 flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-200/68">
-                    Order Lookup
-                  </p>
-
-                  <h2 className="mt-2 text-2xl font-black tracking-[-0.06em] text-white">
-                    Verify details
-                  </h2>
-                </div>
-
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-red-300/12 bg-red-500/[0.07] text-red-100">
-                  <Icon name="search" className="h-5 w-5" />
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="grid gap-5">
-                <Field
-                  icon="mail"
-                  label="Billing email"
-                  type="email"
-                  value={email}
-                  onChange={setEmail}
-                  placeholder="you@email.com"
-                  autoComplete="email"
-                  required
-                />
-
-                <Field
-                  icon="hash"
-                  label="Confirmation number"
-                  value={orderNumber}
-                  onChange={setOrderNumber}
-                  placeholder="Example: 1042"
-                  autoComplete="off"
-                  required
-                />
-
-                <AnimatePresence mode="wait">
-                  {error && <ErrorMessage key="error">{error}</ErrorMessage>}
-                </AnimatePresence>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative mt-1 flex min-h-[54px] w-full items-center justify-center overflow-hidden rounded-full bg-red-600 px-5 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_16px_46px_rgba(220,38,38,0.22)] transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.24),transparent)] transition duration-700 group-hover:translate-x-full" />
-
-                  <span className="relative flex items-center gap-2">
-                    {loading ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
-                        Checking
-                      </>
-                    ) : (
-                      <>
-                        Track Order
-                        <Icon
-                          name="arrow"
-                          className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                        />
-                      </>
-                    )}
-                  </span>
-                </button>
-              </form>
-
-              <div className="mt-7 flex items-start gap-3 border-t border-white/[0.07] pt-5">
-                <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-red-300/12 bg-red-500/[0.06] text-red-100">
-                  <Icon name="lock" className="h-4 w-4" />
-                </div>
-
-                <p className="text-xs font-bold leading-6 text-white/34">
-                  For privacy, details only appear when the billing email
-                  matches the confirmation number.
-                </p>
-              </div>
-            </aside>
-
-            <section className="min-h-[500px] p-5 sm:p-8">
-              <AnimatePresence mode="wait">
-                {result ? (
-                  <TrackingResult result={result} />
-                ) : (
-                  <EmptyTracking />
-                )}
-              </AnimatePresence>
-            </section>
-          </div>
-        </section>
+            <a href="/contact" className="rgv-experience-link">Need help finding your order? <Icon name="arrow" /></a>
+          </section>
+          <section className="rgv-tracking-details" aria-live="polite" aria-busy={loading} aria-label="Order details">
+            <AnimatePresence mode="wait">{result ? <TrackingResult result={result} /> : <EmptyTracking />}</AnimatePresence>
+          </section>
+        </div>
+        <p className="rgv-experience-notice">Carrier tracking becomes available after shipment. You can also review your order history in <a href="/account">your account</a>.</p>
       </div>
     </main>
   );

@@ -1,0 +1,53 @@
+.rgv-account-access { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr); gap: clamp(44px,7vw,110px); align-items: start; }
+.rgv-account-intro { padding-top: 25px; }
+.rgv-account-intro .rgv-experience-title { font-size: clamp(38px,4.2vw,60px); }
+.rgv-account-intro__features { max-width: 440px; margin: 36px 0 22px; }
+.rgv-account-intro__features > div { display: flex; gap: 20px; padding: 19px 0; border-top: 1px solid #ffffff19; }
+.rgv-account-intro__features > div > span { padding-top: 3px; color: #a75555; font-family: ui-monospace,monospace; font-size: 9px; }
+.rgv-account-intro__features h2 { margin: 0 0 5px; font-size: 12px; font-weight: 500; letter-spacing: -.02em; }
+.rgv-account-intro__features p { margin: 0; color: #9698a1; font-size: 10px; line-height: 1.8; }
+.rgv-account-auth { min-width: 0; }
+.rgv-account .pointer-events-none.absolute { display: none; }
+.rgv-account-auth__panel { padding: 30px; border-color: #ffffff20; background: #101114; box-shadow: none; }
+.rgv-account-auth__heading { text-align: left; }
+.rgv-account-auth__symbol { display: none; }
+.rgv-account-auth__heading > p:first-of-type { font-size: 9px; color: #b97774; }
+.rgv-account-auth__heading h2 { margin: 13px 0 0; font-size: 28px; font-weight: 450; letter-spacing: -.045em; line-height: 1.2; }
+.rgv-account-auth__heading p:last-child { margin: 12px 0 0; font-size: 11px; line-height: 1.9; }
+.rgv-account :where(h2,h3) { font-weight: 500; letter-spacing: -.035em; }
+.rgv-account :where(button,a) { -webkit-tap-highlight-color: transparent; }
+.rgv-account button.rounded-full, .rgv-account a.rounded-full { border-radius: 11px; }
+.rgv-account input { border-color: #33343a; border-radius: 11px; background: #0b0c0f; font-size: 12px; font-weight: 400; }
+.rgv-account input::placeholder { color: #777984; }
+.rgv-account input:focus { border-color: #ac5358; background: #0c0d10; box-shadow: 0 0 0 3px #8f1d271c; }
+.rgv-account label > span:first-child { font-size: 10px; color: #b5b6bd; }
+.rgv-account-dashboard > div:first-child { padding-bottom: 30px; margin-bottom: 30px; border-bottom: 1px solid #ffffff19; }
+.rgv-account-dashboard h1 { font-size: clamp(36px,4vw,56px); font-weight: 450; line-height: 1.15; letter-spacing: -.055em; overflow-wrap: anywhere; }
+.rgv-account-sidebar { top: auto; box-shadow: none; }
+.rgv-account [aria-pressed] { min-height: 46px; font-size: 11px; border-radius: 11px; box-shadow: none; }
+.rgv-account [aria-pressed="true"] { border-color: #aa3943; background: #791c25; }
+.rgv-account [aria-pressed="false"] { border-color: #ffffff17; background: #ffffff02; }
+.rgv-account [aria-pressed="false"]:hover { background: #ffffff06; }
+.rgv-account p { overflow-wrap: anywhere; }
+@media (min-width: 1024px) { .rgv-account-sidebar { top: 132px; } }
+@media (max-width: 1023px) {
+  .rgv-account-access { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 32px; }
+  .rgv-account-intro .rgv-experience-title { font-size: 38px; }
+  .rgv-account-auth__panel { padding: 24px; }
+  .rgv-account-sidebar { padding: 16px; }
+  .rgv-account-tabs.is-mobile { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #5a383b transparent; }
+  .rgv-account-tabs.is-mobile > button { width: auto; min-height: 42px; flex: 0 0 auto; gap: 8px; padding: 9px 12px; white-space: nowrap; }
+  .rgv-account-tabs.is-mobile > button > span:first-child { width: 18px; height: 18px; border: 0; background: transparent; }
+  .rgv-account-tabs.is-mobile > button svg { width: 15px; height: 15px; }
+}
+@media (max-width: 767px) {
+  .rgv-account-access { grid-template-columns: 1fr; gap: 28px; }
+  .rgv-account-intro { padding-top: 0; }
+  .rgv-account-intro .rgv-experience-title { font-size: clamp(34px,8.6vw,46px); }
+  .rgv-account-intro__features { display: none; }
+  .rgv-account-intro > a { margin-top: 14px; }
+  .rgv-account-auth__panel { padding: 24px 20px; border-radius: 16px; }
+  .rgv-account-auth__heading h2 { font-size: 25px; }
+  .rgv-account-dashboard > div:first-child { margin-bottom: 24px; padding-bottom: 24px; }
+  .rgv-account-dashboard h1 { font-size: 34px; }
+}

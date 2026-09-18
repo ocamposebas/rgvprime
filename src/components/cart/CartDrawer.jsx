@@ -1,6 +1,7 @@
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "./CartContext";
+import "./CartDrawer.css";
 
 function formatMoney(value) {
   const number = Number(value);
@@ -102,76 +103,23 @@ const CartItem = memo(function CartItem({
   }, [updateQuantity, item.id, item.quantity]);
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-      <div className="flex gap-3 sm:gap-4">
-        <a
-          href={productUrl}
-          onClick={closeCart}
-          className="flex h-[88px] w-[88px] shrink-0 items-center justify-center rounded-xl bg-[#101010] p-2 sm:h-24 sm:w-24"
-        >
-          <img
-            src={item.image}
-            alt={item.name}
-            loading="lazy"
-            decoding="async"
-            draggable="false"
-            className="h-full w-full object-contain"
-          />
-        </a>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex gap-3">
-            <a
-              href={productUrl}
-              onClick={closeCart}
-              className="line-clamp-2 flex-1 text-sm font-black leading-5 text-white transition hover:text-red-300"
-            >
-              {item.name}
-            </a>
-
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white/45 transition hover:border-red-500/35 hover:bg-red-600 hover:text-white"
-              aria-label={`Remove ${item.name}`}
-            >
-              <TrashIcon />
-            </button>
+    <article className="rgv-cart-item">
+      <a href={productUrl} onClick={closeCart} className="rgv-cart-item__image">
+        <img src={item.image} alt={item.name} loading="lazy" decoding="async" draggable="false" />
+      </a>
+      <div className="rgv-cart-item__body">
+        <div className="rgv-cart-item__heading">
+          <a href={productUrl} onClick={closeCart}>{item.name}</a>
+          <button type="button" onClick={handleRemove} className="rgv-cart-item__remove" aria-label={`Remove ${item.name}`}><TrashIcon /></button>
+        </div>
+        <p className="rgv-cart-item__unit">{formatMoney(item.price)} <span>/ each</span></p>
+        <div className="rgv-cart-item__bottom">
+          <div className="rgv-cart-quantity" role="group" aria-label={`Quantity of ${item.name}`}>
+            <button type="button" onClick={handleDecrease} aria-label={`Decrease quantity of ${item.name}`}>−</button>
+            <span aria-live="polite">{item.quantity}</span>
+            <button type="button" onClick={handleIncrease} aria-label={`Increase quantity of ${item.name}`}>+</button>
           </div>
-
-          <p className="mt-2 text-sm font-black text-white">
-            {formatMoney(item.price)}
-          </p>
-
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="flex h-10 items-center overflow-hidden rounded-xl border border-white/10 bg-black/35">
-              <button
-                type="button"
-                onClick={handleDecrease}
-                className="flex h-10 w-10 items-center justify-center text-lg font-black text-white/70 transition hover:bg-white/10 hover:text-white"
-                aria-label={`Decrease quantity of ${item.name}`}
-              >
-                -
-              </button>
-
-              <span className="flex h-10 min-w-10 items-center justify-center text-sm font-black text-white">
-                {item.quantity}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleIncrease}
-                className="flex h-10 w-10 items-center justify-center text-lg font-black text-white/70 transition hover:bg-white/10 hover:text-white"
-                aria-label={`Increase quantity of ${item.name}`}
-              >
-                +
-              </button>
-            </div>
-
-            <p className="text-sm font-black text-white/80">
-              {formatMoney(itemTotal)}
-            </p>
-          </div>
+          <p className="rgv-cart-item__total">{formatMoney(itemTotal)}</p>
         </div>
       </div>
     </article>
@@ -179,6 +127,7 @@ const CartItem = memo(function CartItem({
 });
 
 function CartDrawer({ checkoutPath = "/checkout" }) {
+  const dialogRef = useRef(null);
   const {
     items,
     itemCount,
@@ -231,19 +180,39 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
     if (!isCartOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
     const previousPaddingRight = document.body.style.paddingRight;
     const scrollbarWidth = Math.max(
       0,
       window.innerWidth - document.documentElement.clientWidth,
     );
 
+    const previousFocus = document.activeElement;
+    const panel = dialogRef.current;
+    panel?.querySelector(".rgv-cart-close")?.focus();
+
     function handleKeyDown(event) {
       if (event.key === "Escape") {
+        event.preventDefault();
         closeCart();
+      }
+      if (event.key === "Tab") {
+        const controls = [...(panel?.querySelectorAll('a[href],button:not(:disabled)') || [])]
+          .filter((node) => node.getClientRects().length && node.getAttribute("aria-disabled") !== "true");
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) {
+          event.preventDefault();
+          first?.focus();
+        }
       }
     }
 
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     if (scrollbarWidth > 0) {
       const currentPadding = Number.parseFloat(
@@ -258,153 +227,62 @@ function CartDrawer({ checkoutPath = "/checkout" }) {
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
       document.body.style.paddingRight = previousPaddingRight;
       window.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, [isCartOpen, closeCart]);
 
   if (!isCartOpen || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[1000]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Shopping cart"
-    >
-          <button
-            type="button"
-            aria-label="Close cart overlay"
-            onClick={handleOverlayClose}
-            className="absolute inset-0 z-0 bg-black/70 backdrop-blur-sm"
-          />
-
-          <aside
-            className="absolute right-0 top-0 z-10 flex h-[100dvh] w-[96vw] max-w-[440px] flex-col overflow-hidden rounded-l-2xl border-l border-white/10 bg-[#070707] text-white shadow-[0_0_90px_rgba(0,0,0,0.65)] sm:w-full sm:rounded-none"
-          >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(220,38,38,0.12),transparent_32%),radial-gradient(circle_at_15%_75%,rgba(127,29,29,0.12),transparent_34%)]" />
-            <div className="pointer-events-none absolute left-0 top-0 h-full w-px bg-gradient-to-b from-red-500/35 via-white/10 to-transparent" />
-
-            <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-              <div className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5 sm:py-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-red-500 sm:text-xs">
-                      Your Cart
-                    </p>
-
-                    <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] sm:text-3xl">
-                      {itemCount} {itemCount === 1 ? "Item" : "Items"}
-                    </h2>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={closeCart}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/80 transition hover:bg-red-600 hover:text-white"
-                    aria-label="Close cart"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-                {!hasItems ? (
-                  <div
-                    className="flex min-h-full flex-col items-center justify-center py-10 text-center"
-                  >
-                    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/65 shadow-[0_0_40px_rgba(220,38,38,0.08)]">
-                      <EmptyCartIcon />
-                    </div>
-
-                    <p className="text-xl font-black tracking-[-0.03em] text-white sm:text-2xl">
-                      Your cart is empty.
-                    </p>
-
-                    <p className="mt-2 max-w-xs text-sm leading-6 text-white/50">
-                      Add a product to begin your order.
-                    </p>
-
-                    <a
-                      href="/shop"
-                      onClick={closeCart}
-                      className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-red-600 px-8 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-red-500"
-                    >
-                      Shop Products
-                    </a>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {safeItems.map((item) => (
-                      <CartItem
-                        key={item.id}
-                        item={item}
-                        closeCart={closeCart}
-                        removeItem={removeItem}
-                        updateQuantity={updateQuantity}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {hasItems && (
-                <div
-                  className="shrink-0 border-t border-white/10 bg-black/45 px-4 py-4 sm:px-5 sm:py-5"
-                  style={{
-                    paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={handleClearCart}
-                    className="mb-4 text-xs font-bold uppercase tracking-[0.12em] text-white/35 transition hover:text-red-300"
-                  >
-                    Clear Cart
-                  </button>
-
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/45">
-                      Subtotal
-                    </p>
-
-                    <p className="text-3xl font-black tracking-[-0.05em] text-white">
-                      {formattedSubtotal}
-                    </p>
-                  </div>
-
-                  {cartNotice && (
-                    <p
-                      role="alert"
-                      className="mb-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2.5 text-xs font-bold leading-5 text-amber-100"
-                    >
-                      {cartNotice}
-                    </p>
-                  )}
-
-                  <a
-                    href={checkoutPath}
-                    onClick={handleCheckoutClick}
-                    aria-disabled={isCheckingStock}
-                    className={`flex min-h-[52px] w-full items-center justify-center rounded-xl px-6 text-sm font-black uppercase tracking-[0.1em] text-white transition ${
-                      isCheckingStock
-                        ? "pointer-events-none cursor-wait bg-red-950 text-white/55"
-                        : "bg-red-600 hover:bg-red-500"
-                    }`}
-                  >
-                    {isCheckingStock ? "Checking Stock..." : "Continue to Checkout"}
-                  </a>
-
-                  <p className="mt-4 text-center text-[11px] leading-5 text-white/35">
-                    Products are intended strictly for laboratory research use
-                    only. Not for human or animal use.
-                  </p>
-                </div>
-              )}
+    <div className="rgv-cart-overlay" role="dialog" aria-modal="true" aria-label="Shopping cart">
+      <button type="button" aria-label="Close cart overlay" aria-hidden="true" tabIndex={-1} onClick={handleOverlayClose} className="rgv-cart-scrim" />
+      <aside ref={dialogRef} className="rgv-cart-panel">
+        <header className="rgv-cart-header">
+          <div>
+            <p>RGVPRIME / YOUR SELECTION</p>
+            <h2>Your cart <span>{itemCount} {itemCount === 1 ? "item" : "items"}</span></h2>
+          </div>
+          <button type="button" onClick={closeCart} className="rgv-cart-close" aria-label="Close cart"><CloseIcon /></button>
+        </header>
+        <div className={`rgv-cart-content${!hasItems ? " is-empty" : ""}`}>
+          {!hasItems ? (
+            <div className="rgv-cart-empty">
+              <div className="rgv-cart-empty__icon"><EmptyCartIcon /></div>
+              <h3>Your cart is empty</h3>
+              <p>Explore the collection and add your first selection.</p>
             </div>
-          </aside>
-        </div>,
+          ) : (
+            <div className="rgv-cart-items">{safeItems.map((item) => <CartItem key={item.id} item={item} closeCart={closeCart} removeItem={removeItem} updateQuantity={updateQuantity} />)}</div>
+          )}
+        </div>
+        {!hasItems && (
+          <footer className="rgv-cart-footer rgv-cart-footer--empty">
+            <a href="/shop" onClick={closeCart} className="rgv-cart-button">Explore the collection <span aria-hidden="true">↗</span></a>
+            <div className="rgv-cart-footer__links">
+              <button type="button" onClick={closeCart}>Continue browsing</button>
+            </div>
+          </footer>
+        )}
+        {hasItems && (
+          <footer className="rgv-cart-footer">
+            <div className="rgv-cart-summary"><span>Subtotal</span><strong>{formattedSubtotal}</strong></div>
+            <p className="rgv-cart-shipping-note">Shipping and any applicable taxes are calculated at checkout.</p>
+            {cartNotice && <p role="alert" className="rgv-cart-notice">{cartNotice}</p>}
+            <a href={checkoutPath} onClick={handleCheckoutClick} aria-disabled={isCheckingStock} className="rgv-cart-button">
+              {isCheckingStock ? "Checking stock…" : "Continue to checkout"}<span aria-hidden="true">↗</span>
+            </a>
+            <div className="rgv-cart-footer__links">
+              <button type="button" onClick={closeCart}>Continue shopping</button>
+              <button type="button" onClick={handleClearCart}>Clear cart</button>
+            </div>
+            <p className="rgv-cart-disclaimer">Strictly for laboratory research use. Not for human or animal use.</p>
+          </footer>
+        )}
+      </aside>
+    </div>,
     document.body,
   );
 }

@@ -1,16 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Navbar from "../components/nav/Navbar.jsx";
 import COASection from "../components/coa/COASection.jsx";
 ---
 
 <BaseLayout
+  bodyClass="rgv-service-page"
   title="Certificates of Analysis | RGVPRIME LLC"
   description="Search RGVPRIME LLC certificate records by product name, product identifier, or lot number and review available laboratory documentation."
 >
-  <Navbar client:load />
-
-  <main class="relative min-h-screen bg-black">
-    <COASection client:load />
-  </main>
+  <COASection client:load />
 </BaseLayout>

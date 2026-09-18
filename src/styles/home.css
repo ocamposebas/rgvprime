@@ -90,7 +90,7 @@
 .rgv-home-questions__support > span { color: #958a7b; }
 .rgv-home-questions__support > a { display: inline-flex; align-items: center; gap: 10px; color: #d5cabe; }
 
-/* Keep the existing newsletter and footer connected to the home palette. */
+/* Keep newsletter spacing connected to the home sections. */
 .rgv-home-page .rgv-dispatch { padding: 0 0 63px; background: #09090a; color-scheme: dark; font-family: "RGV Sora",ui-sans-serif,system-ui,sans-serif; }
 .rgv-home-page .rgv-dispatch__shell { width: min(1256px,calc(100% - 96px)); border: 1px solid #ffffff24; border-radius: 18px; background: #131313; }
 .rgv-home-page .rgv-dispatch__offer { min-height: 310px; background: #581316; }
@@ -106,10 +106,6 @@
 .rgv-home-page .rgv-dispatch__consent input:checked + span { border-color: #b8524f; background: #822629; }
 .rgv-home-page .rgv-dispatch__status[data-kind="success"] { color: #a1bc9e; }
 .rgv-home-page .rgv-dispatch__status[data-kind="error"] { color: #dd9690; }
-.rgv-home-page footer { font-family: "RGV Sora",ui-sans-serif,system-ui,sans-serif; }
-.rgv-home-page footer [class~="bg-red-600"] { border-color: #a74845 !important; background: #822629 !important; box-shadow: none !important; }
-.rgv-home-page footer [class~="bg-red-600"]:hover { background: #942f32 !important; }
-.rgv-home-page footer [class~="text-red-500"], .rgv-home-page footer [class~="text-red-400"] { color: #b96a63; }
 
 @media (max-width: 1100px) {
   .rgv-home-shell, .rgv-home-page .rgv-dispatch__shell { width: calc(100% - 64px); }
