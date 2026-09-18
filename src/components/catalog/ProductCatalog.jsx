@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { isProductAvailable } from "../../lib/inventory";
+import { calculateLoyaltyPoints, formatPoints } from "../../lib/loyaltyProgram";
 import {
   getFormatMeta,
   getProductFormatSupport,
@@ -1707,7 +1708,20 @@ export function ProductCard({
     !isVariableProduct ||
     variationStatus === "success" ||
     cardVariations.length > 0;
-  const optionsLoading = isVariableProduct && !exactOptionsReady;
+  const optionsLoading =
+    isVariableProduct && !exactOptionsReady && variationStatus !== "error";
+  const startingPrice =
+    isVariableProduct && !selectedVariation && !isKit
+      ? formatPrice(product.price)
+      : null;
+  const displayPrice = selectedPrice || startingPrice;
+  const points = calculateLoyaltyPoints(
+    selectedVariation
+      ? getVariationPrice(selectedVariation, product)
+      : !isKit || !isVariableProduct
+        ? product.price
+        : 0,
+  );
   const allFormatOptionsSoldOut =
     formatVariations.length > 0 &&
     !formatVariations.some(({ variation }) => isVariationAvailable(variation));
@@ -1836,6 +1850,21 @@ export function ProductCard({
           <a href={productUrl}>
             <h3>{product.name}</h3>
           </a>
+          <div
+            className={`rgv-card-price ${displayPrice ? "" : "is-empty"}`}
+            aria-live="polite"
+          >
+            <small>{priceContext}</small>
+            {startingPrice && <span className="rgv-card-price__from">From</span>}
+            <span>
+              <strong>{displayPrice || (optionsLoading ? "—" : "View price")}</strong>
+              {discount && <del>{formatPrice(discount.regularPrice)}</del>}
+            </span>
+            {points > 0 && <span className="rgv-card-points">+{formatPoints(points)} points</span>}
+          </div>
+        </div>
+        <div className="rgv-card-meta-row">
+          <p className="rgv-card-meta">{formatLabel}</p>
           <span
             className={`rgv-card-inline-stock rgv-index-card__stock ${cardStatus.status}`}
             aria-label={`Availability: ${cardStatus.label}`}
@@ -1847,7 +1876,6 @@ export function ProductCard({
             {stockLabel}
           </span>
         </div>
-        <p className="rgv-card-meta">{formatLabel}</p>
         {isVariableProduct && (
           <fieldset className="rgv-card-options">
             <legend>{isApparel ? "Size" : "Strength"}</legend>
@@ -1900,18 +1928,6 @@ export function ProductCard({
         )}
 
         <footer className="rgv-index-card__footer rgv-card-footer">
-          <div
-            className={`rgv-card-price ${selectedPrice ? "" : "is-empty"}`}
-            aria-live="polite"
-          >
-            <small>{priceContext}</small>
-            <span>
-              <strong>
-                {selectedPrice || (optionsLoading ? "Loading…" : "View price")}
-              </strong>
-              {discount && <del>{formatPrice(discount.regularPrice)}</del>}
-            </span>
-          </div>
           <button
             type="button"
             className="rgv-card-add"
@@ -1924,9 +1940,13 @@ export function ProductCard({
             }
             aria-busy={isAdding}
             aria-controls={
-              canAddDirectly ? undefined : "catalog-strength-sheet"
+              !canAddDirectly && typeof onChoose === "function"
+                ? "catalog-strength-sheet"
+                : undefined
             }
-            aria-expanded={canAddDirectly ? undefined : active}
+            aria-expanded={
+              !canAddDirectly && typeof onChoose === "function" ? active : undefined
+            }
           >
             <span>{actionLabel}</span>
             {canAddDirectly ? (
@@ -2025,6 +2045,13 @@ export default function ProductCatalog({ initialProducts = [] }) {
   const [productsPerPage, setProductsPerPage] = useState(
     DESKTOP_PRODUCTS_PER_PAGE,
   );
+
+  useEffect(() => {
+    const format = new URLSearchParams(window.location.search).get("format");
+    if (format === PRODUCT_FORMATS.SINGLE || format === PRODUCT_FORMATS.KIT) {
+      setActiveFormat(format);
+    }
+  }, []);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 639px)");

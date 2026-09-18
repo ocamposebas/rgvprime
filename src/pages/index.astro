@@ -4,8 +4,13 @@ import HomePage from "../components/app/HomePage.jsx";
 ---
 
 <BaseLayout
+  bodyClass="rgv-home-page"
   title="Laboratory Research Products | RGVPRIME LLC"
   description="Browse RGVPRIME LLC laboratory research products with clear catalog information, certificate documentation, availability, and secure ordering."
 >
+  <Fragment slot="head">
+    <link rel="preload" href="/fonts/goldman/Goldman-Bold.ttf" as="font" type="font/ttf" crossorigin="anonymous" />
+    <link rel="preload" href="/fonts/sora/Sora-Variable.ttf" as="font" type="font/ttf" crossorigin="anonymous" />
+  </Fragment>
   <HomePage client:load />
 </BaseLayout>

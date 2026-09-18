@@ -11,6 +11,7 @@ import {
 } from "../lib/seo";
 
 interface Props {
+  bodyClass?: string;
   title?: string;
   description?: string;
   image?: string;
@@ -34,6 +35,7 @@ const omnisendBrandId = String(
 ).trim();
 
 const {
+  bodyClass,
   title = "RGVPRIME LLC | Laboratory Research Products",
   description = "RGVPRIME LLC provides high-quality laboratory research products, transparent COA access, secure ordering and reliable service. Products are intended strictly for research use.",
   image = "/logo.webp",
@@ -346,7 +348,7 @@ const webpageSchema = {
     <slot name="head" />
   </head>
 
-  <body>
+  <body class={bodyClass}>
     <div class="site-shell">
       <Agegate client:load />
 

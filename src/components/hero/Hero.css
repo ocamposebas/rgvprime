@@ -1,0 +1,117 @@
+@font-face {
+  font-family: "RGV Hero Display";
+  src: url("/fonts/goldman/Goldman-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+.rgv-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 151px 0 0;
+  color: #f0efeb;
+  background: #090a0c;
+}
+.rgv-hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 34% 35%, #777f9012, transparent 48%),
+    radial-gradient(ellipse at 86% 70%, #701c1f1a, transparent 40%),
+    linear-gradient(112deg, transparent 58%, #ffffff02 58.1%, #ffffff00 80%);
+  content: "";
+}
+.rgv-hero__composition {
+  display: grid;
+  grid-template-columns: minmax(0,1.8fr) minmax(0,1fr);
+  align-items: end;
+  gap: 62px;
+  padding: 48px 0 41px;
+}
+.rgv-hero__copy { min-width: 0; }
+.rgv-hero__title {
+  margin: 0;
+  font-family: "RGV Hero Display", "Arial Narrow", sans-serif;
+  font-size: clamp(56px,7.7vw,112px);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -.018em;
+  line-height: .88;
+  text-transform: uppercase;
+}
+.rgv-hero__title-line {
+  display: block;
+  width: fit-content;
+  padding-right: .05em;
+  transform: skewX(-7deg);
+  transform-origin: left bottom;
+  color: #f1f1ed;
+}
+.rgv-hero__title .rgv-hero__title-accent {
+  margin-top: 11px;
+  color: #b0383b;
+}
+.rgv-hero__introduction { display: flex; align-items: stretch; gap: 18px; margin-top: 33px; }
+.rgv-hero__intro-rule { width: 2px; flex-shrink: 0; background: #81352f; }
+.rgv-hero__introduction p { max-width: 580px; margin: 0; color: #a8aaae; font-size: 13px; font-weight: 400; line-height: 1.85; }
+.rgv-hero__actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 27px; }
+.rgv-hero-primary, .rgv-hero-secondary { display: inline-flex; min-height: 50px; align-items: center; justify-content: center; gap: 19px; padding: 13px 21px; border: 1px solid transparent; border-radius: 13px; color: #f7f5f2; font-size: 11px; font-weight: 550; transition: background-color 180ms ease,border-color 180ms ease; }
+.rgv-hero-primary { border-color: #a2353b; background: #851e25; box-shadow: inset 0 1px 0 #df868b1a; }
+.rgv-hero-primary:hover { background: #9b282f; border-color: #b7454b; }
+.rgv-hero-secondary { border-color: #ffffff29; background: #0e1014; box-shadow: inset 0 1px 0 #ffffff05; }
+.rgv-hero-secondary:hover { border-color: #ffffff60; background: #15181d; }
+.rgv-hero__index { min-width: 0; margin-bottom: 3px; padding: 2px 0 0 28px; border-left: 1px solid #ffffff23; }
+.rgv-hero__index-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: #979ba1; }
+.rgv-hero__index-header > span { font-family: ui-monospace,monospace; font-size: 8px; font-weight: 500; letter-spacing: .13em; }
+.rgv-hero__index-header > svg { width: 17px; }
+.rgv-hero__index-title { margin: 21px 0 26px; color: #b9bdc3; font-size: 21px; font-weight: 450; line-height: 1.4; letter-spacing: -.04em; }
+.rgv-hero__index-links a { display: grid; min-height: 76px; grid-template-columns: 20px minmax(0,1fr) 18px; align-items: center; gap: 12px; border-top: 1px solid #ffffff1c; transition: background-color 180ms ease; }
+.rgv-hero__index-links a:last-child { border-bottom: 1px solid #ffffff1c; }
+.rgv-hero__index-links a:hover { background: #ffffff04; }
+.rgv-hero__index-links a:hover > svg { transform: translate(2px,-2px); color: #db8b7b; }
+.rgv-hero__index-number { color: #a5665d; font-family: ui-monospace,monospace; font-size: 9px; }
+.rgv-hero__index-copy strong { display: block; color: #e5e4e1; font-size: 12px; font-weight: 500; line-height: 1.5; }
+.rgv-hero__index-copy small { display: block; margin-top: 3px; color: #92969d; font-size: 9px; line-height: 1.5; }
+.rgv-hero__index-links svg { color: #9ca2aa; transition: transform 180ms ease,color 180ms ease; }
+.rgv-hero__baseline { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px 0 22px; border-top: 1px solid #ffffff1c; }
+.rgv-hero__baseline p { margin: 0; color: #94979d; font-size: 9px; line-height: 1.8; }
+.rgv-hero__baseline a { display: inline-flex; align-items: center; gap: 18px; color: #cac6c0; font-size: 9px; white-space: nowrap; }
+.rgv-hero__baseline a:hover { color: #fff; }
+@media (min-width: 1600px) {
+  .rgv-hero__composition { padding-block: 54px 45px; gap: 85px; }
+}
+@media (max-width: 1100px) {
+  .rgv-hero__composition { gap: 32px; grid-template-columns: minmax(0,1.6fr) minmax(0,1fr); }
+  .rgv-hero__title { font-size: 7.7vw; }
+  .rgv-hero__index { padding-left: 22px; }
+  .rgv-hero__index-title { font-size: 19px; }
+  .rgv-hero__desktop-break { display: none; }
+}
+@media (max-width: 767px) {
+  .rgv-hero { padding-top: 141px; }
+  .rgv-hero__composition { grid-template-columns: minmax(0,1fr); gap: 27px; padding: 33px 0 22px; }
+  .rgv-hero__title { font-size: clamp(39px,13.4vw,96px); letter-spacing: -.025em; line-height: .92; }
+  .rgv-hero__title .rgv-hero__title-accent { margin-top: 7px; }
+  .rgv-hero__introduction { gap: 13px; margin-top: 24px; }
+  .rgv-hero__introduction p { max-width: 380px; font-size: 12px; line-height: 1.8; }
+  .rgv-hero__actions { gap: 8px; margin-top: 23px; }
+  .rgv-hero-primary, .rgv-hero-secondary { min-height: 46px; padding: 12px 16px; gap: 15px; font-size: 10px; border-radius: 12px; }
+  .rgv-hero__index { padding: 0; margin: 0; border: 0; }
+  .rgv-hero__index-header, .rgv-hero__index-title { display: none; }
+  .rgv-hero__index-links { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-block: 1px solid #ffffff1c; }
+  .rgv-hero__index-links a { min-height: 54px; grid-template-columns: minmax(0,1fr) 12px; gap: 5px; padding: 0 10px; border: 0; border-left: 1px solid #ffffff1c; }
+  .rgv-hero__index-links a:first-child { padding-left: 0; border-left: 0; }
+  .rgv-hero__index-links a:last-child { padding-right: 0; border-bottom: 0; }
+  .rgv-hero__index-number, .rgv-hero__index-copy small { display: none; }
+  .rgv-hero__index-copy strong { font-size: 8px; line-height: 1.5; }
+  .rgv-hero__index-links svg { width: 12px; }
+  .rgv-hero__baseline { display: block; padding: 0 0 18px; border-top: 0; }
+  .rgv-hero__baseline p { font-size: 8px; line-height: 1.8; }
+  .rgv-hero__baseline a { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rgv-hero *, .rgv-hero *::before, .rgv-hero *::after { transition: none !important; }
+}

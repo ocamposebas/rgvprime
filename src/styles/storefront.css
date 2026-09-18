@@ -1,4 +1,11 @@
 /* Shared catalog, product, and quick-order design system. */
+@font-face {
+  font-family: "RGV Sora";
+  src: url("/fonts/sora/Sora-Variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+}
 .rgv-catalog,
 .rgv-product-page {
   --rgv-bg: #0c0c0e;
@@ -420,6 +427,14 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .rgv-product-card {
+  --rgv-text: #f5f5f6;
+  --rgv-copy: #b2b2b9;
+  --rgv-muted: #92929c;
+  --rgv-line: #2b2b30;
+  --rgv-red: #991b24;
+  --rgv-red-hover: #ad2530;
+  --rgv-pill: 999px;
+  --rgv-display: "RGV Sora", ui-sans-serif, system-ui, sans-serif;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -427,6 +442,8 @@
   border: 1px solid #363639;
   border-radius: 16px;
   background: #101012;
+  font-family: var(--rgv-display);
+  color-scheme: dark;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
@@ -525,8 +542,8 @@
   padding: 16px;
 }
 .rgv-card-title-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: 6px 10px;
@@ -539,20 +556,27 @@
   margin: 0;
   color: var(--rgv-text);
   font-family: var(--rgv-display);
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-size: 0.9375rem;
+  font-weight: 550;
+  letter-spacing: -0.025em;
   line-height: 1.35;
   overflow-wrap: anywhere;
-  text-transform: uppercase;
 }
 .rgv-card-title-row a:hover h3 {
   color: #f39a9a;
 }
+.rgv-card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  margin-top: 8px;
+}
 .rgv-card-meta {
-  margin: 5px 0 0;
+  margin: 0;
   color: var(--rgv-muted);
-  font-size: 0.63rem;
+  font-size: 0.5625rem;
 }
 .rgv-index-card__stock {
   display: inline-flex;
@@ -560,18 +584,24 @@
   flex-shrink: 0;
   gap: 6px;
   color: #c2c2c9;
-  font-size: 0.57rem;
+  font-size: 0.5rem;
   font-weight: 500;
-  letter-spacing: 0.09em;
+  letter-spacing: 0;
   line-height: 1.5;
-  text-transform: uppercase;
 }
 .rgv-index-card__stock > i {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #29db7c;
+  background: #39ff14;
+}
+.rgv-index-card__stock:is(.high, .medium, .low) {
+  color: #39ff14;
+}
+.rgv-index-card__stock:is(.high, .medium, .low) > i {
+  background: #39ff14;
+  box-shadow: 0 0 7px #39ff1433;
 }
 .rgv-index-card__stock.out {
   color: #f39a9a;
@@ -615,8 +645,8 @@
   border-radius: 13px;
   background: transparent;
   font-family: var(--rgv-display);
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.6875rem;
+  font-weight: 600;
   cursor: pointer;
 }
 .rgv-card-options button:only-child {
@@ -630,8 +660,8 @@
 }
 .rgv-card-options button.is-active:not(:disabled) {
   color: #fff;
-  border-color: #f0434a;
-  background: linear-gradient(120deg, #e11729, #bb0a1e);
+  border-color: #b53c44;
+  background: linear-gradient(120deg, #9f1f28, #801720);
 }
 .rgv-card-options button:disabled {
   color: #777780;
@@ -655,19 +685,18 @@
 }
 .rgv-card-footer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(134px, 1.18fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: end;
-  gap: 12px;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 12px;
 }
 .rgv-card-price {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   min-width: 0;
 }
 .rgv-card-price > small {
@@ -680,6 +709,7 @@
 }
 .rgv-card-price > span {
   display: flex;
+  justify-content: flex-end;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 5px;
@@ -687,14 +717,21 @@
 .rgv-card-price strong {
   color: var(--rgv-text);
   font-family: var(--rgv-display);
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 550;
   letter-spacing: -0.025em;
   line-height: 1.4;
 }
 .rgv-card-price del {
   color: var(--rgv-muted);
-  font-size: 0.68rem;
+  font-size: 0.5625rem;
+}
+.rgv-card-price__from,
+.rgv-card-points {
+  color: var(--rgv-muted);
+  font-size: 0.5rem;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 .rgv-card-price.is-empty strong {
   font-size: 0.8rem;
@@ -704,7 +741,7 @@
   display: inline-flex;
   min-width: 0;
   width: 100%;
-  min-height: 46px;
+  min-height: 40px;
   align-items: center;
   justify-content: space-between;
   gap: 7px;
@@ -712,11 +749,11 @@
   color: #fff;
   border: 1px solid var(--rgv-red);
   border-radius: 14px;
-  background: linear-gradient(120deg, #e11729, #bb0a1e);
+  background: linear-gradient(120deg, #9f1f28, #801720);
   font-family: var(--rgv-display);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
@@ -1982,7 +2019,7 @@
     padding: 12px;
   }
   .rgv-card-title-row h3 {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
   }
   .rgv-card-title-row {
     gap: 5px 7px;
@@ -1990,43 +2027,61 @@
   .rgv-index-card__stock {
     gap: 4px;
     font-size: 0.48rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
   }
   .rgv-card-options {
     margin-top: 11px;
   }
   .rgv-card-options > div {
-    gap: 5px;
+    flex-wrap: nowrap;
+    gap: 4px;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 2px;
+    padding-block: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #585860 transparent;
   }
   .rgv-card-options button {
-    flex: 0 0 auto;
+    flex: 0 0 calc((100% - 12px) / 4);
+    min-width: max-content;
     min-height: 36px;
-    padding: 6px;
-    font-size: 0.65rem;
-    border-radius: 11px;
+    padding: 5px 4px;
+    font-size: 0.625rem;
+    border-radius: 9px;
+    scroll-snap-align: start;
+    white-space: nowrap;
   }
   .rgv-card-footer {
     grid-template-columns: minmax(0, 1fr);
-    gap: 11px;
-    padding-top: 12px;
+    gap: 8px;
+    padding-top: 10px;
   }
   .rgv-card-price > span {
     gap: 7px;
   }
   .rgv-card-price strong {
-    font-size: 1.25rem;
+    font-size: 1rem;
+    line-height: 1.2;
   }
   .rgv-card-add {
     width: 100%;
-    min-height: 44px;
-    padding: 7px 8px 7px 12px;
-    font-size: 0.625rem;
-    letter-spacing: 0.045em;
-    border-radius: 12px;
+    min-height: 38px;
+    padding: 6px 8px 6px 10px;
+    font-size: 0.6rem;
+    letter-spacing: 0.035em;
+    border-radius: 10px;
   }
   .rgv-card-add__icon {
-    width: 23px;
-    height: 23px;
+    width: 20px;
+    height: 20px;
+  }
+  .rgv-card-add__icon svg {
+    width: 16px;
+    height: 16px;
   }
   .rgv-card-sale-badge {
     top: 10px;
@@ -2297,12 +2352,12 @@
   }
   .rgv-card-add {
     gap: 4px;
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     padding-left: 10px;
   }
   .rgv-card-add__icon {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
   }
   .rgv-points-credit__note {
     display: none;

@@ -1,357 +1,118 @@
 import { useEffect, useState } from "react";
-import {
-  formatPoints,
-  getProductLoyaltyPoints,
-} from "../../lib/loyaltyProgram";
+import { ArrowUpRight } from "lucide-react";
+import { ProductCard, requestVariationSummaryBatch } from "../catalog/ProductCatalog";
 
-const FALLBACK_IMAGE = "/logo.webp";
+const EMPTY_PRODUCTS = [];
 
-function stripHtml(html = "") {
-  return html.replace(/<[^>]*>?/gm, "").trim();
-}
-
-function formatPrice(price) {
-  if (!price) return "View";
-
-  const number = Number(price);
-
-  if (Number.isNaN(number)) {
-    return `$${price}`;
-  }
-
-  return `$${number.toFixed(2).replace(".00", "")}`;
-}
-
-function getSimpleDescription(product) {
-  const cleanDescription = stripHtml(product.short_description || "");
-
-  if (!cleanDescription) {
-    return "Research-use-only product for laboratory use.";
-  }
-
-  if (cleanDescription.length > 64) {
-    return `${cleanDescription.slice(0, 64)}...`;
-  }
-
-  return cleanDescription;
-}
-
-function getStockBadge(product) {
-  const quantity =
-    product.stock_quantity !== null &&
-    product.stock_quantity !== undefined &&
-    product.stock_quantity !== ""
-      ? Number(product.stock_quantity)
-      : null;
-
-  if (product.stock_status !== "instock") {
-    return {
-      label: "Out",
-      className:
-        "border-red-500/35 bg-red-600/20 text-red-200 shadow-[0_0_24px_rgba(220,38,38,0.25)]",
-    };
-  }
-
-  if (quantity === null || Number.isNaN(quantity)) {
-    return {
-      label: "Available",
-      className:
-        "border-green-500/30 bg-green-500/15 text-green-200 shadow-[0_0_24px_rgba(34,197,94,0.18)]",
-    };
-  }
-
-  if (quantity >= 40) {
-    return {
-      label: `${quantity} Available`,
-      className:
-        "border-green-500/30 bg-green-500/15 text-green-200 shadow-[0_0_24px_rgba(34,197,94,0.18)]",
-    };
-  }
-
-  if (quantity >= 20) {
-    return {
-      label: `${quantity} Left`,
-      className:
-        "border-yellow-500/35 bg-yellow-500/15 text-yellow-200 shadow-[0_0_24px_rgba(234,179,8,0.18)]",
-    };
-  }
-
-  if (quantity > 0) {
-    return {
-      label: `Only ${quantity} Left`,
-      className:
-        "border-red-500/35 bg-red-600/20 text-red-200 shadow-[0_0_24px_rgba(220,38,38,0.25)]",
-    };
-  }
-
-  return {
-    label: "Out",
-    className:
-      "border-red-500/35 bg-red-600/20 text-red-200 shadow-[0_0_24px_rgba(220,38,38,0.25)]",
-  };
-}
-
-function getProductUrl(product = {}) {
-  const slug = String(product?.slug || "")
-    .replace(/^\/+|\/+$/g, "")
-    .trim();
-
-  return slug ? `/product/${slug}` : "/shop";
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-export default function FeaturedProducts({ initialProducts } = {}) {
-  const hasInitialProducts =
-    Array.isArray(initialProducts) && initialProducts.length > 0;
-
-  const [products, setProducts] = useState(() =>
-    hasInitialProducts ? initialProducts.slice(0, 4) : []
-  );
-
-  const [status, setStatus] = useState(() =>
-    hasInitialProducts ? "success" : "loading"
-  );
+export default function FeaturedProducts({ initialProducts = EMPTY_PRODUCTS }) {
+  const [products, setProducts] = useState(() => initialProducts.slice(0, 4));
+  const [status, setStatus] = useState(initialProducts.length ? "success" : "loading");
+  const [variationSummaries, setVariationSummaries] = useState({});
+  const [variationStatuses, setVariationStatuses] = useState({});
 
   useEffect(() => {
-    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
+    if (initialProducts.length) {
       setProducts(initialProducts.slice(0, 4));
       setStatus("success");
       return;
     }
-
-    let cancelled = false;
-
-    async function loadProducts() {
-      try {
-        setStatus("loading");
-
-        const response = await fetch("/api/featured-products", {
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
+    const controller = new AbortController();
+    fetch("/api/featured-products", {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
         const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "Could not load products.");
-        }
-
-        if (!cancelled) {
-          setProducts((data.products || []).slice(0, 4));
-          setStatus("success");
-        }
-      } catch (error) {
-        console.error(error);
-
-        if (!cancelled) {
-          setProducts([]);
-          setStatus("error");
-        }
-      }
-    }
-
-    loadProducts();
-
-    return () => {
-      cancelled = true;
-    };
+        if (!response.ok || data.success !== true) throw new Error("Products unavailable");
+        setProducts(Array.isArray(data.products) ? data.products.slice(0, 4) : []);
+        setStatus("success");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") setStatus("error");
+      });
+    return () => controller.abort();
   }, [initialProducts]);
 
+  useEffect(() => {
+    const ids = products
+      .filter((product) => product.type === "variable")
+      .map((product) => String(product.id));
+    if (!ids.length) return;
+
+    let active = true;
+    setVariationStatuses(Object.fromEntries(ids.map((id) => [id, "loading"])));
+    requestVariationSummaryBatch(ids)
+      .then(({ summaries, failedIds }) => {
+        if (!active) return;
+        const failed = new Set(failedIds.map(String));
+        setVariationSummaries(summaries);
+        setVariationStatuses(Object.fromEntries(ids.map((id) => [
+          id,
+          failed.has(id) || !Array.isArray(summaries[id]) ? "error" : "success",
+        ])));
+      })
+      .catch(() => {
+        if (active) setVariationStatuses(Object.fromEntries(ids.map((id) => [id, "error"])));
+      });
+    return () => {
+      active = false;
+    };
+  }, [products]);
+
   return (
-    <section className="rgv-featured-products relative overflow-hidden bg-[#050505] py-14 text-white sm:py-16 lg:py-20">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(220,38,38,0.12),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(127,29,29,0.1),transparent_32%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-600/35 to-transparent" />
-
-      <div className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-8 lg:px-12 xl:px-8">
-        <div className="mx-auto mb-7 max-w-3xl text-center sm:mb-8">
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-red-500">
-            Best Sellers
-          </p>
-
-          <h2 className="text-3xl font-black leading-tight tracking-[-0.04em] text-white sm:text-4xl md:text-5xl">
-            Our Most Requested Products
-          </h2>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
-            Customer favorites from our current product lineup.
-          </p>
+    <section id="featured-products" className="rgv-home-collection rgv-home-section" aria-labelledby="home-collection-title">
+      <div className="rgv-home-shell">
+        <div className="rgv-home-section-heading">
+          <div>
+            <p className="rgv-home-kicker"><span>01</span> THE COLLECTION</p>
+            <h2 id="home-collection-title">The current selection.</h2>
+          </div>
+          <div className="rgv-home-section-heading-aside">
+            <p>A closer look at the RGVPRIME catalog.</p>
+            <a className="rgv-home-text-link" href="/shop">View all products <ArrowUpRight size={16} aria-hidden="true" /></a>
+          </div>
         </div>
 
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]"
-              >
-                <div className="aspect-[4/5] w-full animate-pulse bg-white/[0.04]" />
-
-                <div className="space-y-3 p-3 sm:p-4">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-white/10" />
-                  <div className="h-4 w-full animate-pulse rounded bg-white/[0.06]" />
-                  <div className="h-12 w-full animate-pulse rounded-xl bg-white/10" />
-                  <div className="h-10 w-full animate-pulse rounded-xl bg-white/10" />
-                </div>
+          <div className="rgv-home-products" aria-busy="true" aria-label="Loading featured products">
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className="rgv-product-card rgv-home-product--loading" aria-hidden="true">
+                <div className="rgv-card-media" />
+                <div className="rgv-card-body"><span /><span /><span /></div>
               </div>
             ))}
           </div>
         )}
 
-        {status === "error" && (
-          <div className="mx-auto max-w-xl rounded-3xl border border-red-500/20 bg-red-500/10 p-6 text-center">
-            <p className="text-lg font-black text-white">
-              Products are not available right now.
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-white/60">
-              Please try again in a moment or visit the shop.
-            </p>
-
-            <a
-              href="/shop"
-              className="mt-5 inline-flex min-h-12 items-center justify-center rounded-xl bg-red-600 px-6 text-sm font-black text-white transition hover:bg-red-500"
-            >
-              Go to Shop
-            </a>
+        {status !== "loading" && !products.length && (
+          <div className="rgv-home-empty" role="status">
+            <p>{status === "error" ? "The selection is temporarily unavailable." : "Explore the complete collection in the catalog."}</p>
+            <a className="rgv-home-button" href="/shop">Open the catalog <ArrowUpRight size={16} aria-hidden="true" /></a>
           </div>
         )}
 
-        {status === "success" && products.length === 0 && (
-          <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white/[0.035] p-6 text-center">
-            <p className="text-lg font-black text-white">
-              No featured products yet.
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-white/55">
-              Please check back soon.
-            </p>
+        {products.length > 0 && (
+          <div className="rgv-home-products">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.id || product.slug}
+                product={product}
+                sequence={index + 1}
+                priority={index < 2}
+                variations={variationSummaries[String(product.id)] || []}
+                variationStatus={
+                  variationStatuses[String(product.id)] ||
+                  (product.type === "variable" ? "loading" : "success")
+                }
+              />
+            ))}
           </div>
         )}
 
-        {status === "success" && products.length > 0 && (
-          <>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-              {products.map((product, index) => {
-                const image = product.image || FALLBACK_IMAGE;
-                const description = getSimpleDescription(product);
-                const productUrl = getProductUrl(product);
-
-                const price =
-                  product.type === "variable"
-                    ? `From ${formatPrice(product.price)}`
-                    : formatPrice(product.price);
-
-                const stockBadge = getStockBadge(product);
-                const loyaltyPoints = getProductLoyaltyPoints(product);
-
-                return (
-                  <article
-                    key={product.id || product.slug || product.name}
-                    className="rgv-product-card group h-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition duration-300 hover:-translate-y-1 hover:border-red-500/35 hover:shadow-[0_28px_80px_rgba(0,0,0,0.4)]"
-                  >
-                    <a
-                      href={productUrl}
-                      className="rgv-product-media relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden bg-[#101010]"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-black/20" />
-
-                      <div className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/10 blur-3xl transition duration-300 group-hover:bg-red-600/20 sm:h-44 sm:w-44" />
-
-                      <img
-                        src={image}
-                        srcSet={product?.images?.[0]?.srcset || undefined}
-                        alt={product.image_alt || product.name}
-                        loading={index < 2 ? "eager" : "lazy"}
-                        fetchPriority={index < 2 ? "high" : "auto"}
-                        decoding="async"
-                        draggable="false"
-                        width="520"
-                        height="780"
-                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 50vw, 25vw"
-                        className="relative h-full w-full max-w-none object-cover object-center transition-transform duration-200 group-hover:scale-[1.025]"
-                      />
-
-                      <span
-                        className={`rgv-stock-badge absolute left-2 top-2 rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${stockBadge.className}`}
-                      >
-                        {stockBadge.label}
-                      </span>
-
-                      <span className="rgv-product-eye absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/65 text-white/80 backdrop-blur transition duration-300 group-hover:border-red-500/35 group-hover:bg-red-600 group-hover:text-white sm:right-3 sm:top-3">
-                        <EyeIcon />
-                      </span>
-                    </a>
-
-                    <div className="p-3 sm:p-4">
-                      <h3 className="line-clamp-2 min-h-[40px] text-sm font-black leading-tight tracking-[-0.03em] text-white sm:min-h-[44px] sm:text-base">
-                        {product.name}
-                      </h3>
-
-                      <p className="mt-2 line-clamp-2 min-h-[38px] text-[11px] leading-5 text-white/55 sm:min-h-[40px] sm:text-xs">
-                        {description}
-                      </p>
-
-                      <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2.5 sm:mt-4 sm:p-3">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
-                          Price
-                        </p>
-
-                        <p className="mt-1 text-xl font-black tracking-[-0.04em] text-white sm:text-2xl">
-                          {price}
-                        </p>
-                        {loyaltyPoints > 0 && (
-                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-red-400/15 bg-red-500/[0.07] px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-red-100/70 sm:text-[9px]">
-                            <span className="text-red-400" aria-hidden="true">★</span>
-                            +{formatPoints(loyaltyPoints)} points
-                          </span>
-                        )}
-                      </div>
-
-                      <a
-                        href={productUrl}
-                        className="mt-3 flex min-h-10 w-full items-center justify-center rounded-xl bg-red-600 px-3 text-[10px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-red-500 sm:min-h-11 sm:px-4 sm:text-xs"
-                      >
-                        View Product
-                      </a>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="mt-7 text-center">
-              <a
-                href="/shop"
-                className="rgv-products-secondary inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-7 text-sm font-black text-white transition hover:border-red-500/35 hover:bg-red-600"
-              >
-                View All Products
-              </a>
-            </div>
-          </>
-        )}
-
-        <p className="mx-auto mt-7 max-w-3xl text-center text-xs leading-6 text-white/35">
-          Products shown are intended strictly for laboratory research use only.
-          Not for human or animal use.
-        </p>
+        <div className="rgv-home-collection__footnote">
+          <p>Laboratory research products. Product specifications and format availability are listed in the catalog.</p>
+          <a href="/shop">Explore the full lineup <ArrowUpRight size={14} aria-hidden="true" /></a>
+        </div>
       </div>
     </section>
   );
