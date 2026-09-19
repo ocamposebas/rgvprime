@@ -30,7 +30,7 @@
   inset: 12% -12% 4% 42%;
   background: radial-gradient(ellipse at 60% 45%, #7a141b38, #3e0b111a 40%, transparent 69%);
   opacity: .65;
-  animation: rgv-hero-ambient-breathe 16s ease-in-out infinite;
+  animation: rgv-hero-ambient-breathe 13s ease-in-out infinite;
   animation-play-state: paused;
 }
 .rgv-hero__ribbon {
@@ -42,7 +42,7 @@
   max-width: none;
   opacity: .92;
   transform-origin: 75% 45%;
-  animation: rgv-hero-ribbon-drift 20s ease-in-out infinite;
+  animation: rgv-hero-ribbon-drift 17s cubic-bezier(.45,.05,.55,.95) infinite;
   animation-play-state: paused;
 }
 .rgv-hero.is-motion-active .rgv-hero__ribbon,
@@ -50,8 +50,10 @@
 .rgv-hero.is-motion-active .rgv-hero__ribbon { will-change: transform; }
 .rgv-hero > .rgv-home-shell { position: relative; }
 @keyframes rgv-hero-ribbon-drift {
-  0%, 100% { transform: translate3d(0,-12px,0) rotate(-4deg); }
-  50% { transform: translate3d(-28px,18px,0) rotate(1deg); }
+  0%, 100% { transform: translate3d(5px,-20px,0) rotate(-4.5deg) scale(1.01); }
+  25% { transform: translate3d(-18px,-2px,0) rotate(-2deg) scale(1.018); }
+  50% { transform: translate3d(-46px,22px,0) rotate(1.4deg) scale(1.025); }
+  75% { transform: translate3d(-19px,7px,0) rotate(-.8deg) scale(1.015); }
 }
 @keyframes rgv-hero-ambient-breathe {
   0%, 100% { opacity: .5; }
@@ -127,9 +129,15 @@
 }
 @media (max-width: 767px) {
   .rgv-hero { padding-top: 137px; }
-  .rgv-hero__backdrop::after { background: linear-gradient(90deg, #090a0cd9, #090a0c4d 75%), linear-gradient(0deg, #090a0c, #090a0c00 50%); }
-  .rgv-hero__ribbon { top: -7px; right: -283px; width: 720px; opacity: .82; }
-  .rgv-hero__ambient { inset: 15% -40% 7% 5%; }
+  .rgv-hero__backdrop::after { background: linear-gradient(90deg, #090a0ce8 0%, #090a0ca8 42%, #090a0c3d 78%, #090a0c18 100%), linear-gradient(0deg, #090a0c 0%, #090a0c00 52%); }
+  .rgv-hero__ribbon {
+    top: -28px;
+    right: clamp(-64px, -10vw, -32px);
+    width: 760px;
+    opacity: .96;
+    transform-origin: 62% 44%;
+  }
+  .rgv-hero__ambient { inset: 8% -18% 3% -8%; opacity: .8; }
   .rgv-hero__composition { padding: 29px 0 28px; }
   .rgv-hero__title { font-size: clamp(38px,13.3vw,96px); letter-spacing: -.035em; line-height: .96; }
   .rgv-hero__title .rgv-hero__title-accent { margin-top: 4px; font-size: 1.12em; }
