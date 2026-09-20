@@ -24,6 +24,7 @@ const ROUTES = {
   "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
   "orbit-hosted-status": "/wp-json/orbit/v1/card-hosted-status",
 };
+const DISABLED_ROUTES = new Set(["zelle-order"]);
 
 function containsPuertoRicoAddress(body = {}) {
   return [body?.billing, body?.shipping].some((address) => {
@@ -43,7 +44,12 @@ export async function POST(context) {
     return json({ success: false, message: "Checkout request is too large." }, 413);
   }
 
-  const route = ROUTES[String(context.params.action || "")];
+  const action = String(context.params.action || "");
+  if (DISABLED_ROUTES.has(action)) {
+    return json({ success: false, message: "This payment method is currently unavailable." }, 410);
+  }
+
+  const route = ROUTES[action];
   if (!route || !WP_URL || !COMPLIANCE_SECRET) return json({ success: false, message: "Checkout route is unavailable." }, 503);
 
   const approved = await requireApprovedSession(context);
@@ -58,13 +64,13 @@ export async function POST(context) {
     return json({ success: false, message: "Shipping to Puerto Rico is not available." }, 400);
   }
 
-  const isQuote = context.params.action === "card-quote";
+  const isQuote = action === "card-quote";
   const requiresCheckoutAcceptance = [
     "card-order",
     "zelle-order",
     "edebit-order",
     "orbit-card-order",
-  ].includes(context.params.action);
+  ].includes(action);
   if (requiresCheckoutAcceptance && !hasRequiredAcknowledgements(body)) {
     return json({ success: false, message: "The separate RUO and Terms confirmations are required at final checkout." }, 400);
   }

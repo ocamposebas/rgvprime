@@ -10,6 +10,9 @@ const destinations = [
 
 export default function Hero() {
   const heroRef = useRef(null);
+  const ribbonRef = useRef(null);
+  const speedRampStartedRef = useRef(false);
+  const speedRampCompletedRef = useRef(false);
   const [motionActive, setMotionActive] = useState(false);
 
   useEffect(() => {
@@ -37,11 +40,71 @@ export default function Hero() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!motionActive || speedRampStartedRef.current || speedRampCompletedRef.current) {
+      return undefined;
+    }
+
+    speedRampStartedRef.current = true;
+    let frame = 0;
+    let ribbonAnimation = null;
+    let cancelled = false;
+
+    const settleDuration = 4400;
+    const initialPlaybackRate = 2.75;
+
+    const findRibbonAnimation = () => {
+      if (cancelled) return;
+
+      ribbonAnimation = ribbonRef.current
+        ?.getAnimations()
+        .find((animation) => animation.animationName === "rgv-hero-ribbon-drift");
+
+      if (!ribbonAnimation) {
+        frame = window.requestAnimationFrame(findRibbonAnimation);
+        return;
+      }
+
+      const startedAt = performance.now();
+
+      const easeIntoCruise = (now) => {
+        if (cancelled || !ribbonAnimation) return;
+
+        const progress = Math.min(1, (now - startedAt) / settleDuration);
+        const remainingSpeed = (1 - progress) ** 2;
+        ribbonAnimation.playbackRate = 1 + (initialPlaybackRate - 1) * remainingSpeed;
+
+        if (progress < 1) {
+          frame = window.requestAnimationFrame(easeIntoCruise);
+        } else {
+          ribbonAnimation.playbackRate = 1;
+          speedRampCompletedRef.current = true;
+          speedRampStartedRef.current = false;
+        }
+      };
+
+      frame = window.requestAnimationFrame(easeIntoCruise);
+    };
+
+    frame = window.requestAnimationFrame(findRibbonAnimation);
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      if (ribbonAnimation) ribbonAnimation.playbackRate = 1;
+      speedRampStartedRef.current = false;
+    };
+  }, [motionActive]);
+
   return (
-    <section ref={heroRef} className={`rgv-hero${motionActive ? " is-motion-active" : ""}`} aria-labelledby="home-hero-title">
+    <section
+      ref={heroRef}
+      className={`rgv-hero${motionActive ? " is-motion-active" : ""}`}
+      aria-labelledby="home-hero-title"
+    >
       <div className="rgv-hero__backdrop" aria-hidden="true">
         <div className="rgv-hero__ambient" />
-        <svg className="rgv-hero__ribbon" viewBox="0 0 1200 900" width="1200" height="900" fill="none" focusable="false">
+        <svg ref={ribbonRef} className="rgv-hero__ribbon" viewBox="0 0 1200 900" width="1200" height="900" fill="none" focusable="false">
           <defs>
             <linearGradient id="rgv-hero-ribbon-surface" x1="690" y1="50" x2="1070" y2="850" gradientUnits="userSpaceOnUse">
               <stop stopColor="#140609" />

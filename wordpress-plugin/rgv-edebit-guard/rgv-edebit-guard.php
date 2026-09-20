@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV eDebit Guard
  * Description: Tracks eDebit payment lifecycles, expires abandoned pending orders, and exposes key-protected status/cancel endpoints for the RGVPRIME checkout.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  * Requires PHP: 7.4
@@ -22,7 +22,7 @@ add_action(
 );
 
 final class RGV_Edebit_Guard {
-    private const VERSION = '1.0.0';
+    private const VERSION = '1.1.0';
     private const REST_NAMESPACE = 'rgv-edebit/v1';
     private const GATEWAY_ID = 'edd_draft_yodlee_gateway';
     private const EXPIRY_SECONDS = HOUR_IN_SECONDS;
@@ -32,9 +32,16 @@ final class RGV_Edebit_Guard {
     private const INITIATED_AT_META = '_rgv_edebit_initiated_at';
     private const EXPIRED_AT_META = '_rgv_edebit_expired_at';
     private const ADMIN_COLUMN = 'rgv_edebit_lifecycle';
+    private const DISCOUNT_RATE = 0.08;
+    private const DISCOUNT_META = '_rgv_edebit_discount_applied';
+    private const DISCOUNT_AMOUNT_META = '_rgv_edebit_discount_amount';
+    private static $discounting_orders = array();
 
     public static function init(): void {
         add_action( 'rest_api_init', array( __CLASS__, 'register_rest_routes' ) );
+        add_action( 'woocommerce_update_order', array( __CLASS__, 'maybe_apply_discount' ), 20, 2 );
+        add_action( 'woocommerce_checkout_order_processed', array( __CLASS__, 'maybe_apply_discount' ), 20, 3 );
+        add_action( 'woocommerce_order_status_pending', array( __CLASS__, 'maybe_apply_discount' ), 20, 1 );
         add_action( 'woocommerce_new_order', array( __CLASS__, 'maybe_initialize_order' ), 30, 2 );
         add_action( 'woocommerce_checkout_order_processed', array( __CLASS__, 'maybe_initialize_order' ), 30, 1 );
         add_action( 'woocommerce_order_status_pending', array( __CLASS__, 'maybe_initialize_order' ), 30, 1 );
@@ -166,6 +173,51 @@ final class RGV_Edebit_Guard {
                 'message'   => 'The previous incomplete bank payment was cancelled.',
             )
         );
+    }
+
+    public static function maybe_apply_discount( $order_id, $context = false, $possible_order = false ): void {
+        $order_id = absint( $order_id );
+        if ( ! $order_id || isset( self::$discounting_orders[ $order_id ] ) ) return;
+
+        $order = $context instanceof WC_Order
+            ? $context
+            : ( $possible_order instanceof WC_Order ? $possible_order : wc_get_order( $order_id ) );
+
+        if (
+            ! $order instanceof WC_Order ||
+            ! self::is_edebit_order( $order ) ||
+            $order->is_paid() ||
+            $order->get_meta( self::DISCOUNT_META, true )
+        ) return;
+
+        $eligible_subtotal = 0.0;
+        foreach ( $order->get_items( 'line_item' ) as $item ) {
+            $eligible_subtotal += max( 0.0, (float) $item->get_total() );
+        }
+        if ( $eligible_subtotal <= 0 ) return;
+
+        $discount = round( $eligible_subtotal * self::DISCOUNT_RATE, wc_get_price_decimals() );
+        if ( $discount <= 0 ) return;
+
+        self::$discounting_orders[ $order_id ] = true;
+
+        try {
+            $fee = new WC_Order_Item_Fee();
+            $fee->set_name( 'eDebit savings (8%)' );
+            $fee->set_amount( -$discount );
+            $fee->set_total( -$discount );
+            $fee->set_tax_status( 'none' );
+            $fee->add_meta_data( '_rgv_edebit_discount_line', 1, true );
+            $order->add_item( $fee );
+            $order->update_meta_data( self::DISCOUNT_META, 1 );
+            $order->update_meta_data( self::DISCOUNT_AMOUNT_META, wc_format_decimal( $discount ) );
+            $order->update_meta_data( '_rgv_edebit_discount_rate', self::DISCOUNT_RATE );
+            $order->calculate_totals( false );
+            $order->add_order_note( sprintf( 'eDebit discount applied: 8%% (%s).', wp_strip_all_tags( wc_price( $discount, array( 'currency' => $order->get_currency() ) ) ) ) );
+            $order->save();
+        } finally {
+            unset( self::$discounting_orders[ $order_id ] );
+        }
     }
 
     public static function maybe_initialize_order( $order_id, $order = false ): void {

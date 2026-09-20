@@ -68,6 +68,14 @@
 .rgv-checkout .rgvx-payment-option > svg { color: #b28c85; }
 .rgv-checkout .rgvx-payment-option strong { color: #e1e0df; font-size: 11px; font-weight: 500; }
 .rgv-checkout .rgvx-payment-option small,.rgv-checkout .rgvx-payment-method-note { color: #9698a1; font-size: 9px; }
+.rgv-checkout .rgvx-payment-switch.is-single { grid-template-columns: minmax(0,1fr); }
+.rgv-checkout .rgvx-payment-switch.is-single .rgvx-payment-option { grid-template-columns: 20px minmax(0,1fr) auto; }
+.rgv-checkout .rgvx-payment-switch.is-single .rgvx-payment-option em { display: inline-flex; padding: 5px 8px; border: 1px solid #5c8c5870; border-radius: 8px; background: #253d2638; color: #a9d6a5; font-size: 8px; font-weight: 550; font-style: normal; letter-spacing: .06em; text-transform: uppercase; }
+.rgv-checkout .rgvx-edebit-saving-callout { display: flex; align-items: flex-start; gap: 11px; margin-top: 12px; padding: 13px 14px; border: 1px solid #53794f68; border-radius: 11px; background: linear-gradient(135deg,#283d272e,#12171345); }
+.rgv-checkout .rgvx-edebit-saving-callout > svg { flex: 0 0 auto; color: #9dca96; }
+.rgv-checkout .rgvx-edebit-saving-callout > span { display: grid; gap: 4px; }
+.rgv-checkout .rgvx-edebit-saving-callout strong { color: #c7dfc3; font-size: 11px; font-weight: 550; }
+.rgv-checkout .rgvx-edebit-saving-callout small { color: #929e91; font-size: 9px; line-height: 1.65; }
 .rgv-checkout .rgvx-final-button { min-height: 50px; border: 1px solid #aa3943; border-radius: 12px; background: #8f1d27; color: #fff; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; box-shadow: none; }
 .rgv-checkout .rgvx-final-button:hover:not(:disabled) { background: #a12a33; box-shadow: none; transform: none; }
 .rgv-checkout .rgvx-summary-item { gap: 12px; padding-block: 17px; border-color: #ffffff15; }
@@ -78,9 +86,24 @@
 .rgv-checkout .rgvx-summary-item em { font-size: 12px; font-weight: 450; color: #dedddb; }
 .rgv-checkout .rgvx-total-row { color: #a1a2aa; font-size: 11px; }
 .rgv-checkout .rgvx-total-row strong { color: #d8d7d5; font-weight: 450; }
+.rgv-checkout .rgvx-edebit-savings-row { align-items: flex-start; margin: 5px 0; padding: 10px 11px; border: 1px solid #557c5260; border-radius: 10px; background: #2237212b; }
+.rgv-checkout .rgvx-edebit-savings-row > span { display: grid; gap: 3px; color: #b7d8b2; }
+.rgv-checkout .rgvx-edebit-savings-row small { color: #839282; font-size: 8px; font-weight: 400; line-height: 1.5; }
+.rgv-checkout .rgvx-edebit-savings-row strong { color: #bce2b7; font-size: 13px; }
 .rgv-checkout .rgvx-total-row.total { border-color: #ffffff20; color: #ededeb; }
 .rgv-checkout .rgvx-total-row.total strong { color: #ededeb; font-size: 28px; font-weight: 450; letter-spacing: -.04em; }
 .rgv-checkout .rgvx-mini-coupon { border-color: #ffffff19; }
+.rgv-checkout .rgvx-points-wallet { display: grid; gap: 11px; margin-top: 13px; padding: 13px; border: 1px solid #ffffff19; border-radius: 12px; background: #0c0d10; }
+.rgv-checkout .rgvx-points-wallet__heading { display: flex; align-items: center; gap: 10px; }
+.rgv-checkout .rgvx-points-wallet__icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border: 1px solid #74424970; border-radius: 10px; background: #61182235; color: #c88b82; }
+.rgv-checkout .rgvx-points-wallet__heading > span:last-child { display: grid; gap: 2px; }
+.rgv-checkout .rgvx-points-wallet__heading small { color: #8e9099; font-size: 8px; font-weight: 450; letter-spacing: .08em; text-transform: uppercase; }
+.rgv-checkout .rgvx-points-wallet__heading strong { color: #dddcda; font-size: 11px; font-weight: 520; }
+.rgv-checkout .rgvx-points-wallet__action { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid #ffffff12; }
+.rgv-checkout .rgvx-points-wallet__action p,.rgv-checkout .rgvx-points-wallet__status { margin: 0; color: #92949d; font-size: 9px; line-height: 1.65; }
+.rgv-checkout .rgvx-points-wallet__action button { min-height: 34px; padding: 8px 11px; border: 1px solid #89404a; border-radius: 9px; background: #711b24; color: #fff; font-size: 9px; font-weight: 520; white-space: nowrap; }
+.rgv-checkout .rgvx-points-wallet__action button:hover:not(:disabled) { background: #88242d; }
+.rgv-checkout .rgvx-points-wallet__action button:disabled { border-color: #ffffff12; background: #ffffff06; color: #656770; cursor: not-allowed; }
 .rgv-checkout .rgvx-mini-coupon-title { font-size: 10px; font-weight: 400; color: #a1a2aa; }
 .rgv-checkout .rgvx-mini-coupon-input { border-color: #33343a; border-radius: 10px; background: #0b0c0f; font-size: 11px; color: #ededeb; }
 .rgv-checkout .rgvx-mini-coupon-action { border-color: #ffffff25; border-radius: 10px; background: #ffffff03; font-size: 10px; font-weight: 500; color: #d5d4d2; }
@@ -149,5 +172,7 @@
   .rgv-checkout .rgvx-form-section,.rgv-checkout .rgvx-payment-section { padding-block: 25px; }
   .rgv-checkout .rgvx-empty-state { padding: 28px 22px; }
   .rgv-checkout .rgvx-thanks-page { padding-top: 32px !important; }
+  .rgv-checkout .rgvx-points-wallet__action { grid-template-columns: 1fr; }
+  .rgv-checkout .rgvx-points-wallet__action button { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .rgv-checkout *, .rgv-checkout *::before, .rgv-checkout *::after { animation: none !important; transition: none !important; } }

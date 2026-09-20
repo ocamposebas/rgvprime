@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Coins,
   CreditCard,
   FileUp,
   Lock,
@@ -23,7 +24,7 @@ import {
   trackOmnisendCart,
   trackOmnisendStartedCheckout,
 } from "../../lib/omnisendCart";
-import { getMeOnce } from "../../lib/accountSession";
+import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 import OrbitSecureCardPayment from "./OrbitSecureCardPayment";
 import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
 
@@ -51,6 +52,7 @@ const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
 const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
+const EDEBIT_DISCOUNT_RATE = 0.08;
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -161,7 +163,7 @@ const ACCEPTED_RECEIPT_TYPES = [
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
 const ORBIT_PAYMENT_MODE = "disabled";
-const ZELLE_PAYMENT_VISIBLE = true;
+const ZELLE_PAYMENT_VISIBLE = false;
 const ORBIT_EMBEDDED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "embedded";
 const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted";
 const ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000;
@@ -190,8 +192,8 @@ const PAYMENT_METHODS = [
     label: "eDebit",
     eyebrow: "Secure bank route",
     title: "eDebit",
-    description: "Secure bank payment",
-    badge: "Secure",
+    description: "Secure bank payment · Save 8%",
+    badge: "Save 8%",
     icon: Building2,
   },
   ...(ZELLE_PAYMENT_VISIBLE ? [{
@@ -1060,6 +1062,9 @@ export default function RgvCheckout() {
   const [memoCopied, setMemoCopied] = useState(false);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(true);
   const [sessionCustomer, setSessionCustomer] = useState(null);
+  const [sessionCustomerLoading, setSessionCustomerLoading] = useState(true);
+  const [rewardsLoading, setRewardsLoading] = useState(false);
+  const [rewardsMessage, setRewardsMessage] = useState("");
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
   const edebitFlowSubmittingRef = useRef(false);
@@ -1109,7 +1114,11 @@ export default function RgvCheckout() {
     }
 
     const user = await sessionCustomerPromiseRef.current;
-    if (!user?.email) return null;
+    setSessionCustomerLoading(false);
+    if (!user?.email) {
+      setSessionCustomer(null);
+      return null;
+    }
 
     setSessionCustomer(user);
     setCheckoutForm((current) => {
@@ -1151,7 +1160,18 @@ export default function RgvCheckout() {
   }, []);
 
   useEffect(() => {
-    loadSessionCustomer();
+    const refreshCustomer = () => {
+      sessionCustomerPromiseRef.current = null;
+      setSessionCustomerLoading(true);
+      void loadSessionCustomer();
+    };
+
+    void loadSessionCustomer();
+    window.addEventListener("rgv-access-granted", refreshCustomer);
+
+    return () => {
+      window.removeEventListener("rgv-access-granted", refreshCustomer);
+    };
   }, []);
 
   useEffect(() => {
@@ -1373,8 +1393,11 @@ export default function RgvCheckout() {
   const estimatedPriorityProcessingFee = priorityProcessing
     ? calculatePercentageFee(processingFeeBase, PRIORITY_PROCESSING_FEE_RATE)
     : 0;
+  const edebitSavings = isEdebitSelected
+    ? Number((Math.max(discountedCartTotal, 0) * EDEBIT_DISCOUNT_RATE).toFixed(2))
+    : 0;
   const estimatedDue = Math.max(
-    processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee,
+    processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee - edebitSavings,
     0
   );
   const orbitPaymentsAvailable = Boolean(
@@ -1585,6 +1608,12 @@ export default function RgvCheckout() {
     ? Number(checkoutQuote.priorityProcessingFeeMinor || 0) / 100
     : estimatedPriorityProcessingFee;
   const summaryTotal = usesOrbitQuote ? authoritativeDue : estimatedDue;
+  const loyalty = sessionCustomer?.loyalty || null;
+  const loyaltyPoints = Math.max(0, Number(loyalty?.points || 0));
+  const loyaltyMinimum = Math.max(1, Number(loyalty?.minimum_points || 1000));
+  const redeemablePoints = Math.max(0, Number(loyalty?.redeemable_points || 0));
+  const redeemableCredit = Math.max(0, Number(loyalty?.redeemable_credit || 0));
+  const pointsToUnlock = Math.max(0, Number(loyalty?.points_to_unlock ?? loyaltyMinimum));
   const edebitAttemptFingerprint = buildEdebitAttemptFingerprint(
     buildCheckoutItems(cartItems),
     checkoutForm.email,
@@ -1619,7 +1648,7 @@ export default function RgvCheckout() {
       : isZelleSelected
       ? "Place order with Zelle"
       : isEdebitSelected
-      ? "Continue with eDebit"
+      ? `Continue with eDebit · Save ${formatMoney(edebitSavings)}`
         : isOrbitSecureSelected
           ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
             ? `Pay ${formatMoney(authoritativeDue)} with ORBIT`
@@ -1629,7 +1658,7 @@ export default function RgvCheckout() {
   const paymentButtonDescription = isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
-      ? "Your order will be created, then you will securely link your bank."
+      ? `Your 8% eDebit savings is already included. Your order will be created before you securely link your bank.`
       : isOrbitSecureSelected
         ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
           ? "Your card is tokenized securely and the payment is confirmed before the order is completed."
@@ -1731,6 +1760,68 @@ export default function RgvCheckout() {
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("rgv_checkout_coupon");
+    }
+  };
+
+  const redeemAvailablePoints = async () => {
+    if (rewardsLoading || !loyalty?.can_redeem || redeemablePoints < 1) return;
+
+    if (coupon || couponInput.trim()) {
+      setRewardsMessage("Remove the current discount code before redeeming your points.");
+      return;
+    }
+
+    const customerEmail = normalizeEmail(checkoutForm.email || sessionCustomer?.email || "");
+    if (!isValidEmail(customerEmail)) {
+      setRewardsMessage("Enter your account email before redeeming points.");
+      return;
+    }
+
+    let issuedCode = "";
+
+    try {
+      setRewardsLoading(true);
+      setRewardsMessage("");
+      setError("");
+
+      const response = await fetch("/api/account/redeem-points", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ points: redeemablePoints }),
+      });
+      const data = safeJsonParse(await response.text(), {});
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || "Unable to redeem your points.");
+      }
+
+      issuedCode = normalizeCoupon(data?.coupon || "");
+      if (!issuedCode) throw new Error("Your reward was created, but no discount code was returned.");
+
+      setSessionCustomer((current) => current ? { ...current, loyalty: data?.loyalty || current.loyalty } : current);
+      resetMeCache();
+      setCouponInput(issuedCode);
+
+      try {
+        const validation = await validateCouponWithWoo(issuedCode, customerEmail);
+        const finalCode = normalizeCoupon(validation?.code || issuedCode);
+        setCoupon(finalCode);
+        setCouponInput(finalCode);
+        setCouponValidation(validation);
+        setCouponStatus("valid");
+        setCouponMessage("Points reward applied.");
+        setRewardsMessage(`You redeemed ${redeemablePoints.toLocaleString("en-US")} points and saved ${formatMoney(data?.credit || redeemableCredit)}.`);
+      } catch {
+        setCouponStatus("idle");
+        setCouponMessage("Your points reward is ready. Select Apply coupon to use it.");
+        setRewardsMessage(`Reward code ${issuedCode} was created and placed in the discount field.`);
+      }
+    } catch (rewardError) {
+      setRewardsMessage(rewardError?.message || "Unable to redeem your points.");
+      if (issuedCode) setCouponInput(issuedCode);
+    } finally {
+      setRewardsLoading(false);
     }
   };
 
@@ -2484,6 +2575,9 @@ export default function RgvCheckout() {
           shipping: finalShipping,
           items: checkoutItems,
           couponCode: coupon,
+          coupon: coupon,
+          couponDiscount,
+          coupon_discount: couponDiscount,
           shippingMethod: {
             id: selectedShippingMethod?.id,
             method_id: selectedShippingMethod?.id,
@@ -2508,6 +2602,17 @@ export default function RgvCheckout() {
           free_shipping_unlocked: freeShippingForOrder,
           couponValidation,
           coupon_validation: couponValidation,
+          subtotal: cartTotal,
+          cartSubtotal: cartTotal,
+          cart_subtotal: cartTotal,
+          discountedSubtotal: discountedCartTotal,
+          discounted_subtotal: discountedCartTotal,
+          edebitDiscountRate: EDEBIT_DISCOUNT_RATE,
+          edebit_discount_rate: EDEBIT_DISCOUNT_RATE,
+          edebitDiscount: edebitSavings,
+          edebit_discount: edebitSavings,
+          expectedTotal: estimatedDue,
+          expected_total: estimatedDue,
           source: "rgvprime_custom_checkout_edebit",
           checkoutAttemptId: edebitCheckoutAttemptIdRef.current,
           ageConfirmed: researchUseAcknowledged,
@@ -3675,7 +3780,7 @@ export default function RgvCheckout() {
                 <h2>How would you like to pay?</h2>
                 <span>Pay securely by linking your bank with eDebit.</span>
               </div>
-              <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""}`} role="radiogroup" aria-label="Payment method">
+              <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""} ${availablePaymentMethods.length === 1 ? "is-single" : ""}`} role="radiogroup" aria-label="Payment method">
                 {availablePaymentMethods.map((method) => {
                   const Icon = method.icon;
                   const active = selectedPaymentMethodId === method.id;
@@ -3687,7 +3792,15 @@ export default function RgvCheckout() {
               {isOrbitSecureSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> {ORBIT_EMBEDDED_CHECKOUT_VISIBLE
                 ? "Enter your credit or debit card securely without leaving this page."
                 : "You will finish securely on pay.orbit, then return here automatically."}</p>}
-              {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Secure bank payment. You will link your bank after your order is created.</p>}
+              {isEdebitSelected && (
+                <div className="rgvx-edebit-saving-callout">
+                  <Coins size={17} aria-hidden="true" />
+                  <span>
+                    <strong>Save 8% with eDebit</strong>
+                    <small>{formatMoney(edebitSavings)} has been deducted from this order. You will link your bank securely after the order is created.</small>
+                  </span>
+                </div>
+              )}
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
 
@@ -3841,6 +3954,16 @@ export default function RgvCheckout() {
                 </div>
               )}
 
+              {edebitSavings > 0 && (
+                <div className="rgvx-total-row good rgvx-edebit-savings-row">
+                  <span>
+                    eDebit savings (8%)
+                    <small>You save by paying securely from your bank</small>
+                  </span>
+                  <strong>-{formatMoney(edebitSavings)}</strong>
+                </div>
+              )}
+
               <div className="rgvx-total-row">
                 <span>{shippingLabelForDisplay}</span>
                 <strong className={freeShippingUnlocked ? "free" : ""}>
@@ -3866,6 +3989,46 @@ export default function RgvCheckout() {
                 <span>{isZelleSelected ? "Due now" : "Total USD"}</span>
                 <strong>{formatMoney(summaryTotal)}</strong>
               </div>
+
+              <section className="rgvx-points-wallet" aria-label="Rewards points">
+                <div className="rgvx-points-wallet__heading">
+                  <span className="rgvx-points-wallet__icon"><Coins size={16} aria-hidden="true" /></span>
+                  <span>
+                    <small>Your rewards</small>
+                    <strong>
+                      {sessionCustomerLoading
+                        ? "Loading points…"
+                        : `${loyaltyPoints.toLocaleString("en-US")} points available`}
+                    </strong>
+                  </span>
+                </div>
+
+                {!sessionCustomerLoading && loyalty && (
+                  <div className="rgvx-points-wallet__action">
+                    <p>
+                      {loyalty.can_redeem
+                        ? `${redeemablePoints.toLocaleString("en-US")} points unlock ${formatMoney(redeemableCredit)} in store credit.`
+                        : `${pointsToUnlock.toLocaleString("en-US")} more points to unlock your next ${formatMoney(loyalty?.reward_value || 25)} reward.`}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={redeemAvailablePoints}
+                      disabled={rewardsLoading || !loyalty.can_redeem || Boolean(coupon || couponInput.trim())}
+                    >
+                      {rewardsLoading
+                        ? "Redeeming…"
+                        : loyalty.can_redeem
+                          ? `Redeem ${formatMoney(redeemableCredit)}`
+                          : `Unlocks at ${loyaltyMinimum.toLocaleString("en-US")}`}
+                    </button>
+                  </div>
+                )}
+
+                {!sessionCustomerLoading && !loyalty && (
+                  <p className="rgvx-points-wallet__status">Rewards information is temporarily unavailable.</p>
+                )}
+                {rewardsMessage && <p className="rgvx-points-wallet__status">{rewardsMessage}</p>}
+              </section>
 
               <section
                 className={`rgvx-mini-coupon ${couponStatus !== "idle" ? `is-${couponStatus}` : ""}`}

@@ -30,12 +30,13 @@ const [
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-admin.php"),
 ]);
 
-for (const method of ['id: "orbit_secure"', 'id: "edebit"', 'id: "zelle"']) {
+for (const method of ['id: "orbit_secure"', 'id: "edebit"']) {
   assert(checkout.includes(method), `Checkout payment method is missing: ${method}`);
 }
 
 assert(checkout.includes('const ORBIT_PAYMENT_MODE = "disabled"'), "ORBIT card payments must stay hidden while temporarily disabled");
-assert(checkout.includes("const ZELLE_PAYMENT_VISIBLE = true"), "Zelle must be visible as an active checkout payment method");
+assert(checkout.includes("const ZELLE_PAYMENT_VISIBLE = false"), "Zelle must remain hidden while disabled");
+assert(proxy.includes('const DISABLED_ROUTES = new Set(["zelle-order"])'), "The storefront proxy must reject disabled Zelle orders");
 assert(checkout.includes('const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted"'), "Hosted checkout must remain available behind the mode switch");
 assert(checkout.includes('useState("edebit")'), "eDebit must remain the default while COP card charging is an optional fallback");
 assert(checkout.includes('description: ORBIT_EMBEDDED_CHECKOUT_VISIBLE ? "Credit or debit card"'), "The Wompi option must use concise card copy");
@@ -122,4 +123,4 @@ for (const expected of [
 assert(hostedSecret.includes("sodium_crypto_secretbox") && hostedSecret.includes("aes-256-gcm"), "Hosted installation secret must remain encrypted at rest");
 assert(admin.includes("orbit_relay_connection_code") && admin.includes("Public storefront URL"), "Hosted setup controls must remain available for later use");
 
-console.log("Payment verification passed (Zelle active, ORBIT card payments hidden with implementations retained).");
+console.log("Payment verification passed (Zelle disabled, ORBIT card payments hidden with implementations retained).");
