@@ -457,7 +457,7 @@ const webpageSchema = {
               ? "Joining…"
               : isSuccess
                 ? "You’re subscribed"
-                : "Get 10% off";
+                : "Get 10% off your first order";
           }
 
           if (status) {
@@ -543,7 +543,7 @@ const webpageSchema = {
             setFormState(
               form,
               "success",
-              data.message || "Your 10% welcome offer is on its way.",
+              data.message || "Your one-time 10% first-order offer is on its way.",
             );
             window.dispatchEvent(
               new CustomEvent("rgv-newsletter-subscribed", {

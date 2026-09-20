@@ -16,6 +16,7 @@ const COMPLIANCE_SECRET = String(
 );
 const ROUTES = {
   "card-quote": "/wp-json/orbit/v1/card-quote",
+  "coupon-validate": "/wp-json/rgv/v1/validate-coupon",
   "card-order": "/wp-json/orbit/v1/card-checkout",
   "zelle-order": "/wp-json/rgv/v1/manual-zelle-order",
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
@@ -64,7 +65,7 @@ export async function POST(context) {
     return json({ success: false, message: "Shipping to Puerto Rico is not available." }, 400);
   }
 
-  const isQuote = action === "card-quote";
+  const isQuote = action === "card-quote" || action === "coupon-validate";
   const requiresCheckoutAcceptance = [
     "card-order",
     "zelle-order",

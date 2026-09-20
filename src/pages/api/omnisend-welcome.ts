@@ -577,7 +577,7 @@ export const POST: APIRoute = async ({
     return json({
       success: true,
       message:
-        "Your welcome offer is being prepared.",
+        "Your one-time first-order offer is being prepared.",
     });
   }
 
@@ -832,7 +832,7 @@ export const POST: APIRoute = async ({
       success: true,
 
       message:
-        "Your 10% welcome offer is on its way.",
+        "Your one-time 10% first-order offer is on its way.",
     });
   } catch (error) {
     console.error(

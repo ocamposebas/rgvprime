@@ -694,7 +694,7 @@ function getPaymentProofEndpoint() {
 }
 
 function getCouponValidateEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/validate-coupon`;
+  return "/api/checkout/coupon-validate";
 }
 
 function getEdebitOrderEndpoint() {
@@ -1740,7 +1740,10 @@ export default function RgvCheckout() {
       setCoupon("");
       setCouponValidation(null);
       setCouponStatus("invalid");
-      setCouponMessage(getCouponUiMessage("invalid"));
+      setCouponMessage(
+        String(err?.message || "").trim().slice(0, 240) ||
+          getCouponUiMessage("invalid")
+      );
 
       if (typeof window !== "undefined") {
         localStorage.removeItem("rgv_checkout_coupon");

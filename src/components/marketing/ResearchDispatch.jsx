@@ -47,7 +47,7 @@ export default function ResearchDispatch() {
                 required
               />
               <button type="submit" data-rgv-newsletter-submit>
-                <span data-rgv-newsletter-button-label>Get 10% off</span>
+                <span data-rgv-newsletter-button-label>Get 10% off your first order</span>
                 <ArrowUpRight size={17} strokeWidth={2.2} aria-hidden="true" />
               </button>
             </div>
@@ -56,8 +56,8 @@ export default function ResearchDispatch() {
               <input name="consent" type="checkbox" required />
               <span aria-hidden="true" />
               <small>
-                I agree to receive my welcome email and occasional catalog
-                updates. Unsubscribe anytime.
+                I agree to receive my one-time first-order offer and occasional
+                catalog updates. Unsubscribe anytime.
               </small>
             </label>
 

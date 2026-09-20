@@ -649,7 +649,7 @@ export default function AgeGate() {
                       className="rgv-gate__checkbox"
                     />
                     <span>
-                      <strong>Send me the 10% welcome offer</strong> and occasional product news by email. Optional; unsubscribe anytime.
+                      <strong>Send me the one-time 10% first-order offer</strong> and occasional product news by email. Optional; unsubscribe anytime.
                     </span>
                   </label>
 
