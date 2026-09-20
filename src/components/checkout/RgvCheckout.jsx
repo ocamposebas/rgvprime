@@ -52,7 +52,7 @@ const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
 const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
-const EDEBIT_DISCOUNT_RATE = 0.08;
+const EDEBIT_DISCOUNT_RATE = 0.05;
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -192,8 +192,8 @@ const PAYMENT_METHODS = [
     label: "eDebit",
     eyebrow: "Secure bank route",
     title: "eDebit",
-    description: "Secure bank payment · Save 8%",
-    badge: "Save 8%",
+    description: "Secure bank payment · Save 5%",
+    badge: "Save 5%",
     icon: Building2,
   },
   ...(ZELLE_PAYMENT_VISIBLE ? [{
@@ -1658,7 +1658,7 @@ export default function RgvCheckout() {
   const paymentButtonDescription = isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
-      ? `Your 8% eDebit savings is already included. Your order will be created before you securely link your bank.`
+      ? `Your 5% eDebit savings is already included. Your order will be created before you securely link your bank.`
       : isOrbitSecureSelected
         ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
           ? "Your card is tokenized securely and the payment is confirmed before the order is completed."
@@ -3799,7 +3799,7 @@ export default function RgvCheckout() {
                 <div className="rgvx-edebit-saving-callout">
                   <Coins size={17} aria-hidden="true" />
                   <span>
-                    <strong>Save 8% with eDebit</strong>
+                    <strong>Save 5% with eDebit</strong>
                     <small>{formatMoney(edebitSavings)} has been deducted from this order. You will link your bank securely after the order is created.</small>
                   </span>
                 </div>
@@ -3960,7 +3960,7 @@ export default function RgvCheckout() {
               {edebitSavings > 0 && (
                 <div className="rgvx-total-row good rgvx-edebit-savings-row">
                   <span>
-                    eDebit savings (8%)
+                    eDebit savings (5%)
                     <small>You save by paying securely from your bank</small>
                   </span>
                   <strong>-{formatMoney(edebitSavings)}</strong>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV eDebit Guard
  * Description: Tracks eDebit payment lifecycles, expires abandoned pending orders, and exposes key-protected status/cancel endpoints for the RGVPRIME checkout.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  * Requires PHP: 7.4
@@ -22,7 +22,7 @@ add_action(
 );
 
 final class RGV_Edebit_Guard {
-    private const VERSION = '1.1.0';
+    private const VERSION = '1.1.1';
     private const REST_NAMESPACE = 'rgv-edebit/v1';
     private const GATEWAY_ID = 'edd_draft_yodlee_gateway';
     private const EXPIRY_SECONDS = HOUR_IN_SECONDS;
@@ -32,7 +32,7 @@ final class RGV_Edebit_Guard {
     private const INITIATED_AT_META = '_rgv_edebit_initiated_at';
     private const EXPIRED_AT_META = '_rgv_edebit_expired_at';
     private const ADMIN_COLUMN = 'rgv_edebit_lifecycle';
-    private const DISCOUNT_RATE = 0.08;
+    private const DISCOUNT_RATE = 0.05;
     private const DISCOUNT_META = '_rgv_edebit_discount_applied';
     private const DISCOUNT_AMOUNT_META = '_rgv_edebit_discount_amount';
     private static $discounting_orders = array();
@@ -203,7 +203,7 @@ final class RGV_Edebit_Guard {
 
         try {
             $fee = new WC_Order_Item_Fee();
-            $fee->set_name( 'eDebit savings (8%)' );
+            $fee->set_name( 'eDebit savings (5%)' );
             $fee->set_amount( -$discount );
             $fee->set_total( -$discount );
             $fee->set_tax_status( 'none' );
@@ -213,7 +213,7 @@ final class RGV_Edebit_Guard {
             $order->update_meta_data( self::DISCOUNT_AMOUNT_META, wc_format_decimal( $discount ) );
             $order->update_meta_data( '_rgv_edebit_discount_rate', self::DISCOUNT_RATE );
             $order->calculate_totals( false );
-            $order->add_order_note( sprintf( 'eDebit discount applied: 8%% (%s).', wp_strip_all_tags( wc_price( $discount, array( 'currency' => $order->get_currency() ) ) ) ) );
+            $order->add_order_note( sprintf( 'eDebit discount applied: 5%% (%s).', wp_strip_all_tags( wc_price( $discount, array( 'currency' => $order->get_currency() ) ) ) ) );
             $order->save();
         } finally {
             unset( self::$discounting_orders[ $order_id ] );

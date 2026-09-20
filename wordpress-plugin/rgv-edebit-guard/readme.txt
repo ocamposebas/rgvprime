@@ -2,10 +2,10 @@
 Contributors: rgvprime
 Requires at least: 6.4
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 
-Tracks the eDebit checkout lifecycle, applies the storefront's 8% eDebit savings once per order, labels unconfirmed orders accurately, expires abandoned pending orders after 60 minutes, and provides order-key-protected status verification for the RGVPRIME storefront.
+Tracks the eDebit checkout lifecycle, applies the storefront's 5% eDebit savings once per order, labels unconfirmed orders accurately, expires abandoned pending orders after 60 minutes, and provides order-key-protected status verification for the RGVPRIME storefront.
 
 == Installation ==
 

@@ -17,8 +17,8 @@ assert(checkout.includes("activeAttempt?.fingerprint === edebitAttemptFingerprin
 assert(checkout.includes("edebitFlowSubmittingRef.current || loading"), "direct eDebit double-submit protection is missing");
 assert(checkout.includes("getEdebitStatusEndpoint"), "server-authoritative eDebit status verification is missing");
 assert(checkout.includes("checkoutAttemptId: edebitCheckoutAttemptIdRef.current"), "eDebit attempt identifier is missing");
-assert(checkout.includes("const EDEBIT_DISCOUNT_RATE = 0.08"), "eDebit 8% discount rate is missing");
-assert(checkout.includes("eDebit savings (8%)"), "eDebit savings must be visible in the order summary");
+assert(checkout.includes("const EDEBIT_DISCOUNT_RATE = 0.05"), "eDebit 5% discount rate is missing");
+assert(checkout.includes("eDebit savings (5%)"), "eDebit savings must be visible in the order summary");
 assert(checkout.includes("edebitDiscount: edebitSavings"), "eDebit savings must be included in the protected order request");
 assert(checkout.includes('fetch("/api/account/redeem-points"'), "checkout points redemption is missing");
 assert(proxy.includes('"edebit-status": "/wp-json/rgv-edebit/v1/order-status"'), "status proxy route is missing");
@@ -33,8 +33,8 @@ for (const expected of [
   "Awaiting customer",
   "custom_order_tables",
   "paymentConfirmed",
-  "DISCOUNT_RATE = 0.08",
-  "eDebit savings (8%)",
+  "DISCOUNT_RATE = 0.05",
+  "eDebit savings (5%)",
   "_rgv_edebit_discount_applied",
 ]) assert(plugin.includes(expected), `eDebit Guard is missing: ${expected}`);
 
