@@ -14,6 +14,7 @@ import {
   getPermanentProductRedirect,
   normalizeCanonicalPath,
 } from "./lib/seo";
+import { isFraudBlockedRequest } from "./lib/fraudBlocklist";
 
 const MAINTENANCE_ACCESS_PARAM = "maintenance_access";
 const MAINTENANCE_ACCESS_COOKIE = "rgv_maintenance_access";
@@ -239,6 +240,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (permanentRedirect) {
     return secure(
       context.redirect(permanentRedirect.location, permanentRedirect.status),
+    );
+  }
+
+  if (
+    pathname.startsWith("/api/") &&
+    (await isFraudBlockedRequest({
+      request: context.request,
+      cookies: context.cookies,
+    }))
+  ) {
+    return secure(
+      new Response(
+        JSON.stringify({
+          success: false,
+          message: "Unable to process this request.",
+        }),
+        {
+          status: 403,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store",
+          },
+        },
+      ),
     );
   }
 
