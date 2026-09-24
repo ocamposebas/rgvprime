@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 2.3.4
+ * Version: 2.3.5
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.3.4';
+  const VERSION = '2.3.5';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -182,7 +182,7 @@ final class RGV_Storefront_Card_Wallet_Return {
   function arrangeOrderPaySurface() {
     var form = document.querySelector('form#order_review');
     var payment = form ? form.querySelector('#payment') : null;
-    var paymentSurface = document.querySelector('#psc-checkout-root');
+    var paymentSurface = document.querySelector('#psc-checkout-root, #psc-checkout');
 
     // On Woo's order-pay endpoint the provider prints its Stripe surface before
     // the form. Move it into the stable form before Stripe mounts its iframes so
@@ -193,7 +193,7 @@ final class RGV_Storefront_Card_Wallet_Return {
       }
     }
 
-    if (form && form.querySelector('#psc-checkout-root')) {
+    if (form && form.querySelector('#psc-checkout-root, #psc-checkout')) {
       form.classList.add('rgv-payment-layout-ready');
     }
 
@@ -1196,7 +1196,7 @@ JS;
         background: #101114 !important;
       }
 
-      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > :is(#psc-checkout-root, #psc-checkout) {
         box-sizing: border-box;
         grid-column: 1;
         grid-row: 2;
@@ -1221,7 +1221,30 @@ JS;
         box-shadow: none !important;
       }
 
-      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root :where(.psc-wallet-stage, .psc-card-stage) {
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout {
+        box-sizing: border-box;
+        grid-column: 1;
+        grid-row: 2;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 26px 20px !important;
+        border: 0 !important;
+        border-right: 1px solid var(--rgv-pay-border) !important;
+        border-left: 1px solid var(--rgv-pay-border) !important;
+        border-radius: 0 !important;
+        background: #101114 !important;
+        box-shadow: none !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout > .psc-card-stage {
+        padding: 16px !important;
+        border: 1px solid rgba(255, 255, 255, .11) !important;
+        border-radius: 15px !important;
+        background: #0b0c0f !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > :is(#psc-checkout-root, #psc-checkout) :where(.psc-wallet-stage, .psc-card-stage) {
         width: 100%;
         min-width: 0;
         margin: 0 !important;
@@ -1304,7 +1327,7 @@ JS;
           grid-row: 2;
         }
 
-        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > :is(#psc-checkout-root, #psc-checkout) {
           grid-column: 1;
           grid-row: 3;
         }
@@ -1326,11 +1349,19 @@ JS;
           border-radius: 18px 18px 0 0 !important;
         }
 
-        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > :is(#psc-checkout-root, #psc-checkout) {
           padding: 0 17px 16px !important;
         }
 
         body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root .psc-checkout {
+          padding: 12px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout {
+          padding: 0 17px 16px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout > .psc-card-stage {
           padding: 12px !important;
         }
 
