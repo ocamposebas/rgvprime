@@ -18,6 +18,7 @@ const ROUTES = {
   "card-quote": "/wp-json/orbit/v1/card-quote",
   "coupon-validate": "/wp-json/rgv/v1/validate-coupon",
   "card-order": "/wp-json/orbit/v1/card-checkout",
+  "prism-order": "/wp-json/rgv-prism/v1/order",
   "zelle-order": "/wp-json/rgv/v1/manual-zelle-order",
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
   "edebit-status": "/wp-json/rgv-edebit/v1/order-status",
@@ -25,7 +26,6 @@ const ROUTES = {
   "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
   "orbit-hosted-status": "/wp-json/orbit/v1/card-hosted-status",
 };
-const DISABLED_ROUTES = new Set(["zelle-order"]);
 
 function containsPuertoRicoAddress(body = {}) {
   return [body?.billing, body?.shipping].some((address) => {
@@ -46,10 +46,6 @@ export async function POST(context) {
   }
 
   const action = String(context.params.action || "");
-  if (DISABLED_ROUTES.has(action)) {
-    return json({ success: false, message: "This payment method is currently unavailable." }, 410);
-  }
-
   const route = ROUTES[action];
   if (!route || !WP_URL || !COMPLIANCE_SECRET) return json({ success: false, message: "Checkout route is unavailable." }, 503);
 
@@ -68,6 +64,7 @@ export async function POST(context) {
   const isQuote = action === "card-quote" || action === "coupon-validate";
   const requiresCheckoutAcceptance = [
     "card-order",
+    "prism-order",
     "zelle-order",
     "edebit-order",
     "orbit-card-order",

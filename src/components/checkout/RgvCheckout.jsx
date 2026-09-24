@@ -163,12 +163,21 @@ const ACCEPTED_RECEIPT_TYPES = [
 
 const LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE = false;
 const ORBIT_PAYMENT_MODE = "disabled";
-const ZELLE_PAYMENT_VISIBLE = false;
+const ZELLE_PAYMENT_VISIBLE = true;
 const ORBIT_EMBEDDED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "embedded";
 const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted";
 const ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000;
 
 const PAYMENT_METHODS = [
+  {
+    id: "prism",
+    label: "PRISM Secure Checkout",
+    eyebrow: "Secure checkout",
+    title: "PRISM Secure Checkout",
+    description: "Cards · Link · Apple Pay · Google Pay",
+    badge: "Secure",
+    icon: CreditCard,
+  },
   ...(LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE ? [{
     id: "card",
     label: "Card & Wallets",
@@ -689,6 +698,10 @@ function getManualOrderEndpoint() {
   return "/api/checkout/zelle-order";
 }
 
+function getPrismOrderEndpoint() {
+  return "/api/checkout/prism-order";
+}
+
 function getPaymentProofEndpoint() {
   return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/payment-proof`;
 }
@@ -1070,6 +1083,8 @@ export default function RgvCheckout() {
   const edebitFlowSubmittingRef = useRef(false);
   const edebitSubmittingRef = useRef(false);
   const edebitCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
+  const prismSubmittingRef = useRef(false);
+  const prismCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
   const orbitCardSubmittingRef = useRef(false);
   const orbitCardPaymentRef = useRef(null);
   const orbitSecureCardPaymentRef = useRef(null);
@@ -1361,11 +1376,12 @@ export default function RgvCheckout() {
 
   const isEdebitSelected = selectedPaymentMethodId === "edebit";
   const isZelleSelected = selectedPaymentMethodId === "zelle";
+  const isPrismSelected = selectedPaymentMethodId === "prism";
   const isOrbitSecureSelected = selectedPaymentMethodId === "orbit_secure";
   const isCardSelected = LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE && selectedPaymentMethodId === "card";
   const usesOrbitQuote = isCardSelected || (isOrbitSecureSelected && ORBIT_HOSTED_CHECKOUT_VISIBLE);
   const hasSelectedPaymentMethod = Boolean(selectedPaymentMethodId);
-  const requiresDirectDetails = isCardSelected || isOrbitSecureSelected || isEdebitSelected || isZelleSelected;
+  const requiresDirectDetails = isCardSelected || isOrbitSecureSelected || isEdebitSelected || isZelleSelected || isPrismSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
@@ -1634,7 +1650,9 @@ export default function RgvCheckout() {
     : summaryItems;
 
   const paymentButtonTitle = loading
-    ? isZelleSelected
+    ? isPrismSelected
+      ? "Opening PRISM Secure Checkout"
+      : isZelleSelected
       ? "Creating Zelle order"
       : isEdebitSelected
         ? "Connecting secure bank payment"
@@ -1645,6 +1663,8 @@ export default function RgvCheckout() {
           : "Preparing secure card payment"
     : !hasSelectedPaymentMethod
       ? "Choose a payment method"
+      : isPrismSelected
+        ? `Continue to PRISM · ${formatMoney(summaryTotal)}`
       : isZelleSelected
       ? "Place order with Zelle"
       : isEdebitSelected
@@ -1655,7 +1675,9 @@ export default function RgvCheckout() {
             : `Continue to ORBIT · ${formatMoney(authoritativeDue)}`
         : `Pay ${formatMoney(authoritativeDue)} securely`;
 
-  const paymentButtonDescription = isZelleSelected
+  const paymentButtonDescription = isPrismSelected
+    ? "You will finish verification and payment securely on the WooCommerce PRISM page."
+    : isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
       ? `Your 5% eDebit savings is already included. Your order will be created before you securely link your bank.`
@@ -1666,7 +1688,7 @@ export default function RgvCheckout() {
       : isCardSelected
         ? "Your payment details are encrypted and protected throughout checkout."
         : !hasSelectedPaymentMethod
-          ? "Select eDebit above before continuing."
+          ? "Select a payment method above before continuing."
           : "Your WooCommerce order total is verified before payment.";
 
   const validateCouponWithWoo = async (cleanCoupon, customerEmail = "") => {
@@ -2765,6 +2787,161 @@ export default function RgvCheckout() {
     }
   };
 
+  const createPrismOrder = async () => {
+    if (prismSubmittingRef.current || loading) return;
+    if (!validateBaseCheckout()) return;
+
+    if (couponInput && couponInput !== coupon) {
+      setError("Apply or clear the coupon code before continuing to PRISM.");
+      return;
+    }
+
+    if (!(await validateCheckoutInventory())) return;
+
+    const normalizedForm = validateDirectPaymentForm("PRISM Secure Checkout");
+    if (!normalizedForm) return;
+
+    const checkoutItems = buildCheckoutItems(cartItems);
+    if (!checkoutItems.length || checkoutItems.some((item) => !item.product_id)) {
+      setError("One or more products are missing a valid WooCommerce product ID.");
+      return;
+    }
+
+    const freeShippingForOrder = isFreeShippingUnlocked();
+    const shippingCostForApi = Number(
+      freeShippingForOrder ? 0 : selectedShippingBaseCost
+    ).toFixed(2);
+    const shippingLabelForOrder = getShippingOrderLabel(
+      selectedShippingMethod,
+      freeShippingForOrder
+    );
+    const controller = new AbortController();
+    const requestTimeout = window.setTimeout(() => controller.abort(), 45000);
+    let redirecting = false;
+
+    try {
+      prismSubmittingRef.current = true;
+      setLoading(true);
+      setError("");
+      setPaymentNotice("Creating your order and opening PRISM Secure Checkout...");
+      persistCheckoutDetails(checkoutForm, normalizedForm.email);
+
+      const response = await fetch(getPrismOrderEndpoint(), {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Idempotency-Key": prismCheckoutAttemptIdRef.current,
+        },
+        body: JSON.stringify({
+          paymentMethod: "psc",
+          payment_method: "psc",
+          paymentMethodTitle: "PRISM Secure Checkout",
+          payment_method_title: "PRISM Secure Checkout",
+          billing: normalizedForm,
+          shipping: normalizedForm,
+          items: checkoutItems,
+          couponCode: coupon,
+          coupon,
+          couponDiscount,
+          coupon_discount: couponDiscount,
+          couponValidation,
+          coupon_validation: couponValidation,
+          priorityProcessing,
+          priority_processing: priorityProcessing,
+          subtotal: cartTotal,
+          cartSubtotal: cartTotal,
+          cart_subtotal: cartTotal,
+          discountedSubtotal: discountedCartTotal,
+          discounted_subtotal: discountedCartTotal,
+          shippingMethod: selectedShippingMethod?.id,
+          shipping_method: selectedShippingMethod?.id,
+          shippingMethodId: selectedShippingMethod?.id,
+          shipping_method_id: selectedShippingMethod?.id,
+          shippingMethodTitle: shippingLabelForOrder,
+          shipping_method_title: shippingLabelForOrder,
+          shippingMethodLabel: shippingLabelForOrder,
+          shipping_method_label: shippingLabelForOrder,
+          shippingCarrier: selectedShippingMethod?.carrier,
+          shipping_carrier: selectedShippingMethod?.carrier,
+          shippingCost: shippingCostForApi,
+          shipping_cost: shippingCostForApi,
+          shippingBaseCost: selectedShippingBaseCost,
+          shipping_base_cost: selectedShippingBaseCost,
+          freeShippingUnlocked: freeShippingForOrder,
+          free_shipping_unlocked: freeShippingForOrder,
+          freeShippingQualifiedBySubtotal,
+          free_shipping_qualified_by_subtotal: freeShippingQualifiedBySubtotal,
+          freeShippingEvaluationBasis: "subtotal_before_coupon",
+          free_shipping_evaluation_basis: "subtotal_before_coupon",
+          freeShippingMinimum: FREE_SHIPPING_MINIMUM,
+          free_shipping_minimum: FREE_SHIPPING_MINIMUM,
+          standardShippingCost: selectedShippingBaseCost,
+          standard_shipping_cost: selectedShippingBaseCost,
+          expectedTotal: estimatedDue,
+          expected_total: estimatedDue,
+          source: "rgv_custom_checkout_prism",
+          requestId: prismCheckoutAttemptIdRef.current,
+          ageConfirmed: researchUseAcknowledged,
+          researchUseAcknowledged,
+          termsAccepted,
+          refundPolicyAccepted: termsAccepted,
+          finalSalePolicyAccepted: termsAccepted,
+          researchUsePolicyAccepted: true,
+          policyAcknowledgedAt: new Date().toISOString(),
+        }),
+      });
+
+      const data = safeJsonParse(await response.text(), {});
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          data?.message || data?.error || "Unable to open PRISM Secure Checkout."
+        );
+      }
+
+      const paymentUrlValue =
+        data?.payment_url || data?.paymentUrl || data?.order?.payment_url || data?.order?.paymentUrl;
+      if (!paymentUrlValue) {
+        throw new Error("Your order was created, but PRISM did not return a payment URL. Please contact support before retrying.");
+      }
+
+      let paymentUrl;
+      let wordpressUrl;
+      try {
+        paymentUrl = new URL(String(paymentUrlValue));
+        wordpressUrl = new URL(cleanUrl(WP_URL));
+      } catch {
+        throw new Error("PRISM returned an invalid payment URL. Please contact support before retrying.");
+      }
+
+      if (
+        paymentUrl.protocol !== "https:" ||
+        paymentUrl.origin !== wordpressUrl.origin ||
+        paymentUrl.username ||
+        paymentUrl.password
+      ) {
+        throw new Error("PRISM returned an untrusted payment URL. Please contact support before retrying.");
+      }
+
+      setPaymentNotice("Redirecting to PRISM Secure Checkout...");
+      redirecting = true;
+      window.location.assign(paymentUrl.toString());
+    } catch (err) {
+      const message = err?.name === "AbortError"
+        ? "PRISM took too long to respond. Your attempt is protected from duplicates; please try again."
+        : err?.message || "Unable to open PRISM Secure Checkout.";
+      setError(message);
+      setPaymentNotice("");
+    } finally {
+      window.clearTimeout(requestTimeout);
+      prismSubmittingRef.current = false;
+      if (!redirecting) setLoading(false);
+    }
+  };
+
   const createZelleOrder = async () => {
     if (!validateBaseCheckout()) return;
 
@@ -2936,6 +3113,11 @@ export default function RgvCheckout() {
   };
 
   const handleContinuePayment = () => {
+    if (isPrismSelected) {
+      void createPrismOrder();
+      return;
+    }
+
     if (isOrbitSecureSelected) {
       if (ORBIT_EMBEDDED_CHECKOUT_VISIBLE) {
         void continueToOrbitSecureCard();
@@ -3489,7 +3671,7 @@ export default function RgvCheckout() {
                     <div>
                       <strong>Contact</strong>
                       <small>
-                        {isCardSelected || isOrbitSecureSelected
+                        {isCardSelected || isOrbitSecureSelected || isPrismSelected
                           ? "We will send your receipt and order updates here."
                           : isEdebitSelected
                             ? "For your confirmation and bank-payment updates."
@@ -3781,7 +3963,7 @@ export default function RgvCheckout() {
               <div className="rgvx-section-heading">
                 <p>Payment</p>
                 <h2>How would you like to pay?</h2>
-                <span>Pay securely by linking your bank with eDebit.</span>
+                <span>Choose secure checkout, bank payment, or manual Zelle.</span>
               </div>
               <div className={`rgvx-payment-switch ${availablePaymentMethods.length === 3 ? "has-three" : ""} ${availablePaymentMethods.length === 1 ? "is-single" : ""}`} role="radiogroup" aria-label="Payment method">
                 {availablePaymentMethods.map((method) => {
@@ -3795,6 +3977,7 @@ export default function RgvCheckout() {
               {isOrbitSecureSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> {ORBIT_EMBEDDED_CHECKOUT_VISIBLE
                 ? "Enter your credit or debit card securely without leaving this page."
                 : "You will finish securely on pay.orbit, then return here automatically."}</p>}
+              {isPrismSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> You will continue to WooCommerce for PRISM verification and secure payment.</p>}
               {isEdebitSelected && (
                 <div className="rgvx-edebit-saving-callout">
                   <Coins size={17} aria-hidden="true" />

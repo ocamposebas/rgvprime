@@ -5,13 +5,14 @@ import { hasRequiredAcknowledgements } from "../src/lib/complianceRules.js";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [ageGate, cart, checkout, proxy, middleware, zelle, orbit, orbitSecure] = await Promise.all([
+const [ageGate, cart, checkout, proxy, middleware, zelle, prism, orbit, orbitSecure] = await Promise.all([
   read("src/components/agegate/AgeGate.jsx"),
   read("src/components/cart/CartContext.jsx"),
   read("src/components/checkout/RgvCheckout.jsx"),
   read("src/pages/api/checkout/[action].js"),
   read("src/middleware.ts"),
   read("wordpress-plugin/rgv-zelle-checkout/rgv-zelle-checkout.php"),
+  read("wordpress-plugin/rgv-prism-checkout/rgv-prism-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
   read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
 ]);
@@ -37,13 +38,13 @@ const exactCertification = "I certify that I am 21 years of age or older and tha
 assert(checkout.includes(exactCertification), "final checkout certification text is missing");
 assert(checkout.includes("researchUseAcknowledged={researchUseAcknowledged}"), "RUO checkbox must be present at final checkout");
 assert(checkout.includes("termsAccepted={termsAccepted}"), "Terms checkbox must be separate at final checkout");
-assert(checkout.includes("/api/checkout/card-order") && checkout.includes("/api/checkout/zelle-order"), "orders must use protected server routes");
+assert(checkout.includes("/api/checkout/card-order") && checkout.includes("/api/checkout/prism-order") && checkout.includes("/api/checkout/zelle-order"), "orders must use protected server routes");
 assert(!checkout.includes('<option value="PR">'), "Puerto Rico must not be selectable as a checkout country");
 assert(!checkout.includes('["PR", "Puerto Rico"]'), "Puerto Rico must not be selectable as a checkout state");
 assert(proxy.includes('country === "PR" || state === "PR"'), "the checkout proxy must reject Puerto Rico addresses");
 assert(zelle.includes("$country === 'PR' || $state === 'PR'"), "Zelle checkout must reject Puerto Rico addresses");
 
-for (const backend of [zelle, orbit, orbitSecure]) {
+for (const backend of [zelle, prism, orbit, orbitSecure]) {
   assert(backend.includes("x-rgv-compliance-secret"), "WordPress must reject calls outside the protected storefront proxy");
   for (const key of [
     "_rgv_compliance_order_id",

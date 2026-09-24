@@ -12,6 +12,7 @@ const [
   statusProxy,
   embeddedPlugin,
   zellePlugin,
+  prismPlugin,
   relay,
   hosted,
   hostedSecret,
@@ -24,21 +25,23 @@ const [
   read("src/pages/api/checkout/orbit-card-status.js"),
   read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
   read("wordpress-plugin/rgv-zelle-checkout/rgv-zelle-checkout.php"),
+  read("wordpress-plugin/rgv-prism-checkout/rgv-prism-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-hosted-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-hosted-secret-store.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-admin.php"),
 ]);
 
-for (const method of ['id: "orbit_secure"', 'id: "edebit"']) {
+for (const method of ['id: "prism"', 'id: "orbit_secure"', 'id: "edebit"', 'id: "zelle"']) {
   assert(checkout.includes(method), `Checkout payment method is missing: ${method}`);
 }
 
 assert(checkout.includes('const ORBIT_PAYMENT_MODE = "disabled"'), "ORBIT card payments must stay hidden while temporarily disabled");
-assert(checkout.includes("const ZELLE_PAYMENT_VISIBLE = false"), "Zelle must remain hidden while disabled");
-assert(proxy.includes('const DISABLED_ROUTES = new Set(["zelle-order"])'), "The storefront proxy must reject disabled Zelle orders");
+assert(checkout.includes("const ZELLE_PAYMENT_VISIBLE = true"), "Zelle must be visible");
+assert(proxy.includes('"zelle-order": "/wp-json/rgv/v1/manual-zelle-order"'), "The protected Zelle route is missing");
+assert(proxy.includes('"prism-order": "/wp-json/rgv-prism/v1/order"'), "The protected PRISM route is missing");
 assert(checkout.includes('const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted"'), "Hosted checkout must remain available behind the mode switch");
-assert(checkout.includes('useState("edebit")'), "eDebit must remain the default while COP card charging is an optional fallback");
+assert(checkout.includes('useState("edebit")'), "The existing eDebit default must remain unchanged");
 assert(checkout.includes('description: ORBIT_EMBEDDED_CHECKOUT_VISIBLE ? "Credit or debit card"'), "The Wompi option must use concise card copy");
 assert(checkout.includes("ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000"), "ORBIT Payments must support orders through $600 USD");
 assert(checkout.includes("<OrbitSecureCardPayment"), "The embedded ORBIT card form must be mounted");
@@ -106,6 +109,17 @@ assert(embeddedPlugin.includes("getenv($environment_name)") && embeddedPlugin.in
 assert(embeddedPlugin.includes("www.datos.gov.co/resource/mcec-87by.json") && embeddedPlugin.includes("superfinanciera_trm"), "The plugin must obtain the official current TRM automatically");
 assert(embeddedPlugin.includes("6 * HOUR_IN_SECONDS") && embeddedPlugin.includes("3 * DAY_IN_SECONDS"), "The official TRM must use bounded caching and a recent fallback");
 assert(!zellePlugin.includes("orbit-card-order") && !zellePlugin.includes("RGV_WOMPI_PRIVATE_KEY"), "The Zelle plugin must remain isolated from card processing");
+assert(!zellePlugin.includes("'/prism-order'") && !zellePlugin.includes("set_payment_method('psc')"), "PRISM must remain isolated from the Zelle plugin");
+for (const expected of [
+  "Plugin Name: RGV PRISM Checkout Handoff",
+  "'rgv-prism/v1'",
+  "$order->set_customer_id(0)",
+  "$order->set_payment_method('psc')",
+  "$order->set_payment_method_title('PRISM Secure Checkout')",
+  "_rgv_storefront_user",
+  "$order->set_status('pending')",
+  "$order->get_checkout_payment_url()",
+]) assert(prismPlugin.includes(expected), `PRISM handoff is missing: ${expected}`);
 
 // Keep the hosted implementation ready for a later mode change; it is intentionally inactive today.
 assert(checkout.includes("window.location.assign(redirectUrl.toString())"), "The retained hosted flow must redirect only after server approval");
@@ -123,4 +137,4 @@ for (const expected of [
 assert(hostedSecret.includes("sodium_crypto_secretbox") && hostedSecret.includes("aes-256-gcm"), "Hosted installation secret must remain encrypted at rest");
 assert(admin.includes("orbit_relay_connection_code") && admin.includes("Public storefront URL"), "Hosted setup controls must remain available for later use");
 
-console.log("Payment verification passed (Zelle disabled, ORBIT card payments hidden with implementations retained).");
+console.log("Payment verification passed (PRISM and Zelle enabled; ORBIT card implementation retained but hidden).");
