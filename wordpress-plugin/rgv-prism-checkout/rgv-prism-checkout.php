@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 2.3.3
+ * Version: 2.3.4
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.3.3';
+  const VERSION = '2.3.4';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -179,9 +179,26 @@ final class RGV_Storefront_Card_Wallet_Return {
     });
   }
 
-  function arrangeCompletedVerification() {
+  function arrangeOrderPaySurface() {
+    var form = document.querySelector('form#order_review');
+    var payment = form ? form.querySelector('#payment') : null;
+    var paymentSurface = document.querySelector('#psc-checkout-root');
+
+    // On Woo's order-pay endpoint the provider prints its Stripe surface before
+    // the form. Move it into the stable form before Stripe mounts its iframes so
+    // the complete payment experience can be presented as one composed card.
+    if (form && payment && paymentSurface && paymentSurface.parentNode !== form) {
+      if (!paymentSurface.querySelector('iframe')) {
+        form.insertBefore(paymentSurface, payment);
+      }
+    }
+
+    if (form && form.querySelector('#psc-checkout-root')) {
+      form.classList.add('rgv-payment-layout-ready');
+    }
+
     var verification = document.querySelector('#psc-research-checkout[data-psc-step="complete"]');
-    var payment = document.querySelector('form#order_review #payment, .woocommerce-order-pay #order_review #payment');
+    payment = payment || document.querySelector('form#order_review #payment, .woocommerce-order-pay #order_review #payment');
     if (!verification || !payment || !payment.parentNode) return;
     if (payment.nextElementSibling !== verification) {
       payment.insertAdjacentElement('afterend', verification);
@@ -190,7 +207,7 @@ final class RGV_Storefront_Card_Wallet_Return {
 
   function start() {
     neutralize(document.body);
-    arrangeCompletedVerification();
+    arrangeOrderPaySurface();
     new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (mutation.type === 'characterData' && mutation.target.parentElement) {
@@ -200,7 +217,7 @@ final class RGV_Storefront_Card_Wallet_Return {
           if (node.nodeType === 1) neutralize(node);
         });
       });
-      arrangeCompletedVerification();
+      arrangeOrderPaySurface();
     }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-psc-step'] });
   }
 
@@ -1146,6 +1163,185 @@ JS;
           margin: 8px 0 0 44px !important;
         }
 
+      }
+
+      /* 2.3.4: compose Woo's header/button and the stable Stripe surface as one card. */
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready {
+        grid-template-columns: minmax(0, 1fr) minmax(370px, 410px);
+        grid-template-rows: auto auto auto auto;
+        column-gap: 28px;
+        row-gap: 0;
+        align-items: start;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment {
+        display: contents !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > ul.payment_methods {
+        box-sizing: border-box;
+        grid-column: 1;
+        grid-row: 1;
+        width: 100%;
+        margin: 0 !important;
+        padding: 26px 26px 16px !important;
+        border: 1px solid var(--rgv-pay-border) !important;
+        border-bottom: 0 !important;
+        border-radius: 22px 22px 0 0 !important;
+        background: #101114 !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+        box-sizing: border-box;
+        grid-column: 1;
+        grid-row: 2;
+        width: 100% !important;
+        min-width: 0;
+        margin: 0 !important;
+        padding: 0 26px 20px !important;
+        border-right: 1px solid var(--rgv-pay-border);
+        border-left: 1px solid var(--rgv-pay-border);
+        background: #101114;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root .psc-checkout {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 16px !important;
+        border: 1px solid rgba(255, 255, 255, .11) !important;
+        border-radius: 15px !important;
+        background: #0b0c0f !important;
+        box-shadow: none !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root :where(.psc-wallet-stage, .psc-card-stage) {
+        width: 100%;
+        min-width: 0;
+        margin: 0 !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > .form-row.place-order {
+        box-sizing: border-box;
+        grid-column: 1;
+        grid-row: 3;
+        width: 100%;
+        margin: 0 !important;
+        padding: 0 26px 26px !important;
+        border: 1px solid var(--rgv-pay-border) !important;
+        border-top: 0 !important;
+        border-radius: 0 0 22px 22px !important;
+        background: #101114 !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > .form-row.place-order::before {
+        display: block;
+        width: 100%;
+        margin: 0 0 20px;
+        border-top: 1px solid var(--rgv-pay-border);
+        content: "";
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > .form-row.place-order #place_order {
+        min-height: 54px;
+        border-radius: 13px !important;
+        font-size: 14px !important;
+        letter-spacing: -.01em;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > table.shop_table {
+        grid-column: 2;
+        grid-row: 1 / 5;
+        margin: 0 !important;
+        border-radius: 22px !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > table.shop_table :is(th, td) {
+        padding: 16px 18px !important;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-research-checkout[data-psc-step="complete"] {
+        grid-column: 1;
+        grid-row: 4;
+        width: 100% !important;
+        margin: 14px 0 0 !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-research-checkout[data-psc-step="complete"] .psc-r-shell {
+        border-radius: 14px !important;
+        background: rgba(16, 17, 20, .96) !important;
+      }
+
+      body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-research-checkout[data-psc-step="complete"] .psc-r-body {
+        padding: 13px 16px !important;
+      }
+
+      @media (max-width: 900px) {
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto auto auto auto;
+          column-gap: 0;
+          row-gap: 0;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > table.shop_table {
+          position: static;
+          grid-column: 1;
+          grid-row: 1;
+          margin: 0 0 18px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > ul.payment_methods {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+          grid-column: 1;
+          grid-row: 3;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > .form-row.place-order {
+          grid-column: 1;
+          grid-row: 4;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-research-checkout[data-psc-step="complete"] {
+          grid-column: 1;
+          grid-row: 5;
+        }
+      }
+
+      @media (max-width: 700px) {
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > ul.payment_methods {
+          padding: 21px 17px 13px !important;
+          border-radius: 18px 18px 0 0 !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root {
+          padding: 0 17px 16px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-checkout-root .psc-checkout {
+          padding: 12px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #payment > .form-row.place-order {
+          padding: 0 17px 18px !important;
+          border-radius: 0 0 18px 18px !important;
+        }
+
+        body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready > #psc-research-checkout[data-psc-step="complete"] {
+          margin-top: 12px !important;
+        }
       }
 CSS;
   }

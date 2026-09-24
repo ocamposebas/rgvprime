@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-prism-checkout'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-storefront-card-return-2.0.5.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-prism-checkout-2.3.4.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "Card and wallet return source directory was not found: $pluginRoot"
@@ -24,7 +24,9 @@ $archive = [IO.Compression.ZipArchive]::new(
 )
 
 try {
-    Get-ChildItem -LiteralPath $pluginRoot -Recurse -File | ForEach-Object {
+    Get-ChildItem -LiteralPath $pluginRoot -Recurse -File |
+        Where-Object { $_.Extension -ne '.lnk' } |
+        ForEach-Object {
         $relativePath = $_.FullName.Substring($pluginRoot.Length).TrimStart([char[]]@('\', '/')).Replace('\', '/')
         $entry = $archive.CreateEntry(
             "rgv-prism-checkout/$relativePath",
@@ -63,8 +65,8 @@ try {
     }
 
     if ($mainSource -notmatch 'Plugin Name:\s+RGV Storefront Card & Wallet Return' -or
-        $mainSource -notmatch 'Version:\s+2\.0\.5') {
-        throw 'ZIP main plugin header is not the expected 2.0.5 card and wallet return build.'
+        $mainSource -notmatch 'Version:\s+2\.3\.4') {
+        throw 'ZIP main plugin header is not the expected 2.3.4 card and wallet return build.'
     }
 
     $invalidEntry = $validationArchive.Entries |
