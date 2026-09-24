@@ -127,10 +127,22 @@ for (const expected of [
   "payment_request_order_key",
   "return (int) get_current_user_id()",
   "hash_equals",
-  "card_payment",
+  "woocommerce_available_payment_gateways",
+  "restrict_public_wordpress_navigation",
+  "is_storefront_receipt_request",
+  "rgv-card-wallet-thankyou-page",
+  "logo.webp",
+  "Go to my account",
+  "Back to store",
+  "5000",
+  "wp_doing_ajax",
+  "REST_REQUEST",
+  "wc-api",
+  "wc-ajax",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
 assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment access must not duplicate WooCommerce's pay_for_order capability lookup");
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
+assert(!cardReturnPlugin.toLowerCase().includes("zelle"), "The branded card checkout shell must remain isolated from Zelle");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
   "is_card_wallet_payment_submission",

@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
- * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.2.0
+ * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
+ * Version: 2.3.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.2.0';
+  const VERSION = '2.3.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -25,6 +25,7 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
     add_filter('woocommerce_order_get_customer_id', [$this, 'allow_bearer_payment_session'], 1000, 2);
     add_filter('body_class', [$this, 'payment_page_body_class'], 100);
+    add_action('template_redirect', [$this, 'restrict_public_wordpress_navigation'], 1);
     add_action('wp_enqueue_scripts', [$this, 'neutralize_frontend_branding'], 100);
     add_action('wp_body_open', [$this, 'render_payment_nav'], 5, 0);
     add_action('before_woocommerce_pay_form', [$this, 'render_payment_header'], 5, 0);
@@ -125,10 +126,13 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     // Keep the branded order-pay shell available even if the payment provider
     // changes its stylesheet handles in a later release.
-    if ($this->is_storefront_payment_request()) {
+    if ($this->is_storefront_payment_request() || $this->is_storefront_receipt_request()) {
       wp_register_style('rgv-card-wallet-payment-page', false, [], self::VERSION);
       wp_enqueue_style('rgv-card-wallet-payment-page');
-      wp_add_inline_style('rgv-card-wallet-payment-page', $css . $this->payment_page_css());
+      wp_add_inline_style(
+        'rgv-card-wallet-payment-page',
+        $css . $this->payment_page_css() . $this->thankyou_page_css()
+      );
     }
 
     $script = <<<'JS'
@@ -206,20 +210,59 @@ JS;
     if ($this->is_storefront_payment_request()) {
       $classes[] = 'rgv-card-wallet-payment-page';
     }
+    if ($this->is_storefront_receipt_request()) {
+      $classes[] = 'rgv-card-wallet-thankyou-page';
+    }
 
     return array_values(array_unique($classes));
   }
 
+  public function restrict_public_wordpress_navigation() {
+    if (
+      is_admin() ||
+      wp_doing_ajax() ||
+      (defined('REST_REQUEST') && REST_REQUEST) ||
+      (defined('DOING_CRON') && DOING_CRON) ||
+      (defined('WP_CLI') && WP_CLI) ||
+      (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) ||
+      isset($_GET['wc-api']) ||
+      isset($_GET['wc-ajax']) ||
+      (function_exists('get_query_var') && (get_query_var('wc-api') || get_query_var('wc-ajax'))) ||
+      !in_array(strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')), ['GET', 'HEAD'], true)
+    ) {
+      return;
+    }
+
+    if ($this->is_storefront_payment_request() || $this->is_storefront_receipt_request()) {
+      return;
+    }
+
+    $storefront = $this->storefront_url();
+    if (!$storefront) {
+      return;
+    }
+
+    wp_redirect($storefront, 302, 'RGVPRIME Storefront');
+    exit;
+  }
+
   public function render_payment_nav() {
-    if (!$this->is_storefront_payment_request()) {
+    if (!$this->is_storefront_payment_request() && !$this->is_storefront_receipt_request()) {
       return;
     }
 
     $storefront = $this->storefront_url();
     $checkout = $storefront ? trailingslashit($storefront) . 'checkout' : '';
+    $logo = $storefront ? trailingslashit($storefront) . 'logo.webp' : '';
 
     echo '<nav class="rgv-pay-nav" aria-label="Payment navigation"><div class="rgv-pay-nav__inner">';
-    echo '<a class="rgv-pay-nav__brand" href="' . esc_url($storefront ?: home_url('/')) . '" aria-label="RGVPRIME home">RGV<span>PRIME</span></a>';
+    echo '<a class="rgv-pay-nav__brand" href="' . esc_url($storefront ?: home_url('/')) . '" aria-label="RGVPRIME home">';
+    if ($logo) {
+      echo '<img src="' . esc_url($logo) . '" alt="RGVPRIME">';
+    } else {
+      echo 'RGV<span>PRIME</span>';
+    }
+    echo '</a>';
     echo '<span class="rgv-pay-nav__secure" aria-label="Secure checkout"><span aria-hidden="true">&#128274;</span> Secure checkout</span>';
     if ($checkout) {
       echo '<a class="rgv-pay-nav__back" href="' . esc_url($checkout) . '"><span aria-hidden="true">&larr;</span> Back to checkout</a>';
@@ -308,6 +351,14 @@ JS;
 
       body.rgv-card-wallet-payment-page .rgv-pay-nav__brand span {
         color: #a12a33;
+      }
+
+      body.rgv-card-wallet-payment-page .rgv-pay-nav__brand img {
+        display: block;
+        width: 144px;
+        height: auto;
+        max-height: 44px;
+        object-fit: contain;
       }
 
       body.rgv-card-wallet-payment-page .rgv-pay-nav__secure {
@@ -819,6 +870,10 @@ JS;
           font-size: 17px;
         }
 
+        body.rgv-card-wallet-payment-page .rgv-pay-nav__brand img {
+          width: 116px;
+        }
+
         body.rgv-card-wallet-payment-page .rgv-pay-nav__back {
           min-height: 36px;
           padding: 8px 10px;
@@ -868,6 +923,260 @@ JS;
 CSS;
   }
 
+  private function thankyou_page_css() {
+    return <<<'CSS'
+
+      body.rgv-card-wallet-thankyou-page {
+        --rgv-pay-bg: #090a0c;
+        --rgv-pay-surface: #101114;
+        --rgv-pay-text: #ededeb;
+        --rgv-pay-muted: #9698a1;
+        --rgv-pay-border: rgba(255, 255, 255, .13);
+        --rgv-pay-accent: #8f1d27;
+        --rgv-pay-accent-hover: #a12a33;
+        min-height: 100svh;
+        background: linear-gradient(145deg, rgba(73, 20, 26, .075), transparent 42%), var(--rgv-pay-bg) !important;
+        color: var(--rgv-pay-text) !important;
+        font-family: "RGV Sora", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      html:has(body.rgv-card-wallet-thankyou-page) {
+        background: #090a0c !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page :where(.wp-site-blocks > header, .wp-site-blocks > footer, .wp-block-post-title, .woocommerce-breadcrumb, .storefront-breadcrumb, #secondary, .widget-area) {
+        display: none !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page :where(.wp-site-blocks, .wp-site-blocks > main, .wp-block-post-content, .entry-content) {
+        box-sizing: border-box;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav {
+        position: relative;
+        z-index: 20;
+        width: 100%;
+        border-bottom: 1px solid rgba(255, 255, 255, .10);
+        background: rgba(9, 10, 12, .96);
+        color: var(--rgv-pay-text);
+        backdrop-filter: blur(14px);
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav__inner {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        width: min(1256px, calc(100% - 96px));
+        min-height: 76px;
+        margin: 0 auto;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav__brand {
+        justify-self: start;
+        color: #ededeb !important;
+        text-decoration: none !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav__brand img {
+        display: block;
+        width: 144px;
+        height: auto;
+        max-height: 44px;
+        object-fit: contain;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav__secure {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        justify-self: center;
+        color: #b0b1ba;
+        font-size: 10px;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-pay-nav__back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-self: end;
+        min-height: 40px;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 255, 255, .14);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, .012);
+        color: #d3d2d0 !important;
+        font-size: 10px;
+        text-decoration: none !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .woocommerce {
+        box-sizing: border-box;
+        width: min(100% - 36px, 720px) !important;
+        max-width: 720px !important;
+        margin: 64px auto 80px !important;
+        color: var(--rgv-pay-text) !important;
+        font-family: inherit;
+      }
+
+      body.rgv-card-wallet-thankyou-page :where(.woocommerce-thankyou-order-received, .woocommerce-order-overview, .woocommerce-order-details, .woocommerce-customer-details, .wc-bacs-bank-details, .woocommerce-notice:not(.rgv-thankyou-card *)) {
+        display: none !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card {
+        padding: 42px 38px 36px;
+        border: 1px solid var(--rgv-pay-border);
+        border-radius: 18px;
+        background: var(--rgv-pay-surface);
+        color: var(--rgv-pay-text);
+        text-align: center;
+        box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__icon {
+        display: grid;
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 24px;
+        place-items: center;
+        border: 1px solid rgba(169, 214, 165, .45);
+        border-radius: 16px;
+        background: rgba(37, 61, 38, .28);
+        color: #a9d6a5;
+        font-size: 26px;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__eyebrow {
+        margin: 0 0 12px;
+        color: #b97774;
+        font-size: 9px;
+        font-weight: 550;
+        letter-spacing: .10em;
+        text-transform: uppercase;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card h1 {
+        margin: 0;
+        color: var(--rgv-pay-text) !important;
+        font-size: clamp(34px, 7vw, 50px);
+        font-weight: 450;
+        letter-spacing: -.05em;
+        line-height: 1.08;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__copy {
+        max-width: 520px;
+        margin: 16px auto 0;
+        color: var(--rgv-pay-muted) !important;
+        font-size: 13px;
+        line-height: 1.8;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 28px 0 0;
+        padding: 18px;
+        border: 1px solid var(--rgv-pay-border);
+        border-radius: 14px;
+        background: #0b0c0f;
+        text-align: left;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__meta span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--rgv-pay-muted);
+        font-size: 9px;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__meta strong {
+        color: #dedddb;
+        font-size: 13px;
+        font-weight: 520;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__actions a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 550;
+        text-decoration: none !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__account {
+        border: 1px solid #aa3943;
+        background: var(--rgv-pay-accent);
+        color: #ffffff !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__store {
+        border: 1px solid rgba(255, 255, 255, .15);
+        background: rgba(255, 255, 255, .02);
+        color: #d8d7d5 !important;
+      }
+
+      body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__redirect {
+        margin: 18px 0 0;
+        color: #858792;
+        font-size: 10px;
+      }
+
+      @media (max-width: 700px) {
+        body.rgv-card-wallet-thankyou-page .rgv-pay-nav__inner {
+          grid-template-columns: 1fr auto;
+          width: calc(100% - 36px);
+          min-height: 66px;
+        }
+
+        body.rgv-card-wallet-thankyou-page .rgv-pay-nav__secure {
+          display: none;
+        }
+
+        body.rgv-card-wallet-thankyou-page .rgv-pay-nav__brand img {
+          width: 116px;
+        }
+
+        body.rgv-card-wallet-thankyou-page .rgv-pay-nav__back {
+          min-height: 36px;
+          padding: 8px 10px;
+        }
+
+        body.rgv-card-wallet-thankyou-page .woocommerce {
+          width: calc(100% - 24px) !important;
+          margin: 28px auto 48px !important;
+        }
+
+        body.rgv-card-wallet-thankyou-page .rgv-thankyou-card {
+          padding: 32px 20px 24px;
+        }
+
+        body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__actions,
+        body.rgv-card-wallet-thankyou-page .rgv-thankyou-card__meta {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+CSS;
+  }
+
   public function return_paid_storefront_order($order_id) {
     $order = wc_get_order($order_id);
     if (!$this->is_storefront_card_wallet_order($order)) {
@@ -888,14 +1197,25 @@ CSS;
       return;
     }
 
-    $target = add_query_arg([
-      'card_payment' => 'success',
-      'order_id' => $order->get_id(),
-      'order_key' => $order->get_order_key(),
-    ], trailingslashit($storefront) . 'checkout');
+    $account_url = trailingslashit($storefront) . 'account';
+    $store_url = trailingslashit($storefront);
 
-    echo '<p class="rgv-storefront-return"><a href="' . esc_url($target) . '">Return to RGVPRIME</a></p>';
-    echo '<script>window.setTimeout(function(){window.location.replace(' . wp_json_encode(esc_url_raw($target)) . ');},900);</script>';
+    echo '<section class="rgv-thankyou-card" aria-labelledby="rgv-thankyou-title">';
+    echo '<div class="rgv-thankyou-card__icon" aria-hidden="true">&#10003;</div>';
+    echo '<p class="rgv-thankyou-card__eyebrow">Payment confirmed</p>';
+    echo '<h1 id="rgv-thankyou-title">Thank you for your order.</h1>';
+    echo '<p class="rgv-thankyou-card__copy">Your payment was received successfully. You can review the order and its progress from your account.</p>';
+    echo '<div class="rgv-thankyou-card__meta">';
+    echo '<div><span>Order</span><strong>#' . esc_html((string) $order->get_order_number()) . '</strong></div>';
+    echo '<div><span>Total</span><strong>' . wp_kses_post($order->get_formatted_order_total()) . '</strong></div>';
+    echo '</div>';
+    echo '<div class="rgv-thankyou-card__actions">';
+    echo '<a class="rgv-thankyou-card__account" href="' . esc_url($account_url) . '">Go to my account</a>';
+    echo '<a class="rgv-thankyou-card__store" href="' . esc_url($store_url) . '">Back to store</a>';
+    echo '</div>';
+    echo '<p class="rgv-thankyou-card__redirect" role="status">Taking you to your account in <span data-rgv-countdown>5</span> seconds.</p>';
+    echo '</section>';
+    echo '<script>(function(){var remaining=5;var counter=document.querySelector("[data-rgv-countdown]");var timer=window.setInterval(function(){remaining-=1;if(counter)counter.textContent=String(Math.max(remaining,0));if(remaining<=0)window.clearInterval(timer);},1000);window.setTimeout(function(){window.location.replace(' . wp_json_encode(esc_url_raw($account_url)) . ');},5000);}());</script>';
   }
 
   private function storefront_url() {
@@ -954,6 +1274,22 @@ CSS;
     }
 
     $order_id = $this->payment_request_order_id();
+    $provided_key = $this->payment_request_order_key();
+    if (!$order_id || !$provided_key) {
+      return false;
+    }
+
+    $order = wc_get_order($order_id);
+    return $this->is_storefront_card_wallet_order($order) &&
+      hash_equals((string) $order->get_order_key(), (string) $provided_key);
+  }
+
+  private function is_storefront_receipt_request() {
+    if (!function_exists('is_order_received_page') || !is_order_received_page()) {
+      return false;
+    }
+
+    $order_id = function_exists('get_query_var') ? absint(get_query_var('order-received', 0)) : 0;
     $provided_key = $this->payment_request_order_key();
     if (!$order_id || !$provided_key) {
       return false;
