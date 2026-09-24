@@ -5,6 +5,7 @@ import {
   json,
   portalRequest,
 } from "../../../lib/portalApi";
+import { listCardWalletOrdersForUser } from "../../../lib/cardWalletCheckout";
 
 export const prerender = false;
 
@@ -53,11 +54,29 @@ export async function GET({ cookies, url }) {
     // Keep active customers signed in for 30 days from their latest visit.
     cookies.set(PORTAL_COOKIE, token, getCookieOptions(url));
 
+    const portalOrders = Array.isArray(data.orders) ? data.orders : [];
+    let cardWalletOrders = [];
+    try {
+      cardWalletOrders = await listCardWalletOrdersForUser(data.user);
+    } catch (orderError) {
+      console.error("CARD WALLET ACCOUNT ORDERS ERROR:", orderError?.code || orderError?.message || orderError);
+    }
+    const mergedOrders = [...portalOrders];
+    const knownOrderIds = new Set(portalOrders.map((order) => Number(order?.id || order?.order_id || 0)));
+    cardWalletOrders.forEach((order) => {
+      if (!knownOrderIds.has(Number(order.id))) mergedOrders.push(order);
+    });
+    mergedOrders.sort((left, right) => {
+      const leftDate = Date.parse(left?.date_created || left?.date || 0) || 0;
+      const rightDate = Date.parse(right?.date_created || right?.date || 0) || 0;
+      return rightDate - leftDate;
+    });
+
     return noStore(
       json({
         success: true,
         user: data.user,
-        orders: data.orders || [],
+        orders: mergedOrders,
       })
     );
   } catch (error) {

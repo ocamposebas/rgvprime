@@ -60,6 +60,7 @@ const PAYMENT_RETURN_TTL_MS = 60 * 60 * 1000;
 const EDEBIT_PENDING_TTL_MS = 60 * 60 * 1000;
 const EDEBIT_PENDING_STORAGE_KEY = "rgv_edebit_pending_order";
 const EDEBIT_ACTIVE_SESSION_KEY = "rgv_edebit_active_payment";
+const CARD_WALLET_PENDING_STORAGE_KEY = "rgv_card_wallet_pending_order";
 
 const SHIPPING_METHODS = [
   {
@@ -170,10 +171,10 @@ const ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000;
 
 const PAYMENT_METHODS = [
   {
-    id: "prism",
-    label: "PRISM Secure Checkout",
+    id: "card_wallets",
+    label: "Card & Wallets",
     eyebrow: "Secure checkout",
-    title: "PRISM Secure Checkout",
+    title: "Card & Wallets",
     description: "Cards · Link · Apple Pay · Google Pay",
     badge: "Secure",
     icon: CreditCard,
@@ -698,8 +699,12 @@ function getManualOrderEndpoint() {
   return "/api/checkout/zelle-order";
 }
 
-function getPrismOrderEndpoint() {
-  return "/api/checkout/prism-order";
+function getCardWalletOrderEndpoint() {
+  return "/api/checkout/card-wallet-order";
+}
+
+function getCardWalletStatusEndpoint() {
+  return "/api/checkout/card-wallet-status";
 }
 
 function getPaymentProofEndpoint() {
@@ -909,6 +914,50 @@ function getInitialOrbitHostedReturn() {
   };
 }
 
+const CARD_WALLET_RETURN_QUERY_KEYS = [
+  "card_payment",
+  "order_id",
+  "order_key",
+];
+
+function getInitialCardWalletReturn() {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("card_payment") !== "success") return null;
+
+  return {
+    payment: "checking",
+    orderId: String(params.get("order_id") || "").replace(/\D/g, "").slice(0, 20),
+    orderKey: String(params.get("order_key") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100),
+  };
+}
+
+function storeCardWalletAttempt(order = {}) {
+  if (typeof window === "undefined") return;
+
+  const orderId = Number(order.order_id || order.id || 0);
+  const orderKey = String(order.order_key || order.orderKey || "");
+  if (!orderId || !orderKey) return;
+
+  try {
+    localStorage.setItem(CARD_WALLET_PENDING_STORAGE_KEY, JSON.stringify({
+      orderId,
+      orderKey,
+      orderNumber: String(order.order_number || order.number || orderId),
+      savedAt: Date.now(),
+      expiresAt: Date.now() + 2 * 60 * 60 * 1000,
+    }));
+  } catch {
+    // The order can still be completed when browser storage is unavailable.
+  }
+}
+
+function clearStoredCardWalletAttempt() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(CARD_WALLET_PENDING_STORAGE_KEY);
+}
+
 const EDEBIT_RETURN_QUERY_KEYS = [
   "rgvprime_bank_thanks",
   "phaseone_bank_thanks",
@@ -1034,6 +1083,10 @@ function ComplianceConfirm({
 export default function RgvCheckout() {
   const cart = useCart?.();
   const [localCartItems] = useState(() => readStoredCartItems());
+  const [cardWalletReturn] = useState(() => getInitialCardWalletReturn());
+  const [verifiedCardWalletReturn, setVerifiedCardWalletReturn] = useState(() =>
+    cardWalletReturn ? { ...cardWalletReturn, payment: "checking" } : null
+  );
   const [edebitReturn] = useState(() => getInitialEdebitReturn());
   const [verifiedEdebitReturn, setVerifiedEdebitReturn] = useState(() =>
     edebitReturn ? { ...edebitReturn, payment: "checking" } : null
@@ -1083,8 +1136,8 @@ export default function RgvCheckout() {
   const edebitFlowSubmittingRef = useRef(false);
   const edebitSubmittingRef = useRef(false);
   const edebitCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
-  const prismSubmittingRef = useRef(false);
-  const prismCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
+  const cardWalletSubmittingRef = useRef(false);
+  const cardWalletCheckoutAttemptIdRef = useRef(createCheckoutAttemptId());
   const orbitCardSubmittingRef = useRef(false);
   const orbitCardPaymentRef = useRef(null);
   const orbitSecureCardPaymentRef = useRef(null);
@@ -1188,6 +1241,88 @@ export default function RgvCheckout() {
       window.removeEventListener("rgv-access-granted", refreshCustomer);
     };
   }, []);
+
+  useEffect(() => {
+    if (!cardWalletReturn || typeof window === "undefined") return undefined;
+
+    const cleanReturnUrl = new URL(window.location.href);
+    CARD_WALLET_RETURN_QUERY_KEYS.forEach((key) => cleanReturnUrl.searchParams.delete(key));
+    window.history.replaceState(
+      {},
+      "",
+      `${cleanReturnUrl.pathname}${cleanReturnUrl.search}${cleanReturnUrl.hash}`
+    );
+
+    const controller = new AbortController();
+    const verifyPayment = async () => {
+      if (!cardWalletReturn.orderId || !cardWalletReturn.orderKey) {
+        setVerifiedCardWalletReturn({
+          ...cardWalletReturn,
+          payment: "unverified",
+          message: "We could not verify this payment yet. Your cart was preserved.",
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(getCardWalletStatusEndpoint(), {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            orderId: cardWalletReturn.orderId,
+            orderKey: cardWalletReturn.orderKey,
+          }),
+        });
+        const data = safeJsonParse(await response.text(), {});
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || "The payment status service is temporarily unavailable.");
+        }
+
+        const lifecycle = String(data?.lifecycle || "pending").toLowerCase();
+        const payment = lifecycle === "confirmed"
+          ? "success"
+          : ["cancelled", "expired"].includes(lifecycle)
+            ? "cancelled"
+            : lifecycle === "failed"
+              ? "failed"
+              : "pending";
+
+        setVerifiedCardWalletReturn({
+          ...cardWalletReturn,
+          payment,
+          orderNumber: String(data?.orderNumber || cardWalletReturn.orderId),
+          status: String(data?.orderStatus || ""),
+          total: String(data?.total || ""),
+          currency: String(data?.currency || "USD"),
+          message: String(data?.message || ""),
+        });
+
+        if (["confirmed", "cancelled", "expired", "failed"].includes(lifecycle)) {
+          clearStoredCardWalletAttempt();
+        }
+        if (lifecycle !== "confirmed") return;
+
+        CART_STORAGE_FALLBACK_KEYS.forEach((key) => localStorage.removeItem(key));
+        localStorage.removeItem("rgv_checkout_coupon");
+        resetMeCache();
+        const clearCartHandler = cart?.clearCart || cart?.emptyCart || cart?.resetCart;
+        if (typeof clearCartHandler === "function") clearCartHandler();
+      } catch (statusError) {
+        if (statusError?.name === "AbortError") return;
+        setVerifiedCardWalletReturn({
+          ...cardWalletReturn,
+          payment: "unverified",
+          message: "We could not verify this payment yet. Your cart was preserved; check your email or order history before trying again.",
+        });
+      }
+    };
+
+    verifyPayment();
+    return () => controller.abort();
+  }, [cardWalletReturn?.orderId, cardWalletReturn?.orderKey]);
 
   useEffect(() => {
     if (!edebitReturn || typeof window === "undefined") return undefined;
@@ -1376,12 +1511,12 @@ export default function RgvCheckout() {
 
   const isEdebitSelected = selectedPaymentMethodId === "edebit";
   const isZelleSelected = selectedPaymentMethodId === "zelle";
-  const isPrismSelected = selectedPaymentMethodId === "prism";
+  const isCardWalletSelected = selectedPaymentMethodId === "card_wallets";
   const isOrbitSecureSelected = selectedPaymentMethodId === "orbit_secure";
   const isCardSelected = LEGACY_ORBIT_CARD_CHECKOUT_VISIBLE && selectedPaymentMethodId === "card";
   const usesOrbitQuote = isCardSelected || (isOrbitSecureSelected && ORBIT_HOSTED_CHECKOUT_VISIBLE);
   const hasSelectedPaymentMethod = Boolean(selectedPaymentMethodId);
-  const requiresDirectDetails = isCardSelected || isOrbitSecureSelected || isEdebitSelected || isZelleSelected || isPrismSelected;
+  const requiresDirectDetails = isCardSelected || isOrbitSecureSelected || isEdebitSelected || isZelleSelected || isCardWalletSelected;
   const hasItems = cartItems.length > 0;
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
@@ -1650,8 +1785,8 @@ export default function RgvCheckout() {
     : summaryItems;
 
   const paymentButtonTitle = loading
-    ? isPrismSelected
-      ? "Opening PRISM Secure Checkout"
+    ? isCardWalletSelected
+      ? "Opening secure card and wallet checkout"
       : isZelleSelected
       ? "Creating Zelle order"
       : isEdebitSelected
@@ -1663,8 +1798,8 @@ export default function RgvCheckout() {
           : "Preparing secure card payment"
     : !hasSelectedPaymentMethod
       ? "Choose a payment method"
-      : isPrismSelected
-        ? `Continue to PRISM · ${formatMoney(summaryTotal)}`
+      : isCardWalletSelected
+        ? `Continue to secure payment · ${formatMoney(summaryTotal)}`
       : isZelleSelected
       ? "Place order with Zelle"
       : isEdebitSelected
@@ -1675,8 +1810,8 @@ export default function RgvCheckout() {
             : `Continue to ORBIT · ${formatMoney(authoritativeDue)}`
         : `Pay ${formatMoney(authoritativeDue)} securely`;
 
-  const paymentButtonDescription = isPrismSelected
-    ? "You will finish verification and payment securely on the WooCommerce PRISM page."
+  const paymentButtonDescription = isCardWalletSelected
+    ? "You will finish research verification and payment on our secure card and wallet page."
     : isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
@@ -2787,18 +2922,18 @@ export default function RgvCheckout() {
     }
   };
 
-  const createPrismOrder = async () => {
-    if (prismSubmittingRef.current || loading) return;
+  const createCardWalletOrder = async () => {
+    if (cardWalletSubmittingRef.current || loading) return;
     if (!validateBaseCheckout()) return;
 
     if (couponInput && couponInput !== coupon) {
-      setError("Apply or clear the coupon code before continuing to PRISM.");
+      setError("Apply or clear the coupon code before continuing to secure payment.");
       return;
     }
 
     if (!(await validateCheckoutInventory())) return;
 
-    const normalizedForm = validateDirectPaymentForm("PRISM Secure Checkout");
+    const normalizedForm = validateDirectPaymentForm("Card & Wallets");
     if (!normalizedForm) return;
 
     const checkoutItems = buildCheckoutItems(cartItems);
@@ -2820,13 +2955,13 @@ export default function RgvCheckout() {
     let redirecting = false;
 
     try {
-      prismSubmittingRef.current = true;
+      cardWalletSubmittingRef.current = true;
       setLoading(true);
       setError("");
-      setPaymentNotice("Creating your order and opening PRISM Secure Checkout...");
+      setPaymentNotice("Creating your order and opening secure payment...");
       persistCheckoutDetails(checkoutForm, normalizedForm.email);
 
-      const response = await fetch(getPrismOrderEndpoint(), {
+      const response = await fetch(getCardWalletOrderEndpoint(), {
         method: "POST",
         credentials: "include",
         cache: "no-store",
@@ -2834,13 +2969,13 @@ export default function RgvCheckout() {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "Idempotency-Key": prismCheckoutAttemptIdRef.current,
+          "Idempotency-Key": cardWalletCheckoutAttemptIdRef.current,
         },
         body: JSON.stringify({
           paymentMethod: "psc",
           payment_method: "psc",
-          paymentMethodTitle: "PRISM Secure Checkout",
-          payment_method_title: "PRISM Secure Checkout",
+          paymentMethodTitle: "Card & Wallets",
+          payment_method_title: "Card & Wallets",
           billing: normalizedForm,
           shipping: normalizedForm,
           items: checkoutItems,
@@ -2883,8 +3018,8 @@ export default function RgvCheckout() {
           standard_shipping_cost: selectedShippingBaseCost,
           expectedTotal: estimatedDue,
           expected_total: estimatedDue,
-          source: "rgv_custom_checkout_prism",
-          requestId: prismCheckoutAttemptIdRef.current,
+          source: "rgv_custom_checkout_card_wallets",
+          requestId: cardWalletCheckoutAttemptIdRef.current,
           ageConfirmed: researchUseAcknowledged,
           researchUseAcknowledged,
           termsAccepted,
@@ -2898,14 +3033,14 @@ export default function RgvCheckout() {
       const data = safeJsonParse(await response.text(), {});
       if (!response.ok || data?.success === false) {
         throw new Error(
-          data?.message || data?.error || "Unable to open PRISM Secure Checkout."
+          data?.message || data?.error || "Unable to open secure card and wallet checkout."
         );
       }
 
       const paymentUrlValue =
         data?.payment_url || data?.paymentUrl || data?.order?.payment_url || data?.order?.paymentUrl;
       if (!paymentUrlValue) {
-        throw new Error("Your order was created, but PRISM did not return a payment URL. Please contact support before retrying.");
+        throw new Error("Your order was created, but a payment link was not returned. Please contact support before retrying.");
       }
 
       let paymentUrl;
@@ -2914,7 +3049,7 @@ export default function RgvCheckout() {
         paymentUrl = new URL(String(paymentUrlValue));
         wordpressUrl = new URL(cleanUrl(WP_URL));
       } catch {
-        throw new Error("PRISM returned an invalid payment URL. Please contact support before retrying.");
+        throw new Error("The payment service returned an invalid URL. Please contact support before retrying.");
       }
 
       if (
@@ -2923,21 +3058,23 @@ export default function RgvCheckout() {
         paymentUrl.username ||
         paymentUrl.password
       ) {
-        throw new Error("PRISM returned an untrusted payment URL. Please contact support before retrying.");
+        throw new Error("The payment service returned an untrusted URL. Please contact support before retrying.");
       }
 
-      setPaymentNotice("Redirecting to PRISM Secure Checkout...");
+      const order = data?.order || data;
+      storeCardWalletAttempt(order);
+      setPaymentNotice("Redirecting to secure payment...");
       redirecting = true;
       window.location.assign(paymentUrl.toString());
     } catch (err) {
       const message = err?.name === "AbortError"
-        ? "PRISM took too long to respond. Your attempt is protected from duplicates; please try again."
-        : err?.message || "Unable to open PRISM Secure Checkout.";
+        ? "Secure checkout took too long to respond. Your attempt is protected from duplicates; please try again."
+        : err?.message || "Unable to open secure card and wallet checkout.";
       setError(message);
       setPaymentNotice("");
     } finally {
       window.clearTimeout(requestTimeout);
-      prismSubmittingRef.current = false;
+      cardWalletSubmittingRef.current = false;
       if (!redirecting) setLoading(false);
     }
   };
@@ -3113,8 +3250,8 @@ export default function RgvCheckout() {
   };
 
   const handleContinuePayment = () => {
-    if (isPrismSelected) {
-      void createPrismOrder();
+    if (isCardWalletSelected) {
+      void createCardWalletOrder();
       return;
     }
 
@@ -3222,6 +3359,68 @@ export default function RgvCheckout() {
       <style>{styles}</style>
     </main>
   );
+
+  if (verifiedCardWalletReturn) {
+    const paymentSucceeded = verifiedCardWalletReturn.payment === "success";
+    const paymentChecking = verifiedCardWalletReturn.payment === "checking";
+    const paymentCancelled = verifiedCardWalletReturn.payment === "cancelled";
+    const paymentPending = ["pending", "unverified"].includes(verifiedCardWalletReturn.payment);
+    const orderNumber = verifiedCardWalletReturn.orderNumber || verifiedCardWalletReturn.orderId;
+    const returnTitle = paymentChecking
+      ? "Verifying your payment"
+      : paymentSucceeded
+        ? "Payment completed"
+        : paymentCancelled
+          ? "Payment cancelled"
+          : paymentPending
+            ? "Payment is not confirmed"
+            : "Payment was not completed";
+    const returnMessage = verifiedCardWalletReturn.message || (
+      paymentChecking
+        ? "Please wait while we confirm the order directly with WooCommerce."
+        : paymentSucceeded
+          ? "Your payment was confirmed and your order is now being processed."
+          : "Your cart was preserved so you can safely return to checkout."
+    );
+
+    return (
+      <main className="rgvx-page rgvx-thanks-page">
+        <div className="rgvx-background-wash" />
+        <section className="rgvx-shell rgvx-thanks-shell">
+          <div className="rgvx-topbar">
+            <a href="/shop" className="rgvx-ghost-link"><ArrowLeft size={14} /> Back to shop</a>
+            <div className={`rgvx-lock-pill ${paymentSucceeded ? "rgvx-confirmed-pill" : ""}`}>
+              {paymentSucceeded ? <BadgeCheck size={13} /> : paymentChecking || paymentPending ? <ShieldCheck size={13} /> : <X size={13} />}
+              {paymentChecking ? "Checking status" : paymentSucceeded ? "Payment confirmed" : paymentPending ? "Confirmation pending" : "Payment not completed"}
+            </div>
+          </div>
+
+          <section className="rgvx-receipt-thanks-card" aria-live="polite">
+            <div className="rgvx-receipt-thanks-icon">
+              {paymentSucceeded ? <BadgeCheck size={36} /> : <CreditCard size={36} />}
+            </div>
+            <p>{orderNumber ? `ORDER #${orderNumber}` : "CARD & WALLET PAYMENT"}</p>
+            <h1>{returnTitle}</h1>
+            <span>{returnMessage}</span>
+            <div className="rgvx-receipt-thanks-details">
+              <div><CreditCard size={17} /><span>Payment method</span><strong>Card &amp; Wallets</strong></div>
+              <div><ShieldCheck size={17} /><span>Current status</span><strong>{paymentChecking ? "Verifying" : paymentSucceeded ? "Processing" : paymentPending ? "Not confirmed" : "Payment required"}</strong></div>
+            </div>
+            <a
+              href={paymentSucceeded ? "/shop" : paymentChecking ? "#" : "/checkout/"}
+              className="rgvx-receipt-thanks-button"
+              aria-disabled={paymentChecking}
+              onClick={paymentChecking ? (event) => event.preventDefault() : undefined}
+            >
+              {paymentChecking ? "Verifying payment..." : paymentSucceeded ? "Continue shopping" : "Return to checkout"}
+              <ChevronRight size={18} />
+            </a>
+          </section>
+        </section>
+        <style>{styles}</style>
+      </main>
+    );
+  }
 
   if (verifiedEdebitReturn) {
     const paymentSucceeded = verifiedEdebitReturn.payment === "success";
@@ -3401,9 +3600,9 @@ export default function RgvCheckout() {
     );
   }
 
-  if (!cart?.hasHydrated && !orbitCardCheckout) return <CheckoutLoadingState />;
+  if (!cart?.hasHydrated && !orbitCardCheckout && !verifiedCardWalletReturn) return <CheckoutLoadingState />;
 
-  if (!hasItems && !orbitCardCheckout) return <EmptyState />;
+  if (!hasItems && !orbitCardCheckout && !verifiedCardWalletReturn) return <EmptyState />;
 
   if (receiptSubmitted && manualOrder && isZelleSelected) {
     const orderNumber = manualOrder.order_number || manualOrder.number || manualOrder.id;
@@ -3671,7 +3870,7 @@ export default function RgvCheckout() {
                     <div>
                       <strong>Contact</strong>
                       <small>
-                        {isCardSelected || isOrbitSecureSelected || isPrismSelected
+                        {isCardSelected || isOrbitSecureSelected || isCardWalletSelected
                           ? "We will send your receipt and order updates here."
                           : isEdebitSelected
                             ? "For your confirmation and bank-payment updates."
@@ -3977,7 +4176,7 @@ export default function RgvCheckout() {
               {isOrbitSecureSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> {ORBIT_EMBEDDED_CHECKOUT_VISIBLE
                 ? "Enter your credit or debit card securely without leaving this page."
                 : "You will finish securely on pay.orbit, then return here automatically."}</p>}
-              {isPrismSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> You will continue to WooCommerce for PRISM verification and secure payment.</p>}
+              {isCardWalletSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> You will continue to our secure page for research verification and card or wallet payment.</p>}
               {isEdebitSelected && (
                 <div className="rgvx-edebit-saving-callout">
                   <Coins size={17} aria-hidden="true" />

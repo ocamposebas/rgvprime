@@ -6,7 +6,15 @@ import {
   hasRequiredAcknowledgements,
   requireApprovedSession,
 } from "../../../lib/complianceSession";
-import { isRequestBodyTooLarge } from "../../../lib/requestSecurity";
+import {
+  checkRateLimit,
+  isRequestBodyTooLarge,
+  requestSecurityResponse,
+} from "../../../lib/requestSecurity";
+import {
+  createCardWalletOrder,
+  getCardWalletOrderStatus,
+} from "../../../lib/cardWalletCheckout";
 
 export const prerender = false;
 
@@ -18,7 +26,6 @@ const ROUTES = {
   "card-quote": "/wp-json/orbit/v1/card-quote",
   "coupon-validate": "/wp-json/rgv/v1/validate-coupon",
   "card-order": "/wp-json/orbit/v1/card-checkout",
-  "prism-order": "/wp-json/rgv-prism/v1/order",
   "zelle-order": "/wp-json/rgv/v1/manual-zelle-order",
   "edebit-order": "/wp-json/rgvprime/v1/create-edebit-order",
   "edebit-status": "/wp-json/rgv-edebit/v1/order-status",
@@ -47,7 +54,10 @@ export async function POST(context) {
 
   const action = String(context.params.action || "");
   const route = ROUTES[action];
-  if (!route || !WP_URL || !COMPLIANCE_SECRET) return json({ success: false, message: "Checkout route is unavailable." }, 503);
+  const isCardWalletAction = action === "card-wallet-order" || action === "card-wallet-status";
+  if ((!route && !isCardWalletAction) || !WP_URL || !COMPLIANCE_SECRET) {
+    return json({ success: false, message: "Checkout route is unavailable." }, 503);
+  }
 
   const approved = await requireApprovedSession(context);
   if (!approved) {
@@ -64,7 +74,7 @@ export async function POST(context) {
   const isQuote = action === "card-quote" || action === "coupon-validate";
   const requiresCheckoutAcceptance = [
     "card-order",
-    "prism-order",
+    "card-wallet-order",
     "zelle-order",
     "edebit-order",
     "orbit-card-order",
@@ -87,6 +97,48 @@ export async function POST(context) {
     policyVersion: COMPLIANCE_POLICY_VERSION,
     textVersion: COMPLIANCE_TEXT_VERSION,
   };
+
+  if (isCardWalletAction) {
+    const rate = checkRateLimit(context.request, {
+      namespace: action,
+      limit: action === "card-wallet-order" ? 10 : 60,
+      windowMs: action === "card-wallet-order" ? 10 * 60 * 1000 : 60 * 1000,
+      identifier: String(approved.user?.id || approved.user?.user_id || approved.user?.email || ""),
+    });
+    if (!rate.allowed) {
+      return requestSecurityResponse(
+        action === "card-wallet-order"
+          ? "Too many checkout attempts. Please wait before trying again."
+          : "Too many payment status checks. Please wait and try again.",
+        429,
+        rate.retryAfter,
+      );
+    }
+
+    try {
+      const result = action === "card-wallet-order"
+        ? await createCardWalletOrder({
+            body,
+            acceptance,
+            attemptId: context.request.headers.get("idempotency-key") || body?.requestId,
+          })
+        : await getCardWalletOrderStatus({
+            orderId: body?.orderId || body?.order_id,
+            orderKey: body?.orderKey || body?.order_key,
+            approvedUser: approved.user,
+          });
+      return json(result, 200);
+    } catch (error) {
+      console.error(`CARD WALLET ${action.toUpperCase()} ERROR:`, error?.code || error?.message || error);
+      const status = Number(error?.status || 500);
+      return json({
+        success: false,
+        message: status >= 500
+          ? "Secure card and wallet checkout is temporarily unavailable."
+          : String(error?.message || "The checkout request could not be completed."),
+      }, status >= 400 && status < 600 ? status : 500);
+    }
+  }
 
   const origin = storefrontOrigin(context.request);
   try {

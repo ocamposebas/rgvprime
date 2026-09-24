@@ -23,6 +23,7 @@ import {
 } from "../../lib/inventory";
 
 const CART_STORAGE_KEY = "rgv-prime-cart-v1";
+const CARD_WALLET_PENDING_STORAGE_KEY = "rgv_card_wallet_pending_order";
 const OMNISEND_CHECKOUT_SIGNATURE_KEY =
   "rgv-prime-omnisend-checkout-signature-v1";
 
@@ -272,6 +273,53 @@ export function CartProvider({ children }) {
       console.error("Cart save error:", error);
     }
   }, [items, hasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated || typeof window === "undefined") return undefined;
+
+    let attempt = null;
+    try {
+      attempt = JSON.parse(window.localStorage.getItem(CARD_WALLET_PENDING_STORAGE_KEY) || "null");
+    } catch {
+      window.localStorage.removeItem(CARD_WALLET_PENDING_STORAGE_KEY);
+      return undefined;
+    }
+    if (!attempt?.orderId || !attempt?.orderKey) return undefined;
+
+    const controller = new AbortController();
+    const reconcilePayment = async () => {
+      try {
+        const response = await fetch("/api/checkout/card-wallet-status", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ orderId: attempt.orderId, orderKey: attempt.orderKey }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.success === false) return;
+
+        const lifecycle = String(data?.lifecycle || "pending").toLowerCase();
+        if (lifecycle === "confirmed") {
+          clearCart();
+          window.localStorage.removeItem(CARD_WALLET_PENDING_STORAGE_KEY);
+          window.dispatchEvent(new CustomEvent("rgv-card-wallet-payment-confirmed", { detail: data }));
+          return;
+        }
+        if (["cancelled", "expired", "failed"].includes(lifecycle)) {
+          window.localStorage.removeItem(CARD_WALLET_PENDING_STORAGE_KEY);
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.warn("Unable to reconcile the pending card or wallet payment.");
+        }
+      }
+    };
+
+    void reconcilePayment();
+    return () => controller.abort();
+  }, [hasHydrated]);
 
   const identifyContact = useCallback(async (email) => {
     const cleanEmail = normalizeEmail(email);
