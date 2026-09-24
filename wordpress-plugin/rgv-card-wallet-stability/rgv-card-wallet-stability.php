@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: RGV Card & Wallet Payment Stability
- * Description: Reserves additional PHP memory only for the hosted card and wallet payment flow.
- * Version: 1.1.0
+ * Description: Stabilizes the hosted card and wallet payment flow without changing other payment methods.
+ * Version: 1.2.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,13 +13,14 @@ defined('ABSPATH') || exit;
 final class RGV_Card_Wallet_Payment_Stability {
   private const TARGET_MEMORY_LIMIT = '512M';
   private const TARGET_MEMORY_BYTES = 536870912;
-  private const VERSION = '1.1.0';
+  private const VERSION = '1.2.0';
   private const TRACE_FILE = WP_CONTENT_DIR . '/rgv-card-wallet-payment-trace.json';
 
   private static $trace_started_at = 0.0;
   private static $trace_stage = 'bootstrap';
   private static $last_query_shape = '';
   private static $last_query_stack = [];
+  private static $suppressed_recursive_callbacks = [];
 
   public static function bootstrap() {
     add_action('rest_api_init', [self::class, 'register_status_route']);
@@ -117,6 +118,7 @@ final class RGV_Card_Wallet_Payment_Stability {
     self::$trace_stage = 'payment_post_started';
 
     add_filter('query', [self::class, 'capture_query'], PHP_INT_MAX, 1);
+    add_action('wp', [self::class, 'guard_recursive_order_snippets'], 1, 0);
     add_action('woocommerce_before_pay_action', [self::class, 'mark_before_pay_action'], PHP_INT_MAX, 0);
     add_action('woocommerce_before_order_object_save', [self::class, 'mark_before_order_save'], PHP_INT_MAX, 1);
     add_action('woocommerce_after_order_object_save', [self::class, 'mark_after_order_save'], PHP_INT_MAX, 1);
@@ -132,6 +134,38 @@ final class RGV_Card_Wallet_Payment_Stability {
     self::$last_query_stack = self::safe_stack();
     self::$trace_stage = 'database_query';
     return $query;
+  }
+
+  public static function guard_recursive_order_snippets() {
+    global $wp_filter;
+
+    $hook_name = 'woocommerce_update_order';
+    $hook = $wp_filter[$hook_name] ?? null;
+    if (!$hook instanceof WP_Hook || !is_array($hook->callbacks)) {
+      return;
+    }
+
+    foreach ($hook->callbacks as $priority => $callbacks) {
+      foreach ((array) $callbacks as $entry) {
+        $callback = $entry['function'] ?? null;
+        $file = self::callback_file($callback);
+        if ('' === $file || false === stripos($file, 'snippet-ops.php') || false === stripos($file, "eval()'d code")) {
+          continue;
+        }
+
+        if (remove_action($hook_name, $callback, (int) $priority)) {
+          self::$suppressed_recursive_callbacks[] = [
+            'hook' => $hook_name,
+            'priority' => (int) $priority,
+            'file' => basename($file),
+          ];
+        }
+      }
+    }
+
+    if (self::$suppressed_recursive_callbacks) {
+      self::$trace_stage = 'recursive_order_snippet_suppressed';
+    }
   }
 
   public static function mark_before_pay_action() {
@@ -162,6 +196,7 @@ final class RGV_Card_Wallet_Payment_Stability {
       'last_stage' => self::$trace_stage,
       'last_query_shape' => self::$last_query_shape,
       'last_query_stack' => self::$last_query_stack,
+      'suppressed_recursive_callbacks' => self::$suppressed_recursive_callbacks,
       'fatal' => $is_fatal ? [
         'type' => (int) ($last_error['type'] ?? 0),
         'message' => self::redact_error_message((string) ($last_error['message'] ?? '')),
@@ -196,7 +231,7 @@ final class RGV_Card_Wallet_Payment_Stability {
 
   private static function safe_stack() {
     $stack = [];
-    foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 16) as $frame) {
+    foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 32) as $frame) {
       $stack[] = [
         'file' => basename((string) ($frame['file'] ?? '')),
         'line' => (int) ($frame['line'] ?? 0),
@@ -204,6 +239,29 @@ final class RGV_Card_Wallet_Payment_Stability {
       ];
     }
     return $stack;
+  }
+
+  private static function callback_file($callback) {
+    try {
+      if ($callback instanceof Closure || (is_string($callback) && function_exists($callback))) {
+        $reflection = new ReflectionFunction($callback);
+      } elseif (is_array($callback) && 2 === count($callback)) {
+        $reflection = new ReflectionMethod($callback[0], (string) $callback[1]);
+      } elseif (is_string($callback) && false !== strpos($callback, '::')) {
+        [$class, $method] = explode('::', $callback, 2);
+        $reflection = new ReflectionMethod($class, $method);
+      } elseif (is_object($callback) && method_exists($callback, '__invoke')) {
+        $reflection = new ReflectionMethod($callback, '__invoke');
+      } else {
+        return '';
+      }
+
+      $file = $reflection->getFileName();
+      return is_string($file) ? $file : '';
+    } catch (Throwable $error) {
+      unset($error);
+      return '';
+    }
   }
 
   private static function redact_error_message($message) {

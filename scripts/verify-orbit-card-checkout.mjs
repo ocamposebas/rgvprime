@@ -13,6 +13,7 @@ const [
   embeddedPlugin,
   zellePlugin,
   cardReturnPlugin,
+  cardWalletStabilityPlugin,
   cardWalletBackend,
   relay,
   hosted,
@@ -27,6 +28,7 @@ const [
   read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
   read("wordpress-plugin/rgv-zelle-checkout/rgv-zelle-checkout.php"),
   read("wordpress-plugin/rgv-prism-checkout/rgv-prism-checkout.php"),
+  read("wordpress-plugin/rgv-card-wallet-stability/rgv-card-wallet-stability.php"),
   read("src/lib/cardWalletCheckout.js"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-hosted-checkout.php"),
@@ -129,6 +131,15 @@ for (const expected of [
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
 assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment access must not duplicate WooCommerce's pay_for_order capability lookup");
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
+for (const expected of [
+  "Plugin Name: RGV Card & Wallet Payment Stability",
+  "is_card_wallet_payment_submission",
+  "guard_recursive_order_snippets",
+  "woocommerce_update_order",
+  "snippet-ops.php",
+  "suppressed_recursive_callbacks",
+]) assert(cardWalletStabilityPlugin.includes(expected), `Card payment stability guard is missing: ${expected}`);
+assert(!cardWalletStabilityPlugin.includes("zelle"), "The card payment stability guard must remain isolated from Zelle");
 for (const expected of [
   'payment_method: "psc"',
   'payment_method_title: "Card & Wallets"',
