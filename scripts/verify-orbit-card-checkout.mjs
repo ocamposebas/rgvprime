@@ -119,7 +119,7 @@ assert(!checkout.includes("PRISM") && !checkout.includes("Prism") && !checkout.i
 for (const expected of [
   "Plugin Name: RGV Storefront Card & Wallet Return",
   "woocommerce_gateway_title",
-  "Card & Wallets",
+  "Secure card payment",
   "woocommerce_thankyou",
   "allow_bearer_payment_session",
   "woocommerce_order_get_customer_id",
