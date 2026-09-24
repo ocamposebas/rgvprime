@@ -13,6 +13,7 @@ import {
 } from "../../../lib/requestSecurity";
 import {
   createCardWalletOrder,
+  getCardWalletPaymentRedirect,
   getCardWalletOrderStatus,
 } from "../../../lib/cardWalletCheckout";
 
@@ -45,6 +46,56 @@ function containsPuertoRicoAddress(body = {}) {
 function storefrontOrigin(request) {
   const configured = String(import.meta.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
   return configured || new URL(request.url).origin;
+}
+
+export async function GET(context) {
+  const action = String(context.params.action || "");
+  if (action !== "card-wallet-pay") {
+    return json({ success: false, message: "Checkout route was not found." }, 404);
+  }
+  if (!WP_URL || !COMPLIANCE_SECRET) {
+    return json({ success: false, message: "Checkout route is unavailable." }, 503);
+  }
+
+  const approved = await requireApprovedSession(context);
+  if (!approved) {
+    return json({ success: false, sessionRequired: true, message: "Please sign in before continuing to payment." }, 401);
+  }
+
+  const rate = checkRateLimit(context.request, {
+    namespace: action,
+    limit: 30,
+    windowMs: 10 * 60 * 1000,
+    identifier: String(approved.user?.id || approved.user?.user_id || approved.user?.email || ""),
+  });
+  if (!rate.allowed) {
+    return requestSecurityResponse("Too many payment-link requests. Please wait and try again.", 429, rate.retryAfter);
+  }
+
+  try {
+    const result = await getCardWalletPaymentRedirect({
+      orderId: new URL(context.request.url).searchParams.get("order_id"),
+      approvedUser: approved.user,
+    });
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: result.paymentUrl,
+        "Cache-Control": "no-store, private",
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    console.error("CARD WALLET PAYMENT REDIRECT ERROR:", error?.code || error?.message || error);
+    const status = Number(error?.status || 500);
+    return json({
+      success: false,
+      message: status >= 500
+        ? "Secure card and wallet checkout is temporarily unavailable."
+        : String(error?.message || "The payment link could not be opened."),
+    }, status >= 400 && status < 600 ? status : 500);
+  }
 }
 
 export async function POST(context) {

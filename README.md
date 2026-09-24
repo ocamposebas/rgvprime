@@ -4,19 +4,21 @@
 
 The customer-facing checkout labels this route **Card & Wallets**. The Node
 server validates the signed-in storefront session, stock, current WooCommerce
-prices, coupon, shipping and fees, then creates one guest `pending` order with
-the WooCommerce payment method ID `psc`. The browser receives only the order's
-WooCommerce payment URL and navigates to the top-level `order-pay` page.
+prices, coupon, shipping and fees, then creates one `pending` order associated
+with the signed-in account through private order metadata. The browser enters a
+protected storefront handoff that reloads the current order key immediately
+before redirecting to WooCommerce's top-level `order-pay` page.
 
 Configure `WC_API_URL`, `WC_CONSUMER_KEY` and `WC_CONSUMER_SECRET` as private
 Node deployment variables. The key needs WooCommerce read/write permission.
 The existing `PORTAL_API_SECRET` (or dedicated `COMPLIANCE_SIGNING_SECRET`)
 continues to protect checkout acceptance evidence.
 
-Install `wordpress-plugin/rgv-storefront-card-return-2.0.0.zip` over the earlier
+Install `wordpress-plugin/rgv-storefront-card-return-2.0.1.zip` over the earlier
 RGV handoff helper. It no longer creates orders. It gives the payment route the
 neutral customer-facing name **Card & Wallets**, removes provider branding from
-the buyer surface, and returns a confirmed order to the Astro receipt page.
+the buyer surface, authorizes only exact valid storefront payment links, and
+returns a confirmed order to the Astro receipt page.
 WooCommerce's **Hold stock (minutes)** setting must remain at `60` so abandoned
 pending orders expire automatically.
 

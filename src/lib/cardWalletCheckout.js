@@ -268,10 +268,13 @@ async function findExistingOrder(hash, billingEmail) {
 }
 
 function paymentUrlForOrder(order) {
-  if (order?.payment_url) return String(order.payment_url);
   const wpUrl = wordpressBaseUrl();
   if (!wpUrl || !order?.id || !order?.order_key) return "";
-  return `${wpUrl}/checkout/order-pay/${encodeURIComponent(order.id)}/?pay_for_order=true&key=${encodeURIComponent(order.order_key)}`;
+
+  const paymentUrl = new URL(`/checkout/order-pay/${encodeURIComponent(order.id)}/`, `${wpUrl}/`);
+  paymentUrl.searchParams.set("pay_for_order", "true");
+  paymentUrl.searchParams.set("key", String(order.order_key));
+  return paymentUrl.toString();
 }
 
 function formatOrderResponse(order, duplicatePrevented = false) {
@@ -434,6 +437,41 @@ function orderBelongsToUser(order, approvedUser) {
     (approvedId !== "0" && orderUser === approvedId) ||
     (approvedEmail && orderEmail === approvedEmail),
   );
+}
+
+export async function getCardWalletPaymentRedirect({ orderId, approvedUser }) {
+  const id = Number(orderId);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    throw checkoutError("The order reference is invalid.", 400, "INVALID_ORDER_REFERENCE");
+  }
+
+  const order = await wooRequest(`orders/${id}`);
+  const source = metaValue(order, "_rgv_payment_source");
+  if (
+    order?.payment_method !== "psc" ||
+    !["rgv_custom_checkout_card_wallets", "rgv_custom_checkout_prism"].includes(source) ||
+    !orderBelongsToUser(order, approvedUser)
+  ) {
+    throw checkoutError("This order could not be verified.", 403, "ORDER_NOT_AUTHORIZED");
+  }
+
+  const status = String(order.status || "").toLowerCase();
+  if (order.date_paid || order.date_paid_gmt || ["processing", "completed"].includes(status)) {
+    throw checkoutError("This order has already been paid.", 409, "ORDER_ALREADY_PAID");
+  }
+  if (!["pending", "failed"].includes(status)) {
+    throw checkoutError("This order is no longer available for payment.", 409, "ORDER_NOT_PAYABLE");
+  }
+
+  const paymentUrl = paymentUrlForOrder(order);
+  if (!paymentUrl) {
+    throw checkoutError("A secure payment link could not be generated.", 502, "PAYMENT_URL_MISSING");
+  }
+
+  return {
+    orderId: Number(order.id),
+    paymentUrl,
+  };
 }
 
 export async function getCardWalletOrderStatus({ orderId, orderKey, approvedUser }) {

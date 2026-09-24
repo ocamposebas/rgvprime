@@ -42,6 +42,7 @@ assert(checkout.includes('const ORBIT_PAYMENT_MODE = "disabled"'), "ORBIT card p
 assert(checkout.includes("const ZELLE_PAYMENT_VISIBLE = true"), "Zelle must be visible");
 assert(proxy.includes('"zelle-order": "/wp-json/rgv/v1/manual-zelle-order"'), "The protected Zelle route is missing");
 assert(proxy.includes('action === "card-wallet-order"') && proxy.includes("createCardWalletOrder"), "The protected card and wallet route is missing");
+assert(proxy.includes('action !== "card-wallet-pay"') && proxy.includes("getCardWalletPaymentRedirect"), "The authenticated card and wallet payment redirect is missing");
 assert(checkout.includes('const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted"'), "Hosted checkout must remain available behind the mode switch");
 assert(checkout.includes('useState("edebit")'), "The existing eDebit default must remain unchanged");
 assert(checkout.includes('description: ORBIT_EMBEDDED_CHECKOUT_VISIBLE ? "Credit or debit card"'), "The Wompi option must use concise card copy");
@@ -118,6 +119,8 @@ for (const expected of [
   "woocommerce_gateway_title",
   "Card & Wallets",
   "woocommerce_thankyou",
+  "allow_storefront_payment_link",
+  "hash_equals",
   "card_payment",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
 for (const expected of [
@@ -128,8 +131,10 @@ for (const expected of [
   'status: "pending"',
   "set_paid: false",
   "paymentUrlForOrder",
+  "getCardWalletPaymentRedirect",
   "getCardWalletOrderStatus",
 ]) assert(cardWalletBackend.includes(expected), `Card and wallet order handoff is missing: ${expected}`);
+assert(checkout.includes("getCardWalletPaymentRedirectEndpoint") && checkout.includes('handoffUrl.searchParams.set("order_id"'), "Card and wallet checkout must use the authenticated canonical payment redirect");
 
 // Keep the hosted implementation ready for a later mode change; it is intentionally inactive today.
 assert(checkout.includes("window.location.assign(redirectUrl.toString())"), "The retained hosted flow must redirect only after server approval");

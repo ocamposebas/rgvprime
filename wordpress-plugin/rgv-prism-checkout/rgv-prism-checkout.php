@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.0.0';
+  const VERSION = '2.0.1';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -21,6 +21,7 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('woocommerce_gateway_description', [$this, 'gateway_description'], 100, 2);
     add_filter('woocommerce_order_get_payment_method_title', [$this, 'order_payment_title'], 100, 2);
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
+    add_filter('user_has_cap', [$this, 'allow_storefront_payment_link'], 1000, 4);
     add_action('wp_enqueue_scripts', [$this, 'neutralize_frontend_branding'], 100);
     add_action('woocommerce_thankyou', [$this, 'return_paid_storefront_order'], 1000);
   }
@@ -43,6 +44,31 @@ final class RGV_Storefront_Card_Wallet_Return {
     }
 
     return $title;
+  }
+
+  public function allow_storefront_payment_link($allcaps, $caps, $args, $user) {
+    if (($caps[0] ?? '') !== 'pay_for_order') {
+      return $allcaps;
+    }
+
+    $order_id = absint($args[2] ?? 0);
+    $provided_key = isset($_GET['key']) && is_string($_GET['key'])
+      ? wc_clean(wp_unslash($_GET['key']))
+      : '';
+    if (!$order_id || !$provided_key) {
+      return $allcaps;
+    }
+
+    $order = wc_get_order($order_id);
+    if (!$this->is_storefront_card_wallet_order($order) || !$order->needs_payment()) {
+      return $allcaps;
+    }
+
+    if (hash_equals((string) $order->get_order_key(), (string) $provided_key)) {
+      $allcaps['pay_for_order'] = true;
+    }
+
+    return $allcaps;
   }
 
   public function neutral_frontend_copy($translated, $original, $domain) {
@@ -150,12 +176,7 @@ JS;
 
   public function return_paid_storefront_order($order_id) {
     $order = wc_get_order($order_id);
-    if (!$order instanceof WC_Order || self::PAYMENT_METHOD !== $order->get_payment_method()) {
-      return;
-    }
-
-    $source = (string) $order->get_meta('_rgv_payment_source');
-    if (!in_array($source, ['rgv_custom_checkout_card_wallets', 'rgv_custom_checkout_prism'], true)) {
+    if (!$this->is_storefront_card_wallet_order($order)) {
       return;
     }
 
@@ -191,6 +212,18 @@ JS;
     }
 
     return $url;
+  }
+
+  private function is_storefront_card_wallet_order($order) {
+    if (!$order instanceof WC_Order || self::PAYMENT_METHOD !== $order->get_payment_method()) {
+      return false;
+    }
+
+    return in_array(
+      (string) $order->get_meta('_rgv_payment_source'),
+      ['rgv_custom_checkout_card_wallets', 'rgv_custom_checkout_prism'],
+      true
+    );
   }
 
   private function is_checkout_surface() {

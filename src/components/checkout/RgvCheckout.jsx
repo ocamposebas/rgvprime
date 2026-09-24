@@ -703,6 +703,10 @@ function getCardWalletOrderEndpoint() {
   return "/api/checkout/card-wallet-order";
 }
 
+function getCardWalletPaymentRedirectEndpoint() {
+  return "/api/checkout/card-wallet-pay";
+}
+
 function getCardWalletStatusEndpoint() {
   return "/api/checkout/card-wallet-status";
 }
@@ -3062,10 +3066,18 @@ export default function RgvCheckout() {
       }
 
       const order = data?.order || data;
+      const orderId = Number(order?.order_id || order?.id || 0);
+      const orderKey = String(order?.order_key || order?.orderKey || "");
+      if (!orderId || !orderKey) {
+        throw new Error("The payment service returned an incomplete order reference. Please contact support before retrying.");
+      }
+
       storeCardWalletAttempt(order);
       setPaymentNotice("Redirecting to secure payment...");
+      const handoffUrl = new URL(getCardWalletPaymentRedirectEndpoint(), window.location.origin);
+      handoffUrl.searchParams.set("order_id", String(orderId));
       redirecting = true;
-      window.location.assign(paymentUrl.toString());
+      window.location.assign(handoffUrl.toString());
     } catch (err) {
       const message = err?.name === "AbortError"
         ? "Secure checkout took too long to respond. Your attempt is protected from duplicates; please try again."
