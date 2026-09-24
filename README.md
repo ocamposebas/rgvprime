@@ -14,7 +14,7 @@ Node deployment variables. The key needs WooCommerce read/write permission.
 The existing `PORTAL_API_SECRET` (or dedicated `COMPLIANCE_SIGNING_SECRET`)
 continues to protect checkout acceptance evidence.
 
-Install `wordpress-plugin/rgv-storefront-card-return-2.0.3.zip` over the earlier
+Install `wordpress-plugin/rgv-storefront-card-return-2.0.4.zip` over the earlier
 RGV handoff helper. It no longer creates orders. It gives the payment route the
 neutral customer-facing name **Card & Wallets**, removes provider branding from
 the buyer surface, authorizes only exact valid storefront payment links, and

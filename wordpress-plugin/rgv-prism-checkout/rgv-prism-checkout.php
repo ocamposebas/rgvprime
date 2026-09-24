@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.0.3
+ * Version: 2.0.4
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.0.3';
+  const VERSION = '2.0.4';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -71,12 +71,7 @@ final class RGV_Storefront_Card_Wallet_Return {
   }
 
   public function allow_bearer_payment_session($customer_id, $order) {
-    $ajax_action = isset($_REQUEST['action']) && is_string($_REQUEST['action'])
-      ? sanitize_key(wp_unslash($_REQUEST['action']))
-      : '';
     if (
-      !wp_doing_ajax() ||
-      !str_starts_with($ajax_action, 'psc_') ||
       (int) $customer_id < 1 ||
       !$this->is_storefront_card_wallet_order($order) ||
       !$order->needs_payment()
@@ -101,6 +96,14 @@ final class RGV_Storefront_Card_Wallet_Return {
   }
 
   public function neutral_frontend_copy($translated, $original, $domain) {
+    if (
+      !is_admin() &&
+      'woocommerce' === $domain &&
+      false !== stripos((string) $original, 'You are paying for a guest order')
+    ) {
+      return '<span class="rgv-payment-link-session-notice" hidden></span>';
+    }
+
     if (is_admin() || 'prism-simple-checkout' !== $domain || false === stripos((string) $translated, 'prism')) {
       return $translated;
     }
@@ -122,6 +125,11 @@ final class RGV_Storefront_Card_Wallet_Return {
     $css = '
       img[src*="prism-wordmark"],
       .psc-blocks-label img[alt="PRISM"] {
+        display: none !important;
+      }
+      .woocommerce-error:has(.rgv-payment-link-session-notice),
+      .woocommerce-info:has(.rgv-payment-link-session-notice),
+      .woocommerce-message:has(.rgv-payment-link-session-notice) {
         display: none !important;
       }
     ';
@@ -151,6 +159,11 @@ final class RGV_Storefront_Card_Wallet_Return {
 
   function neutralize(root) {
     if (!root || root.nodeType !== 1) return;
+
+    root.querySelectorAll('.rgv-payment-link-session-notice').forEach(function (marker) {
+      var notice = marker.closest('.woocommerce-error, .woocommerce-info, .woocommerce-message');
+      if (notice) notice.remove();
+    });
 
     root.querySelectorAll('img[src*="prism-wordmark"], img[alt*="PRISM" i]').forEach(function (image) {
       image.hidden = true;

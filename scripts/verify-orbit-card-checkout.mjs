@@ -122,9 +122,9 @@ for (const expected of [
   "allow_storefront_payment_link",
   "allow_bearer_payment_session",
   "woocommerce_order_get_customer_id",
-  "wp_doing_ajax",
-  "str_starts_with($ajax_action, 'psc_')",
   "payment_request_order_key",
+  "rgv-payment-link-session-notice",
+  "You are paying for a guest order",
   "hash_equals",
   "card_payment",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
