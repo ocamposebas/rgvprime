@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 2.4.0
+ * Version: 2.4.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,13 +13,14 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.4.0';
+  const VERSION = '2.4.1';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
     add_filter('woocommerce_gateway_title', [$this, 'gateway_title'], 100, 2);
     add_filter('woocommerce_gateway_description', [$this, 'gateway_description'], 100, 2);
     add_filter('woocommerce_order_get_payment_method_title', [$this, 'order_payment_title'], 100, 2);
+    add_filter('woocommerce_order_item_name', [$this, 'order_item_name_with_image'], 100, 3);
     add_filter('woocommerce_available_payment_gateways', [$this, 'card_gateway_only'], 1000);
     add_filter('option_woocommerce_psc_settings', [$this, 'force_dark_gateway_theme'], 100);
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
@@ -66,6 +67,42 @@ final class RGV_Storefront_Card_Wallet_Return {
     }
 
     return $title;
+  }
+
+  public function order_item_name_with_image($name, $item, $is_visible) {
+    if (
+      !$this->is_storefront_payment_request() ||
+      !$item instanceof WC_Order_Item_Product ||
+      false !== strpos((string) $name, 'rgv-order-summary__thumb')
+    ) {
+      return $name;
+    }
+
+    $product = $item->get_product();
+    if (!$product instanceof WC_Product) {
+      return $name;
+    }
+
+    $image_id = (int) $product->get_image_id();
+    if (!$image_id && $product->get_parent_id()) {
+      $image_id = (int) get_post_thumbnail_id($product->get_parent_id());
+    }
+
+    $attributes = [
+      'class' => 'rgv-order-summary__product-image',
+      'alt' => '',
+      'loading' => 'eager',
+      'decoding' => 'async',
+    ];
+    $image = $image_id
+      ? wp_get_attachment_image($image_id, 'woocommerce_thumbnail', false, $attributes)
+      : wc_placeholder_img('woocommerce_thumbnail', $attributes);
+
+    if (!$image) {
+      return $name;
+    }
+
+    return '<span class="rgv-order-summary__thumb" aria-hidden="true">' . $image . '</span>' . $name;
   }
 
   public function allow_bearer_payment_session($customer_id, $order) {
@@ -234,9 +271,12 @@ final class RGV_Storefront_Card_Wallet_Return {
       if (!name) return;
       name.setAttribute('data-rgv-line', String(index + 1).padStart(2, '0'));
       if (!name.querySelector(':scope > .rgv-order-summary__product-copy')) {
+        var media = name.querySelector(':scope > .rgv-order-summary__thumb');
         var copy = document.createElement('div');
         copy.className = 'rgv-order-summary__product-copy';
-        while (name.firstChild) copy.appendChild(name.firstChild);
+        Array.prototype.slice.call(name.childNodes).forEach(function (node) {
+          if (node !== media) copy.appendChild(node);
+        });
         name.appendChild(copy);
       }
     });
@@ -1436,7 +1476,7 @@ CSS;
   private function payment_page_premium_css() {
     return <<<'CSS'
 
-      /* 2.4.0 — RGVPRIME premium order-pay composition. */
+      /* 2.4.1 — RGVPRIME premium order-pay composition. */
       body.rgv-card-wallet-payment-page {
         --rgv-premium-bg: #090a0c;
         --rgv-premium-panel: #101114;
@@ -1536,7 +1576,7 @@ CSS;
 
       body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) 390px;
+        grid-template-columns: minmax(0, 1fr) 410px;
         grid-template-rows: auto auto auto auto;
         column-gap: 32px;
         row-gap: 0;
@@ -1690,6 +1730,11 @@ CSS;
         box-shadow: 0 24px 60px rgba(0, 0, 0, .24);
       }
 
+      body.rgv-card-wallet-payment-page table.rgv-order-summary,
+      body.rgv-card-wallet-payment-page table.rgv-order-summary * {
+        box-sizing: border-box;
+      }
+
       body.rgv-card-wallet-payment-page table.rgv-order-summary > caption.rgv-order-summary__caption {
         display: flex;
         width: 100%;
@@ -1718,6 +1763,7 @@ CSS;
         font-size: 9px;
         letter-spacing: .08em;
         text-transform: uppercase;
+        white-space: nowrap;
       }
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary > thead {
@@ -1735,8 +1781,8 @@ CSS;
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary tr.rgv-order-summary__product {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
-        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) auto minmax(62px, auto);
+        gap: 10px;
         align-items: center;
         width: 100%;
         padding: 17px 0;
@@ -1759,16 +1805,16 @@ CSS;
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-name {
         display: grid !important;
-        grid-template-columns: 42px minmax(0, 1fr);
-        gap: 12px;
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 13px;
         align-items: center;
         color: #dedddb !important;
       }
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-name::before {
         display: grid;
-        width: 42px;
-        height: 48px;
+        width: 58px;
+        height: 66px;
         place-items: center;
         border: 1px solid rgba(255, 255, 255, .10);
         border-radius: 11px;
@@ -1782,6 +1828,33 @@ CSS;
         letter-spacing: .08em;
       }
 
+      body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-name:has(.rgv-order-summary__thumb)::before {
+        display: none;
+      }
+
+      body.rgv-card-wallet-payment-page .rgv-order-summary__thumb {
+        display: grid;
+        width: 58px;
+        height: 66px;
+        place-items: center;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .10);
+        border-radius: 12px;
+        background: linear-gradient(150deg, rgba(143, 29, 39, .16), transparent 68%), #0b0c0f;
+      }
+
+      body.rgv-card-wallet-payment-page .rgv-order-summary__thumb img.rgv-order-summary__product-image {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 4px;
+        object-fit: contain;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+      }
+
       body.rgv-card-wallet-payment-page .rgv-order-summary__product-copy {
         display: grid;
         min-width: 0;
@@ -1789,6 +1862,7 @@ CSS;
         font-size: 12px;
         font-weight: 520;
         line-height: 1.35;
+        overflow-wrap: anywhere;
       }
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary :where(.wc-item-meta, dl.variation) {
@@ -1816,6 +1890,7 @@ CSS;
       }
 
       body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-total {
+        min-width: 62px;
         color: #dedddb !important;
         font-size: 12px;
         font-weight: 560;
@@ -1935,7 +2010,7 @@ CSS;
         }
 
         body.rgv-card-wallet-payment-page form#order_review.rgv-payment-layout-ready {
-          grid-template-columns: minmax(0, 1fr) 350px;
+          grid-template-columns: minmax(0, 1fr) 370px;
           column-gap: 22px;
         }
       }
@@ -2031,13 +2106,18 @@ CSS;
         }
 
         body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-name {
-          grid-template-columns: 36px minmax(0, 1fr);
+          grid-template-columns: 50px minmax(0, 1fr);
           gap: 10px;
         }
 
         body.rgv-card-wallet-payment-page table.rgv-order-summary td.product-name::before {
-          width: 36px;
-          height: 42px;
+          width: 50px;
+          height: 58px;
+        }
+
+        body.rgv-card-wallet-payment-page .rgv-order-summary__thumb {
+          width: 50px;
+          height: 58px;
         }
 
         body.rgv-card-wallet-payment-page table.rgv-order-summary > tfoot > tr.rgv-order-summary__total > td,
