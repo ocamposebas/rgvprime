@@ -119,14 +119,16 @@ for (const expected of [
   "woocommerce_gateway_title",
   "Card & Wallets",
   "woocommerce_thankyou",
-  "allow_storefront_payment_link",
   "allow_bearer_payment_session",
   "woocommerce_order_get_customer_id",
+  "payment_request_order_id",
   "payment_request_order_key",
   "return (int) get_current_user_id()",
   "hash_equals",
   "card_payment",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
+assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment access must not duplicate WooCommerce's pay_for_order capability lookup");
+assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
 for (const expected of [
   'payment_method: "psc"',
   'payment_method_title: "Card & Wallets"',

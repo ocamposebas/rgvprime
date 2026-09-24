@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.1.0
+ * Version: 2.1.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.1.0';
+  const VERSION = '2.1.1';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -22,7 +22,6 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('woocommerce_order_get_payment_method_title', [$this, 'order_payment_title'], 100, 2);
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
     add_filter('woocommerce_order_get_customer_id', [$this, 'allow_bearer_payment_session'], 1000, 2);
-    add_filter('user_has_cap', [$this, 'allow_storefront_payment_link'], 1000, 4);
     add_filter('body_class', [$this, 'payment_page_body_class'], 100);
     add_action('wp_enqueue_scripts', [$this, 'neutralize_frontend_branding'], 100);
     add_action('before_woocommerce_pay_form', [$this, 'render_payment_header'], 5, 0);
@@ -49,43 +48,19 @@ final class RGV_Storefront_Card_Wallet_Return {
     return $title;
   }
 
-  public function allow_storefront_payment_link($allcaps, $caps, $args, $user) {
-    if (($caps[0] ?? '') !== 'pay_for_order') {
-      return $allcaps;
-    }
-
-    $order_id = absint($args[2] ?? 0);
-    $provided_key = $this->payment_request_order_key();
-    if (!$order_id || !$provided_key) {
-      return $allcaps;
-    }
-
-    $order = wc_get_order($order_id);
-    if (!$this->is_storefront_card_wallet_order($order) || !$order->needs_payment()) {
-      return $allcaps;
-    }
-
-    if (hash_equals((string) $order->get_order_key(), (string) $provided_key)) {
-      $allcaps['pay_for_order'] = true;
-    }
-
-    return $allcaps;
-  }
-
   public function allow_bearer_payment_session($customer_id, $order) {
     if (
       (int) $customer_id < 1 ||
-      !$this->is_storefront_card_wallet_order($order) ||
-      !$order->needs_payment()
+      !$order instanceof WC_Order ||
+      $this->payment_request_order_id() !== (int) $order->get_id()
     ) {
       return $customer_id;
     }
 
-    $request_order_id = $this->payment_request_order_id();
     $provided_key = $this->payment_request_order_key();
     if (
-      $request_order_id === (int) $order->get_id() &&
       $provided_key &&
+      $this->is_storefront_card_wallet_order($order) &&
       hash_equals((string) $order->get_order_key(), (string) $provided_key)
     ) {
       // Present the signed request as belonging to the active WordPress user,
