@@ -122,6 +122,8 @@ for (const expected of [
   "allow_storefront_payment_link",
   "allow_bearer_payment_session",
   "woocommerce_order_get_customer_id",
+  "wp_doing_ajax",
+  "str_starts_with($ajax_action, 'psc_')",
   "payment_request_order_key",
   "hash_equals",
   "card_payment",

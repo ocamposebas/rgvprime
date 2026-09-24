@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.0.2
+ * Version: 2.0.3
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.0.2';
+  const VERSION = '2.0.3';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -71,7 +71,12 @@ final class RGV_Storefront_Card_Wallet_Return {
   }
 
   public function allow_bearer_payment_session($customer_id, $order) {
+    $ajax_action = isset($_REQUEST['action']) && is_string($_REQUEST['action'])
+      ? sanitize_key(wp_unslash($_REQUEST['action']))
+      : '';
     if (
+      !wp_doing_ajax() ||
+      !str_starts_with($ajax_action, 'psc_') ||
       (int) $customer_id < 1 ||
       !$this->is_storefront_card_wallet_order($order) ||
       !$order->needs_payment()
