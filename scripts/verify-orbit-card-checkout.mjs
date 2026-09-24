@@ -120,6 +120,9 @@ for (const expected of [
   "Card & Wallets",
   "woocommerce_thankyou",
   "allow_storefront_payment_link",
+  "allow_bearer_payment_session",
+  "woocommerce_order_get_customer_id",
+  "payment_request_order_key",
   "hash_equals",
   "card_payment",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);

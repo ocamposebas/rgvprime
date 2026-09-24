@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Keeps card and wallet checkout customer-facing copy neutral and returns paid storefront orders to the Astro receipt page.
- * Version: 2.0.1
+ * Version: 2.0.2
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.0.1';
+  const VERSION = '2.0.2';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -21,6 +21,7 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('woocommerce_gateway_description', [$this, 'gateway_description'], 100, 2);
     add_filter('woocommerce_order_get_payment_method_title', [$this, 'order_payment_title'], 100, 2);
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
+    add_filter('woocommerce_order_get_customer_id', [$this, 'allow_bearer_payment_session'], 1000, 2);
     add_filter('user_has_cap', [$this, 'allow_storefront_payment_link'], 1000, 4);
     add_action('wp_enqueue_scripts', [$this, 'neutralize_frontend_branding'], 100);
     add_action('woocommerce_thankyou', [$this, 'return_paid_storefront_order'], 1000);
@@ -52,9 +53,7 @@ final class RGV_Storefront_Card_Wallet_Return {
     }
 
     $order_id = absint($args[2] ?? 0);
-    $provided_key = isset($_GET['key']) && is_string($_GET['key'])
-      ? wc_clean(wp_unslash($_GET['key']))
-      : '';
+    $provided_key = $this->payment_request_order_key();
     if (!$order_id || !$provided_key) {
       return $allcaps;
     }
@@ -69,6 +68,31 @@ final class RGV_Storefront_Card_Wallet_Return {
     }
 
     return $allcaps;
+  }
+
+  public function allow_bearer_payment_session($customer_id, $order) {
+    if (
+      (int) $customer_id < 1 ||
+      !$this->is_storefront_card_wallet_order($order) ||
+      !$order->needs_payment()
+    ) {
+      return $customer_id;
+    }
+
+    $request_order_id = $this->payment_request_order_id();
+    $provided_key = $this->payment_request_order_key();
+    if (
+      $request_order_id === (int) $order->get_id() &&
+      $provided_key &&
+      hash_equals((string) $order->get_order_key(), (string) $provided_key)
+    ) {
+      // The official gateway requires a guest owner during its AJAX handoff.
+      // This changes only the value exposed for this exact signed request; the
+      // persisted customer remains intact for account history and rewards.
+      return 0;
+    }
+
+    return $customer_id;
   }
 
   public function neutral_frontend_copy($translated, $original, $domain) {
@@ -224,6 +248,28 @@ JS;
       ['rgv_custom_checkout_card_wallets', 'rgv_custom_checkout_prism'],
       true
     );
+  }
+
+  private function payment_request_order_id() {
+    $posted = isset($_POST['order_id']) && is_scalar($_POST['order_id'])
+      ? absint(wp_unslash($_POST['order_id']))
+      : 0;
+    if ($posted > 0) {
+      return $posted;
+    }
+
+    return function_exists('get_query_var') ? absint(get_query_var('order-pay', 0)) : 0;
+  }
+
+  private function payment_request_order_key() {
+    if (isset($_POST['order_key']) && is_string($_POST['order_key'])) {
+      return wc_clean(wp_unslash($_POST['order_key']));
+    }
+    if (isset($_GET['key']) && is_string($_GET['key'])) {
+      return wc_clean(wp_unslash($_GET['key']));
+    }
+
+    return '';
   }
 
   private function is_checkout_surface() {
