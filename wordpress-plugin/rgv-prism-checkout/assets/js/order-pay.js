@@ -29,12 +29,12 @@
 
     var wrappedStripe = function () {
       var stripeClient = originalStripe.apply(this, arguments);
-      if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElementsV2) {
+      if (!stripeClient || typeof stripeClient.elements !== 'function') {
         return stripeClient;
       }
 
       var originalElements = stripeClient.elements.bind(stripeClient);
-      stripeClient.elements = function (options) {
+      var guardedElements = function (options) {
         var elementsOptions = Object.assign({}, options || {}, {
           paymentMethodTypes: ['card']
         });
@@ -42,7 +42,7 @@
         if (!elements || typeof elements.create !== 'function') return elements;
 
         var originalCreate = elements.create.bind(elements);
-        elements.create = function (type, elementOptions) {
+        var guardedCreate = function (type, elementOptions) {
           if (type === 'expressCheckout') {
             throw new Error('Express checkout is disabled for this card-only storefront flow.');
           }
@@ -60,10 +60,22 @@
           }));
         };
 
-        return elements;
+        return new Proxy(elements, {
+          get: function (target, property) {
+            if (property === 'create') return guardedCreate;
+            var value = Reflect.get(target, property, target);
+            return typeof value === 'function' ? value.bind(target) : value;
+          }
+        });
       };
-      stripeClient.__rgvCardOnlyElementsV2 = true;
-      return stripeClient;
+      return new Proxy(stripeClient, {
+        get: function (target, property) {
+          if (property === 'elements') return guardedElements;
+          if (property === '__rgvCardOnlyElementsV2') return true;
+          var value = Reflect.get(target, property, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        }
+      });
     };
 
     Object.getOwnPropertyNames(originalStripe).forEach(function (property) {

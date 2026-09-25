@@ -164,17 +164,25 @@ cardOnlySandbox.window.PSCCheckoutController = {
   paymentElementOptions() { return { fields: { billingDetails: "never" } }; },
 };
 cardOnlySandbox.window.Stripe = function Stripe() {
-  return {
-    elements(options) {
-      cardOnlyCapture.elements = options;
-      return {
-        create(type, optionsForElement) {
-          cardOnlyCapture.element = { type, options: optionsForElement };
-          return { type };
-        },
+  const elements = {};
+  Object.defineProperty(elements, "create", {
+    get() {
+      return function create(type, optionsForElement) {
+        cardOnlyCapture.element = { type, options: optionsForElement };
+        return { type };
       };
     },
-  };
+  });
+  const stripeClient = {};
+  Object.defineProperty(stripeClient, "elements", {
+    get() {
+      return function elementsFactory(options) {
+      cardOnlyCapture.elements = options;
+        return elements;
+      };
+    },
+  });
+  return stripeClient;
 };
 vm.runInNewContext(cardReturnScript, cardOnlySandbox);
 const guardedClient = cardOnlySandbox.window.Stripe("pk_test_checkout");

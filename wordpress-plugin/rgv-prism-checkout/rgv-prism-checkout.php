@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.6.0
+ * Version: 3.6.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.6.0';
+  const VERSION = '3.6.1';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -203,12 +203,12 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     var wrappedStripe = function () {
       var stripeClient = originalStripe.apply(null, arguments);
-    if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElements) {
+    if (!stripeClient || typeof stripeClient.elements !== 'function') {
       return stripeClient;
     }
 
     var originalElements = stripeClient.elements.bind(stripeClient);
-    stripeClient.elements = function (options) {
+    var guardedElements = function (options) {
       var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card'] });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
@@ -246,7 +246,7 @@ final class RGV_Storefront_Card_Wallet_Return {
       if (!elements || typeof elements.create !== 'function') return elements;
 
       var originalCreate = elements.create.bind(elements);
-      elements.create = function (type, elementOptions) {
+      var guardedCreate = function (type, elementOptions) {
         if (type === 'expressCheckout') {
           throw new Error('Express checkout is disabled for this card-only storefront flow.');
         }
@@ -264,10 +264,22 @@ final class RGV_Storefront_Card_Wallet_Return {
         }));
       };
 
-      return elements;
+      return new Proxy(elements, {
+        get: function (target, property) {
+          if (property === 'create') return guardedCreate;
+          var value = Reflect.get(target, property, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        }
+      });
     };
-      stripeClient.__rgvCardOnlyElements = true;
-      return stripeClient;
+      return new Proxy(stripeClient, {
+        get: function (target, property) {
+          if (property === 'elements') return guardedElements;
+          if (property === '__rgvCardOnlyElements') return true;
+          var value = Reflect.get(target, property, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        }
+      });
     };
 
     Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
@@ -388,12 +400,12 @@ JS;
   var originalStripe = window.Stripe;
   var wrappedStripe = function () {
     var stripeClient = originalStripe.apply(null, arguments);
-    if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElements) {
+    if (!stripeClient || typeof stripeClient.elements !== 'function') {
       return stripeClient;
     }
 
     var originalElements = stripeClient.elements.bind(stripeClient);
-    stripeClient.elements = function (options) {
+    var guardedElements = function (options) {
       var elementsOptions = Object.assign({}, options || {}, {
         paymentMethodTypes: ['card']
       });
@@ -433,7 +445,7 @@ JS;
       if (!elements || typeof elements.create !== 'function') return elements;
 
       var originalCreate = elements.create.bind(elements);
-      elements.create = function (type, elementOptions) {
+      var guardedCreate = function (type, elementOptions) {
         if (type === 'expressCheckout') {
           throw new Error('Express checkout is disabled for this card-only storefront flow.');
         }
@@ -455,10 +467,22 @@ JS;
         return originalCreate(type, paymentOptions);
       };
 
-      return elements;
+      return new Proxy(elements, {
+        get: function (target, property) {
+          if (property === 'create') return guardedCreate;
+          var value = Reflect.get(target, property, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        }
+      });
     };
-    stripeClient.__rgvCardOnlyElements = true;
-    return stripeClient;
+    return new Proxy(stripeClient, {
+      get: function (target, property) {
+        if (property === 'elements') return guardedElements;
+        if (property === '__rgvCardOnlyElements') return true;
+        var value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      }
+    });
   };
 
   Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
