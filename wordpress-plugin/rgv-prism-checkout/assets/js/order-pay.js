@@ -234,12 +234,13 @@
   var revealQueued = false;
   var updateQueued = false;
   var confirmationReloadQueued = false;
-  var pendingStatusCopy = 'Payment submitted. We\u2019re checking the final status \u2014 don\u2019t pay again. This page will update automatically.';
+  var pendingStatusCopy = 'Verifying this payment\u2026 This page will update automatically.';
   var pendingPollState = {
     key: '',
     attempts: 0,
     busy: false,
-    timer: 0
+    timer: 0,
+    releaseBusy: false
   };
 
   function replaceCopy(value) {
@@ -295,6 +296,71 @@
     });
   }
 
+  function recoveryMatchesCurrentOrder(recovery) {
+    var orderPay = window.pscCheckout && window.pscCheckout.orderPay;
+    if (!orderPay || !orderPay.orderId || !recovery || !recovery.orderId) return true;
+    return Number(orderPay.orderId) === Number(recovery.orderId);
+  }
+
+  function releaseFailedPayment(recovery) {
+    var config = window.rgvPaymentRecovery || {};
+    if (
+      pendingPollState.releaseBusy ||
+      !config.ajaxUrl ||
+      !config.retryNonce ||
+      !recovery ||
+      !recovery.orderId ||
+      !recovery.orderKey ||
+      !recovery.paymentId
+    ) {
+      schedulePendingStatusPoll(2500);
+      return;
+    }
+
+    pendingPollState.releaseBusy = true;
+    setPendingStatusCopy('Payment was not completed. Preparing a fresh attempt\u2026');
+
+    var body = new URLSearchParams();
+    body.set('action', 'rgv_release_failed_payment');
+    body.set('nonce', String(config.retryNonce));
+    body.set('order_id', String(recovery.orderId));
+    body.set('order_key', String(recovery.orderKey));
+    body.set('payment_id', String(recovery.paymentId));
+
+    window.fetch(config.ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body.toString()
+    }).then(function (response) {
+      return response.json();
+    }).then(function (envelope) {
+      var result = envelope && envelope.data ? envelope.data : {};
+      var paidRedirect = result.paid === true ? safeCheckoutDestination(result.redirect) : '';
+      var retryUrl = safeCheckoutDestination(result.retry_url);
+
+      if (paidRedirect) {
+        setPendingStatusCopy('Payment confirmed. Opening your order confirmation\u2026');
+        window.location.assign(paidRedirect);
+        return;
+      }
+
+      if (retryUrl) {
+        setPendingStatusCopy('Ready. Reloading secure payment options\u2026');
+        window.location.assign(retryUrl);
+        return;
+      }
+
+      setPendingStatusCopy('Verifying this payment\u2026 This page will update automatically.');
+      schedulePendingStatusPoll(3500);
+    }).catch(function () {
+      setPendingStatusCopy('Verifying this payment\u2026 This page will update automatically.');
+      schedulePendingStatusPoll(5000);
+    }).finally(function () {
+      pendingPollState.releaseBusy = false;
+    });
+  }
+
   function schedulePendingStatusPoll(delay) {
     if (pendingPollState.timer) window.clearTimeout(pendingPollState.timer);
     pendingPollState.timer = window.setTimeout(function () {
@@ -312,7 +378,8 @@
       !config.nonce ||
       !recovery.orderId ||
       !recovery.orderKey ||
-      !recovery.paymentId
+      !recovery.paymentId ||
+      !recoveryMatchesCurrentOrder(recovery)
     ) return;
 
     pendingPollState.busy = true;
@@ -351,8 +418,7 @@
       }
 
       if (result.status === 'failed' || result.status === 'canceled') {
-        setPendingStatusCopy('The payment did not complete. Nothing was charged. Reloading the payment options\u2026');
-        window.setTimeout(function () { window.location.reload(); }, 900);
+        releaseFailedPayment(recovery);
         return;
       }
 
@@ -374,7 +440,7 @@
   }
 
   function startPendingStatusPolling(recovery) {
-    if (!recovery || !recovery.paymentId) return false;
+    if (!recovery || !recovery.paymentId || !recoveryMatchesCurrentOrder(recovery)) return false;
     var key = [recovery.orderId, recovery.orderKey, recovery.paymentId].join(':');
     if (pendingPollState.key !== key) {
       if (pendingPollState.timer) window.clearTimeout(pendingPollState.timer);

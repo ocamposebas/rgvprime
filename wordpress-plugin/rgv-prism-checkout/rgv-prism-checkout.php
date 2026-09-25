@@ -29,12 +29,176 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('body_class', [$this, 'payment_page_body_class'], 100);
     add_filter('woocommerce_locate_template', [$this, 'locate_storefront_template'], 100, 3);
     add_action('template_redirect', [$this, 'restrict_public_wordpress_navigation'], 1);
+    add_action('template_redirect', [$this, 'isolate_payment_order_session'], 5);
     add_action('template_redirect', [$this, 'schedule_pending_payment_reconciliation'], 20);
     add_action(self::RECONCILE_HOOK, [$this, 'reconcile_storefront_payment'], 10, 2);
+    add_action('wp_ajax_rgv_release_failed_payment', [$this, 'release_failed_payment']);
+    add_action('wp_ajax_nopriv_rgv_release_failed_payment', [$this, 'release_failed_payment']);
     add_action('wp_enqueue_scripts', [$this, 'enqueue_storefront_checkout'], 100);
     add_action('wp_body_open', [$this, 'render_payment_nav'], 5, 0);
     add_action('before_woocommerce_pay_form', [$this, 'render_payment_header'], 5, 0);
     add_action('woocommerce_thankyou', [$this, 'return_paid_storefront_order'], 1000);
+  }
+
+  /**
+   * Provider recovery data is stored in the Woo session. A buyer opening a
+   * completely different signed order-pay URL must not inherit a stale lock
+   * from an earlier order. The earlier order and its payment metadata remain
+   * intact for background reconciliation; only this browser's checkout state
+   * is detached so the new order can create its own payment attempt.
+   */
+  public function isolate_payment_order_session() {
+    if (
+      !$this->is_storefront_payment_request() ||
+      !function_exists('WC') ||
+      !WC()->session
+    ) {
+      return;
+    }
+
+    $current_order_id = $this->payment_request_order_id();
+    if ($current_order_id < 1) {
+      return;
+    }
+
+    $session = WC()->session;
+    $pending = $session->get('psc_confirm_pending');
+    $recovery = $session->get('psc_recovery');
+    $attempt = $session->get('psc_attempt');
+    $detached_order_ids = [];
+
+    if (is_array($pending)) {
+      $pending_order_id = absint($pending['order_id'] ?? 0);
+      if ($pending_order_id > 0 && $pending_order_id !== $current_order_id) {
+        $detached_order_ids[] = $pending_order_id;
+        $session->set('psc_confirm_pending', null);
+      }
+    }
+
+    if (is_array($recovery)) {
+      $recovery_order_id = absint($recovery['orderId'] ?? 0);
+      if ($recovery_order_id > 0 && $recovery_order_id !== $current_order_id) {
+        $detached_order_ids[] = $recovery_order_id;
+        $session->set('psc_recovery', null);
+      }
+    }
+
+    if (is_array($attempt)) {
+      $attempt_order_id = absint($attempt['woo_order_id'] ?? 0);
+      if ($attempt_order_id > 0 && $attempt_order_id !== $current_order_id) {
+        $detached_order_ids[] = $attempt_order_id;
+        $session->set('psc_attempt', null);
+      }
+    }
+
+    if (!$detached_order_ids) {
+      return;
+    }
+
+    $session->set('psc_checkout_cycle', null);
+    $session->set('psc_blocks_payment_data', null);
+
+    if (function_exists('wc_get_logger')) {
+      wc_get_logger()->info(
+        sprintf(
+          'Detached stale checkout state from order(s) %s before opening independent order #%d.',
+          implode(',', array_unique(array_map('absint', $detached_order_ids))),
+          $current_order_id
+        ),
+        ['source' => 'rgv-card-wallet-return']
+      );
+    }
+  }
+
+  /**
+   * Release a payment that the provider has definitively marked failed or
+   * canceled. This endpoint never releases processing/attention payments.
+   */
+  public function release_failed_payment() {
+    if (!check_ajax_referer('rgv_retry_failed_payment', 'nonce', false)) {
+      wp_send_json_error(['message' => 'The secure retry request expired. Refresh and try again.'], 403);
+    }
+
+    if (
+      !function_exists('wc_get_order') ||
+      !class_exists('PrismSimpleCheckout\\Plugin') ||
+      !class_exists('PrismSimpleCheckout\\Completion') ||
+      !class_exists('PrismSimpleCheckout\\Rest_Routes')
+    ) {
+      wp_send_json_error(['message' => 'Payment status is temporarily unavailable.'], 503);
+    }
+
+    $order_id = absint($_POST['order_id'] ?? 0);
+    $order_key = isset($_POST['order_key']) ? wc_clean(wp_unslash((string) $_POST['order_key'])) : '';
+    $payment_id = isset($_POST['payment_id']) ? wc_clean(wp_unslash((string) $_POST['payment_id'])) : '';
+    $order = wc_get_order($order_id);
+
+    if (
+      !$order instanceof WC_Order ||
+      !$this->is_storefront_card_wallet_order($order) ||
+      !$order_key ||
+      !hash_equals((string) $order->get_order_key(), $order_key) ||
+      !$payment_id ||
+      !hash_equals((string) $order->get_meta('_psc_payment_id', true), $payment_id)
+    ) {
+      wp_send_json_error(['message' => 'The payment attempt does not match this order.'], 403);
+    }
+
+    $plugin = \PrismSimpleCheckout\Plugin::instance();
+    $identity = \PrismSimpleCheckout\Completion::recovery_identity($order);
+    $payment = $plugin->service_client()->get_payment($payment_id);
+
+    if (is_wp_error($payment)) {
+      $error_data = $payment->get_error_data();
+      $missing = 404 === (int) (is_array($error_data) ? ($error_data['status'] ?? 0) : 0);
+      if (!$missing || !str_starts_with($payment_id, 'pending_')) {
+        wp_send_json_error(['message' => 'Payment status is still being verified.'], 409);
+      }
+      $released = $plugin->completion()->finish_unpaid($order, $identity);
+    } else {
+      $status = (string) ($payment['status'] ?? '');
+      if ('succeeded' === $status) {
+        $plugin->reconciler()->reconcile_order($order);
+        $fresh = wc_get_order($order_id);
+        if ($fresh instanceof WC_Order && $fresh->is_paid()) {
+          wp_send_json_success([
+            'paid' => true,
+            'redirect' => $fresh->get_checkout_order_received_url(),
+          ]);
+        }
+        wp_send_json_error(['message' => 'Payment was received and is being finalized.'], 409);
+      }
+
+      if (!in_array($status, ['failed', 'canceled'], true)) {
+        wp_send_json_error(['message' => 'Payment status is still being verified.'], 409);
+      }
+
+      // The provider's release primitive historically accepted a terminal
+      // cancellation but not its equivalent terminal `failed` response. The
+      // identity, amount, account and attempt are still validated internally.
+      $terminal_payment = $payment;
+      if ('failed' === $status) {
+        $terminal_payment['status'] = 'canceled';
+        $order->add_order_note('Payment processor confirmed a terminal failed attempt. Checkout released for retry.');
+        $order->save();
+      }
+      $released = $plugin->completion()->finish_unpaid($order, $identity, $terminal_payment);
+    }
+
+    if (!$released) {
+      wp_send_json_error(['message' => 'Payment status is still being verified.'], 409);
+    }
+
+    \PrismSimpleCheckout\Rest_Routes::clear_matching_recovery($identity);
+    $fresh = wc_get_order($order_id);
+    if (!$fresh instanceof WC_Order || $fresh->is_paid() || !$fresh->needs_payment()) {
+      wp_send_json_error(['message' => 'The order is no longer available for payment.'], 409);
+    }
+
+    wp_send_json_success([
+      'released' => true,
+      'retry_url' => $fresh->get_checkout_payment_url(),
+    ]);
   }
 
   /**
@@ -565,6 +729,14 @@ JS;
       $script_dependencies,
       self::VERSION,
       true
+    );
+    wp_localize_script(
+      'rgv-order-pay',
+      'rgvPaymentRecovery',
+      [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'retryNonce' => wp_create_nonce('rgv_retry_failed_payment'),
+      ]
     );
   }
 

@@ -1580,18 +1580,37 @@ body.rgv-card-wallet-payment-page :is(.woocommerce-error, .woocommerce-message, 
 }
 
 body.rgv-card-wallet-payment-page .rgv-payment-confirmation-notice {
-  width: auto !important;
-  margin: 0 0 18px !important;
-  padding: 16px 18px !important;
-  border: 1px solid rgba(157, 65, 70, .58) !important;
-  border-radius: 12px !important;
-  background: rgba(111, 36, 40, .18) !important;
-  color: #f1d8d9 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 1.55 !important;
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  width: 100% !important;
+  margin: 0 0 14px !important;
+  padding: 11px 13px !important;
+  border: 1px solid var(--rgv-line) !important;
+  border-left: 3px solid #9d4146 !important;
+  border-radius: 9px !important;
+  background: #111318 !important;
+  color: #deddda !important;
+  font-size: 10.5px !important;
+  font-weight: 520 !important;
+  line-height: 1.4 !important;
   list-style: none !important;
   box-shadow: none !important;
+}
+
+body.rgv-card-wallet-payment-page .rgv-payment-confirmation-notice::before {
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(157, 65, 70, .28);
+  border-top-color: #b95a5f;
+  border-radius: 50%;
+  content: "";
+  animation: rgv-status-spin .85s linear infinite;
+}
+
+@keyframes rgv-status-spin {
+  to { transform: rotate(360deg); }
 }
 
 body.rgv-card-wallet-payment-page .rgv-payment-retry-notice {
