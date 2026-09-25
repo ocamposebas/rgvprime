@@ -150,7 +150,7 @@ for (const expected of [
   "paymentMethodTypes: ['card', 'us_bank_account']",
   "__rgvCardOnlyFactoryV2",
   "__rgvCardOnlyRuntimeReady",
-  "wallets: { applePay: 'auto', googlePay: 'auto' }",
+  "wallets: { applePay: 'auto', googlePay: 'auto', link: 'never' }",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
 
 const cardOnlyCapture = {};
@@ -192,6 +192,7 @@ assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["car
 assert.equal(JSON.stringify(cardOnlyCapture.element.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
 assert.equal(cardOnlyCapture.element.options.wallets.applePay, 'auto', "Apple Pay must be eligible for automatic display");
 assert.equal(cardOnlyCapture.element.options.wallets.googlePay, 'auto', "Google Pay must be eligible for automatic display");
+assert.equal(cardOnlyCapture.element.options.wallets.link, 'never', "Link must stay hidden so saved Klarna funding cannot appear");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
   "is_card_wallet_payment_submission",

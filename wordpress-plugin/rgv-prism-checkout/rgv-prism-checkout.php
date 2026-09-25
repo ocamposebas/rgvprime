@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.7.0
+ * Version: 3.7.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.7.0';
+  const VERSION = '3.7.1';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -260,7 +260,7 @@ final class RGV_Storefront_Card_Wallet_Return {
             spacedAccordionItems: false
           },
           paymentMethodOrder: ['card', 'us_bank_account'],
-          wallets: { applePay: 'auto', googlePay: 'auto' }
+          wallets: { applePay: 'auto', googlePay: 'auto', link: 'never' }
         }));
       };
 
@@ -305,7 +305,7 @@ final class RGV_Storefront_Card_Wallet_Return {
           spacedAccordionItems: false
         },
         paymentMethodOrder: ['card', 'us_bank_account'],
-        wallets: { applePay: 'auto', googlePay: 'auto' }
+        wallets: { applePay: 'auto', googlePay: 'auto', link: 'never' }
       });
     };
     controller.__rgvCardOnlyOptions = true;
@@ -461,7 +461,8 @@ JS;
           paymentMethodOrder: ['card', 'us_bank_account'],
           wallets: {
             applePay: 'auto',
-            googlePay: 'auto'
+            googlePay: 'auto',
+            link: 'never'
           }
         });
         return originalCreate(type, paymentOptions);

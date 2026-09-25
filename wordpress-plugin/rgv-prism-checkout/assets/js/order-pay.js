@@ -17,7 +17,7 @@
             spacedAccordionItems: false
           },
           paymentMethodOrder: ['card', 'us_bank_account'],
-          wallets: { applePay: 'auto', googlePay: 'auto' }
+          wallets: { applePay: 'auto', googlePay: 'auto', link: 'never' }
         });
       };
       controller.__rgvCardOnlyOptionsV2 = true;
@@ -56,7 +56,7 @@
               spacedAccordionItems: false
             },
             paymentMethodOrder: ['card', 'us_bank_account'],
-            wallets: { applePay: 'auto', googlePay: 'auto' }
+            wallets: { applePay: 'auto', googlePay: 'auto', link: 'never' }
           }));
         };
 
