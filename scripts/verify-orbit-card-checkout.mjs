@@ -168,6 +168,7 @@ for (const expected of [
   "managePendingConfirmation",
   "startPendingStatusPolling",
   "recoveryMatchesCurrentOrder",
+  "currentPaymentRecovery",
   "releaseFailedPayment",
   "psc_poll_payment",
   "rgv_release_failed_payment",
@@ -178,8 +179,9 @@ for (const expected of [
   "rgv-payment-inline-notice",
   "Payment cancelled \\u2014 nothing was charged",
   "Nothing was charged",
-  "window.location.reload()",
+  "Never reload the entire checkout as a recovery fallback",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
+assert(!cardReturnScript.includes("window.location.reload()"), "Pending payment recovery must never create a full-page reload loop");
 assert(cardReturnPlugin.includes("__rgvGestureSubmitCaptureInstalled") && cardReturnPlugin.includes("__rgvBeginGestureSubmit"), "The early provider guard must preserve Apple Pay's trusted submit gesture");
 assert(cardReturnPlugin.includes("__rgvFreshAttemptFactory") && cardReturnPlugin.includes("markAttemptForRevalidation"), "Every payment submission must revalidate its provider attempt against the current research record");
 

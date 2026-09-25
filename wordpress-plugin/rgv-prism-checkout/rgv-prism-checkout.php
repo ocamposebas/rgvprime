@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.8.2
+ * Version: 3.8.3
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.8.2';
+  const VERSION = '3.8.3';
   const PAYMENT_METHOD = 'psc';
   const RECONCILE_HOOK = 'rgv_reconcile_storefront_payment';
 
@@ -730,12 +730,26 @@ JS;
       self::VERSION,
       true
     );
+    $recovery_order = wc_get_order($this->payment_request_order_id());
+    $fallback_recovery = null;
+    if ($recovery_order instanceof WC_Order && !$recovery_order->is_paid()) {
+      $fallback_payment_id = (string) $recovery_order->get_meta('_psc_payment_id', true);
+      if ('' !== $fallback_payment_id) {
+        $fallback_recovery = [
+          'orderId' => (int) $recovery_order->get_id(),
+          'orderKey' => (string) $recovery_order->get_order_key(),
+          'paymentId' => $fallback_payment_id,
+        ];
+      }
+    }
+
     wp_localize_script(
       'rgv-order-pay',
       'rgvPaymentRecovery',
       [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'retryNonce' => wp_create_nonce('rgv_retry_failed_payment'),
+        'recovery' => $fallback_recovery,
       ]
     );
   }

@@ -233,7 +233,6 @@
   var revealTimer = 0;
   var revealQueued = false;
   var updateQueued = false;
-  var confirmationReloadQueued = false;
   var pendingStatusCopy = 'Verifying this payment\u2026 This page will update automatically.';
   var pendingPollState = {
     key: '',
@@ -300,6 +299,20 @@
     var orderPay = window.pscCheckout && window.pscCheckout.orderPay;
     if (!orderPay || !orderPay.orderId || !recovery || !recovery.orderId) return true;
     return Number(orderPay.orderId) === Number(recovery.orderId);
+  }
+
+  function currentPaymentRecovery() {
+    var providerRecovery = window.pscCheckout && window.pscCheckout.recovery;
+    if (providerRecovery && providerRecovery.paymentId && recoveryMatchesCurrentOrder(providerRecovery)) {
+      return providerRecovery;
+    }
+
+    var fallbackRecovery = window.rgvPaymentRecovery && window.rgvPaymentRecovery.recovery;
+    if (fallbackRecovery && fallbackRecovery.paymentId && recoveryMatchesCurrentOrder(fallbackRecovery)) {
+      return fallbackRecovery;
+    }
+
+    return null;
   }
 
   function releaseFailedPayment(recovery) {
@@ -371,7 +384,7 @@
 
   function pollPendingStatus() {
     var config = window.pscCheckout || {};
-    var recovery = config.recovery || {};
+    var recovery = currentPaymentRecovery() || {};
     if (
       pendingPollState.busy ||
       !config.ajaxUrl ||
@@ -494,14 +507,14 @@
       button.textContent = 'Checking payment status…';
     }
 
-    var recovery = window.pscCheckout && window.pscCheckout.recovery;
+    var recovery = currentPaymentRecovery();
     if (startPendingStatusPolling(recovery)) return;
-    if (confirmationReloadQueued) return;
 
-    confirmationReloadQueued = true;
-    window.setTimeout(function () {
-      window.location.reload();
-    }, 1400);
+    // Never reload the entire checkout as a recovery fallback. A reload loop
+    // repeatedly tears down Stripe iframes and appears as an endless flash on
+    // mobile. Keep the page stable and let the customer refresh once manually
+    // only if no signed payment identity is available.
+    setPendingStatusCopy('Payment status is unavailable. Refresh this page once to continue.');
   }
 
   function manageVerificationRefresh() {
