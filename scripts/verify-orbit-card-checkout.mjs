@@ -147,11 +147,11 @@ assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment ac
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
 assert(!cardReturnPlugin.toLowerCase().includes("zelle"), "The branded card checkout shell must remain isolated from Zelle");
 for (const expected of [
-  "paymentMethodTypes: ['card']",
+  "paymentMethodTypes: ['card', 'us_bank_account']",
   "__rgvCardOnlyFactoryV2",
   "__rgvCardOnlyRuntimeReady",
-  "wallets: { applePay: 'never', googlePay: 'never' }",
-]) assert(cardReturnScript.includes(expected), `The hosted payment surface is not strictly card-only: ${expected}`);
+  "wallets: { applePay: 'auto', googlePay: 'auto' }",
+]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
 
 const cardOnlyCapture = {};
 const cardOnlySandbox = {
@@ -188,8 +188,10 @@ vm.runInNewContext(cardReturnScript, cardOnlySandbox);
 const guardedClient = cardOnlySandbox.window.Stripe("pk_test_checkout");
 const guardedElements = guardedClient.elements({ mode: "payment" });
 guardedElements.create("payment", {});
-assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card"]', "Stripe Elements must receive only the card method type");
-assert.equal(JSON.stringify(cardOnlyCapture.element.options.paymentMethodOrder), '["card"]', "The mounted Payment Element must retain card as its only ordered method");
+assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","us_bank_account"]', "Stripe Elements must receive card and US bank account methods only");
+assert.equal(JSON.stringify(cardOnlyCapture.element.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
+assert.equal(cardOnlyCapture.element.options.wallets.applePay, 'auto', "Apple Pay must be eligible for automatic display");
+assert.equal(cardOnlyCapture.element.options.wallets.googlePay, 'auto', "Google Pay must be eligible for automatic display");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
   "is_card_wallet_payment_submission",

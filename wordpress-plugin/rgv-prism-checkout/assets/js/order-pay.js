@@ -2,8 +2,8 @@
   'use strict';
 
   /* The provider builds a deferred Stripe Elements session after research
-     verification. Constrain that session itself to card before its DOM-ready
-     bootstrap runs; ordering card first does not remove the other methods. */
+     verification. Limit that session to cards, eligible card wallets, and US
+     bank accounts before its DOM-ready bootstrap runs. */
   function enforceCardOnlyStripe() {
     var controller = window.PSCCheckoutController;
     if (controller && !controller.__rgvCardOnlyOptionsV2 && typeof controller.paymentElementOptions === 'function') {
@@ -16,8 +16,8 @@
             radios: false,
             spacedAccordionItems: false
           },
-          paymentMethodOrder: ['card'],
-          wallets: { applePay: 'never', googlePay: 'never' }
+          paymentMethodOrder: ['card', 'us_bank_account'],
+          wallets: { applePay: 'auto', googlePay: 'auto' }
         });
       };
       controller.__rgvCardOnlyOptionsV2 = true;
@@ -36,7 +36,7 @@
       var originalElements = stripeClient.elements.bind(stripeClient);
       var guardedElements = function (options) {
         var elementsOptions = Object.assign({}, options || {}, {
-          paymentMethodTypes: ['card']
+          paymentMethodTypes: ['card', 'us_bank_account']
         });
         var elements = originalElements(elementsOptions);
         if (!elements || typeof elements.create !== 'function') return elements;
@@ -55,8 +55,8 @@
               radios: false,
               spacedAccordionItems: false
             },
-            paymentMethodOrder: ['card'],
-            wallets: { applePay: 'never', googlePay: 'never' }
+            paymentMethodOrder: ['card', 'us_bank_account'],
+            wallets: { applePay: 'auto', googlePay: 'auto' }
           }));
         };
 

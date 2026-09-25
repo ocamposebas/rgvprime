@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.6.1
+ * Version: 3.7.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.6.1';
+  const VERSION = '3.7.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -190,9 +190,9 @@ final class RGV_Storefront_Card_Wallet_Return {
       self::VERSION
     );
 
-    // The connected account may have several Stripe methods enabled. This
-    // storefront deliberately mounts one traditional card form. Run before
-    // the provider initializes Elements so there is no wallet/tab reflow.
+    // The connected account may have several Stripe methods enabled. Keep the
+    // hosted form limited to cards, eligible card wallets, and US bank accounts.
+    // Run before the provider initializes Elements so there is no tab reflow.
     $card_only_script = <<<'JS'
 (function () {
   if (window.__rgvCardOnlyStripeGuard) return;
@@ -209,7 +209,7 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
-      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card'] });
+      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card', 'us_bank_account'] });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
         theme: 'night',
@@ -259,8 +259,8 @@ final class RGV_Storefront_Card_Wallet_Return {
             radios: false,
             spacedAccordionItems: false
           },
-          paymentMethodOrder: ['card'],
-          wallets: { applePay: 'never', googlePay: 'never' }
+          paymentMethodOrder: ['card', 'us_bank_account'],
+          wallets: { applePay: 'auto', googlePay: 'auto' }
         }));
       };
 
@@ -304,8 +304,8 @@ final class RGV_Storefront_Card_Wallet_Return {
           radios: false,
           spacedAccordionItems: false
         },
-        paymentMethodOrder: ['card'],
-        wallets: { applePay: 'never', googlePay: 'never' }
+        paymentMethodOrder: ['card', 'us_bank_account'],
+        wallets: { applePay: 'auto', googlePay: 'auto' }
       });
     };
     controller.__rgvCardOnlyOptions = true;
@@ -390,9 +390,9 @@ JS;
     }
 
     // The provider defaults to every payment method enabled on the connected
-    // Stripe account. This storefront intentionally presents one traditional
-    // card form, so constrain the deferred Elements session before the provider
-    // creates it. The server-side confirmation flow remains unchanged.
+    // Stripe account. Constrain the deferred Elements session to cards, eligible
+    // card wallets, and US bank accounts. The server-side confirmation flow
+    // remains unchanged.
     $card_only_script = <<<'JS'
 (function () {
   if (window.__rgvCardOnlyStripe || typeof window.Stripe !== 'function') return;
@@ -407,7 +407,7 @@ JS;
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
       var elementsOptions = Object.assign({}, options || {}, {
-        paymentMethodTypes: ['card']
+        paymentMethodTypes: ['card', 'us_bank_account']
       });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
@@ -458,10 +458,10 @@ JS;
             radios: false,
             spacedAccordionItems: false
           },
-          paymentMethodOrder: ['card'],
+          paymentMethodOrder: ['card', 'us_bank_account'],
           wallets: {
-            applePay: 'never',
-            googlePay: 'never'
+            applePay: 'auto',
+            googlePay: 'auto'
           }
         });
         return originalCreate(type, paymentOptions);
