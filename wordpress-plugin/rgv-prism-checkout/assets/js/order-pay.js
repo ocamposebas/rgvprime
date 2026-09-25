@@ -74,9 +74,37 @@
     }, true);
   }
 
+  function expressCheckoutOptions(options) {
+    options = options || {};
+    return Object.assign({}, options, {
+      buttonHeight: 50,
+      buttonTheme: Object.assign({}, options.buttonTheme || {}, {
+        applePay: 'black',
+        googlePay: 'black'
+      }),
+      buttonType: Object.assign({}, options.buttonType || {}, {
+        applePay: 'check-out',
+        googlePay: 'checkout'
+      }),
+      layout: {
+        maxColumns: 2,
+        overflow: 'never'
+      },
+      paymentMethodOrder: ['applePay', 'googlePay', 'link'],
+      paymentMethods: Object.assign({}, options.paymentMethods || {}, {
+        applePay: 'auto',
+        googlePay: 'auto',
+        link: 'auto',
+        amazonPay: 'never',
+        klarna: 'never',
+        paypal: 'never'
+      })
+    });
+  }
+
   /* The provider builds a deferred Stripe Elements session after research
-     verification. Limit that session to cards, eligible card wallets, and US
-     bank accounts before its DOM-ready bootstrap runs. */
+     verification. Keep the manual form to card/bank and give eligible wallets
+     a dedicated Express Checkout row above it. */
   function enforceCardOnlyStripe() {
     var controller = window.PSCCheckoutController;
     if (controller && !controller.__rgvCardOnlyOptionsV2 && typeof controller.paymentElementOptions === 'function') {
@@ -90,9 +118,15 @@
             spacedAccordionItems: false
           },
           paymentMethodOrder: ['card', 'us_bank_account'],
-          wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }
+          wallets: { applePay: 'never', googlePay: 'never', link: 'never' }
         });
       };
+      if (typeof controller.expressCheckoutOptions === 'function') {
+        var originalExpressOptions = controller.expressCheckoutOptions.bind(controller);
+        controller.expressCheckoutOptions = function (policy) {
+          return expressCheckoutOptions(originalExpressOptions(policy));
+        };
+      }
       controller.__rgvCardOnlyOptionsV2 = true;
     }
 
@@ -109,7 +143,7 @@
       var originalElements = stripeClient.elements.bind(stripeClient);
       var guardedElements = function (options) {
         var elementsOptions = Object.assign({}, options || {}, {
-          paymentMethodTypes: ['card', 'us_bank_account']
+          paymentMethodTypes: ['card', 'link', 'us_bank_account']
         });
         var elements = originalElements(elementsOptions);
         if (!elements || typeof elements.create !== 'function') return elements;
@@ -119,7 +153,7 @@
         var originalCreate = elements.create.bind(elements);
         var guardedCreate = function (type, elementOptions) {
           if (type === 'expressCheckout') {
-            throw new Error('Express checkout is disabled for this card-only storefront flow.');
+            return originalCreate(type, expressCheckoutOptions(elementOptions));
           }
           if (type !== 'payment') return originalCreate(type, elementOptions);
 
@@ -131,7 +165,7 @@
               spacedAccordionItems: false
             },
             paymentMethodOrder: ['card', 'us_bank_account'],
-            wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }
+            wallets: { applePay: 'never', googlePay: 'never', link: 'never' }
           }));
         };
 
@@ -282,6 +316,31 @@
     }, 1400);
   }
 
+  function manageVerificationRefresh() {
+    var notices = Array.prototype.filter.call(
+      document.querySelectorAll('.woocommerce-error, .woocommerce-info, .woocommerce-message, .psc-payment-message'),
+      function (notice) {
+        return /research verification changed/i.test(String(notice.textContent || ''));
+      }
+    );
+
+    if (!notices.length) return;
+
+    notices.forEach(function (notice, index) {
+      if (index > 0) {
+        notice.hidden = true;
+        notice.setAttribute('aria-hidden', 'true');
+        return;
+      }
+
+      notice.hidden = false;
+      notice.removeAttribute('aria-hidden');
+      notice.classList.add('rgv-payment-retry-notice');
+      notice.setAttribute('role', 'status');
+      notice.textContent = 'Your secure payment session was refreshed. Review the order and tap Pay securely once more. Nothing was charged.';
+    });
+  }
+
   function arrangeCheckout() {
     var form = document.querySelector('form#order_review.rgv-order-pay, form#order_review');
     var payment = form ? form.querySelector(':scope > #payment') : null;
@@ -299,9 +358,27 @@
       form.classList.add('rgv-payment-layout-ready');
       surface.classList.add('rgv-card-only-surface');
 
-      surface.querySelectorAll('#psc-wallet-stage, .psc-wallet-stage, #psc-card-toggle').forEach(function (walletElement) {
-        walletElement.hidden = true;
-        walletElement.setAttribute('aria-hidden', 'true');
+      surface.querySelectorAll('#psc-card-toggle').forEach(function (cardToggle) {
+        cardToggle.hidden = true;
+        cardToggle.setAttribute('aria-hidden', 'true');
+      });
+
+      surface.querySelectorAll('#psc-wallet-stage, .psc-wallet-stage').forEach(function (walletStage) {
+        walletStage.classList.add('rgv-quick-pay');
+
+        var expressElement = walletStage.querySelector('#psc-express-checkout-element, .psc-express-element');
+        if (expressElement && !walletStage.querySelector(':scope > .rgv-quick-pay__label')) {
+          var quickLabel = document.createElement('div');
+          quickLabel.className = 'rgv-quick-pay__label';
+          quickLabel.innerHTML = '<strong>Express checkout</strong><span>Fast and secure</span>';
+          walletStage.insertBefore(quickLabel, expressElement);
+        }
+        if (expressElement && !walletStage.querySelector(':scope > .rgv-quick-pay__divider')) {
+          var divider = document.createElement('div');
+          divider.className = 'rgv-quick-pay__divider';
+          divider.innerHTML = '<span>or pay with card or bank</span>';
+          expressElement.insertAdjacentElement('afterend', divider);
+        }
       });
 
       surface.querySelectorAll('#psc-card-stage, .psc-card-stage').forEach(function (cardStage) {
@@ -362,6 +439,7 @@
     updateQueued = false;
     neutralizeProviderCopy(document.body);
     managePendingConfirmation();
+    manageVerificationRefresh();
     arrangeCheckout();
   }
 

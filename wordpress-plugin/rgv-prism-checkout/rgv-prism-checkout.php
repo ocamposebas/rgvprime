@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.7.4
+ * Version: 3.8.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.7.4';
+  const VERSION = '3.8.0';
   const PAYMENT_METHOD = 'psc';
   const RECONCILE_HOOK = 'rgv_reconcile_storefront_payment';
 
@@ -270,6 +270,31 @@ final class RGV_Storefront_Card_Wallet_Return {
   if (window.__rgvCardOnlyStripeGuard) return;
   window.__rgvCardOnlyStripeGuard = true;
 
+  function expressCheckoutOptions(options) {
+    options = options || {};
+    return Object.assign({}, options, {
+      buttonHeight: 50,
+      buttonTheme: Object.assign({}, options.buttonTheme || {}, {
+        applePay: 'black',
+        googlePay: 'black'
+      }),
+      buttonType: Object.assign({}, options.buttonType || {}, {
+        applePay: 'check-out',
+        googlePay: 'checkout'
+      }),
+      layout: { maxColumns: 2, overflow: 'never' },
+      paymentMethodOrder: ['applePay', 'googlePay', 'link'],
+      paymentMethods: Object.assign({}, options.paymentMethods || {}, {
+        applePay: 'auto',
+        googlePay: 'auto',
+        link: 'auto',
+        amazonPay: 'never',
+        klarna: 'never',
+        paypal: 'never'
+      })
+    });
+  }
+
   function gestureSubmitBridge(elements) {
     if (!elements || typeof elements.submit !== 'function') return null;
 
@@ -346,7 +371,7 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
-      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card', 'us_bank_account'] });
+      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card', 'link', 'us_bank_account'] });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
         theme: 'night',
@@ -387,7 +412,7 @@ final class RGV_Storefront_Card_Wallet_Return {
       var originalCreate = elements.create.bind(elements);
       var guardedCreate = function (type, elementOptions) {
         if (type === 'expressCheckout') {
-          throw new Error('Express checkout is disabled for this card-only storefront flow.');
+          return originalCreate(type, expressCheckoutOptions(elementOptions));
         }
         if (type !== 'payment') return originalCreate(type, elementOptions);
 
@@ -399,7 +424,7 @@ final class RGV_Storefront_Card_Wallet_Return {
             spacedAccordionItems: false
           },
           paymentMethodOrder: ['card', 'us_bank_account'],
-          wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }
+          wallets: { applePay: 'never', googlePay: 'never', link: 'never' }
         }));
       };
 
@@ -437,22 +462,55 @@ final class RGV_Storefront_Card_Wallet_Return {
 
   function patchController() {
     var controller = window.PSCCheckoutController;
-    if (!controller || controller.__rgvCardOnlyOptions || typeof controller.paymentElementOptions !== 'function') return false;
-    var originalOptions = controller.paymentElementOptions.bind(controller);
-    controller.paymentElementOptions = function (options) {
-      return Object.assign({}, originalOptions(options) || {}, {
-        layout: {
-          type: 'accordion',
-          defaultCollapsed: false,
-          radios: false,
-          spacedAccordionItems: false
-        },
-        paymentMethodOrder: ['card', 'us_bank_account'],
-        wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }
-      });
-    };
-    controller.__rgvCardOnlyOptions = true;
-    return true;
+    if (!controller) return false;
+
+    if (!controller.__rgvFreshAttemptFactory && typeof controller.createController === 'function') {
+      var originalControllerFactory = controller.createController.bind(controller);
+      controller.createController = function (dependencies) {
+        var checkoutController = originalControllerFactory(dependencies);
+        if (checkoutController && !checkoutController.__rgvFreshPaymentData && typeof checkoutController.paymentData === 'function') {
+          var originalPaymentData = checkoutController.paymentData.bind(checkoutController);
+          checkoutController.paymentData = function (kind) {
+            // The research record is session-bound and can be replaced by a
+            // second checkout tab. Revalidate the provider attempt immediately
+            // before token creation so a stale tab can never reach Woo submit.
+            if (typeof checkoutController.markAttemptForRevalidation === 'function') {
+              checkoutController.markAttemptForRevalidation();
+            }
+            return originalPaymentData(kind);
+          };
+          checkoutController.__rgvFreshPaymentData = true;
+        }
+        window.__rgvCheckoutControllerInstance = checkoutController;
+        return checkoutController;
+      };
+      controller.__rgvFreshAttemptFactory = true;
+    }
+
+    if (!controller.__rgvCardOnlyOptions && typeof controller.paymentElementOptions === 'function') {
+      var originalOptions = controller.paymentElementOptions.bind(controller);
+      controller.paymentElementOptions = function (options) {
+        return Object.assign({}, originalOptions(options) || {}, {
+          layout: {
+            type: 'accordion',
+            defaultCollapsed: false,
+            radios: false,
+            spacedAccordionItems: false
+          },
+          paymentMethodOrder: ['card', 'us_bank_account'],
+          wallets: { applePay: 'never', googlePay: 'never', link: 'never' }
+        });
+      };
+      if (typeof controller.expressCheckoutOptions === 'function') {
+        var originalExpressOptions = controller.expressCheckoutOptions.bind(controller);
+        controller.expressCheckoutOptions = function (policy) {
+          return expressCheckoutOptions(originalExpressOptions(policy));
+        };
+      }
+      controller.__rgvCardOnlyOptions = true;
+    }
+
+    return !!(controller.__rgvCardOnlyOptions && controller.__rgvFreshAttemptFactory);
   }
 
   var stripeFactory = typeof window.Stripe === 'function' ? wrapStripeFactory(window.Stripe) : window.Stripe;
@@ -481,7 +539,11 @@ final class RGV_Storefront_Card_Wallet_Return {
       window.Stripe = wrapStripeFactory(window.Stripe);
       window.__rgvCardOnlyStripe = true;
     }
-    var controllerReady = patchController() || !!(window.PSCCheckoutController && window.PSCCheckoutController.__rgvCardOnlyOptions);
+    var controllerReady = patchController() || !!(
+      window.PSCCheckoutController &&
+      window.PSCCheckoutController.__rgvCardOnlyOptions &&
+      window.PSCCheckoutController.__rgvFreshAttemptFactory
+    );
     if ((window.__rgvCardOnlyStripe && controllerReady) || checks > 200) window.clearInterval(guard);
   }, 25);
 }());
@@ -550,7 +612,7 @@ JS;
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
       var elementsOptions = Object.assign({}, options || {}, {
-        paymentMethodTypes: ['card', 'us_bank_account']
+        paymentMethodTypes: ['card', 'link', 'us_bank_account']
       });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
@@ -590,7 +652,17 @@ JS;
       var originalCreate = elements.create.bind(elements);
       var guardedCreate = function (type, elementOptions) {
         if (type === 'expressCheckout') {
-          throw new Error('Express checkout is disabled for this card-only storefront flow.');
+          return originalCreate(type, Object.assign({}, elementOptions || {}, {
+            buttonHeight: 50,
+            buttonTheme: { applePay: 'black', googlePay: 'black' },
+            buttonType: { applePay: 'check-out', googlePay: 'checkout' },
+            layout: { maxColumns: 2, overflow: 'never' },
+            paymentMethodOrder: ['applePay', 'googlePay', 'link'],
+            paymentMethods: {
+              applePay: 'auto', googlePay: 'auto', link: 'auto',
+              amazonPay: 'never', klarna: 'never', paypal: 'never'
+            }
+          }));
         }
         if (type !== 'payment') return originalCreate(type, elementOptions);
 
@@ -603,9 +675,9 @@ JS;
           },
           paymentMethodOrder: ['card', 'us_bank_account'],
           wallets: {
-            applePay: 'auto',
-            googlePay: 'auto',
-            link: 'auto'
+            applePay: 'never',
+            googlePay: 'never',
+            link: 'never'
           }
         });
         return originalCreate(type, paymentOptions);

@@ -151,17 +151,48 @@ assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment ac
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
 assert(!cardReturnPlugin.toLowerCase().includes("zelle"), "The branded card checkout shell must remain isolated from Zelle");
 for (const expected of [
-  "paymentMethodTypes: ['card', 'us_bank_account']",
+  "paymentMethodTypes: ['card', 'link', 'us_bank_account']",
   "__rgvCardOnlyFactoryV2",
   "__rgvCardOnlyRuntimeReady",
   "__rgvGestureSubmitCaptureInstalled",
   "__rgvBeginGestureSubmit",
-  "wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }",
+  "paymentMethodOrder: ['applePay', 'googlePay', 'link']",
+  "wallets: { applePay: 'never', googlePay: 'never', link: 'never' }",
+  "buttonHeight: 50",
+  "rgv-quick-pay__divider",
   "managePendingConfirmation",
   "Confirming your payment. Keep this page open",
+  "manageVerificationRefresh",
+  "Nothing was charged",
   "window.location.reload()",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
 assert(cardReturnPlugin.includes("__rgvGestureSubmitCaptureInstalled") && cardReturnPlugin.includes("__rgvBeginGestureSubmit"), "The early provider guard must preserve Apple Pay's trusted submit gesture");
+assert(cardReturnPlugin.includes("__rgvFreshAttemptFactory") && cardReturnPlugin.includes("markAttemptForRevalidation"), "Every payment submission must revalidate its provider attempt against the current research record");
+
+const earlyGuardMatch = cardReturnPlugin.match(/\$card_only_script = <<<'JS'\r?\n([\s\S]*?)\r?\nJS;/);
+assert(earlyGuardMatch, "The early checkout guard must remain embedded before the provider initializes");
+const freshAttemptCalls = [];
+const earlyGuardSandbox = {
+  document: { addEventListener() {} },
+  setInterval(callback) { callback(); return 1; },
+  clearInterval() {},
+};
+earlyGuardSandbox.window = earlyGuardSandbox;
+earlyGuardSandbox.Stripe = function Stripe() { return { elements() { return { create() { return {}; }, submit() { return Promise.resolve({}); } }; } }; };
+earlyGuardSandbox.PSCCheckoutController = {
+  paymentElementOptions() { return {}; },
+  expressCheckoutOptions() { return {}; },
+  createController() {
+    return {
+      markAttemptForRevalidation() { freshAttemptCalls.push("revalidate"); },
+      paymentData() { freshAttemptCalls.push("paymentData"); return Promise.resolve({}); },
+    };
+  },
+};
+vm.runInNewContext(earlyGuardMatch[1], earlyGuardSandbox);
+const freshController = earlyGuardSandbox.PSCCheckoutController.createController({});
+await freshController.paymentData("payment");
+assert.deepEqual(freshAttemptCalls, ["revalidate", "paymentData"], "The current research record must be revalidated immediately before payment data is created");
 
 const cardOnlyCapture = {};
 const cardOnlySandbox = {
@@ -186,7 +217,8 @@ cardOnlySandbox.window.Stripe = function Stripe() {
   Object.defineProperty(elements, "create", {
     get() {
       return function create(type, optionsForElement) {
-        cardOnlyCapture.element = { type, options: optionsForElement };
+        cardOnlyCapture.elementsByType ||= {};
+        cardOnlyCapture.elementsByType[type] = { type, options: optionsForElement };
         return { type };
       };
     },
@@ -206,6 +238,7 @@ vm.runInNewContext(cardReturnScript, cardOnlySandbox);
 const guardedClient = cardOnlySandbox.window.Stripe("pk_test_checkout");
 const guardedElements = guardedClient.elements({ mode: "payment" });
 guardedElements.create("payment", {});
+guardedElements.create("expressCheckout", {});
 const gestureSubmit = guardedElements.__rgvBeginGestureSubmit();
 const providerSubmit = guardedElements.submit();
 assert.strictEqual(providerSubmit, gestureSubmit, "The provider must consume the submit promise started by the trusted checkout gesture");
@@ -213,11 +246,17 @@ await providerSubmit;
 assert.equal(cardOnlyCapture.submitCalls, 1, "Apple Pay submit must run once for the gesture/provider handoff");
 await guardedElements.submit();
 assert.equal(cardOnlyCapture.submitCalls, 2, "A later independent payment attempt must call Stripe submit again");
-assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","us_bank_account"]', "Stripe Elements must receive card and US bank account methods only");
-assert.equal(JSON.stringify(cardOnlyCapture.element.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
-assert.equal(cardOnlyCapture.element.options.wallets.applePay, 'auto', "Apple Pay must be eligible for automatic display");
-assert.equal(cardOnlyCapture.element.options.wallets.googlePay, 'auto', "Google Pay must be eligible for automatic display");
-assert.equal(cardOnlyCapture.element.options.wallets.link, 'auto', "Link must be eligible for automatic display");
+assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","link","us_bank_account"]', "Stripe Elements must receive card, Link, and US bank account methods");
+assert.equal(JSON.stringify(cardOnlyCapture.elementsByType.payment.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
+assert.equal(cardOnlyCapture.elementsByType.payment.options.wallets.applePay, 'never', "Apple Pay must not be duplicated inside the manual Payment Element");
+assert.equal(cardOnlyCapture.elementsByType.payment.options.wallets.googlePay, 'never', "Google Pay must not be duplicated inside the manual Payment Element");
+assert.equal(cardOnlyCapture.elementsByType.payment.options.wallets.link, 'never', "Link must not be duplicated inside the manual Payment Element");
+assert.equal(JSON.stringify(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethodOrder), '["applePay","googlePay","link"]', "Express Checkout must prioritize Apple Pay, Google Pay, then Link");
+assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.buttonHeight, 50, "Express wallet buttons must use the premium 50px height");
+assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.layout.maxColumns, 2, "Express wallets must render in a two-column row when possible");
+assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethods.applePay, 'auto', "Apple Pay must be eligible on supported devices");
+assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethods.googlePay, 'auto', "Google Pay must be eligible on supported devices");
+assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethods.link, 'auto', "Link must be available as the wallet fallback");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
   "is_card_wallet_payment_submission",

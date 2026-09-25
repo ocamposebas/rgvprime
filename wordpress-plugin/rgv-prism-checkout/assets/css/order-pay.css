@@ -603,8 +603,73 @@ body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay > #psc-checkou
   box-shadow: none !important;
 }
 
-body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) :is(#psc-wallet-stage, .psc-wallet-stage, #psc-card-toggle) {
+body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) #psc-card-toggle,
+body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) :is(#psc-wallet-stage, .psc-wallet-stage)[hidden] {
   display: none !important;
+}
+
+body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) :is(#psc-wallet-stage, .psc-wallet-stage):not([hidden]) {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 0 18px !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, .105) !important;
+  border-radius: 10px !important;
+  background: var(--rgv-panel-deep) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .02) !important;
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 13px;
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__label strong {
+  color: var(--rgv-text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__label span {
+  color: #c88488;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 0;
+  color: var(--rgv-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__divider::before,
+body.rgv-card-wallet-payment-page .rgv-quick-pay__divider::after {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--rgv-line);
+  content: "";
+}
+
+body.rgv-card-wallet-payment-page .rgv-quick-pay__divider span {
+  flex: 0 0 auto;
+}
+
+body.rgv-card-wallet-payment-page #psc-express-checkout-element {
+  width: 100% !important;
+  min-height: 50px;
 }
 
 body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) :is(#psc-card-stage, .psc-card-stage),
@@ -620,6 +685,17 @@ body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay > #psc-checkou
   border-radius: 10px !important;
   background: var(--rgv-panel-deep) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .02) !important;
+}
+
+@media (max-width: 560px) {
+  body.rgv-card-wallet-payment-page .rgv-quick-pay__label span {
+    display: none;
+  }
+
+  body.rgv-card-wallet-payment-page .rgv-quick-pay__divider {
+    gap: 9px;
+    font-size: 8px;
+  }
 }
 
 body.rgv-card-wallet-payment-page form#order_review.rgv-order-pay :is(#psc-checkout-root, #psc-checkout) :where(*) {
@@ -1516,6 +1592,20 @@ body.rgv-card-wallet-payment-page .rgv-payment-confirmation-notice {
   line-height: 1.55 !important;
   list-style: none !important;
   box-shadow: none !important;
+}
+
+body.rgv-card-wallet-payment-page .rgv-payment-retry-notice {
+  width: auto !important;
+  margin: 0 0 18px !important;
+  padding: 15px 17px !important;
+  border: 1px solid rgba(83, 166, 115, .34) !important;
+  border-left: 3px solid #53a673 !important;
+  border-radius: 10px !important;
+  background: rgba(34, 77, 51, .18) !important;
+  color: #dcebe1 !important;
+  font-size: 12px !important;
+  font-weight: 550 !important;
+  line-height: 1.55 !important;
 }
 
 body.rgv-card-wallet-payment-page.rgv-payment-reconciling #place_order {
