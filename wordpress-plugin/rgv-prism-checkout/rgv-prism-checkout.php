@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.8.1
+ * Version: 3.8.2
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.8.1';
+  const VERSION = '3.8.2';
   const PAYMENT_METHOD = 'psc';
   const RECONCILE_HOOK = 'rgv_reconcile_storefront_payment';
 
@@ -58,10 +58,13 @@ final class RGV_Storefront_Card_Wallet_Return {
       return;
     }
 
-    $args = [(int) $order->get_id(), 0];
-    if (!wp_next_scheduled(self::RECONCILE_HOOK, $args)) {
-      wp_schedule_single_event(time() + 1, self::RECONCILE_HOOK, $args);
+    for ($queued_attempt = 0; $queued_attempt <= 20; $queued_attempt++) {
+      if (wp_next_scheduled(self::RECONCILE_HOOK, [(int) $order->get_id(), $queued_attempt])) {
+        return;
+      }
     }
+
+    wp_schedule_single_event(time() + 1, self::RECONCILE_HOOK, [(int) $order->get_id(), 0]);
   }
 
   /**
@@ -95,7 +98,7 @@ final class RGV_Storefront_Card_Wallet_Return {
     }
 
     $attempt = max(0, absint($attempt));
-    if (!in_array($result, ['pending', 'ambiguous'], true) || $attempt >= 6) {
+    if (!in_array($result, ['pending', 'ambiguous'], true) || $attempt >= 20) {
       return;
     }
 

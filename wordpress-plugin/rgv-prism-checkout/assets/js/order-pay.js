@@ -234,6 +234,13 @@
   var revealQueued = false;
   var updateQueued = false;
   var confirmationReloadQueued = false;
+  var pendingStatusCopy = 'Payment submitted. We\u2019re checking the final status \u2014 don\u2019t pay again. This page will update automatically.';
+  var pendingPollState = {
+    key: '',
+    attempts: 0,
+    busy: false,
+    timer: 0
+  };
 
   function replaceCopy(value) {
     return copyReplacements.reduce(function (current, entry) {
@@ -272,9 +279,117 @@
     return document.querySelector('#psc-checkout-root, #psc-checkout');
   }
 
+  function safeCheckoutDestination(value) {
+    try {
+      var destination = new URL(String(value || ''), window.location.href);
+      return destination.origin === window.location.origin ? destination.href : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function setPendingStatusCopy(copy) {
+    pendingStatusCopy = String(copy || pendingStatusCopy);
+    document.querySelectorAll('.rgv-payment-confirmation-notice').forEach(function (notice) {
+      if (String(notice.textContent || '') !== pendingStatusCopy) notice.textContent = pendingStatusCopy;
+    });
+  }
+
+  function schedulePendingStatusPoll(delay) {
+    if (pendingPollState.timer) window.clearTimeout(pendingPollState.timer);
+    pendingPollState.timer = window.setTimeout(function () {
+      pendingPollState.timer = 0;
+      pollPendingStatus();
+    }, delay);
+  }
+
+  function pollPendingStatus() {
+    var config = window.pscCheckout || {};
+    var recovery = config.recovery || {};
+    if (
+      pendingPollState.busy ||
+      !config.ajaxUrl ||
+      !config.nonce ||
+      !recovery.orderId ||
+      !recovery.orderKey ||
+      !recovery.paymentId
+    ) return;
+
+    pendingPollState.busy = true;
+    pendingPollState.attempts += 1;
+
+    var body = new URLSearchParams();
+    body.set('action', 'psc_poll_payment');
+    body.set('nonce', String(config.nonce));
+    body.set('order_id', String(recovery.orderId));
+    body.set('order_key', String(recovery.orderKey));
+    body.set('payment_id', String(recovery.paymentId));
+
+    window.fetch(config.ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body.toString()
+    }).then(function (response) {
+      return response.json();
+    }).then(function (envelope) {
+      var result = envelope && envelope.data ? envelope.data : {};
+      var paidRedirect = result.paid === true ? safeCheckoutDestination(result.redirect) : '';
+      var completeRedirect = result.completed === true ? safeCheckoutDestination(result.redirect) : '';
+      var retryUrl = safeCheckoutDestination(result.retry_url);
+
+      if (paidRedirect || completeRedirect) {
+        setPendingStatusCopy('Payment confirmed. Opening your order confirmation\u2026');
+        window.location.assign(paidRedirect || completeRedirect);
+        return;
+      }
+
+      if (retryUrl) {
+        setPendingStatusCopy('The payment did not complete. Nothing was charged. Reloading the payment options\u2026');
+        window.location.assign(retryUrl);
+        return;
+      }
+
+      if (result.status === 'failed' || result.status === 'canceled') {
+        setPendingStatusCopy('The payment did not complete. Nothing was charged. Reloading the payment options\u2026');
+        window.setTimeout(function () { window.location.reload(); }, 900);
+        return;
+      }
+
+      if (result.status === 'requires_action') {
+        setPendingStatusCopy('Your bank still needs confirmation. Complete the bank prompt \u2014 don\u2019t submit another payment.');
+      } else if (pendingPollState.attempts > 12) {
+        setPendingStatusCopy('Still checking the same payment. Don\u2019t pay again \u2014 this page will update automatically.');
+      }
+
+      schedulePendingStatusPoll(pendingPollState.attempts > 40 ? 8000 : 2500);
+    }).catch(function () {
+      if (pendingPollState.attempts > 12) {
+        setPendingStatusCopy('Still checking the same payment. Don\u2019t pay again \u2014 this page will update automatically.');
+      }
+      schedulePendingStatusPoll(6000);
+    }).finally(function () {
+      pendingPollState.busy = false;
+    });
+  }
+
+  function startPendingStatusPolling(recovery) {
+    if (!recovery || !recovery.paymentId) return false;
+    var key = [recovery.orderId, recovery.orderKey, recovery.paymentId].join(':');
+    if (pendingPollState.key !== key) {
+      if (pendingPollState.timer) window.clearTimeout(pendingPollState.timer);
+      pendingPollState.key = key;
+      pendingPollState.attempts = 0;
+      pendingPollState.busy = false;
+      pendingPollState.timer = 0;
+    }
+    if (!pendingPollState.busy && !pendingPollState.timer) schedulePendingStatusPoll(500);
+    return true;
+  }
+
   function managePendingConfirmation() {
     var notices = Array.prototype.filter.call(
-      document.querySelectorAll('.woocommerce-error, .woocommerce-info, .woocommerce-message, .wc-block-components-notice-banner'),
+      document.querySelectorAll('.woocommerce-error, .woocommerce-info, .woocommerce-message, .wc-block-components-notice-banner, .psc-payment-message, #psc-payment-message, #psc-payment-message-footer, #psc-recovery-message'),
       function (notice) {
         return /still confirming|still settling|confirmation is still|previous payment confirmation/i.test(
           String(notice.textContent || '')
@@ -284,18 +399,25 @@
 
     if (!notices.length) return;
 
-    notices.forEach(function (notice, index) {
-      if (index > 0) {
+    var surface = paymentSurface();
+    var primary = notices.filter(function (notice) {
+      return !surface || !surface.contains(notice);
+    })[0] || notices[0];
+
+    notices.forEach(function (notice) {
+      if (notice !== primary) {
         notice.hidden = true;
         notice.setAttribute('aria-hidden', 'true');
+        notice.classList.add('rgv-payment-source-hidden');
         return;
       }
 
       notice.hidden = false;
       notice.removeAttribute('aria-hidden');
+      notice.classList.remove('rgv-payment-source-hidden');
       notice.classList.add('rgv-payment-confirmation-notice');
       notice.setAttribute('role', 'status');
-      notice.textContent = 'Confirming your payment. Keep this page open — it will update automatically.';
+      if (String(notice.textContent || '') !== pendingStatusCopy) notice.textContent = pendingStatusCopy;
     });
 
     document.body.classList.add('rgv-payment-reconciling');
@@ -307,7 +429,7 @@
     }
 
     var recovery = window.pscCheckout && window.pscCheckout.recovery;
-    if (recovery && recovery.paymentId) return;
+    if (startPendingStatusPolling(recovery)) return;
     if (confirmationReloadQueued) return;
 
     confirmationReloadQueued = true;

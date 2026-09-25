@@ -146,6 +146,7 @@ for (const expected of [
   "schedule_pending_payment_reconciliation",
   "reconcile_storefront_payment",
   "reconcile_order($order)",
+  "$queued_attempt <= 20",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
 assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment access must not duplicate WooCommerce's pay_for_order capability lookup");
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
@@ -161,7 +162,10 @@ for (const expected of [
   "buttonHeight: 50",
   "rgv-quick-pay__divider",
   "managePendingConfirmation",
-  "Confirming your payment. Keep this page open",
+  "startPendingStatusPolling",
+  "psc_poll_payment",
+  "#psc-payment-message-footer",
+  "Payment submitted. We\\u2019re checking the final status",
   "manageVerificationRefresh",
   "managePaymentFeedback",
   "rgv-payment-inline-notice",
