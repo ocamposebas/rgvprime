@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.7.3
+ * Version: 3.7.4
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,8 +13,9 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.7.3';
+  const VERSION = '3.7.4';
   const PAYMENT_METHOD = 'psc';
+  const RECONCILE_HOOK = 'rgv_reconcile_storefront_payment';
 
   public function __construct() {
     add_filter('woocommerce_gateway_title', [$this, 'gateway_title'], 100, 2);
@@ -28,10 +29,81 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('body_class', [$this, 'payment_page_body_class'], 100);
     add_filter('woocommerce_locate_template', [$this, 'locate_storefront_template'], 100, 3);
     add_action('template_redirect', [$this, 'restrict_public_wordpress_navigation'], 1);
+    add_action('template_redirect', [$this, 'schedule_pending_payment_reconciliation'], 20);
+    add_action(self::RECONCILE_HOOK, [$this, 'reconcile_storefront_payment'], 10, 2);
     add_action('wp_enqueue_scripts', [$this, 'enqueue_storefront_checkout'], 100);
     add_action('wp_body_open', [$this, 'render_payment_nav'], 5, 0);
     add_action('before_woocommerce_pay_form', [$this, 'render_payment_header'], 5, 0);
     add_action('woocommerce_thankyou', [$this, 'return_paid_storefront_order'], 1000);
+  }
+
+  /**
+   * A provider confirmation can legitimately return before its final payment
+   * status is available. Queue a focused, session-free status check for this
+   * exact order instead of making the buyer wait for the broad five-minute
+   * reconciliation sweep.
+   */
+  public function schedule_pending_payment_reconciliation() {
+    if (!$this->is_storefront_payment_request() || !function_exists('wc_get_order')) {
+      return;
+    }
+
+    $order = wc_get_order($this->payment_request_order_id());
+    if (
+      !$order instanceof WC_Order ||
+      !$this->is_storefront_card_wallet_order($order) ||
+      $order->is_paid() ||
+      '' === (string) $order->get_meta('_psc_payment_id', true)
+    ) {
+      return;
+    }
+
+    $args = [(int) $order->get_id(), 0];
+    if (!wp_next_scheduled(self::RECONCILE_HOOK, $args)) {
+      wp_schedule_single_event(time() + 1, self::RECONCILE_HOOK, $args);
+    }
+  }
+
+  /**
+   * Ask the provider for the existing payment's state. This never creates or
+   * confirms a payment; it can only reconcile the order already on hold.
+   */
+  public function reconcile_storefront_payment($order_id, $attempt = 0) {
+    if (
+      !function_exists('wc_get_order') ||
+      !class_exists('PrismSimpleCheckout\\Plugin')
+    ) {
+      return;
+    }
+
+    $order = wc_get_order(absint($order_id));
+    if (
+      !$order instanceof WC_Order ||
+      !$this->is_storefront_card_wallet_order($order) ||
+      $order->is_paid() ||
+      '' === (string) $order->get_meta('_psc_payment_id', true)
+    ) {
+      return;
+    }
+
+    try {
+      $plugin = \PrismSimpleCheckout\Plugin::instance();
+      $reconciler = $plugin->reconciler();
+      $result = $reconciler->reconcile_order($order);
+    } catch (Throwable $error) {
+      $result = 'ambiguous';
+    }
+
+    $attempt = max(0, absint($attempt));
+    if (!in_array($result, ['pending', 'ambiguous'], true) || $attempt >= 6) {
+      return;
+    }
+
+    $next_args = [(int) $order->get_id(), $attempt + 1];
+    if (!wp_next_scheduled(self::RECONCILE_HOOK, $next_args)) {
+      $delay = min(60, 5 * (2 ** $attempt));
+      wp_schedule_single_event(time() + $delay, self::RECONCILE_HOOK, $next_args);
+    }
   }
 
   public function locate_storefront_template($template, $template_name, $template_path) {

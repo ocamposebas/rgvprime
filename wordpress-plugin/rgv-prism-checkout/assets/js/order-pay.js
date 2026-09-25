@@ -199,6 +199,7 @@
   var revealTimer = 0;
   var revealQueued = false;
   var updateQueued = false;
+  var confirmationReloadQueued = false;
 
   function replaceCopy(value) {
     return copyReplacements.reduce(function (current, entry) {
@@ -235,6 +236,50 @@
 
   function paymentSurface() {
     return document.querySelector('#psc-checkout-root, #psc-checkout');
+  }
+
+  function managePendingConfirmation() {
+    var notices = Array.prototype.filter.call(
+      document.querySelectorAll('.woocommerce-error, .woocommerce-info, .woocommerce-message, .wc-block-components-notice-banner'),
+      function (notice) {
+        return /still confirming|still settling|confirmation is still|previous payment confirmation/i.test(
+          String(notice.textContent || '')
+        );
+      }
+    );
+
+    if (!notices.length) return;
+
+    notices.forEach(function (notice, index) {
+      if (index > 0) {
+        notice.hidden = true;
+        notice.setAttribute('aria-hidden', 'true');
+        return;
+      }
+
+      notice.hidden = false;
+      notice.removeAttribute('aria-hidden');
+      notice.classList.add('rgv-payment-confirmation-notice');
+      notice.setAttribute('role', 'status');
+      notice.textContent = 'Confirming your payment. Keep this page open — it will update automatically.';
+    });
+
+    document.body.classList.add('rgv-payment-reconciling');
+    var button = document.querySelector('form#order_review #place_order');
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      button.textContent = 'Checking payment status…';
+    }
+
+    var recovery = window.pscCheckout && window.pscCheckout.recovery;
+    if (recovery && recovery.paymentId) return;
+    if (confirmationReloadQueued) return;
+
+    confirmationReloadQueued = true;
+    window.setTimeout(function () {
+      window.location.reload();
+    }, 1400);
   }
 
   function arrangeCheckout() {
@@ -316,6 +361,7 @@
   function update() {
     updateQueued = false;
     neutralizeProviderCopy(document.body);
+    managePendingConfirmation();
     arrangeCheckout();
   }
 

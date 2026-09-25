@@ -142,6 +142,10 @@ for (const expected of [
   "REST_REQUEST",
   "wc-api",
   "wc-ajax",
+  "rgv_reconcile_storefront_payment",
+  "schedule_pending_payment_reconciliation",
+  "reconcile_storefront_payment",
+  "reconcile_order($order)",
 ]) assert(cardReturnPlugin.includes(expected), `Card and wallet return handling is missing: ${expected}`);
 assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment access must not duplicate WooCommerce's pay_for_order capability lookup");
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
@@ -153,6 +157,9 @@ for (const expected of [
   "__rgvGestureSubmitCaptureInstalled",
   "__rgvBeginGestureSubmit",
   "wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }",
+  "managePendingConfirmation",
+  "Confirming your payment. Keep this page open",
+  "window.location.reload()",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
 assert(cardReturnPlugin.includes("__rgvGestureSubmitCaptureInstalled") && cardReturnPlugin.includes("__rgvBeginGestureSubmit"), "The early provider guard must preserve Apple Pay's trusted submit gesture");
 
