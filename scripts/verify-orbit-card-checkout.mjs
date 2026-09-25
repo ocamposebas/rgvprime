@@ -150,8 +150,11 @@ for (const expected of [
   "paymentMethodTypes: ['card', 'us_bank_account']",
   "__rgvCardOnlyFactoryV2",
   "__rgvCardOnlyRuntimeReady",
+  "__rgvGestureSubmitCaptureInstalled",
+  "__rgvBeginGestureSubmit",
   "wallets: { applePay: 'auto', googlePay: 'auto', link: 'auto' }",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
+assert(cardReturnPlugin.includes("__rgvGestureSubmitCaptureInstalled") && cardReturnPlugin.includes("__rgvBeginGestureSubmit"), "The early provider guard must preserve Apple Pay's trusted submit gesture");
 
 const cardOnlyCapture = {};
 const cardOnlySandbox = {
@@ -165,6 +168,14 @@ cardOnlySandbox.window.PSCCheckoutController = {
 };
 cardOnlySandbox.window.Stripe = function Stripe() {
   const elements = {};
+  Object.defineProperty(elements, "submit", {
+    get() {
+      return function submit() {
+        cardOnlyCapture.submitCalls = (cardOnlyCapture.submitCalls || 0) + 1;
+        return Promise.resolve({});
+      };
+    },
+  });
   Object.defineProperty(elements, "create", {
     get() {
       return function create(type, optionsForElement) {
@@ -188,6 +199,13 @@ vm.runInNewContext(cardReturnScript, cardOnlySandbox);
 const guardedClient = cardOnlySandbox.window.Stripe("pk_test_checkout");
 const guardedElements = guardedClient.elements({ mode: "payment" });
 guardedElements.create("payment", {});
+const gestureSubmit = guardedElements.__rgvBeginGestureSubmit();
+const providerSubmit = guardedElements.submit();
+assert.strictEqual(providerSubmit, gestureSubmit, "The provider must consume the submit promise started by the trusted checkout gesture");
+await providerSubmit;
+assert.equal(cardOnlyCapture.submitCalls, 1, "Apple Pay submit must run once for the gesture/provider handoff");
+await guardedElements.submit();
+assert.equal(cardOnlyCapture.submitCalls, 2, "A later independent payment attempt must call Stripe submit again");
 assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","us_bank_account"]', "Stripe Elements must receive card and US bank account methods only");
 assert.equal(JSON.stringify(cardOnlyCapture.element.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
 assert.equal(cardOnlyCapture.element.options.wallets.applePay, 'auto', "Apple Pay must be eligible for automatic display");

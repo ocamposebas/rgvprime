@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.7.2
+ * Version: 3.7.3
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.7.2';
+  const VERSION = '3.7.3';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -198,6 +198,71 @@ final class RGV_Storefront_Card_Wallet_Return {
   if (window.__rgvCardOnlyStripeGuard) return;
   window.__rgvCardOnlyStripeGuard = true;
 
+  function gestureSubmitBridge(elements) {
+    if (!elements || typeof elements.submit !== 'function') return null;
+
+    var originalSubmit = elements.submit.bind(elements);
+    var pending = null;
+
+    function remember(promise) {
+      var guarded = Promise.resolve(promise);
+      guarded.catch(function () {});
+      pending = { promise: guarded, startedAt: Date.now() };
+      return guarded;
+    }
+
+    return {
+      begin: function () {
+        if (pending && Date.now() - pending.startedAt < 1500) return pending.promise;
+        try {
+          return remember(originalSubmit());
+        } catch (error) {
+          return remember(Promise.reject(error));
+        }
+      },
+      submit: function () {
+        if (pending) {
+          var current = pending;
+          pending = null;
+          return current.promise;
+        }
+        return originalSubmit();
+      }
+    };
+  }
+
+  function checkoutFormReady(form) {
+    if (!form || !form.matches('form#order_review, form.checkout')) return false;
+    if (!form.classList.contains('psc-wallet-ready')) return false;
+    if (form.querySelector('input[name="psc_confirmation_token"]')) return false;
+
+    var selected = form.querySelector('input[name="payment_method"]:checked');
+    return !selected || selected.value === 'psc';
+  }
+
+  function beginGestureSubmit(form) {
+    if (!checkoutFormReady(form)) return;
+    var active = window.__rgvGestureSubmitElements;
+    if (!active || typeof active.__rgvBeginGestureSubmit !== 'function') return;
+    active.__rgvBeginGestureSubmit();
+  }
+
+  if (!window.__rgvGestureSubmitCaptureInstalled) {
+    window.__rgvGestureSubmitCaptureInstalled = true;
+    document.addEventListener('click', function (event) {
+      if (!event.isTrusted) return;
+      var target = event.target && event.target.closest
+        ? event.target.closest('#place_order, button[name="woocommerce_pay"], input[name="woocommerce_checkout_place_order"]')
+        : null;
+      if (!target || target.disabled) return;
+      beginGestureSubmit(target.closest('form'));
+    }, true);
+    document.addEventListener('submit', function (event) {
+      if (!event.isTrusted) return;
+      beginGestureSubmit(event.target);
+    }, true);
+  }
+
   function wrapStripeFactory(originalStripe) {
     if (typeof originalStripe !== 'function' || originalStripe.__rgvCardOnlyFactory) return originalStripe;
 
@@ -245,6 +310,8 @@ final class RGV_Storefront_Card_Wallet_Return {
       var elements = originalElements(elementsOptions);
       if (!elements || typeof elements.create !== 'function') return elements;
 
+      var submitBridge = gestureSubmitBridge(elements);
+
       var originalCreate = elements.create.bind(elements);
       var guardedCreate = function (type, elementOptions) {
         if (type === 'expressCheckout') {
@@ -264,13 +331,17 @@ final class RGV_Storefront_Card_Wallet_Return {
         }));
       };
 
-      return new Proxy(elements, {
+      var guardedElementsProxy = new Proxy(elements, {
         get: function (target, property) {
           if (property === 'create') return guardedCreate;
+          if (property === 'submit' && submitBridge) return submitBridge.submit;
+          if (property === '__rgvBeginGestureSubmit' && submitBridge) return submitBridge.begin;
           var value = Reflect.get(target, property, target);
           return typeof value === 'function' ? value.bind(target) : value;
         }
       });
+      if (submitBridge) window.__rgvGestureSubmitElements = guardedElementsProxy;
+      return guardedElementsProxy;
     };
       return new Proxy(stripeClient, {
         get: function (target, property) {

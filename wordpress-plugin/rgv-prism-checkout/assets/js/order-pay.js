@@ -1,6 +1,79 @@
 (function () {
   'use strict';
 
+  /* Apple Pay must begin while Safari still considers the checkout action a
+     trusted user gesture. The provider performs server-side attempt checks
+     before calling elements.submit(), which can make Safari reject the wallet
+     sheet. Start submit in the trusted click/submit event and let the provider
+     consume that exact promise after its safety checks finish. */
+  function gestureSubmitBridge(elements) {
+    if (!elements || typeof elements.submit !== 'function') return null;
+
+    var originalSubmit = elements.submit.bind(elements);
+    var pending = null;
+
+    function remember(promise) {
+      var guarded = Promise.resolve(promise);
+      // The provider consumes this promise shortly afterwards. Attach a
+      // rejection observer now so a slow create-attempt request cannot produce
+      // an unhandled rejection before that consumer is attached.
+      guarded.catch(function () {});
+      pending = { promise: guarded, startedAt: Date.now() };
+      return guarded;
+    }
+
+    return {
+      begin: function () {
+        if (pending && Date.now() - pending.startedAt < 1500) return pending.promise;
+        try {
+          return remember(originalSubmit());
+        } catch (error) {
+          return remember(Promise.reject(error));
+        }
+      },
+      submit: function () {
+        if (pending) {
+          var current = pending;
+          pending = null;
+          return current.promise;
+        }
+        return originalSubmit();
+      }
+    };
+  }
+
+  function checkoutFormReady(form) {
+    if (!form || !form.matches('form#order_review, form.checkout')) return false;
+    if (!form.classList.contains('psc-wallet-ready')) return false;
+    if (form.querySelector('input[name="psc_confirmation_token"]')) return false;
+
+    var selected = form.querySelector('input[name="payment_method"]:checked');
+    return !selected || selected.value === 'psc';
+  }
+
+  function beginGestureSubmit(form) {
+    if (!checkoutFormReady(form)) return;
+    var active = window.__rgvGestureSubmitElements;
+    if (!active || typeof active.__rgvBeginGestureSubmit !== 'function') return;
+    active.__rgvBeginGestureSubmit();
+  }
+
+  if (!window.__rgvGestureSubmitCaptureInstalled) {
+    window.__rgvGestureSubmitCaptureInstalled = true;
+    document.addEventListener('click', function (event) {
+      if (!event.isTrusted) return;
+      var target = event.target && event.target.closest
+        ? event.target.closest('#place_order, button[name="woocommerce_pay"], input[name="woocommerce_checkout_place_order"]')
+        : null;
+      if (!target || target.disabled) return;
+      beginGestureSubmit(target.closest('form'));
+    }, true);
+    document.addEventListener('submit', function (event) {
+      if (!event.isTrusted) return;
+      beginGestureSubmit(event.target);
+    }, true);
+  }
+
   /* The provider builds a deferred Stripe Elements session after research
      verification. Limit that session to cards, eligible card wallets, and US
      bank accounts before its DOM-ready bootstrap runs. */
@@ -41,6 +114,8 @@
         var elements = originalElements(elementsOptions);
         if (!elements || typeof elements.create !== 'function') return elements;
 
+        var submitBridge = gestureSubmitBridge(elements);
+
         var originalCreate = elements.create.bind(elements);
         var guardedCreate = function (type, elementOptions) {
           if (type === 'expressCheckout') {
@@ -60,13 +135,17 @@
           }));
         };
 
-        return new Proxy(elements, {
+        var guardedElementsProxy = new Proxy(elements, {
           get: function (target, property) {
             if (property === 'create') return guardedCreate;
+            if (property === 'submit' && submitBridge) return submitBridge.submit;
+            if (property === '__rgvBeginGestureSubmit' && submitBridge) return submitBridge.begin;
             var value = Reflect.get(target, property, target);
             return typeof value === 'function' ? value.bind(target) : value;
           }
         });
+        if (submitBridge) window.__rgvGestureSubmitElements = guardedElementsProxy;
+        return guardedElementsProxy;
       };
       return new Proxy(stripeClient, {
         get: function (target, property) {
