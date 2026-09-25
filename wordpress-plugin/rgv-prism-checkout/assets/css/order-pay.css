@@ -77,6 +77,38 @@ body.rgv-card-wallet-payment-page a {
   color: inherit;
 }
 
+/* The research gate ships its own gray/purple dark theme. Override the theme
+   tokens at the source so every verification step belongs to RGVPRIME. */
+body.rgv-card-wallet-payment-page #psc-research-checkout {
+  --psc-r-bg: #16090c !important;
+  --psc-r-surface: #220d12 !important;
+  --psc-r-text: #fff8f6 !important;
+  --psc-r-muted: #c5aaa8 !important;
+  --psc-r-border: #59242b !important;
+  --psc-r-input-border: #7a313a !important;
+  --psc-r-highlight: #df6b72 !important;
+  --psc-r-tint: #2f0f16 !important;
+  --psc-r-success: #78c98a !important;
+  --psc-r-success-bg: #14241a !important;
+  --psc-r-accent: #ad3540 !important;
+  --psc-r-on-accent: #fff8f6 !important;
+  --psc-r-error: #ff989d !important;
+  --psc-r-error-bg: #351217 !important;
+  --psc-r-shadow: 0 26px 70px -26px rgba(68, 5, 14, .92) !important;
+  color-scheme: dark !important;
+}
+
+body.rgv-card-wallet-payment-page #psc-research-checkout .psc-r-primary {
+  background: linear-gradient(180deg, var(--rgv-red-bright), var(--rgv-red)) !important;
+  border-color: #c6535c !important;
+  color: #fff !important;
+}
+
+body.rgv-card-wallet-payment-page #psc-research-checkout :is(.psc-r-shell, .psc-r-help) {
+  background: var(--psc-r-bg) !important;
+  border-color: var(--psc-r-border) !important;
+}
+
 /* Minimal storefront navigation. */
 body.rgv-card-wallet-payment-page .rgv-pay-nav {
   position: relative;
