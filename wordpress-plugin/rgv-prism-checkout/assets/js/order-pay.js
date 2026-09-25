@@ -2,12 +2,12 @@
   'use strict';
 
   var copyReplacements = [
-    [/PRISM Secure Checkout/gi, 'Secure card payment'],
-    [/PRISM Fall Checkout/gi, 'Secure card payment'],
-    [/Powered by PRISM/gi, 'Secure checkout'],
-    [/PRISM research verification/gi, 'Secure research verification'],
-    [/Loading PRISM verification/gi, 'Loading secure verification'],
-    [/\bPRISM\b/gi, 'secure checkout']
+    [/PRISM Secure Checkout/gi, 'Card payment'],
+    [/PRISM Fall Checkout/gi, 'Card payment'],
+    [/Powered by PRISM/gi, 'Card payment'],
+    [/PRISM research verification/gi, 'Research verification'],
+    [/Loading PRISM verification/gi, 'Loading verification'],
+    [/\bPRISM\b/gi, 'payment']
   ];
   var revealTimer = 0;
   var revealQueued = false;

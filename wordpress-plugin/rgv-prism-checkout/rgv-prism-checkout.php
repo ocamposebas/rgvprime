@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.1.0
+ * Version: 3.2.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.1.0';
+  const VERSION = '3.2.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -147,11 +147,11 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     $copy = str_ireplace(
       ['PRISM Secure Checkout', 'PRISM Fall Checkout', 'Powered by PRISM', 'PRISM research verification', 'Loading PRISM verification'],
-      ['Secure card payment', 'Secure card payment', 'Secure checkout', 'Secure research verification', 'Loading secure verification'],
+      ['Card payment', 'Card payment', 'Card payment', 'Research verification', 'Loading verification'],
       (string) $translated
     );
 
-    return preg_replace('/\bPRISM\b/i', 'secure checkout', $copy);
+    return preg_replace('/\bPRISM\b/i', 'payment', $copy);
   }
 
   public function enqueue_storefront_checkout() {
@@ -219,15 +219,15 @@ final class RGV_Storefront_Card_Wallet_Return {
           borderRadius: '12px',
           spacingUnit: '5px',
           colorPrimary: '#d15c65',
-          colorBackground: '#121419',
-          colorText: '#f5f5f3',
-          colorTextSecondary: '#a6a8b0',
+          colorBackground: '#14080b',
+          colorText: '#fff8f6',
+          colorTextSecondary: '#c7a9a8',
           colorDanger: '#ef7379'
         }),
         rules: Object.assign({}, originalAppearance.rules || {}, {
           '.Input': {
             padding: '14px',
-            border: '1px solid #343840',
+            border: '1px solid #5e272d',
             boxShadow: 'none'
           },
           '.Input:focus': {
@@ -235,7 +235,7 @@ final class RGV_Storefront_Card_Wallet_Return {
             boxShadow: '0 0 0 1px #d15c65'
           },
           '.Label': {
-            color: '#d8d9dc',
+            color: '#f1dedd',
             fontSize: '13px',
             fontWeight: '600'
           }
@@ -406,15 +406,15 @@ JS;
           borderRadius: '11px',
           spacingUnit: '5px',
           colorPrimary: '#c35d64',
-          colorBackground: '#111318',
-          colorText: '#f3f3f1',
-          colorTextSecondary: '#9da0a9',
+          colorBackground: '#14080b',
+          colorText: '#fff8f6',
+          colorTextSecondary: '#c7a9a8',
           colorDanger: '#ef7379'
         }),
         rules: Object.assign({}, originalAppearance.rules || {}, {
           '.Input': {
             padding: '13px 14px',
-            border: '1px solid #343840',
+            border: '1px solid #5e272d',
             boxShadow: 'none'
           },
           '.Input:focus': {
@@ -422,7 +422,7 @@ JS;
             boxShadow: '0 0 0 1px #c35d64'
           },
           '.Label': {
-            color: '#d8d9dc',
+            color: '#f1dedd',
             fontSize: '13px',
             fontWeight: '600'
           }
@@ -476,12 +476,12 @@ JS;
     $script = <<<'JS'
 (function () {
   var replacements = [
-    [/PRISM Secure Checkout/gi, 'Secure card payment'],
-    [/PRISM Fall Checkout/gi, 'Secure card payment'],
-    [/Powered by PRISM/gi, 'Secure checkout'],
-    [/PRISM research verification/gi, 'Secure research verification'],
-    [/Loading PRISM verification/gi, 'Loading secure verification'],
-    [/\bPRISM\b/gi, 'secure checkout']
+    [/PRISM Secure Checkout/gi, 'Card payment'],
+    [/PRISM Fall Checkout/gi, 'Card payment'],
+    [/Powered by PRISM/gi, 'Card payment'],
+    [/PRISM research verification/gi, 'Research verification'],
+    [/Loading PRISM verification/gi, 'Loading verification'],
+    [/\bPRISM\b/gi, 'payment']
   ];
 
   function replace(value) {
@@ -757,7 +757,6 @@ JS;
       echo 'RGV<span>PRIME</span>';
     }
     echo '</a>';
-    echo '<span class="rgv-pay-nav__secure" aria-label="Secure checkout"><span aria-hidden="true">&#128274;</span> Secure checkout</span>';
     if ($checkout) {
       echo '<a class="rgv-pay-nav__back" href="' . esc_url($checkout) . '"><span aria-hidden="true">&larr;</span> Back to checkout</a>';
     }
@@ -771,7 +770,7 @@ JS;
 
     echo '<section class="rgv-payment-intro" aria-labelledby="rgv-payment-title">';
     echo '<div class="rgv-payment-intro__copy-group">';
-    echo '<p class="rgv-payment-intro__eyebrow"><span aria-hidden="true"></span> Secure checkout</p>';
+    echo '<p class="rgv-payment-intro__eyebrow"><span aria-hidden="true"></span> Card payment</p>';
     echo '<h1 id="rgv-payment-title">Finish your order.</h1>';
     echo '<p class="rgv-payment-intro__copy">Review the details, enter your card, and you are done.</p>';
     echo '</div>';
@@ -779,7 +778,7 @@ JS;
     echo '<span><b aria-hidden="true">&#10003;</b> Encrypted payment</span>';
     echo '<span><b aria-hidden="true">&#10003;</b> Card details stay private</span>';
     echo '</div></section>';
-    echo '<section class="rgv-payment-loader" aria-live="polite" aria-label="Preparing secure checkout">';
+    echo '<section class="rgv-payment-loader" aria-live="polite" aria-label="Preparing card form">';
     echo '<div class="rgv-payment-loader__payment">';
     echo '<div class="rgv-payment-loader__head"><span></span><i></i></div>';
     echo '<div class="rgv-payment-loader__field"></div><div class="rgv-payment-loader__field rgv-payment-loader__field--short"></div>';
@@ -788,7 +787,7 @@ JS;
     echo '<span class="rgv-payment-loader__line"></span>';
     echo '<div class="rgv-payment-loader__items"><span></span><span></span><span></span></div>';
     echo '<div class="rgv-payment-loader__total"></div></div>';
-    echo '<p class="rgv-payment-loader__status"><span aria-hidden="true"></span> Building your secure checkout&hellip;</p>';
+    echo '<p class="rgv-payment-loader__status"><span aria-hidden="true"></span> Preparing your card form&hellip;</p>';
     echo '</section>';
   }
 
