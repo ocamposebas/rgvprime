@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 2.5.0
+ * Version: 3.0.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '2.5.0';
+  const VERSION = '3.0.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -26,11 +26,21 @@ final class RGV_Storefront_Card_Wallet_Return {
     add_filter('gettext', [$this, 'neutral_frontend_copy'], 100, 3);
     add_filter('woocommerce_order_get_customer_id', [$this, 'allow_bearer_payment_session'], 1000, 2);
     add_filter('body_class', [$this, 'payment_page_body_class'], 100);
+    add_filter('woocommerce_locate_template', [$this, 'locate_storefront_template'], 100, 3);
     add_action('template_redirect', [$this, 'restrict_public_wordpress_navigation'], 1);
-    add_action('wp_enqueue_scripts', [$this, 'neutralize_frontend_branding'], 100);
+    add_action('wp_enqueue_scripts', [$this, 'enqueue_storefront_checkout'], 100);
     add_action('wp_body_open', [$this, 'render_payment_nav'], 5, 0);
     add_action('before_woocommerce_pay_form', [$this, 'render_payment_header'], 5, 0);
     add_action('woocommerce_thankyou', [$this, 'return_paid_storefront_order'], 1000);
+  }
+
+  public function locate_storefront_template($template, $template_name, $template_path) {
+    if ('checkout/form-pay.php' !== (string) $template_name || !$this->is_storefront_payment_request()) {
+      return $template;
+    }
+
+    $storefront_template = plugin_dir_path(__FILE__) . 'templates/checkout/form-pay.php';
+    return is_readable($storefront_template) ? $storefront_template : $template;
   }
 
   public function gateway_title($title, $gateway_id) {
@@ -102,7 +112,8 @@ final class RGV_Storefront_Card_Wallet_Return {
       return $name;
     }
 
-    return '<span class="rgv-order-summary__thumb" aria-hidden="true">' . $image . '</span>' . $name;
+    return '<span class="rgv-order-summary__thumb" aria-hidden="true">' . $image . '</span>' .
+      '<span class="rgv-order-summary__product-title">' . $name . '</span>';
   }
 
   public function allow_bearer_payment_session($customer_id, $order) {
@@ -141,6 +152,147 @@ final class RGV_Storefront_Card_Wallet_Return {
     );
 
     return preg_replace('/\bPRISM\b/i', 'secure checkout', $copy);
+  }
+
+  public function enqueue_storefront_checkout() {
+    if (!$this->is_checkout_surface()) {
+      return;
+    }
+
+    $provider_neutralizer = '
+      img[src*="prism-wordmark"],
+      .psc-blocks-label img[alt="PRISM"] {
+        display: none !important;
+      }
+    ';
+
+    foreach (['psc-research-checkout', 'psc-checkout'] as $handle) {
+      if (wp_style_is($handle, 'enqueued')) {
+        wp_add_inline_style($handle, $provider_neutralizer);
+      }
+    }
+
+    if ($this->is_storefront_receipt_request()) {
+      wp_register_style('rgv-card-wallet-receipt', false, [], self::VERSION);
+      wp_enqueue_style('rgv-card-wallet-receipt');
+      wp_add_inline_style('rgv-card-wallet-receipt', $provider_neutralizer . $this->thankyou_page_css());
+      return;
+    }
+
+    if (!$this->is_storefront_payment_request()) {
+      return;
+    }
+
+    wp_enqueue_style(
+      'rgv-order-pay',
+      plugins_url('assets/css/order-pay.css', __FILE__),
+      [],
+      self::VERSION
+    );
+
+    // The connected account may have several Stripe methods enabled. This
+    // storefront deliberately mounts one traditional card form. Run before
+    // the provider initializes Elements so there is no wallet/tab reflow.
+    $card_only_script = <<<'JS'
+(function () {
+  if (window.__rgvCardOnlyStripe || typeof window.Stripe !== 'function') return;
+
+  var originalStripe = window.Stripe;
+  var wrappedStripe = function () {
+    var stripeClient = originalStripe.apply(null, arguments);
+    if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElements) {
+      return stripeClient;
+    }
+
+    var originalElements = stripeClient.elements.bind(stripeClient);
+    stripeClient.elements = function (options) {
+      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card'] });
+      var originalAppearance = options && options.appearance ? options.appearance : {};
+      elementsOptions.appearance = Object.assign({}, originalAppearance, {
+        theme: 'night',
+        variables: Object.assign({}, originalAppearance.variables || {}, {
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          fontSizeBase: '15px',
+          borderRadius: '12px',
+          spacingUnit: '5px',
+          colorPrimary: '#d15c65',
+          colorBackground: '#121419',
+          colorText: '#f5f5f3',
+          colorTextSecondary: '#a6a8b0',
+          colorDanger: '#ef7379'
+        }),
+        rules: Object.assign({}, originalAppearance.rules || {}, {
+          '.Input': {
+            padding: '14px',
+            border: '1px solid #343840',
+            boxShadow: 'none'
+          },
+          '.Input:focus': {
+            border: '1px solid #d15c65',
+            boxShadow: '0 0 0 1px #d15c65'
+          },
+          '.Label': {
+            color: '#d8d9dc',
+            fontSize: '13px',
+            fontWeight: '600'
+          }
+        })
+      });
+
+      var elements = originalElements(elementsOptions);
+      if (!elements || typeof elements.create !== 'function') return elements;
+
+      var originalCreate = elements.create.bind(elements);
+      elements.create = function (type, elementOptions) {
+        if (type === 'expressCheckout') {
+          throw new Error('Express checkout is disabled for this card-only storefront flow.');
+        }
+        if (type !== 'payment') return originalCreate(type, elementOptions);
+
+        return originalCreate(type, Object.assign({}, elementOptions || {}, {
+          layout: {
+            type: 'accordion',
+            defaultCollapsed: false,
+            radios: false,
+            spacedAccordionItems: false
+          },
+          paymentMethodOrder: ['card'],
+          wallets: { applePay: 'never', googlePay: 'never' }
+        }));
+      };
+
+      return elements;
+    };
+    stripeClient.__rgvCardOnlyElements = true;
+    return stripeClient;
+  };
+
+  Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
+    if (['length', 'name', 'prototype', 'arguments', 'caller'].indexOf(property) !== -1) return;
+    try {
+      Object.defineProperty(wrappedStripe, property, Object.getOwnPropertyDescriptor(originalStripe, property));
+    } catch (error) { /* Optional Stripe factory metadata. */ }
+  });
+
+  window.Stripe = wrappedStripe;
+  window.__rgvCardOnlyStripe = true;
+}());
+JS;
+
+    if (wp_script_is('psc-classic-checkout', 'registered')) {
+      wp_add_inline_script('psc-classic-checkout', $card_only_script, 'before');
+    }
+
+    $script_dependencies = wp_script_is('psc-classic-checkout', 'registered')
+      ? ['psc-classic-checkout']
+      : [];
+    wp_enqueue_script(
+      'rgv-order-pay',
+      plugins_url('assets/js/order-pay.js', __FILE__),
+      $script_dependencies,
+      self::VERSION,
+      true
+    );
   }
 
   public function neutralize_frontend_branding() {
@@ -565,24 +717,25 @@ JS;
     }
 
     echo '<section class="rgv-payment-intro" aria-labelledby="rgv-payment-title">';
-    echo '<p class="rgv-payment-intro__eyebrow">Final secure step</p>';
-    echo '<h1 id="rgv-payment-title">Complete your payment</h1>';
-    echo '<p class="rgv-payment-intro__copy">Review your order, then pay securely by card or an available wallet.</p>';
+    echo '<div class="rgv-payment-intro__copy-group">';
+    echo '<p class="rgv-payment-intro__eyebrow"><span aria-hidden="true"></span> Secure checkout</p>';
+    echo '<h1 id="rgv-payment-title">Finish your order.</h1>';
+    echo '<p class="rgv-payment-intro__copy">Review the details, enter your card, and you are done.</p>';
+    echo '</div>';
     echo '<div class="rgv-payment-intro__trust" aria-label="Checkout protections">';
-    echo '<span>Encrypted checkout</span><span>Your order is reserved</span>';
+    echo '<span><b aria-hidden="true">&#10003;</b> Encrypted payment</span>';
+    echo '<span><b aria-hidden="true">&#10003;</b> Card details stay private</span>';
     echo '</div></section>';
     echo '<section class="rgv-payment-loader" aria-live="polite" aria-label="Preparing secure checkout">';
     echo '<div class="rgv-payment-loader__payment">';
-    echo '<span class="rgv-payment-loader__line rgv-payment-loader__line--title"></span>';
-    echo '<span class="rgv-payment-loader__line rgv-payment-loader__line--copy"></span>';
-    echo '<div class="rgv-payment-loader__gateway"><span></span><span></span><span></span><span></span></div>';
+    echo '<div class="rgv-payment-loader__head"><span></span><i></i></div>';
     echo '<div class="rgv-payment-loader__field"></div><div class="rgv-payment-loader__field rgv-payment-loader__field--short"></div>';
     echo '<div class="rgv-payment-loader__button"></div></div>';
     echo '<div class="rgv-payment-loader__summary">';
-    echo '<span class="rgv-payment-loader__line rgv-payment-loader__line--summary"></span>';
+    echo '<span class="rgv-payment-loader__line"></span>';
     echo '<div class="rgv-payment-loader__items"><span></span><span></span><span></span></div>';
     echo '<div class="rgv-payment-loader__total"></div></div>';
-    echo '<p class="rgv-payment-loader__status"><span aria-hidden="true"></span> Preparing your secure checkout&hellip;</p>';
+    echo '<p class="rgv-payment-loader__status"><span aria-hidden="true"></span> Building your secure checkout&hellip;</p>';
     echo '</section>';
   }
 
