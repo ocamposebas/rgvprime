@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.8.0
+ * Version: 3.8.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.8.0';
+  const VERSION = '3.8.1';
   const PAYMENT_METHOD = 'psc';
   const RECONCILE_HOOK = 'rgv_reconcile_storefront_payment';
 
@@ -371,7 +371,7 @@ final class RGV_Storefront_Card_Wallet_Return {
 
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
-      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card', 'link', 'us_bank_account'] });
+      var elementsOptions = Object.assign({}, options || {}, { paymentMethodTypes: ['card', 'us_bank_account'] });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {
         theme: 'night',
@@ -612,7 +612,7 @@ JS;
     var originalElements = stripeClient.elements.bind(stripeClient);
     var guardedElements = function (options) {
       var elementsOptions = Object.assign({}, options || {}, {
-        paymentMethodTypes: ['card', 'link', 'us_bank_account']
+        paymentMethodTypes: ['card', 'us_bank_account']
       });
       var originalAppearance = options && options.appearance ? options.appearance : {};
       elementsOptions.appearance = Object.assign({}, originalAppearance, {

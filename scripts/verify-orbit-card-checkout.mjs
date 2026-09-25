@@ -151,7 +151,7 @@ assert(!cardReturnPlugin.includes("add_filter('user_has_cap'"), "Card payment ac
 assert(!cardReturnPlugin.includes("allow_storefront_payment_link"), "The recursive pay_for_order capability shim must remain removed");
 assert(!cardReturnPlugin.toLowerCase().includes("zelle"), "The branded card checkout shell must remain isolated from Zelle");
 for (const expected of [
-  "paymentMethodTypes: ['card', 'link', 'us_bank_account']",
+  "paymentMethodTypes: ['card', 'us_bank_account']",
   "__rgvCardOnlyFactoryV2",
   "__rgvCardOnlyRuntimeReady",
   "__rgvGestureSubmitCaptureInstalled",
@@ -163,6 +163,9 @@ for (const expected of [
   "managePendingConfirmation",
   "Confirming your payment. Keep this page open",
   "manageVerificationRefresh",
+  "managePaymentFeedback",
+  "rgv-payment-inline-notice",
+  "Payment cancelled \\u2014 nothing was charged",
   "Nothing was charged",
   "window.location.reload()",
 ]) assert(cardReturnScript.includes(expected), `The hosted payment surface is missing an approved method configuration: ${expected}`);
@@ -246,7 +249,7 @@ await providerSubmit;
 assert.equal(cardOnlyCapture.submitCalls, 1, "Apple Pay submit must run once for the gesture/provider handoff");
 await guardedElements.submit();
 assert.equal(cardOnlyCapture.submitCalls, 2, "A later independent payment attempt must call Stripe submit again");
-assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","link","us_bank_account"]', "Stripe Elements must receive card, Link, and US bank account methods");
+assert.equal(JSON.stringify(cardOnlyCapture.elements.paymentMethodTypes), '["card","us_bank_account"]', "Stripe Elements must receive card and US bank account methods; Link stays in Express Checkout");
 assert.equal(JSON.stringify(cardOnlyCapture.elementsByType.payment.options.paymentMethodOrder), '["card","us_bank_account"]', "The mounted Payment Element must order card before US bank account");
 assert.equal(cardOnlyCapture.elementsByType.payment.options.wallets.applePay, 'never', "Apple Pay must not be duplicated inside the manual Payment Element");
 assert.equal(cardOnlyCapture.elementsByType.payment.options.wallets.googlePay, 'never', "Google Pay must not be duplicated inside the manual Payment Element");

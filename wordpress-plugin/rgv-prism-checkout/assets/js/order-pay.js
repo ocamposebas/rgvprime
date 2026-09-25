@@ -143,7 +143,7 @@
       var originalElements = stripeClient.elements.bind(stripeClient);
       var guardedElements = function (options) {
         var elementsOptions = Object.assign({}, options || {}, {
-          paymentMethodTypes: ['card', 'link', 'us_bank_account']
+          paymentMethodTypes: ['card', 'us_bank_account']
         });
         var elements = originalElements(elementsOptions);
         if (!elements || typeof elements.create !== 'function') return elements;
@@ -341,6 +341,53 @@
     });
   }
 
+  function managePaymentFeedback() {
+    var existing = document.querySelector('.rgv-payment-inline-notice');
+    var sources = Array.prototype.filter.call(
+      document.querySelectorAll(
+        '.woocommerce-error, .woocommerce-info, .woocommerce-message, .wc-block-components-notice-banner, .psc-payment-message'
+      ),
+      function (notice) {
+        if (notice.classList.contains('rgv-payment-inline-notice')) return false;
+        return /payment cancelled|unable to show apple pay|apple pay.*different payment|couldn.t start the payment/i.test(
+          String(notice.textContent || '')
+        );
+      }
+    );
+
+    if (!sources.length) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    var combined = sources.map(function (notice) {
+      return String(notice.textContent || '');
+    }).join(' ');
+    var message = /apple pay/i.test(combined)
+      ? 'Apple Pay couldn\u2019t start. Nothing was charged \u2014 use Link, card, or bank.'
+      : 'Payment cancelled \u2014 nothing was charged. Choose a payment method and try again.';
+
+    sources.forEach(function (notice) {
+      notice.hidden = true;
+      notice.setAttribute('aria-hidden', 'true');
+      notice.classList.add('rgv-payment-source-hidden');
+    });
+
+    var surface = paymentSurface();
+    if (!surface) return;
+
+    var compact = existing || document.createElement('div');
+    compact.className = 'rgv-payment-inline-notice';
+    compact.setAttribute('role', 'status');
+    compact.setAttribute('aria-live', 'polite');
+    if (String(compact.textContent || '') !== message) compact.textContent = message;
+    compact.hidden = false;
+    compact.removeAttribute('aria-hidden');
+    if (compact.parentNode !== surface || compact !== surface.firstElementChild) {
+      surface.insertBefore(compact, surface.firstChild);
+    }
+  }
+
   function arrangeCheckout() {
     var form = document.querySelector('form#order_review.rgv-order-pay, form#order_review');
     var payment = form ? form.querySelector(':scope > #payment') : null;
@@ -440,6 +487,7 @@
     neutralizeProviderCopy(document.body);
     managePendingConfirmation();
     manageVerificationRefresh();
+    managePaymentFeedback();
     arrangeCheckout();
   }
 
