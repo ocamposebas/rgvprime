@@ -6,6 +6,7 @@ import {
   portalRequest,
 } from "../../../lib/portalApi";
 import { listCardWalletOrdersForUser } from "../../../lib/cardWalletCheckout";
+import { filterVisibleAccountOrders } from "../../../lib/accountOrderVisibility";
 
 export const prerender = false;
 
@@ -66,7 +67,8 @@ export async function GET({ cookies, url }) {
     cardWalletOrders.forEach((order) => {
       if (!knownOrderIds.has(Number(order.id))) mergedOrders.push(order);
     });
-    mergedOrders.sort((left, right) => {
+    const visibleOrders = filterVisibleAccountOrders(mergedOrders);
+    visibleOrders.sort((left, right) => {
       const leftDate = Date.parse(left?.date_created || left?.date || 0) || 0;
       const rightDate = Date.parse(right?.date_created || right?.date || 0) || 0;
       return rightDate - leftDate;
@@ -76,7 +78,7 @@ export async function GET({ cookies, url }) {
       json({
         success: true,
         user: data.user,
-        orders: mergedOrders,
+        orders: visibleOrders,
       })
     );
   } catch (error) {

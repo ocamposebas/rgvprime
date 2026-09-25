@@ -13,6 +13,7 @@ import {
   hasRequiredAcknowledgements,
   issueComplianceSession,
 } from "../../../lib/complianceSession";
+import { filterVisibleAccountOrders } from "../../../lib/accountOrderVisibility";
 
 export async function POST({ request, cookies, url }) {
   if (isRequestBodyTooLarge(request, 16 * 1024)) {
@@ -51,7 +52,7 @@ export async function POST({ request, cookies, url }) {
     return json({
       success: true,
       user: data.user,
-      orders: data.orders || [],
+      orders: filterVisibleAccountOrders(data.orders),
       compliance: { approved: true, policyVersion: compliance.policyVersion },
     });
   } catch (error) {

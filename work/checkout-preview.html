@@ -1,0 +1,465 @@
+<div id="rgv-checkout-preview" aria-label="RGVPRIME checkout preview">
+  <style>
+    #rgv-checkout-preview {
+      --rgv-bg: #090a0c;
+      --rgv-surface: #101114;
+      --rgv-surface-2: #0b0c0f;
+      --rgv-text: #ededeb;
+      --rgv-muted: #9698a1;
+      --rgv-border: rgba(255, 255, 255, .12);
+      --rgv-accent: #8f1d27;
+      --rgv-accent-hover: #a12a33;
+      --rgv-radius: 18px;
+      overflow: hidden;
+      min-height: 720px;
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(73, 20, 26, .075), transparent 42%), var(--rgv-bg);
+      color: var(--rgv-text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #rgv-checkout-preview * { box-sizing: border-box; }
+    #rgv-checkout-preview button,
+    #rgv-checkout-preview input { font: inherit; }
+
+    #rgv-checkout-preview .rgvp-nav {
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      background: rgba(9, 10, 12, .96);
+    }
+
+    #rgv-checkout-preview .rgvp-nav-inner {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      width: min(100% - 64px, 1120px);
+      min-height: 76px;
+      margin: 0 auto;
+    }
+
+    #rgv-checkout-preview .rgvp-brand {
+      color: var(--rgv-text);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.055em;
+    }
+
+    #rgv-checkout-preview .rgvp-brand span { color: var(--rgv-accent-hover); }
+
+    #rgv-checkout-preview .rgvp-secure,
+    #rgv-checkout-preview .rgvp-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #b0b1ba;
+      font-size: 12px;
+    }
+
+    #rgv-checkout-preview .rgvp-secure { justify-self: center; }
+    #rgv-checkout-preview .rgvp-back {
+      justify-self: end;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, .012);
+      color: #d3d2d0;
+    }
+
+    #rgv-checkout-preview .rgvp-main {
+      width: min(100% - 64px, 860px);
+      margin: 0 auto;
+      padding: 42px 0 64px;
+    }
+
+    #rgv-checkout-preview .rgvp-preview-switch {
+      display: flex;
+      width: fit-content;
+      gap: 4px;
+      margin: 0 0 24px auto;
+      padding: 4px;
+      border: 1px solid var(--rgv-border);
+      border-radius: 12px;
+      background: #0c0d10;
+    }
+
+    #rgv-checkout-preview .rgvp-preview-switch button {
+      min-height: 36px;
+      padding: 8px 13px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--rgv-muted);
+    }
+
+    #rgv-checkout-preview .rgvp-preview-switch button[aria-selected="true"] {
+      background: #202126;
+      color: var(--rgv-text);
+    }
+
+    #rgv-checkout-preview .rgvp-header {
+      margin-bottom: 30px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    #rgv-checkout-preview .rgvp-eyebrow {
+      margin: 0 0 12px;
+      color: #b97774;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    #rgv-checkout-preview h1,
+    #rgv-checkout-preview h2,
+    #rgv-checkout-preview p { margin-top: 0; }
+
+    #rgv-checkout-preview h1 {
+      margin-bottom: 12px;
+      color: var(--rgv-text);
+      font-size: clamp(32px, 4.4vw, 44px);
+      font-weight: 500;
+      letter-spacing: -.055em;
+      line-height: 1.08;
+    }
+
+    #rgv-checkout-preview .rgvp-subtitle {
+      max-width: 620px;
+      margin-bottom: 16px;
+      color: var(--rgv-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    #rgv-checkout-preview .rgvp-proof {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 22px;
+      color: #b8b9bf;
+      font-size: 12px;
+    }
+
+    #rgv-checkout-preview .rgvp-proof span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    #rgv-checkout-preview .rgvp-panel {
+      border: 1px solid var(--rgv-border);
+      border-radius: var(--rgv-radius);
+      background: var(--rgv-surface);
+    }
+
+    #rgv-checkout-preview .rgvp-checkout-shell {
+      overflow: hidden;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
+    }
+
+    #rgv-checkout-preview .rgvp-order-head,
+    #rgv-checkout-preview .rgvp-order-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 70px 110px;
+      gap: 18px;
+      align-items: center;
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+    }
+
+    #rgv-checkout-preview .rgvp-order-head {
+      color: var(--rgv-muted);
+      font-size: 11px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    #rgv-checkout-preview .rgvp-order-head span:nth-child(2),
+    #rgv-checkout-preview .rgvp-order-row > span:nth-child(2) { text-align: center; }
+    #rgv-checkout-preview .rgvp-order-head span:last-child,
+    #rgv-checkout-preview .rgvp-order-row > strong { text-align: right; }
+
+    #rgv-checkout-preview .rgvp-order-row { color: #dedddb; font-size: 13px; }
+    #rgv-checkout-preview .rgvp-order-row strong { font-size: 13px; font-weight: 600; }
+    #rgv-checkout-preview .rgvp-order-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 12px;
+      margin-top: 5px;
+      color: var(--rgv-muted);
+      font-size: 11px;
+    }
+
+    #rgv-checkout-preview .rgvp-summary-lines {
+      padding: 10px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+    }
+
+    #rgv-checkout-preview .rgvp-summary-line,
+    #rgv-checkout-preview .rgvp-summary-total {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    #rgv-checkout-preview .rgvp-summary-line {
+      padding: 7px 0;
+      color: var(--rgv-muted);
+      font-size: 12px;
+    }
+
+    #rgv-checkout-preview .rgvp-summary-line strong { color: #d8d7d5; font-weight: 500; }
+    #rgv-checkout-preview .rgvp-summary-total {
+      align-items: center;
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+      color: var(--rgv-text);
+      font-size: 13px;
+    }
+
+    #rgv-checkout-preview .rgvp-summary-total strong {
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: -.04em;
+    }
+
+    #rgv-checkout-preview .rgvp-payment {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 290px);
+      gap: 24px;
+      align-items: center;
+      padding: 22px;
+      background: #0d0e11;
+    }
+    #rgv-checkout-preview .rgvp-title-row {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 8px;
+    }
+
+    #rgv-checkout-preview .rgvp-title-icon {
+      display: grid;
+      width: 32px;
+      height: 32px;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .02);
+      color: #b28c85;
+    }
+
+    #rgv-checkout-preview h2 {
+      margin-bottom: 0;
+      color: #e1e0df;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: -.025em;
+    }
+
+    #rgv-checkout-preview .rgvp-help {
+      margin-bottom: 0;
+      color: var(--rgv-muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    #rgv-checkout-preview .rgvp-pay-button {
+      width: 100%;
+      min-height: 50px;
+      margin: 0;
+      border: 1px solid #aa3943;
+      border-radius: 12px;
+      background: var(--rgv-accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    #rgv-checkout-preview .rgvp-verify-wrap { max-width: 620px; margin: 0 auto; }
+    #rgv-checkout-preview .rgvp-verify { overflow: hidden; }
+    #rgv-checkout-preview .rgvp-verify-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 72px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--rgv-border);
+    }
+
+    #rgv-checkout-preview .rgvp-verify-label {
+      color: #b97774;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    #rgv-checkout-preview .rgvp-verify-help { color: #aeb0b8; font-size: 12px; }
+    #rgv-checkout-preview .rgvp-verify-body { padding: 30px 32px 28px; }
+    #rgv-checkout-preview .rgvp-progress {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    #rgv-checkout-preview .rgvp-progress-step {
+      padding-top: 11px;
+      border-top: 2px solid rgba(255, 255, 255, .12);
+      color: #777984;
+      font-size: 11px;
+    }
+
+    #rgv-checkout-preview .rgvp-progress-step.active {
+      border-color: #c87875;
+      color: var(--rgv-text);
+    }
+
+    #rgv-checkout-preview .rgvp-checks { display: grid; gap: 10px; margin: 22px 0 16px; }
+    #rgv-checkout-preview .rgvp-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--rgv-border);
+      border-radius: 11px;
+      background: var(--rgv-surface-2);
+      color: #d8d7d5;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    #rgv-checkout-preview .rgvp-check input { accent-color: var(--rgv-accent); }
+    #rgv-checkout-preview .rgvp-terms { color: var(--rgv-muted); font-size: 11px; }
+    #rgv-checkout-preview [hidden] { display: none !important; }
+
+    @media (max-width: 780px) {
+      #rgv-checkout-preview { min-height: 0; }
+      #rgv-checkout-preview .rgvp-nav-inner,
+      #rgv-checkout-preview .rgvp-main { width: calc(100% - 32px); }
+      #rgv-checkout-preview .rgvp-nav-inner { grid-template-columns: 1fr auto; min-height: 66px; }
+      #rgv-checkout-preview .rgvp-secure { display: none; }
+      #rgv-checkout-preview .rgvp-main { padding-top: 28px; }
+      #rgv-checkout-preview .rgvp-payment { grid-template-columns: 1fr; gap: 16px; padding: 20px 16px 16px; }
+      #rgv-checkout-preview .rgvp-order-head,
+      #rgv-checkout-preview .rgvp-order-row { grid-template-columns: minmax(0, 1fr) 48px 76px; gap: 10px; padding-inline: 16px; }
+      #rgv-checkout-preview .rgvp-verify-body { padding: 24px 20px 20px; }
+      #rgv-checkout-preview .rgvp-verify-top { padding-inline: 20px; }
+    }
+  </style>
+
+  <header class="rgvp-nav">
+    <div class="rgvp-nav-inner">
+      <div class="rgvp-brand">RGV<span>PRIME</span></div>
+      <div class="rgvp-secure"><i data-lucide="lock" aria-hidden="true"></i> Secure checkout</div>
+      <button class="rgvp-back cursor-interaction" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Back to checkout</button>
+    </div>
+  </header>
+
+  <main class="rgvp-main">
+    <div class="rgvp-preview-switch" role="tablist" aria-label="Preview step">
+      <button class="cursor-interaction" id="rgvp-tab-verification" type="button" role="tab" aria-selected="false" aria-controls="rgvp-verification">Verification</button>
+      <button class="cursor-interaction" id="rgvp-tab-payment" type="button" role="tab" aria-selected="true" aria-controls="rgvp-payment">Card payment</button>
+    </div>
+
+    <section id="rgvp-payment" role="tabpanel" aria-labelledby="rgvp-tab-payment">
+      <div class="rgvp-header">
+        <p class="rgvp-eyebrow">Final secure step</p>
+        <h1>Complete your payment</h1>
+        <p class="rgvp-subtitle">Review your order, then pay securely by card or an available wallet.</p>
+        <div class="rgvp-proof"><span><i data-lucide="shield-check" aria-hidden="true"></i> Encrypted checkout</span><span><i data-lucide="clock-3" aria-hidden="true"></i> Your order is reserved</span></div>
+      </div>
+
+      <div class="rgvp-panel rgvp-checkout-shell">
+        <div class="rgvp-order-head"><span>Product</span><span>Qty</span><span>Total</span></div>
+        <div class="rgvp-order-row">
+          <div><strong>GHK-CU</strong><div class="rgvp-order-meta"><span>Option: 50mg</span><span>Single</span></div></div>
+          <span>× 1</span><strong>$20.00</strong>
+        </div>
+        <div class="rgvp-order-row">
+          <div><strong>CJC/IPA (no DAC)</strong><div class="rgvp-order-meta"><span>10mg</span><span>Single</span></div></div>
+          <span>× 1</span><strong>$32.00</strong>
+        </div>
+        <div class="rgvp-order-row">
+          <div><strong>E-RECON WATER</strong><div class="rgvp-order-meta"><span>30ml</span></div></div>
+          <span>× 1</span><strong>$16.00</strong>
+        </div>
+        <div class="rgvp-summary-lines">
+          <div class="rgvp-summary-line"><span>Subtotal</span><strong>$68.00</strong></div>
+          <div class="rgvp-summary-line"><span>UPS Shipping</span><strong>$15.00</strong></div>
+          <div class="rgvp-summary-line"><span>Service &amp; processing</span><strong>$2.49</strong></div>
+        </div>
+        <div class="rgvp-summary-total"><span>Total</span><strong>$85.49</strong></div>
+        <section class="rgvp-payment" aria-label="Card and wallet payment">
+          <div>
+            <div class="rgvp-title-row">
+              <span class="rgvp-title-icon"><i data-lucide="credit-card" aria-hidden="true"></i></span>
+              <h2>Card &amp; Wallets</h2>
+            </div>
+            <p class="rgvp-help">Continue to the secure card and wallet payment screen.</p>
+          </div>
+          <button class="rgvp-pay-button cursor-interaction" type="button">Continue to payment</button>
+        </section>
+      </div>
+    </section>
+
+    <section id="rgvp-verification" role="tabpanel" aria-labelledby="rgvp-tab-verification" hidden>
+      <div class="rgvp-verify-wrap">
+        <div class="rgvp-panel rgvp-verify">
+          <div class="rgvp-verify-top"><span class="rgvp-verify-label">Secure verification</span><span class="rgvp-verify-help">? Need help</span></div>
+          <div class="rgvp-verify-body">
+            <div class="rgvp-progress" aria-label="Verification progress">
+              <div class="rgvp-progress-step active">1 · Declarations</div>
+              <div class="rgvp-progress-step">2 · Your details</div>
+              <div class="rgvp-progress-step">3 · Confirmation</div>
+            </div>
+            <h2>Research access</h2>
+            <p class="rgvp-help">Verify to continue to checkout. Remember this device for fewer steps next time.</p>
+            <div class="rgvp-checks">
+              <label class="rgvp-check"><input type="checkbox"> <span>Agree to all</span></label>
+              <label class="rgvp-check"><input type="checkbox"> <span>I am at least 21 years of age.</span></label>
+              <label class="rgvp-check"><input type="checkbox"> <span>I confirm I am a qualified researcher purchasing for laboratory research only.</span></label>
+              <label class="rgvp-check"><input type="checkbox"> <span>I have read and accept the research-purchase terms.</span></label>
+            </div>
+            <p class="rgvp-terms">Research-purchase terms</p>
+            <button class="rgvp-pay-button cursor-interaction" type="button">Continue</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.getElementById('rgv-checkout-preview');
+      const paymentTab = document.getElementById('rgvp-tab-payment');
+      const verificationTab = document.getElementById('rgvp-tab-verification');
+      const paymentPanel = document.getElementById('rgvp-payment');
+      const verificationPanel = document.getElementById('rgvp-verification');
+      const state = { radius: 18, accent: '#8f1d27', view: 'payment' };
+
+      function render() {
+        root.style.setProperty('--rgv-radius', `${state.radius}px`);
+        root.style.setProperty('--rgv-accent', state.accent);
+        const payment = state.view === 'payment';
+        paymentTab.setAttribute('aria-selected', String(payment));
+        verificationTab.setAttribute('aria-selected', String(!payment));
+        paymentPanel.hidden = !payment;
+        verificationPanel.hidden = payment;
+      }
+
+      paymentTab.addEventListener('click', () => { state.view = 'payment'; render(); });
+      verificationTab.addEventListener('click', () => { state.view = 'verification'; render(); });
+      render();
+
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({ container: root, onChange: render });
+        tweak.addSelect(state, 'view', { label: 'Preview step', options: [{ label: 'Card payment', value: 'payment' }, { label: 'Verification', value: 'verification' }], reference: 'checkout.view' });
+        tweak.addSlider(state, 'radius', { label: 'Corner radius', min: 10, max: 24, unit: 'px', reference: '--rgv-radius' });
+        tweak.addColorPicker(state, 'accent', { label: 'Accent color', reference: '--rgv-accent' });
+      }
+    })();
+  </script>
+</div>

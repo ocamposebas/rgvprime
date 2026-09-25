@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
+import {
+  filterVisibleAccountOrders,
+  isZelleAccountOrder,
+  normalizeAccountOrderStatus,
+} from "../../lib/accountOrderVisibility";
 import "../../styles/experience.css";
 import "./AccountPortal.css";
 
@@ -38,6 +43,7 @@ function formatMoney(value, currency = "USD") {
 }
 
 function statusLabel(status = "") {
+  const normalizedStatus = normalizeAccountOrderStatus(status);
   const labels = {
     pending: "Pending",
     processing: "Processing",
@@ -48,7 +54,7 @@ function statusLabel(status = "") {
     failed: "Failed",
   };
 
-  return labels[status] || status || "Unknown";
+  return labels[normalizedStatus] || normalizedStatus || "Unknown";
 }
 
 function getOrderId(order = {}) {
@@ -60,21 +66,7 @@ function getOrderKey(order = {}) {
   return String(order.order_key || order.orderKey || "").trim();
 }
 
-function getOrderPaymentMethod(order = {}) {
-  return String(
-    order.payment_method ||
-      order.paymentMethod ||
-      order.payment_method_title ||
-      order.paymentMethodTitle ||
-      order.payment_details?.title ||
-      ""
-  )
-    .trim()
-    .toLowerCase();
-}
-
 function getInitialZelleReceiptState(order = {}) {
-  const paymentMethod = getOrderPaymentMethod(order);
   const receipt = order.zelle_receipt || order.receipt || {};
   const receiptStatus = String(
     order.receipt_status ||
@@ -92,7 +84,7 @@ function getInitialZelleReceiptState(order = {}) {
       receiptUrl ||
       ["pending_review", "approved"].includes(receiptStatus)
   );
-  const isZelle = paymentMethod.includes("zelle") || Boolean(order.payment_reference);
+  const isZelle = isZelleAccountOrder(order);
 
   return {
     checked: isZelle,
@@ -1025,7 +1017,7 @@ function getOrderTracking(order = {}) {
 
 function getInlineTrackingSteps(order = {}) {
   const tracking = getOrderTracking(order);
-  const status = order?.status || "";
+  const status = normalizeAccountOrderStatus(order?.status);
   const hasTracking = Boolean(tracking.number || tracking.url);
   const stopped = ["cancelled", "refunded", "failed"].includes(status);
 
@@ -1477,7 +1469,9 @@ function ZelleReceiptPanel({
 
   const receiptApproved =
     receiptState.receipt_status === "approved" ||
-    ["processing", "completed"].includes(String(order.status || ""));
+    ["processing", "completed"].includes(
+      normalizeAccountOrderStatus(order.status)
+    );
   const receiptUploaded = Boolean(receiptState.receipt_uploaded) || receiptApproved;
 
   if (receiptUploaded) {
@@ -1595,7 +1589,9 @@ function OrderCard({ order, customerEmail = "" }) {
   const tracking = getOrderTracking(displayedOrder);
   const receiptApproved =
     zelleReceiptState.receipt_status === "approved" ||
-    ["processing", "completed"].includes(String(displayedOrder.status || ""));
+    ["processing", "completed"].includes(
+      normalizeAccountOrderStatus(displayedOrder.status)
+    );
   const receiptUploaded =
     Boolean(zelleReceiptState.receipt_uploaded) || receiptApproved;
 
@@ -1941,6 +1937,10 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const visibleOrders = useMemo(
+    () => filterVisibleAccountOrders(orders),
+    [orders]
+  );
 
   useEffect(() => {
     setProfile({
@@ -1957,19 +1957,22 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
   }, [user]);
 
   const completedOrders = useMemo(
-    () => orders.filter((order) => order.status === "completed").length,
-    [orders]
+    () =>
+      visibleOrders.filter(
+        (order) => normalizeAccountOrderStatus(order.status) === "completed"
+      ).length,
+    [visibleOrders]
   );
 
-  const latestOrder = orders?.[0] || null;
+  const latestOrder = visibleOrders[0] || null;
 
   const totalSpent = useMemo(
     () =>
-      orders.reduce((sum, order) => {
+      visibleOrders.reduce((sum, order) => {
         const number = Number(order.total || 0);
         return sum + (Number.isFinite(number) ? number : 0);
       }, 0),
-    [orders]
+    [visibleOrders]
   );
 
   function setField(key, value) {
@@ -2116,7 +2119,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 className="grid gap-5"
               >
                 <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Total Orders" value={orders.length} icon="box" />
+                  <MetricCard label="Total Orders" value={visibleOrders.length} icon="box" />
                   <MetricCard label="Completed" value={completedOrders} icon="check" />
                   <MetricCard label="Account Value" value={formatMoney(totalSpent)} icon="spark" />
                 </div>
@@ -2147,7 +2150,7 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                     ) : (
                       <EmptyState
                         title="No order activity yet."
-                        text="Your first checkout will open a private order timeline here, organized with status, totals, and product details."
+                        text="Processing and completed orders, plus Zelle orders awaiting verification, will appear here with status, totals, and product details."
                       />
                     )}
                   </div>
@@ -2204,13 +2207,13 @@ function Dashboard({ user, orders, onLogout, onProfileUpdate }) {
                 </div>
 
                 <div className="grid gap-3 p-4 sm:p-5">
-                  {orders.length === 0 ? (
+                  {visibleOrders.length === 0 ? (
                     <EmptyState
                       title="Your order timeline is clear."
-                      text="Completed purchases will appear here with order status, totals, and product details in one organized view."
+                      text="Processing and completed orders, plus Zelle orders awaiting verification, will appear here in one organized view."
                     />
                   ) : (
-                    orders.map((order) => (
+                    visibleOrders.map((order) => (
                       <OrderCard key={order.id} order={order} customerEmail={user?.email} />
                     ))
                   )}

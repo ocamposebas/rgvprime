@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RGVPRIME payment layout 2.4.1</title>
+  <style>
+    @font-face{font-family:Inter;src:local("Inter")}
+    *{box-sizing:border-box}
+    :root{--bg:#090a0c;--panel:#101114;--panel2:#0b0c0f;--text:#ededeb;--muted:#9698a1;--border:rgba(255,255,255,.12);--soft:rgba(255,255,255,.075);--red:#8f1d27;--green:#61d67c}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 4% 0,rgba(107,23,31,.16),transparent 34%),var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    .nav{height:80px;border-bottom:1px solid var(--soft);background:rgba(9,10,12,.88)}
+    .nav__inner{display:flex;width:min(1180px,calc(100% - 64px));height:100%;align-items:center;justify-content:space-between;margin:auto}
+    .brand{display:flex;align-items:center}.brand img{width:180px;height:auto}.back{display:flex;align-items:center;gap:8px;color:#c4c5c8;font-size:12px}.back b{display:grid;width:30px;height:30px;place-items:center;border:1px solid var(--border);border-radius:50%;font-size:15px;font-weight:400}
+    .shell{width:min(1180px,calc(100% - 64px));margin:42px auto 72px}
+    .intro{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .eyebrow{margin-bottom:12px;color:#bc7d79;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    h1{margin:0;color:#f1f1ef;font-size:48px;font-weight:500;letter-spacing:-.055em;line-height:1.02}
+    .intro p{max-width:620px;margin:12px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+    .trust{display:flex;flex-shrink:0;gap:20px;padding-bottom:4px;color:#a9abb1;font-size:10px}.trust span{display:flex;align-items:center;gap:7px}.trust i{width:5px;height:5px;border-radius:50%;background:#b27673}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:30px;align-items:start}
+    .payment{overflow:hidden;border:1px solid var(--border);border-radius:20px;background:radial-gradient(circle at 100% 0,rgba(143,29,39,.12),transparent 280px),var(--panel)}
+    .payment__head{display:flex;align-items:center;gap:13px;padding:28px 30px 20px}.payment__icon{display:grid;width:36px;height:36px;place-items:center;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.025);color:#c58d84}.payment__head strong{display:block;font-size:18px;font-weight:550;letter-spacing:-.03em}.payment__head small{display:block;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5}
+    .stripe-wrap{padding:0 30px 22px}.stripe{padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--panel2)}
+    .link{padding:11px;border-radius:8px;background:var(--green);color:#0b2915;text-align:center;font-size:12px;font-weight:750}.tabs{display:grid;grid-template-columns:1.22fr 1fr 1fr 1.12fr .34fr;gap:7px;margin:12px 0}.tab{padding:11px 9px;border:1px solid #292c33;border-radius:8px;background:#171a20;color:#aeb1b8;font-size:10px}.tab b{display:block;margin-bottom:3px;color:inherit;font-size:12px}.tab.active{border-color:#9f8cf1;background:#9686e9;color:#11131a}
+    .identity{padding:12px;border:1px solid #24262b;border-radius:10px;background:#121315}.identity__email{display:flex;justify-content:space-between;padding-bottom:11px;border-bottom:1px solid #24262b;color:#d3d3d1;font-size:10px}.identity__saved{padding:28px 12px 26px;text-align:center}.identity__saved strong{display:block;font-size:12px;font-weight:600}.identity__saved span{display:block;margin-top:6px;color:var(--muted);font-size:10px}.code{display:flex;justify-content:center;gap:6px;margin:15px 0 10px}.code i{width:28px;height:28px;border-radius:6px;background:#1c1d20}.resend{color:#5bd47a;font-size:9px}
+    .fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:12px}.field label{display:block;margin:0 0 5px;color:#c9c9c7;font-size:9px}.field div{padding:12px;border:1px solid #343741;border-radius:8px;background:#181b21;color:#7f828b;font-size:11px}
+    .pay-zone{padding:0 30px 28px}.pay-zone:before{display:block;margin-bottom:20px;border-top:1px solid var(--soft);content:""}.pay{width:100%;height:56px;border:1px solid #ae3d46;border-radius:13px;background:linear-gradient(180deg,#982931,#861c25);color:#fff;font-size:13px;font-weight:700;box-shadow:0 10px 26px rgba(143,29,39,.14)}
+    .verified{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 16px;border:1px solid rgba(101,139,97,.42);border-radius:14px;background:var(--panel)}.check{display:grid;width:32px;height:32px;flex:0 0 auto;place-items:center;border:1px solid #668b63;border-radius:50%;color:#a9d3a4;font-size:13px}.verified__copy strong{display:block;color:#bce2b9;font-size:9px;letter-spacing:.09em;text-transform:uppercase}.verified__copy span{display:block;margin-top:3px;color:#dededc;font-size:11px}.verified__copy small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.edit{margin-left:auto;padding:8px 11px;border:1px solid var(--border);border-radius:999px;color:#d29a97;font-size:9px}
+    .summary,.summary *{box-sizing:border-box}.summary{position:sticky;top:22px;overflow:hidden;border:1px solid var(--border);border-radius:20px;background:var(--panel);box-shadow:0 24px 60px rgba(0,0,0,.24)}
+    .summary__head{display:flex;align-items:flex-end;justify-content:space-between;padding:25px 24px 20px;border-bottom:1px solid var(--soft);background:radial-gradient(circle at 100% 0,rgba(143,29,39,.14),transparent 210px)}.summary__head h2{margin:0;font-size:21px;font-weight:500;letter-spacing:-.035em}.summary__head span{color:var(--muted);font-size:9px;letter-spacing:.09em;text-transform:uppercase}
+    .products{padding:0 24px}.product{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:13px;align-items:center;padding:17px 0;border-bottom:1px solid var(--soft)}.product:last-child{border-bottom:0}.product__thumb{display:grid;width:58px;height:66px;place-items:center;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:linear-gradient(150deg,rgba(143,29,39,.16),transparent 68%),#0b0c0f}.product__thumb img{display:block;width:100%;height:100%;padding:4px;object-fit:contain}.product__name{min-width:0;color:#dedddb;font-size:11px;font-weight:600;line-height:1.4}.product__meta{display:flex;align-items:center;gap:6px;margin-top:5px;color:var(--muted);font-size:9px}.qty{padding:3px 6px;border:1px solid rgba(255,255,255,.1);border-radius:999px}.product__price{min-width:58px;color:#dedddb;font-size:11px;font-weight:650;text-align:right}
+    .totals{padding:15px 24px 22px;border-top:1px solid var(--soft)}.line{display:flex;justify-content:space-between;gap:20px;padding:6px 0;color:var(--muted);font-size:10px}.line b{max-width:62%;color:#d8d7d5;font-weight:550;text-align:right}.total{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-top:13px;padding:18px;border:1px solid rgba(174,61,70,.3);border-radius:14px;background:linear-gradient(135deg,rgba(143,29,39,.2),rgba(143,29,39,.045) 70%)}.total__label strong{display:block;color:#f0efed;font-size:13px;font-weight:600}.total__label small{display:block;margin-top:5px;color:#a9a5a6;font-size:9px}.total__amount{color:#fff;font-size:29px;font-weight:520;letter-spacing:-.05em;line-height:1}
+    .secure-note{display:flex;align-items:center;justify-content:center;gap:7px;padding:0 0 22px;color:#85878f;font-size:9px}.secure-note i{color:#ad7371}
+    @media(max-width:900px){.intro{display:block}.trust{margin-top:18px}.layout{grid-template-columns:1fr}.summary{position:static;grid-row:1}.brand img{width:150px}}
+  </style>
+</head>
+<body>
+  <nav class="nav"><div class="nav__inner"><a class="brand"><img src="../public/logo.webp" alt="RGVPRIME"></a><div class="back"><b>←</b> Back to checkout</div></div></nav>
+  <main class="shell">
+    <section class="intro"><div><div class="eyebrow">Final secure step</div><h1>Complete your payment</h1><p>Review your order and finish securely with your preferred card or wallet.</p></div><div class="trust"><span><i></i>Encrypted checkout</span><span><i></i>Your order is reserved</span></div></section>
+    <div class="layout">
+      <div>
+        <section class="payment">
+          <header class="payment__head"><div class="payment__icon">▰</div><div><strong>Card &amp; Wallets</strong><small>Pay securely with card, Link, Apple Pay, or Google Pay when available.</small></div></header>
+          <div class="stripe-wrap"><div class="stripe"><div class="link">◉ link&nbsp;&nbsp; 2 saved payment methods</div><div class="tabs"><div class="tab active"><b>▰</b>Card</div><div class="tab"><b>♜</b>Bank</div><div class="tab"><b>Ⓐ</b>Affirm</div><div class="tab"><b>▣</b>Cash App</div><div class="tab"><b>K</b></div></div><div class="identity"><div class="identity__email"><span>customer@example.com</span><span>×</span></div><div class="identity__saved"><strong>Use your saved information</strong><span>Enter the code sent to ••• •••••41</span><div class="code"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="resend">Resend code</div></div></div><div class="fields"><div class="field"><label>Card number</label><div>1234 1234 1234 1234</div></div><div class="field"><label>Expiration</label><div>MM / YY</div></div><div class="field"><label>Security code</label><div>CVC</div></div></div></div></div>
+          <div class="pay-zone"><button class="pay">Pay securely · $85.49</button></div>
+        </section>
+        <section class="verified"><span class="check">✓</span><div class="verified__copy"><strong>Verified customer</strong><span>Sebastian Ocampo</span><small>customer@example.com · Independent</small></div><span class="edit">Edit details</span></section>
+      </div>
+      <aside class="summary">
+        <header class="summary__head"><h2>Order summary</h2><span>3 products</span></header>
+        <div class="products">
+          <article class="product"><div class="product__thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/07/normalized-113-2b4f171bc2-rgv-normalized-1200-phase-one-labz-normalized-1200-3.png" alt=""></div><div><div class="product__name">GHK-CU</div><div class="product__meta"><span>50mg · Single</span><span class="qty">Qty 1</span></div></div><div class="product__price">$20.00</div></article>
+          <article class="product"><div class="product__thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/07/nodac-rgv-normalized-1200-phase-one-labz-normalized-1200-9.png" alt=""></div><div><div class="product__name">CJC/IPA (no DAC)</div><div class="product__meta"><span>10mg · Single</span><span class="qty">Qty 1</span></div></div><div class="product__price">$32.00</div></article>
+          <article class="product"><div class="product__thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/08/6C42A9F4-3BDB-4C23-A93E-42D60E912365-2-phase-one-labz-normalized-1200.png" alt=""></div><div><div class="product__name">E-RECON WATER 30ML</div><div class="product__meta"><span>Single</span><span class="qty">Qty 1</span></div></div><div class="product__price">$16.00</div></article>
+        </div>
+        <div class="totals"><div class="line"><span>Subtotal</span><b>$68.00</b></div><div class="line"><span>Shipping</span><b>$15.00 · UPS Shipping</b></div><div class="line"><span>Service &amp; processing</span><b>$2.49</b></div><div class="total"><div class="total__label"><strong>Total due</strong><small>USD · Secure payment</small></div><div class="total__amount">$85.49</div></div></div>
+        <div class="secure-note"><i>●</i> Payment details are encrypted</div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

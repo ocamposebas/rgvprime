@@ -1,0 +1,16 @@
+HTTP/1.1 303 See Other
+Alt-Svc: h3=":443"; ma=2592000
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0
+Cdn-Cache-Control: no-store
+Date: Fri, 25 Sep 2026 18:01:18 GMT
+Expires: 0
+Location: /?mode=login&next=%2Fcheckout
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=*
+Pragma: no-cache
+Referrer-Policy: strict-origin-when-cross-origin
+Surrogate-Control: no-store
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-Robots-Tag: noindex, follow, noarchive
+Transfer-Encoding: chunked
+

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RGVPRIME checkout visual preview</title>
+  <style>
+    :root{color-scheme:dark;--bg:#08090b;--panel:#111216;--deep:#0c0d10;--line:rgba(255,255,255,.105);--soft:rgba(255,255,255,.07);--text:#f5f3f0;--muted:#92959d;--red:#862d34;--red2:#a7454b}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}body{background:radial-gradient(48rem 30rem at 12% -8%,rgba(125,39,45,.12),transparent 67%),var(--bg)}
+    .nav{border-bottom:1px solid rgba(255,255,255,.065);background:rgba(8,9,11,.91);backdrop-filter:blur(18px)}.nav-in{display:flex;align-items:center;justify-content:space-between;width:min(1180px,calc(100% - 48px));min-height:62px;margin:auto}.logo{width:108px;height:31px;object-fit:contain}.back{padding:10px 14px;border:1px solid rgba(255,255,255,.1);border-radius:999px;color:#d8d7d4;font-size:10px;text-decoration:none}
+    main{width:min(1180px,calc(100% - 48px));margin:30px auto 72px}.intro{width:calc(100% - 414px);margin-bottom:20px}.intro h1{margin:0;font-size:clamp(38px,4vw,50px);font-weight:640;letter-spacing:-.055em;line-height:1.02}.intro p{max-width:570px;margin:11px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:24px;align-items:start}.left{min-width:0}.verified{display:flex;align-items:center;justify-content:space-between;min-height:64px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(120,201,138,.2);border-radius:14px;background:linear-gradient(92deg,rgba(71,126,82,.09),rgba(17,18,22,.97) 38%)}.person{display:flex;align-items:center;gap:12px}.check{display:grid;width:34px;height:34px;place-items:center;border:1px solid rgba(120,201,138,.4);border-radius:50%;background:rgba(120,201,138,.08);color:#78c98a}.person strong{display:block;font-size:12px}.person span{display:block;color:#8f929a;font-size:9px}.edit{padding:8px 11px;border:1px solid var(--line);border-radius:9px;color:#d8d7d4;font-size:9px}
+    .pay{overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 24px 60px rgba(0,0,0,.22)}.pay-head{display:flex;align-items:center;gap:12px;padding:21px 22px 15px;background:linear-gradient(145deg,rgba(125,39,45,.075),transparent 43%)}.card-icon{width:38px;height:38px;border:1px solid rgba(155,64,70,.4);border-radius:11px;background:rgba(125,39,45,.13);position:relative}.card-icon:before,.card-icon:after{content:"";position:absolute;left:10px;height:2px;background:#d18a85}.card-icon:before{top:12px;width:18px}.card-icon:after{top:21px;width:9px}.pay-head h2{margin:0;font-size:16px;letter-spacing:-.025em}.provider{padding:2px 22px 20px}.link{display:flex;align-items:center;justify-content:center;height:44px;margin:0 0 14px;border-radius:9px;background:#62d17b;color:#07120a;font-weight:700}.methods{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}.method{padding:10px;border:1px solid var(--line);border-radius:9px;background:#161920;color:#b6b8bf;font-size:10px}.method.active{border-color:#b9adff;background:#a99df1;color:#111}.saved{margin-bottom:13px;color:#b8adff;font-size:11px;font-weight:650}.fields{display:grid;grid-template-columns:1.65fr .82fr .82fr;gap:9px}.field label{display:block;margin-bottom:5px;color:#e5e4e1;font-size:10px;font-weight:650}.input{height:44px;padding:0 12px;border:1px solid #343740;border-radius:9px;background:#0a0b0e;color:#787b84;font-size:12px}.submit{padding:17px 22px 22px;border-top:1px solid var(--soft)}.submit button{width:100%;height:56px;border:1px solid var(--red2);border-radius:12px;background:linear-gradient(180deg,#94353d,#7f292f);color:#fff;font-weight:720;box-shadow:0 14px 34px rgba(125,39,45,.26),inset 0 1px 0 rgba(255,255,255,.13)}
+    .summary{overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 26px 70px rgba(0,0,0,.27)}.sum-head{padding:22px 18px 19px;background:linear-gradient(120deg,rgba(125,39,45,.2),rgba(17,18,22,.98) 70%);font-size:18px;font-weight:680;letter-spacing:-.035em}.item{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:12px;align-items:center;padding:15px 16px;border-top:1px solid var(--soft)}.thumb{display:flex;width:50px;height:50px;align-items:center;justify-content:center;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:linear-gradient(145deg,#17191e,#0b0c0f)}.thumb img{width:100%;height:100%;padding:5px;object-fit:contain}.product{min-width:0}.product strong{display:block;font-size:12px;line-height:1.3}.product small{display:block;margin-top:4px;color:var(--muted);font-size:9px}.price{text-align:right;font-size:12px;font-weight:680}.qty{display:inline-flex;margin-top:6px;padding:3px 7px;border:1px solid rgba(255,255,255,.09);border-radius:999px;color:#b4b6bd;font-size:9px}.totals{padding:11px 16px;border-top:1px solid var(--soft)}.line{display:flex;justify-content:space-between;gap:18px;padding:6px 0;color:#90939b;font-size:10.5px}.line b{color:#e4e3df;font-size:11px}.total{display:flex;align-items:center;justify-content:space-between;padding:18px 16px;border-top:1px solid rgba(155,64,70,.3);background:linear-gradient(100deg,rgba(125,39,45,.23),rgba(125,39,45,.08));color:#deb0ac;font-size:11px}.total strong{color:#fff;font-size:27px;letter-spacing:-.045em}
+    @media(max-width:960px){main{width:min(720px,calc(100% - 40px))}.intro{width:100%}.layout{grid-template-columns:1fr}.summary{grid-row:1}.left{grid-row:2}}
+    @media(max-width:700px){.nav-in{width:calc(100% - 28px);min-height:58px}.logo{width:94px}main{width:calc(100% - 20px);margin:20px auto 42px}.intro h1{font-size:clamp(33px,10vw,40px)}.intro p{font-size:11.5px}.summary,.pay{border-radius:17px}.fields{grid-template-columns:1fr 1fr}.field:first-child{grid-column:1/-1}.methods{grid-template-columns:1fr 1fr}.item{grid-template-columns:42px minmax(0,1fr) auto;padding:13px 12px}.thumb{width:42px;height:42px}}
+  </style>
+</head>
+<body>
+  <header class="nav"><div class="nav-in"><img class="logo" src="https://rgvprimellc.com/logo.webp" alt="RGVPRIME"><a class="back" href="#">← Back to checkout</a></div></header>
+  <main>
+    <section class="intro"><h1>Complete your order</h1><p>Review your order and choose the payment option that works best for you.</p></section>
+    <div class="layout">
+      <div class="left">
+        <div class="verified"><div class="person"><span class="check">✓</span><div><strong>sebastian ocampo</strong><span>sebascampo1414@gmail.com · Independent</span></div></div><span class="edit">Edit details</span></div>
+        <section class="pay">
+          <div class="pay-head"><span class="card-icon"></span><h2>Card &amp; Wallets</h2></div>
+          <div class="provider">
+            <div class="link">› link&nbsp;&nbsp; · &nbsp;&nbsp;2 saved payment methods</div>
+            <div class="methods"><span class="method active">▣ &nbsp;Card</span><span class="method">▤ &nbsp;Bank</span><span class="method">ⓐ &nbsp;Affirm</span><span class="method">$ &nbsp;Cash App</span></div>
+            <div class="saved">▣ &nbsp;Use a saved payment</div>
+            <div class="fields"><div class="field"><label>Card number</label><div class="input">1234 1234 1234 1234</div></div><div class="field"><label>Expiration date</label><div class="input">MM / YY</div></div><div class="field"><label>Security code</label><div class="input">CVC</div></div></div>
+          </div>
+          <div class="submit"><button>Pay securely · $85.49</button></div>
+        </section>
+      </div>
+      <aside class="summary">
+        <div class="sum-head">Order summary</div>
+        <div class="item"><span class="thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/08/F4BD9C81-40A2-431F-BE90-92E64AF5DAC5-2-phase-one-labz-normalized-1200-1-300x300.png" alt=""></span><span class="product"><strong>GHK-CU</strong><small>Option: 50mg</small><span class="qty">× 1</span></span><span class="price">$20.00</span></div>
+        <div class="item"><span class="thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/08/F4BD9C81-40A2-431F-BE90-92E64AF5DAC5-2-phase-one-labz-normalized-1200-1-300x300.png" alt=""></span><span class="product"><strong>CJC/IPA (no DAC) 10mg</strong><small>Purchase option: Single</small><span class="qty">× 1</span></span><span class="price">$32.00</span></div>
+        <div class="item"><span class="thumb"><img src="https://wp.rgvprimellc.com/wp-content/uploads/2026/08/F4BD9C81-40A2-431F-BE90-92E64AF5DAC5-2-phase-one-labz-normalized-1200-1-300x300.png" alt=""></span><span class="product"><strong>E-RECON WATER 30ML</strong><span class="qty">× 1</span></span><span class="price">$16.00</span></div>
+        <div class="totals"><div class="line"><span>Subtotal</span><b>$68.00</b></div><div class="line"><span>Shipping</span><b>$15.00</b></div><div class="line"><span>Service &amp; processing</span><b>$2.49</b></div></div>
+        <div class="total"><span>Total</span><strong>$85.49</strong></div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

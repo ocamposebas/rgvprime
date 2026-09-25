@@ -17,6 +17,7 @@
     "test:rush": "node scripts/verify-rush-processing-plugin.mjs",
     "test:promotion": "node scripts/verify-storewide-promotion-plugin.mjs",
     "test:welcome": "node scripts/verify-welcome10-guard.mjs",
+    "test:account-orders": "node scripts/verify-account-order-visibility.mjs",
     "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs",
     "test:edebit": "node scripts/verify-edebit-guard.mjs"
   },

@@ -1,0 +1,893 @@
+/* PRISM Simple Checkout — Classic + Blocks shared surface
+ * Themes: .psc-checkout--theme-dark | .psc-checkout--theme-light
+ * Tokens set per theme; components use var(--psc-*).
+ */
+
+.psc-checkout {
+  --psc-gap: 1rem;
+  display: grid;
+  gap: var(--psc-gap);
+  margin: 0.5rem 0 1rem;
+  padding: 1rem 1.1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--psc-border);
+  background: var(--psc-surface);
+  color: var(--psc-text);
+  box-sizing: border-box;
+}
+
+.psc-recovery-status {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 16px;
+  color: inherit;
+  background: inherit;
+}
+.psc-recovery-status p { margin: 0 0 1rem; }
+.psc-recovery-status .button { min-height: 44px; margin: 0.25rem 0; }
+.psc-recovery-status [hidden] { display: none !important; }
+
+/* ---------- Dark theme (default for dark storefronts) ---------- */
+.psc-checkout--theme-dark {
+  --psc-surface: #171c24;
+  --psc-surface-2: #1d232d;
+  --psc-text: #eff1f5;
+  --psc-text-muted: #a1aaba;
+  --psc-border: #303744;
+  --psc-accent: #c4bfff;
+  --psc-accent-text: #171c24;
+  --psc-banner-bg: #25253c;
+  --psc-banner-border: #b4adff;
+  --psc-banner-text: #eff1f5;
+  --psc-input-bg: #171c24;
+  --psc-input-text: #eff1f5;
+  --psc-input-border: #444e5e;
+  --psc-success: #8fd6a8;
+  --psc-success-bg: rgba(46, 125, 70, 0.25);
+  --psc-error: #ffb4a8;
+  --psc-error-bg: rgba(140, 40, 30, 0.35);
+  --psc-focus: #b4adff;
+}
+
+/* ---------- Light theme ---------- */
+.psc-checkout--theme-light {
+  --psc-surface: #ffffff;
+  --psc-surface-2: #f7f8fa;
+  --psc-text: #20242c;
+  --psc-text-muted: #69717e;
+  --psc-border: #e2e5ea;
+  --psc-accent: #4f46e5;
+  --psc-accent-text: #ffffff;
+  --psc-banner-bg: #f4f3ff;
+  --psc-banner-border: #4f46e5;
+  --psc-banner-text: #20242c;
+  --psc-input-bg: #ffffff;
+  --psc-input-text: #20242c;
+  --psc-input-border: #cbd0d8;
+  --psc-success: #0d6b35;
+  --psc-success-bg: #e5f6eb;
+  --psc-error: #9b1c1c;
+  --psc-error-bg: #fde8e8;
+  --psc-focus: #4f46e5;
+}
+
+.psc-checkout--stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--psc-gap);
+  width: 100%;
+}
+
+.psc-checkout-root {
+  width: 100%;
+  margin: 0 0 1rem;
+}
+
+/* LAYOUT (1.0.10.12): in Standard layout the shell lives inside #order_review, above #payment.
+ * Neutralise any theme flex/grid ordering it might inherit and give it breathing room. */
+form.checkout.psc-layout-standard #order_review > .psc-checkout-root,
+form.checkout.psc-layout-standard #order_review > #psc-checkout {
+  order: 0;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.psc-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.psc-wordmark {
+  max-width: 140px;
+  height: auto;
+  display: block;
+}
+
+/* Dark theme → white/light wordmark; light theme → black Groundsetter wordmark */
+.psc-checkout--theme-dark .psc-wordmark--light,
+.psc-checkout--theme-light .psc-wordmark--dark {
+  display: none !important;
+}
+
+.psc-checkout--theme-dark .psc-wordmark--dark,
+.psc-checkout--theme-light .psc-wordmark--light {
+  display: block !important;
+}
+
+.psc-secure-heading {
+  font-weight: 600;
+  margin: 0;
+  color: var(--psc-text);
+  font-size: 1.05rem;
+}
+
+/* ---------- Step 1 banner ---------- */
+.psc-step-banner {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 2px solid var(--psc-banner-border);
+  background: var(--psc-banner-bg);
+  color: var(--psc-banner-text);
+}
+
+.psc-step-banner__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--psc-banner-text);
+  opacity: 0.95;
+}
+
+.psc-step-banner__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--psc-banner-text);
+}
+
+.psc-step-banner__body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--psc-banner-text);
+}
+
+/* ---------- Email / OTP gate ---------- */
+.psc-research-gate {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.psc-email-gate {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 28rem;
+}
+
+.psc-gate-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--psc-text) !important;
+  margin: 0.25rem 0 0;
+}
+
+.psc-gate-help {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--psc-text-muted) !important;
+  line-height: 1.35;
+}
+
+.psc-email-gate input[type="email"],
+.psc-email-gate input[type="text"],
+.psc-gate-email-input,
+.psc-gate-code-input {
+  width: 100%;
+  max-width: 28rem;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--psc-input-text) !important;
+  background: var(--psc-input-bg) !important;
+  border: 1.5px solid var(--psc-input-border) !important;
+  border-radius: 8px;
+  opacity: 1 !important;
+}
+
+.psc-email-gate input:focus,
+.psc-gate-email-input:focus,
+.psc-gate-code-input:focus {
+  outline: 2px solid var(--psc-focus);
+  outline-offset: 1px;
+}
+
+.psc-btn-primary {
+  justify-self: start;
+  margin-top: 0.15rem;
+  background: var(--psc-accent) !important;
+  color: var(--psc-accent-text) !important;
+  border-color: var(--psc-accent) !important;
+  font-weight: 600;
+}
+
+.psc-otp-status {
+  margin: 0.15rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.psc-otp-status[hidden] {
+  display: none !important;
+}
+
+.psc-otp-status--success {
+  color: var(--psc-success) !important;
+  background: var(--psc-success-bg);
+  border: 1px solid var(--psc-success);
+}
+
+.psc-otp-status--error {
+  color: var(--psc-error) !important;
+  background: var(--psc-error-bg);
+  border: 1px solid var(--psc-error);
+}
+
+.psc-otp-status--info {
+  color: var(--psc-text) !important;
+  background: var(--psc-surface-2);
+  border: 1px solid var(--psc-border);
+}
+
+.psc-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--psc-text) !important;
+}
+
+.psc-remember-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--psc-text-muted) !important;
+}
+
+.psc-attestation details {
+  margin: 0.25rem 0;
+}
+
+.psc-attestation summary {
+  color: var(--psc-text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.psc-terms-copy {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.85rem;
+  max-height: 8rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--psc-border);
+  background: var(--psc-surface-2);
+  color: var(--psc-text);
+  border-radius: 8px;
+}
+
+.psc-order-slot:empty {
+  display: none;
+}
+
+.psc-order-slot:not(:empty) {
+  margin: 0.5rem 0;
+}
+
+.psc-wallet-stage {
+  min-height: 0;
+  margin: 0;
+}
+
+.psc-wallet-stage:not([hidden]) {
+  margin: 0;
+}
+
+.psc-card-toggle {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.psc-card-stage {
+  margin-top: 0.75rem;
+}
+
+.psc-payment-stage {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.psc-payment-message[hidden],
+.psc-payment-stage[hidden],
+.psc-wallet-stage[hidden],
+.psc-blocks-express[hidden],
+.psc-card-stage[hidden],
+.psc-card-toggle[hidden],
+.psc-remember-note[hidden] {
+  display: none !important;
+}
+
+.psc-payment-message {
+  margin: 0.35rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--psc-error) !important;
+  background: var(--psc-error-bg);
+  border: 1px solid var(--psc-error);
+}
+
+.psc-payment-message--success {
+  color: var(--psc-success) !important;
+  background: var(--psc-success-bg);
+  border-color: var(--psc-success);
+}
+
+/* Blocks alert: beat theme/[role=alert] error paint. Verified copy must stay green. */
+#psc-blocks-alert.psc-payment-message--success {
+  color: #0d6b35 !important;
+  background: #e5f6eb !important;
+  border: 1px solid #0d6b35 !important;
+}
+.psc-checkout--theme-dark #psc-blocks-alert.psc-payment-message--success {
+  color: #8fd6a8 !important;
+  background: rgba(46, 125, 70, 0.25) !important;
+  border-color: #8fd6a8 !important;
+}
+
+.psc-payment-message--footer {
+  margin-top: 0.75rem;
+}
+
+/* ---------- Woo notices readable under PSC themes (contrast ≥ 4.5) ----------
+ * Notices often render outside .psc-checkout (top of form.checkout / notice wrapper).
+ * Scope via body:has(.psc-checkout--theme-*) so dark storefronts get dark-readable errors.
+ */
+body:has(.psc-checkout--theme-dark) .woocommerce-error,
+body:has(.psc-checkout--theme-dark) .woocommerce-message,
+body:has(.psc-checkout--theme-dark) .woocommerce-info,
+body:has(.psc-checkout--theme-dark) .woocommerce-NoticeGroup .woocommerce-error,
+body:has(.psc-checkout--theme-dark) .woocommerce-NoticeGroup .woocommerce-message,
+body:has(.psc-checkout--theme-dark) .woocommerce-NoticeGroup .woocommerce-info,
+body:has(.psc-checkout--theme-dark) .woocommerce-notices-wrapper .woocommerce-error,
+body:has(.psc-checkout--theme-dark) .woocommerce-notices-wrapper .woocommerce-message,
+body:has(.psc-checkout--theme-dark) .woocommerce-notices-wrapper .woocommerce-info,
+.psc-checkout--theme-dark .woocommerce-error,
+.psc-checkout--theme-dark .woocommerce-message,
+.psc-checkout--theme-dark .woocommerce-info {
+  background: #3d1512 !important;
+  color: #ffe8e4 !important;
+  border: 1px solid #ffb4a8 !important;
+  border-left-width: 4px !important;
+  border-radius: 8px;
+  padding: 0.85rem 1rem !important;
+  font-weight: 600;
+  list-style: none;
+  opacity: 1 !important;
+}
+
+body:has(.psc-checkout--theme-dark) .woocommerce-message,
+body:has(.psc-checkout--theme-dark) .woocommerce-NoticeGroup .woocommerce-message,
+.psc-checkout--theme-dark .woocommerce-message {
+  background: #143d22 !important;
+  color: #d8f5e2 !important;
+  border-color: #8fd6a8 !important;
+}
+
+body:has(.psc-checkout--theme-dark) .woocommerce-info,
+body:has(.psc-checkout--theme-dark) .woocommerce-NoticeGroup .woocommerce-info,
+.psc-checkout--theme-dark .woocommerce-info {
+  background: #1a2433 !important;
+  color: #dce9ff !important;
+  border-color: #8eb4ff !important;
+}
+
+body:has(.psc-checkout--theme-dark) .woocommerce-error li,
+body:has(.psc-checkout--theme-dark) .woocommerce-message li,
+body:has(.psc-checkout--theme-dark) .woocommerce-info li,
+body:has(.psc-checkout--theme-dark) .woocommerce-error a,
+body:has(.psc-checkout--theme-dark) .woocommerce-message a,
+body:has(.psc-checkout--theme-dark) .woocommerce-info a,
+.psc-checkout--theme-dark .woocommerce-error li,
+.psc-checkout--theme-dark .woocommerce-message li,
+.psc-checkout--theme-dark .woocommerce-info li,
+.psc-checkout--theme-dark .woocommerce-error a,
+.psc-checkout--theme-dark .woocommerce-message a,
+.psc-checkout--theme-dark .woocommerce-info a {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+body:has(.psc-checkout--theme-light) .woocommerce-error,
+body:has(.psc-checkout--theme-light) .woocommerce-NoticeGroup .woocommerce-error,
+body:has(.psc-checkout--theme-light) .woocommerce-notices-wrapper .woocommerce-error,
+.psc-checkout--theme-light .woocommerce-error {
+  background: #fde8e8 !important;
+  color: #7a1212 !important;
+  border: 1px solid #c0392b !important;
+  border-left-width: 4px !important;
+  border-radius: 8px;
+  padding: 0.85rem 1rem !important;
+  font-weight: 600;
+  list-style: none;
+  opacity: 1 !important;
+}
+
+body:has(.psc-checkout--theme-light) .woocommerce-message,
+body:has(.psc-checkout--theme-light) .woocommerce-NoticeGroup .woocommerce-message,
+.psc-checkout--theme-light .woocommerce-message {
+  background: #e5f6eb !important;
+  color: #0a4d28 !important;
+  border: 1px solid #0d6b35 !important;
+  border-left-width: 4px !important;
+  border-radius: 8px;
+  padding: 0.85rem 1rem !important;
+  font-weight: 600;
+}
+
+body:has(.psc-checkout--theme-light) .woocommerce-info,
+body:has(.psc-checkout--theme-light) .woocommerce-NoticeGroup .woocommerce-info,
+.psc-checkout--theme-light .woocommerce-info {
+  background: #e8f0fe !important;
+  color: #123a7a !important;
+  border: 1px solid #1a56c4 !important;
+  border-left-width: 4px !important;
+  border-radius: 8px;
+  padding: 0.85rem 1rem !important;
+  font-weight: 600;
+}
+
+body:has(.psc-checkout--theme-light) .woocommerce-error li,
+body:has(.psc-checkout--theme-light) .woocommerce-message li,
+body:has(.psc-checkout--theme-light) .woocommerce-info li,
+body:has(.psc-checkout--theme-light) .woocommerce-error a,
+body:has(.psc-checkout--theme-light) .woocommerce-message a,
+body:has(.psc-checkout--theme-light) .woocommerce-info a,
+.psc-checkout--theme-light .woocommerce-error li,
+.psc-checkout--theme-light .woocommerce-message li,
+.psc-checkout--theme-light .woocommerce-info li {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+.psc-payment-fields-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--psc-text-muted);
+}
+
+/* High-contrast labels / checkboxes */
+.psc-checkout label,
+.psc-remember,
+.psc-attestation label {
+  color: var(--psc-text) !important;
+  font-size: 15px;
+  opacity: 1 !important;
+}
+
+.psc-checkout input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--psc-accent);
+  opacity: 1 !important;
+  flex-shrink: 0;
+}
+
+.psc-checkout .psc-email-gate p,
+.psc-checkout .psc-secure-heading {
+  color: var(--psc-text);
+}
+
+.psc-native-fallback .psc-express-element {
+  display: none;
+}
+
+/* When gate owns email, hide Woo's duplicate billing email row */
+form.checkout.psc-gate-owns-email #billing_email_field {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+ * Wallet-first progressive disclosure
+ *
+ * LAYOUT (1.0.10.12): every rule here is also switched off under .psc-layout-standard, the
+ * gateway's "Standard" layout, where billing/shipping stay in WooCommerce's normal position.
+ * Deliberately NOT applied to the express-element rule above: Standard keeps wallets.
+ * -------------------------------------------------------------------------- */
+
+form.checkout.psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-billing-fields__field-wrapper > :is(#billing_first_name_field, #billing_last_name_field, #billing_country_field, #billing_address_1_field, #billing_address_2_field, #billing_city_field, #billing_state_field, #billing_postcode_field),
+form.checkout.psc-gate-incomplete:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-billing-fields__field-wrapper > :is(#billing_first_name_field, #billing_last_name_field, #billing_country_field, #billing_address_1_field, #billing_address_2_field, #billing_city_field, #billing_state_field, #billing_postcode_field) {
+  display: none !important;
+}
+
+/* If gate owns email, do not force-show Woo email field in the billing column */
+form.checkout.psc-gate-owns-email.psc-gate-incomplete:not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet) #billing_email_field,
+form.checkout.psc-gate-owns-email.psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet) #billing_email_field {
+  /* still sr-only via psc-gate-owns-email rule above */
+}
+
+form.checkout:not(.psc-gate-owns-email).psc-gate-incomplete:not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet) #billing_email_field,
+form.checkout:not(.psc-gate-owns-email).psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet) #billing_email_field {
+  display: block !important;
+}
+
+form.checkout.psc-gate-incomplete:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-billing-fields > h3,
+form.checkout.psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-billing-fields > h3 {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Wallet-first hides the native shipping / additional field blocks because the wallet
+ * sheet collects that data. FIX (1.0.10.10): .woocommerce-additional-fields is ALSO where a
+ * merchant's own checkout fields render. Hiding a container that holds a REQUIRED field
+ * blocks the order with a validation error for something the buyer cannot see or fill —
+ * a hard checkout failure. classic-checkout.js marks such containers .psc-keep-native. */
+form.checkout.psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-shipping-fields:not(.psc-keep-native),
+form.checkout.psc-wallet-ready:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-additional-fields:not(.psc-keep-native),
+form.checkout.psc-gate-incomplete:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-shipping-fields:not(.psc-keep-native),
+form.checkout.psc-gate-incomplete:not(.psc-card-mode):not(.psc-native-fallback):not(.psc-layout-standard):not(.psc-layout-research-wallet)
+  .woocommerce-additional-fields:not(.psc-keep-native) {
+  display: none !important;
+}
+
+form.checkout.psc-gate-incomplete #order_review,
+form.checkout.psc-wallet-ready #order_review {
+  visibility: visible;
+}
+
+.psc-checkout #order_review,
+.psc-checkout .woocommerce-checkout-review-order-table {
+  color: var(--psc-text);
+}
+
+/* Order-review table — fully token-themed. Merchant themes paint these rows
+ * (white zebra + dark text) with high-specificity rules; without owning the
+ * backgrounds here, the dark skin renders theme-light rows under --psc-text
+ * and the table washes out. !important is deliberate: this container must win
+ * over arbitrary merchant themes on heterogeneous installs. */
+.psc-checkout #order_review table.shop_table,
+.psc-checkout table.woocommerce-checkout-review-order-table {
+  background: var(--psc-surface) !important;
+  color: var(--psc-text) !important;
+  border-color: var(--psc-border) !important;
+}
+.psc-checkout #order_review table.shop_table tr,
+.psc-checkout #order_review table.shop_table th,
+.psc-checkout #order_review table.shop_table td,
+.psc-checkout table.woocommerce-checkout-review-order-table tr,
+.psc-checkout table.woocommerce-checkout-review-order-table th,
+.psc-checkout table.woocommerce-checkout-review-order-table td {
+  background: var(--psc-surface) !important;
+  color: var(--psc-text) !important;
+  border-color: var(--psc-border) !important;
+}
+.psc-checkout #order_review table.shop_table thead th,
+.psc-checkout #order_review table.shop_table tfoot th,
+.psc-checkout #order_review table.shop_table tfoot .order-total th,
+.psc-checkout #order_review table.shop_table tfoot .order-total td,
+.psc-checkout table.woocommerce-checkout-review-order-table thead th,
+.psc-checkout table.woocommerce-checkout-review-order-table tfoot th,
+.psc-checkout table.woocommerce-checkout-review-order-table tfoot .order-total th,
+.psc-checkout table.woocommerce-checkout-review-order-table tfoot .order-total td {
+  background: var(--psc-surface-2) !important;
+}
+.psc-checkout #order_review table.shop_table a,
+.psc-checkout #order_review table.shop_table strong,
+.psc-checkout #order_review table.shop_table .amount,
+.psc-checkout #order_review table.shop_table .product-quantity,
+.psc-checkout table.woocommerce-checkout-review-order-table a,
+.psc-checkout table.woocommerce-checkout-review-order-table strong,
+.psc-checkout table.woocommerce-checkout-review-order-table .amount,
+.psc-checkout table.woocommerce-checkout-review-order-table .product-quantity {
+  color: inherit !important;
+}
+.psc-checkout #order_review ul#shipping_method li,
+.psc-checkout #order_review ul#shipping_method label {
+  color: var(--psc-text) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * UI simplify — gateway chrome hide, place order under card, remember callout
+ * -------------------------------------------------------------------------- */
+
+/* Sole/PSC-selected: hide gateway radio list + titles; keep input postable */
+/* Only hide gateway radios when PSC is the sole method (class applied only then). */
+form.checkout.psc-hide-gateway-chrome ul.wc_payment_methods,
+form.checkout.psc-hide-gateway-chrome .wc_payment_methods,
+form.checkout.psc-hide-gateway-chrome .payment_methods {
+  display: none !important;
+}
+/* Multi-gateway: shell hidden while another method is selected (hidden attr + class). */
+#psc-checkout-root[hidden],
+#psc-checkout[hidden],
+form.checkout:not(.psc-gateway-selected) #psc-checkout-root {
+  display: none !important;
+}
+form.checkout.psc-hide-gateway-chrome #payment > .wc_payment_methods + .form-row,
+form.checkout.psc-hide-gateway-chrome #payment .payment_box {
+  background: transparent;
+  border: 0;
+  padding-top: 0;
+}
+form.checkout.psc-hide-gateway-chrome .psc-payment-fields-note,
+form.checkout.psc-hide-gateway-chrome .psc-gateway-description {
+  display: none !important;
+}
+/* Visually hide the payment method heading if theme prints one above the list */
+form.checkout.psc-hide-gateway-chrome #payment .payment_method_psc > label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Remember callout — light */
+.psc-checkout--theme-light .psc-remember-callout {
+  --psc-remember-bg: #fff6cc;
+  --psc-remember-border: #d4a017;
+  --psc-remember-text: #20242c;
+}
+/* Remember callout — dark */
+.psc-checkout--theme-dark .psc-remember-callout {
+  --psc-remember-bg: #3a3018;
+  --psc-remember-border: #e0b84a;
+  --psc-remember-text: #eff1f5;
+}
+.psc-remember-callout {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--psc-remember-border, #d4a017);
+  background: var(--psc-remember-bg, #fff6cc);
+  color: var(--psc-remember-text, #20242c);
+  max-width: 28rem;
+  box-sizing: border-box;
+}
+.psc-remember-callout .psc-remember {
+  color: inherit !important;
+  margin: 0;
+  gap: 0.6rem;
+  align-items: flex-start;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+/* Place order under card — only the row owned under #psc-card-stage is the surface.
+ * Do NOT promote #payment .form-row.place-order (Woo fragment) as a second visible row.
+ * DOM ownership removes duplicates; this CSS belt never dual-styles both. */
+#psc-card-stage + .form-row.place-order {
+  width: 100%;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  float: none;
+}
+/* Belt (after JS ownership class): hide any place-order still under #payment.
+ * Primary fix is DOM removal in placeOrderUnderCard — not this rule alone. */
+form.checkout.psc-place-order-owned #payment .form-row.place-order {
+  display: none !important;
+}
+#psc-card-stage + .form-row.place-order #place_order,
+#psc-card-stage + .form-row.place-order button[name="woocommerce_checkout_place_order"],
+#psc-card-stage + .form-row.place-order input[name="woocommerce_checkout_place_order"] {
+  width: 100% !important;
+  min-height: 48px;
+  font-weight: 700;
+  float: none !important;
+}
+#psc-card-stage {
+  position: static;
+  display: block;
+}
+#psc-card-stage[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .psc-card-toggle,
+  .psc-remember-callout,
+  #psc-card-stage + .form-row.place-order #place_order {
+    max-width: none;
+    width: 100%;
+  }
+  .psc-email-gate {
+    max-width: none;
+  }
+}
+
+/* Shared research-managed checkout: keep merchant layout, scope all field skins. */
+body[data-psc-checkout-theme] {
+  --psc-page-surface: #fff; --psc-page-raised: #f7f8fa; --psc-page-text: #20242c;
+  --psc-page-muted: #69717e; --psc-page-border: #e2e5ea; --psc-page-input-border: #cbd0d8;
+  --psc-page-accent: #4f46e5; --psc-page-on-accent: #fff;
+}
+body[data-psc-checkout-theme=dark] {
+  --psc-page-surface: #171c24; --psc-page-raised: #1d232d; --psc-page-text: #eff1f5;
+  --psc-page-muted: #a1aaba; --psc-page-border: #303744; --psc-page-input-border: #444e5e;
+  --psc-page-accent: #c4bfff; --psc-page-on-accent: #171c24;
+}
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout, .psc-checkout) {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--psc-page-text); color-scheme: light; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) :is(h2, h3, h4, label, th, td) {
+  color: var(--psc-page-text); font-family: inherit; letter-spacing: normal;
+}
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) :is(h2, h3) { font-size: 20px; font-weight: 600; line-height: 1.35; }
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea, .select2-selection) {
+  font: inherit; font-size: 16px; min-height: 48px; border: 1px solid var(--psc-page-input-border);
+  border-radius: 8px; color: var(--psc-page-text); background: var(--psc-page-surface); box-shadow: none; max-width: 100%;
+}
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review) label { font-size: 13px; font-weight: 500; }
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) :is(input, select, textarea, button):focus-visible { outline: 2px solid var(--psc-page-accent); outline-offset: 2px; }
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review) :is(#payment, .payment_box, .checkout-payment, .order-review, .shop_table) {
+  background: var(--psc-page-surface); color: var(--psc-page-text); border-color: var(--psc-page-border);
+}
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review) :is(.shop_table th, .shop_table td, .wc_payment_methods, .place-order) { border-color: var(--psc-page-border); }
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review) :is(.select2-selection__rendered, .woocommerce-Price-amount) { color: var(--psc-page-text); }
+body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) :is(#place_order, .wc-block-components-checkout-place-order-button) {
+  min-height: 50px; padding: 14px 20px; background: var(--psc-page-accent); color: var(--psc-page-on-accent);
+  border: 1px solid var(--psc-page-accent); border-radius: 8px; font: 600 15px/1.4 Inter, sans-serif;
+  text-transform: none; letter-spacing: normal; box-shadow: none;
+}
+body[data-psc-checkout-theme] .psc-card-toggle { font: 500 14px/1.4 Inter, sans-serif; min-height: 48px; }
+body[data-psc-checkout-theme] .psc-checkout { box-shadow: none; padding: 18px; }
+body[data-psc-checkout-theme] .wc-block-components-totals-wrapper { border-color: var(--psc-page-border); }
+body[data-psc-checkout-theme=dark] :is(.wc-block-components-sidebar, .wc-block-components-order-summary, .wc-block-components-checkout-step, .wc-block-checkout__payment-method, .wc-block-components-radio-control-accordion-content) { background: var(--psc-page-surface); color: var(--psc-page-text); border-color: var(--psc-page-border); }
+body[data-psc-checkout-theme=dark] :is(.wc-block-components-totals-item, .wc-block-components-product-name, .wc-block-components-product-metadata, .wc-block-components-text-input label, .wc-block-components-address-card) { color: var(--psc-page-text); }
+body[data-psc-checkout-theme] .psc-blocks-content { min-width: 0; }
+@media (max-width: 767px) {
+  body[data-psc-checkout-theme] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) { min-width: 0; width: 100%; }
+  body[data-psc-checkout-theme] form.checkout :is(#customer_details, #order_review, .col-1, .col-2, .checkout-sidebar, .checkout-main) { width: 100%; max-width: 100%; float: none; min-width: 0; }
+  body[data-psc-checkout-theme] form.checkout .row { margin-left: 0; margin-right: 0; }
+  body[data-psc-checkout-theme] .psc-checkout { padding: 14px; }
+}
+
+/* These controls belong to PRISM, while wallet buttons retain provider branding. */
+body[data-psc-checkout-theme] :is(#psc-card-toggle, .psc-blocks-content .psc-card-toggle) {
+  background: var(--psc-page-accent); color: var(--psc-page-on-accent); border: 1px solid var(--psc-page-accent);
+  border-radius: 8px; font: 500 14px/1.4 Inter, sans-serif; letter-spacing: normal; text-transform: none;
+  padding: 12px 16px; margin: 0; min-height: 48px; max-width: 100%; box-shadow: none;
+}
+body[data-psc-checkout-theme] :is(#psc-card-toggle, .psc-blocks-content .psc-card-toggle):hover {
+  background: var(--psc-page-accent); color: var(--psc-page-on-accent); border-color: var(--psc-page-accent); filter: brightness(1.08); transform: none;
+}
+body[data-psc-checkout-theme] .psc-card-stage { margin: 0; }
+
+/* Skin the checkout content, not the merchant's header, mobile navigation or footer. */
+body.psc-research-page-dark :is(#main, .main-content, .site-content, .page-content):has(#psc-research-checkout) {
+  background-color: #0d1118;
+}
+body[data-psc-checkout-theme=dark] :is(form.checkout, form#order_review, .wp-block-woocommerce-checkout) {
+  background: var(--psc-page-surface); color: var(--psc-page-text); color-scheme: dark;
+}
+body[data-psc-checkout-theme=dark] form.checkout :is(#customer_details, #customer_details > .col-1, #customer_details > .col-2, .woocommerce-billing-fields, .woocommerce-shipping-fields, .woocommerce-additional-fields, #order_review) {
+  background: var(--psc-page-surface); color: var(--psc-page-text); border-color: var(--psc-page-border);
+}
+body[data-psc-checkout-theme=dark] :is(form.checkout, form#order_review) :is(select, .select2-container .select2-selection--single, .select2-container .select2-selection--multiple) {
+  background: var(--psc-page-surface) !important; color: var(--psc-page-text) !important; border-color: var(--psc-page-input-border) !important;
+}
+body[data-psc-checkout-theme=dark] :is(form.checkout, form#order_review) .select2-selection__rendered { color: var(--psc-page-text) !important; }
+body[data-psc-checkout-theme=dark] :is(form.checkout, form#order_review) .select2-selection__arrow b { border-top-color: var(--psc-page-muted); }
+/* SelectWoo appends an open country/state menu to body; match its checkout result IDs. */
+body[data-psc-checkout-theme=dark] .select2-dropdown:has([id^="select2-billing_"], [id^="select2-shipping_"]) {
+  background: var(--psc-page-surface); color: var(--psc-page-text); border-color: var(--psc-page-input-border); color-scheme: dark;
+}
+body[data-psc-checkout-theme=dark] .select2-dropdown:has([id^="select2-billing_"], [id^="select2-shipping_"]) .select2-search__field {
+  background: var(--psc-page-surface); color: var(--psc-page-text); border-color: var(--psc-page-input-border); font-size: 16px;
+}
+body[data-psc-checkout-theme=dark] .select2-dropdown:has([id^="select2-billing_"], [id^="select2-shipping_"]) .select2-results__option[aria-selected=true] { background: var(--psc-page-raised); }
+body[data-psc-checkout-theme=dark] .select2-dropdown:has([id^="select2-billing_"], [id^="select2-shipping_"]) .select2-results__option--highlighted { background: var(--psc-page-accent); color: var(--psc-page-on-accent); }
+
+/* Research wallet-first: native Woo fields follow the selected Stripe method. */
+form.checkout.psc-layout-research-wallet:not(.psc-card-mode) .psc-manual-address-row,
+form.checkout.psc-layout-research-wallet:not(.psc-card-mode) .psc-manual-submit,
+form.checkout.psc-layout-research-wallet .psc-verified-identity-row { display: none !important; }
+form.checkout.psc-layout-research-wallet .row:has(> .psc-checkout-main):has(> .psc-checkout-summary) { display: grid; width: 100%; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 28px; margin: 0; }
+form.checkout.psc-layout-research-wallet :is(.psc-checkout-main, .psc-checkout-summary) { width: auto; max-width: none; min-width: 0; margin: 0; padding: 0 !important; }
+form.checkout.psc-layout-research-wallet #psc-checkout { margin: 0; padding: 20px; gap: 16px; }
+form.checkout.psc-layout-research-wallet.psc-card-mode #psc-checkout { border-bottom: 0; border-radius: 12px 12px 0 0; }
+form.checkout.psc-layout-research-wallet.psc-card-mode #customer_details { padding: 4px 20px 0; border: 1px solid var(--psc-page-border); border-top: 0; border-bottom: 0; }
+form.checkout.psc-layout-research-wallet #customer_details .form-row { margin-bottom: 16px; }
+form.checkout.psc-layout-research-wallet #customer_details h3 { font-size: 16px; margin: 8px 0 16px; text-transform: none; }
+form.checkout.psc-layout-research-wallet .psc-manual-submit { padding: 8px 20px 20px; border: 1px solid var(--psc-page-border); border-top: 0; border-radius: 0 0 12px 12px; background: var(--psc-page-surface); }
+form.checkout.psc-layout-research-wallet .psc-manual-submit .place-order { padding: 0; margin: 0; border: 0; }
+form.checkout.psc-layout-research-wallet .psc-manual-submit #place_order { width: 100%; float: none; }
+form.checkout.psc-layout-research-wallet #order_review { margin: 0; padding: 20px; border: 1px solid var(--psc-page-border); border-radius: 12px; }
+form.checkout.psc-layout-research-wallet #order_review_heading { display: none; }
+form.checkout.psc-layout-research-wallet #order_review table { margin: 12px 0 0; border: 0; font-size: 13px; }
+form.checkout.psc-layout-research-wallet #order_review :is(td, th) { padding: 12px 0; }
+form.checkout.psc-layout-research-wallet #order_review #payment { padding: 0; margin: 0; border: 0; }
+form.checkout.psc-layout-research-wallet #order_review #payment > h4 { display: none; }
+form.checkout.psc-layout-research-wallet .psc-order-summary > summary { display: flex; align-items: center; gap: 12px; min-height: 44px; list-style: none; cursor: pointer; font-weight: 600; font-size: 15px; }
+form.checkout.psc-layout-research-wallet .psc-order-summary > summary::-webkit-details-marker { display: none; }
+form.checkout.psc-layout-research-wallet .psc-order-summary > summary::after { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); margin: -4px 2px 0 0; flex-shrink: 0; }
+form.checkout.psc-layout-research-wallet .psc-order-summary[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
+form.checkout.psc-layout-research-wallet .psc-summary-total { margin-left: auto; font-size: 16px; white-space: nowrap; }
+body[data-psc-checkout-theme] .psc-optional-section { margin: 12px 0; border: 1px solid var(--psc-page-border); border-radius: 8px; color: var(--psc-page-text); background: var(--psc-page-surface); }
+body[data-psc-checkout-theme] .psc-optional-section > summary { box-sizing: border-box; min-height: 44px; margin: 0; padding: 10px 14px; cursor: pointer; font-size: 12px; font-weight: 500; }
+body[data-psc-checkout-theme] .psc-optional-section > :not(summary) { margin: 0; padding: 0 14px 14px; }
+body[data-psc-checkout-theme] :is(.psc-optional-section, .psc-order-summary) > summary:focus-visible { outline: 2px solid var(--psc-page-accent); outline-offset: 3px; border-radius: 6px; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"][data-psc-native-fields="hidden"]) [data-psc-wallet-core="true"] { display: none !important; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) [data-psc-verified-detail="true"] { display: none !important; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .psc-blocks-content { margin: 0; padding: 18px; }
+/* Woo repeats the complete mobile summary beside Actions. Keep its original
+   collapsible sidebar summary, including the total and native coupon controls. */
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .checkout-order-summary-block-fill-wrapper { display: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"][data-psc-native-fields="hidden"]) .wc-block-checkout__actions { display: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .wp-block-woocommerce-checkout-payment-block :is(.wc-block-components-radio-control__option, .wc-block-components-checkout-step__heading-container) { display: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .wp-block-woocommerce-checkout-payment-block :is(.wc-block-components-radio-control, .wc-block-components-radio-control-accordion-option, .wc-block-components-radio-control-accordion-content) { padding: 0; border: 0; box-shadow: none; outline: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .wp-block-woocommerce-checkout-payment-block .wc-block-components-radio-control-accordion-option::after { display: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) [data-psc-verified-contact="true"] .wc-block-checkout__guest-checkout-notice { display: none; }
+.wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) :is(.wc-block-checkout__contact-fields, .wc-block-checkout__order-notes) { margin-bottom: 16px; font-size: 13px; }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout .wc-block-components-checkbox__input { border-color: var(--psc-page-input-border); background: var(--psc-page-surface); }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout .wc-block-components-checkbox__input:checked { border-color: var(--psc-page-accent); background: var(--psc-page-accent); }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout .wc-block-components-checkbox__mark { fill: var(--psc-page-on-accent); }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout :is(.wc-blocks-components-select__container, .wc-blocks-components-select__select) { background: var(--psc-page-surface) !important; color: var(--psc-page-text) !important; border-color: var(--psc-page-input-border); }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout .wc-blocks-components-select__expand { fill: var(--psc-page-muted); }
+body[data-psc-checkout-theme] .wp-block-woocommerce-checkout .wc-block-components-formatted-money-amount { color: var(--psc-page-text); }
+@media (min-width: 992px) {
+  form.checkout.psc-layout-research-wallet .psc-checkout-main { grid-column: 1; grid-row: 1; }
+  form.checkout.psc-layout-research-wallet .psc-checkout-summary { grid-column: 2; grid-row: 1; align-self: start; }
+}
+@media (max-width: 991px) {
+  form.checkout.psc-layout-research-wallet .row:has(> .psc-checkout-main):has(> .psc-checkout-summary) { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  form.checkout.psc-layout-research-wallet .psc-checkout-summary { grid-row: 1; }
+  form.checkout.psc-layout-research-wallet .psc-checkout-main { grid-row: 2; }
+  form.checkout.psc-layout-research-wallet #order_review { padding: 8px 16px; }
+}
+@media (max-width: 560px) {
+  form.checkout.psc-layout-research-wallet #psc-checkout { padding: 14px; }
+  form.checkout.psc-layout-research-wallet.psc-card-mode #customer_details { padding: 2px 14px 0; }
+  form.checkout.psc-layout-research-wallet .psc-manual-submit { padding: 8px 14px 14px; }
+  .wp-block-woocommerce-checkout:has(.psc-blocks-content[data-psc-wallet-first="true"]) .psc-blocks-content { padding: 14px; }
+}
