@@ -1,6 +1,102 @@
 (function () {
   'use strict';
 
+  /* The provider builds a deferred Stripe Elements session after research
+     verification. Constrain that session itself to card before its DOM-ready
+     bootstrap runs; ordering card first does not remove the other methods. */
+  function enforceCardOnlyStripe() {
+    var controller = window.PSCCheckoutController;
+    if (controller && !controller.__rgvCardOnlyOptionsV2 && typeof controller.paymentElementOptions === 'function') {
+      var originalPaymentOptions = controller.paymentElementOptions.bind(controller);
+      controller.paymentElementOptions = function (options) {
+        return Object.assign({}, originalPaymentOptions(options) || {}, {
+          layout: {
+            type: 'accordion',
+            defaultCollapsed: false,
+            radios: false,
+            spacedAccordionItems: false
+          },
+          paymentMethodOrder: ['card'],
+          wallets: { applePay: 'never', googlePay: 'never' }
+        });
+      };
+      controller.__rgvCardOnlyOptionsV2 = true;
+    }
+
+    var originalStripe = window.Stripe;
+    if (typeof originalStripe !== 'function') return false;
+    if (originalStripe.__rgvCardOnlyFactoryV2) return true;
+
+    var wrappedStripe = function () {
+      var stripeClient = originalStripe.apply(this, arguments);
+      if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElementsV2) {
+        return stripeClient;
+      }
+
+      var originalElements = stripeClient.elements.bind(stripeClient);
+      stripeClient.elements = function (options) {
+        var elementsOptions = Object.assign({}, options || {}, {
+          paymentMethodTypes: ['card']
+        });
+        var elements = originalElements(elementsOptions);
+        if (!elements || typeof elements.create !== 'function') return elements;
+
+        var originalCreate = elements.create.bind(elements);
+        elements.create = function (type, elementOptions) {
+          if (type === 'expressCheckout') {
+            throw new Error('Express checkout is disabled for this card-only storefront flow.');
+          }
+          if (type !== 'payment') return originalCreate(type, elementOptions);
+
+          return originalCreate(type, Object.assign({}, elementOptions || {}, {
+            layout: {
+              type: 'accordion',
+              defaultCollapsed: false,
+              radios: false,
+              spacedAccordionItems: false
+            },
+            paymentMethodOrder: ['card'],
+            wallets: { applePay: 'never', googlePay: 'never' }
+          }));
+        };
+
+        return elements;
+      };
+      stripeClient.__rgvCardOnlyElementsV2 = true;
+      return stripeClient;
+    };
+
+    Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
+      if (['length', 'name', 'prototype', 'arguments', 'caller'].indexOf(property) !== -1) return;
+      try {
+        Object.defineProperty(wrappedStripe, property, Object.getOwnPropertyDescriptor(originalStripe, property));
+      } catch (error) { /* Optional Stripe factory metadata. */ }
+    });
+    try {
+      Object.defineProperty(wrappedStripe, '__rgvCardOnlyFactoryV2', { value: true });
+      Object.defineProperty(window, 'Stripe', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: wrappedStripe
+      });
+    } catch (error) {
+      window.Stripe = wrappedStripe;
+    }
+    window.__rgvCardOnlyRuntimeReady = window.Stripe === wrappedStripe;
+    return window.__rgvCardOnlyRuntimeReady;
+  }
+
+  var cardOnlyChecks = 0;
+  if (!enforceCardOnlyStripe()) {
+    var cardOnlyTimer = window.setInterval(function () {
+      cardOnlyChecks += 1;
+      if (enforceCardOnlyStripe() || cardOnlyChecks > 400) {
+        window.clearInterval(cardOnlyTimer);
+      }
+    }, 25);
+  }
+
   var copyReplacements = [
     [/PRISM Secure Checkout/gi, 'Card payment'],
     [/PRISM Fall Checkout/gi, 'Card payment'],
@@ -139,6 +235,7 @@
   }
 
   function start() {
+    enforceCardOnlyStripe();
     update();
 
     new MutationObserver(queueUpdate).observe(document.body, {
