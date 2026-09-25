@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-prism-checkout'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-prism-checkout-3.3.0.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-prism-checkout-3.4.0.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "Card and wallet return source directory was not found: $pluginRoot"
@@ -65,8 +65,8 @@ try {
     }
 
     if ($mainSource -notmatch 'Plugin Name:\s+RGV Storefront Card & Wallet Return' -or
-        $mainSource -notmatch 'Version:\s+3\.3\.0') {
-        throw 'ZIP main plugin header is not the expected 3.3.0 red verification and card-only build.'
+        $mainSource -notmatch 'Version:\s+3\.4\.0') {
+        throw 'ZIP main plugin header is not the expected 3.4.0 storefront palette build.'
     }
 
     foreach ($requiredEntry in @(

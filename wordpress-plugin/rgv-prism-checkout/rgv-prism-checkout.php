@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.3.0
+ * Version: 3.4.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.3.0';
+  const VERSION = '3.4.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -218,24 +218,24 @@ final class RGV_Storefront_Card_Wallet_Return {
           fontSizeBase: '15px',
           borderRadius: '12px',
           spacingUnit: '5px',
-          colorPrimary: '#d15c65',
-          colorBackground: '#14080b',
-          colorText: '#fff8f6',
-          colorTextSecondary: '#c7a9a8',
+          colorPrimary: '#9d4146',
+          colorBackground: '#101114',
+          colorText: '#ededeb',
+          colorTextSecondary: '#9698a1',
           colorDanger: '#ef7379'
         }),
         rules: Object.assign({}, originalAppearance.rules || {}, {
           '.Input': {
             padding: '14px',
-            border: '1px solid #5e272d',
+            border: '1px solid #343840',
             boxShadow: 'none'
           },
           '.Input:focus': {
-            border: '1px solid #d15c65',
-            boxShadow: '0 0 0 1px #d15c65'
+            border: '1px solid #9d4146',
+            boxShadow: '0 0 0 1px #9d4146'
           },
           '.Label': {
-            color: '#f1dedd',
+            color: '#d8d9dc',
             fontSize: '13px',
             fontWeight: '600'
           }
@@ -405,24 +405,24 @@ JS;
           fontSizeBase: '15px',
           borderRadius: '11px',
           spacingUnit: '5px',
-          colorPrimary: '#c35d64',
-          colorBackground: '#14080b',
-          colorText: '#fff8f6',
-          colorTextSecondary: '#c7a9a8',
+          colorPrimary: '#9d4146',
+          colorBackground: '#101114',
+          colorText: '#ededeb',
+          colorTextSecondary: '#9698a1',
           colorDanger: '#ef7379'
         }),
         rules: Object.assign({}, originalAppearance.rules || {}, {
           '.Input': {
             padding: '13px 14px',
-            border: '1px solid #5e272d',
+            border: '1px solid #343840',
             boxShadow: 'none'
           },
           '.Input:focus': {
-            border: '1px solid #c35d64',
-            boxShadow: '0 0 0 1px #c35d64'
+            border: '1px solid #9d4146',
+            boxShadow: '0 0 0 1px #9d4146'
           },
           '.Label': {
-            color: '#f1dedd',
+            color: '#d8d9dc',
             fontSize: '13px',
             fontWeight: '600'
           }
@@ -770,9 +770,9 @@ JS;
 
     echo '<section class="rgv-payment-intro" aria-labelledby="rgv-payment-title">';
     echo '<div class="rgv-payment-intro__copy-group">';
-    echo '<p class="rgv-payment-intro__eyebrow"><span aria-hidden="true"></span> Card payment</p>';
-    echo '<h1 id="rgv-payment-title">Finish your order.</h1>';
-    echo '<p class="rgv-payment-intro__copy">Review the details, enter your card, and you are done.</p>';
+    echo '<p class="rgv-payment-intro__eyebrow"><span aria-hidden="true"></span> Final payment</p>';
+    echo '<h1 id="rgv-payment-title">Complete your order</h1>';
+    echo '<p class="rgv-payment-intro__copy">Review your order, then complete payment by card.</p>';
     echo '</div>';
     echo '<div class="rgv-payment-intro__trust" aria-label="Checkout protections">';
     echo '<span><b aria-hidden="true">&#10003;</b> Encrypted payment</span>';
