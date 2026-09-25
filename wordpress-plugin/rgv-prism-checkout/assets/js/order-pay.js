@@ -103,17 +103,12 @@
     if (!button || !amount) return;
 
     var amountText = String(amount.textContent || '').trim();
-    if (button.dataset.rgvAmount === amountText) return;
-
-    var label = document.createElement('span');
-    label.textContent = 'Pay securely';
-    var price = document.createElement('strong');
-    price.textContent = amountText;
-    var arrow = document.createElement('i');
-    arrow.setAttribute('aria-hidden', 'true');
-    button.replaceChildren(label, price, arrow);
+    var desiredLabel = 'Pay securely · ' + amountText;
+    if (String(button.textContent || '').trim() !== desiredLabel) {
+      button.textContent = desiredLabel;
+    }
     button.dataset.rgvAmount = amountText;
-    button.setAttribute('aria-label', 'Pay securely ' + amountText);
+    button.setAttribute('aria-label', desiredLabel);
   }
 
   function scheduleReveal(form, surface) {

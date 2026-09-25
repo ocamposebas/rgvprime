@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Storefront Card & Wallet Return
  * Description: Provides a closed, branded card and wallet checkout handoff for the RGVPRIME storefront.
- * Version: 3.0.0
+ * Version: 3.1.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 defined('ABSPATH') || exit;
 
 final class RGV_Storefront_Card_Wallet_Return {
-  const VERSION = '3.0.0';
+  const VERSION = '3.1.0';
   const PAYMENT_METHOD = 'psc';
 
   public function __construct() {
@@ -195,11 +195,14 @@ final class RGV_Storefront_Card_Wallet_Return {
     // the provider initializes Elements so there is no wallet/tab reflow.
     $card_only_script = <<<'JS'
 (function () {
-  if (window.__rgvCardOnlyStripe || typeof window.Stripe !== 'function') return;
+  if (window.__rgvCardOnlyStripeGuard) return;
+  window.__rgvCardOnlyStripeGuard = true;
 
-  var originalStripe = window.Stripe;
-  var wrappedStripe = function () {
-    var stripeClient = originalStripe.apply(null, arguments);
+  function wrapStripeFactory(originalStripe) {
+    if (typeof originalStripe !== 'function' || originalStripe.__rgvCardOnlyFactory) return originalStripe;
+
+    var wrappedStripe = function () {
+      var stripeClient = originalStripe.apply(null, arguments);
     if (!stripeClient || typeof stripeClient.elements !== 'function' || stripeClient.__rgvCardOnlyElements) {
       return stripeClient;
     }
@@ -263,19 +266,69 @@ final class RGV_Storefront_Card_Wallet_Return {
 
       return elements;
     };
-    stripeClient.__rgvCardOnlyElements = true;
-    return stripeClient;
-  };
+      stripeClient.__rgvCardOnlyElements = true;
+      return stripeClient;
+    };
 
-  Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
-    if (['length', 'name', 'prototype', 'arguments', 'caller'].indexOf(property) !== -1) return;
+    Object.getOwnPropertyNames(originalStripe).forEach(function (property) {
+      if (['length', 'name', 'prototype', 'arguments', 'caller'].indexOf(property) !== -1) return;
+      try {
+        Object.defineProperty(wrappedStripe, property, Object.getOwnPropertyDescriptor(originalStripe, property));
+      } catch (error) { /* Optional Stripe factory metadata. */ }
+    });
+    try { Object.defineProperty(wrappedStripe, '__rgvCardOnlyFactory', { value: true }); } catch (error) { /* Optional marker. */ }
+    return wrappedStripe;
+  }
+
+  function patchController() {
+    var controller = window.PSCCheckoutController;
+    if (!controller || controller.__rgvCardOnlyOptions || typeof controller.paymentElementOptions !== 'function') return false;
+    var originalOptions = controller.paymentElementOptions.bind(controller);
+    controller.paymentElementOptions = function (options) {
+      return Object.assign({}, originalOptions(options) || {}, {
+        layout: {
+          type: 'accordion',
+          defaultCollapsed: false,
+          radios: false,
+          spacedAccordionItems: false
+        },
+        paymentMethodOrder: ['card'],
+        wallets: { applePay: 'never', googlePay: 'never' }
+      });
+    };
+    controller.__rgvCardOnlyOptions = true;
+    return true;
+  }
+
+  var stripeFactory = typeof window.Stripe === 'function' ? wrapStripeFactory(window.Stripe) : window.Stripe;
+  if (typeof stripeFactory === 'function') {
+    window.Stripe = stripeFactory;
+    window.__rgvCardOnlyStripe = true;
+  } else {
     try {
-      Object.defineProperty(wrappedStripe, property, Object.getOwnPropertyDescriptor(originalStripe, property));
-    } catch (error) { /* Optional Stripe factory metadata. */ }
-  });
+      Object.defineProperty(window, 'Stripe', {
+        configurable: true,
+        enumerable: true,
+        get: function () { return stripeFactory; },
+        set: function (nextFactory) {
+          stripeFactory = wrapStripeFactory(nextFactory);
+          if (typeof stripeFactory === 'function') window.__rgvCardOnlyStripe = true;
+        }
+      });
+    } catch (error) { /* Polling below handles a non-configurable global. */ }
+  }
 
-  window.Stripe = wrappedStripe;
-  window.__rgvCardOnlyStripe = true;
+  patchController();
+  var checks = 0;
+  var guard = window.setInterval(function () {
+    checks += 1;
+    if (typeof window.Stripe === 'function' && !window.Stripe.__rgvCardOnlyFactory) {
+      window.Stripe = wrapStripeFactory(window.Stripe);
+      window.__rgvCardOnlyStripe = true;
+    }
+    var controllerReady = patchController() || !!(window.PSCCheckoutController && window.PSCCheckoutController.__rgvCardOnlyOptions);
+    if ((window.__rgvCardOnlyStripe && controllerReady) || checks > 200) window.clearInterval(guard);
+  }, 25);
 }());
 JS;
 

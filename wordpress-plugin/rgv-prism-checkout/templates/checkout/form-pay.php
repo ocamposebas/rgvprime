@@ -151,11 +151,6 @@ $item_count = count($items);
       ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
       ?>
 
-      <div class="rgv-payment-assurance" aria-label="Payment security">
-        <span><i aria-hidden="true"></i> Encrypted end to end</span>
-        <span>We never store your card number</span>
-      </div>
-
       <?php do_action('woocommerce_pay_order_after_submit'); ?>
       <?php wp_nonce_field('woocommerce-pay', 'woocommerce-pay-nonce'); ?>
     </div>
