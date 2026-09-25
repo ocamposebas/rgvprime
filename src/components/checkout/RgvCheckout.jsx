@@ -1329,6 +1329,18 @@ export default function RgvCheckout() {
   }, [cardWalletReturn?.orderId, cardWalletReturn?.orderKey]);
 
   useEffect(() => {
+    if (verifiedCardWalletReturn?.payment !== "success" || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const accountRedirect = window.setTimeout(() => {
+      window.location.replace("/account");
+    }, 5000);
+
+    return () => window.clearTimeout(accountRedirect);
+  }, [verifiedCardWalletReturn?.payment]);
+
+  useEffect(() => {
     if (!edebitReturn || typeof window === "undefined") return undefined;
 
     const cleanReturnUrl = new URL(window.location.href);
@@ -3418,15 +3430,29 @@ export default function RgvCheckout() {
               <div><CreditCard size={17} /><span>Payment method</span><strong>Card &amp; Wallets</strong></div>
               <div><ShieldCheck size={17} /><span>Current status</span><strong>{paymentChecking ? "Verifying" : paymentSucceeded ? "Processing" : paymentPending ? "Not confirmed" : "Payment required"}</strong></div>
             </div>
-            <a
-              href={paymentSucceeded ? "/shop" : paymentChecking ? "#" : "/checkout/"}
-              className="rgvx-receipt-thanks-button"
-              aria-disabled={paymentChecking}
-              onClick={paymentChecking ? (event) => event.preventDefault() : undefined}
-            >
-              {paymentChecking ? "Verifying payment..." : paymentSucceeded ? "Continue shopping" : "Return to checkout"}
-              <ChevronRight size={18} />
-            </a>
+            {paymentSucceeded ? (
+              <>
+                <div className="rgvx-receipt-thanks-actions">
+                  <a href="/account" className="rgvx-receipt-thanks-button">
+                    Go to my account <ChevronRight size={18} />
+                  </a>
+                  <a href="/" className="rgvx-receipt-thanks-button rgvx-receipt-thanks-button--secondary">
+                    Back to store
+                  </a>
+                </div>
+                <small className="rgvx-receipt-thanks-redirect">Taking you to your account in 5 seconds.</small>
+              </>
+            ) : (
+              <a
+                href={paymentChecking ? "#" : "/checkout/"}
+                className="rgvx-receipt-thanks-button"
+                aria-disabled={paymentChecking}
+                onClick={paymentChecking ? (event) => event.preventDefault() : undefined}
+              >
+                {paymentChecking ? "Verifying payment..." : "Return to checkout"}
+                <ChevronRight size={18} />
+              </a>
+            )}
           </section>
         </section>
         <style>{styles}</style>
@@ -4844,6 +4870,37 @@ const styles = `
     transform: translateY(-1px);
   }
 
+  .rgvx-receipt-thanks-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .rgvx-receipt-thanks-actions .rgvx-receipt-thanks-button {
+    width: 100%;
+  }
+
+  .rgvx-receipt-thanks-actions .rgvx-receipt-thanks-button:first-child {
+    border: 1px solid #9b4046;
+    background: #7d272d;
+    box-shadow: 0 14px 34px rgba(125, 39, 45, 0.22);
+  }
+
+  .rgvx-receipt-thanks-button--secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.035);
+    box-shadow: none;
+  }
+
+  .rgvx-receipt-thanks-redirect {
+    display: block;
+    margin-top: 16px;
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
   @media (max-width: 620px) {
     .rgvx-receipt-thanks-card {
       margin-top: 18px;
@@ -4858,6 +4915,10 @@ const styles = `
 
     .rgvx-receipt-thanks-button {
       width: 100%;
+    }
+
+    .rgvx-receipt-thanks-actions {
+      grid-template-columns: 1fr;
     }
   }
 
