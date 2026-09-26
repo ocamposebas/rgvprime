@@ -49,7 +49,7 @@ assert(proxy.includes('"zelle-order": "/wp-json/rgv/v1/manual-zelle-order"'), "T
 assert(proxy.includes('action === "card-wallet-order"') && proxy.includes("createCardWalletOrder"), "The protected card and wallet route is missing");
 assert(proxy.includes('action !== "card-wallet-pay"') && proxy.includes("getCardWalletPaymentRedirect"), "The authenticated card and wallet payment redirect is missing");
 assert(checkout.includes('const ORBIT_HOSTED_CHECKOUT_VISIBLE = ORBIT_PAYMENT_MODE === "hosted"'), "Hosted checkout must remain available behind the mode switch");
-assert(checkout.includes('useState("edebit")'), "The existing eDebit default must remain unchanged");
+assert(checkout.includes('useState("card_wallets")'), "The PRISM-backed Card & Wallets route must be selected by default");
 assert(checkout.includes('description: ORBIT_EMBEDDED_CHECKOUT_VISIBLE ? "Credit or debit card"'), "The Wompi option must use concise card copy");
 assert(checkout.includes("ORBIT_PAYMENTS_MAX_ORDER_USD_CENTS = 60000"), "ORBIT Payments must support orders through $600 USD");
 assert(checkout.includes("<OrbitSecureCardPayment"), "The embedded ORBIT card form must be mounted");

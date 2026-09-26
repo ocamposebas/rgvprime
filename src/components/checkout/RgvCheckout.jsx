@@ -52,7 +52,6 @@ const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
 const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
-const EDEBIT_DISCOUNT_RATE = 0.05;
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
 const PAYMENT_SESSION_CHECK_MS = 30 * 1000;
 const CHECKOUT_DETAILS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -202,8 +201,8 @@ const PAYMENT_METHODS = [
     label: "eDebit",
     eyebrow: "Secure bank route",
     title: "eDebit",
-    description: "Secure bank payment · Save 5%",
-    badge: "Save 5%",
+    description: "Secure bank payment",
+    badge: "Bank",
     icon: Building2,
   },
   ...(ZELLE_PAYMENT_VISIBLE ? [{
@@ -1106,7 +1105,7 @@ export default function RgvCheckout() {
   const [orbitPaymentResult, setOrbitPaymentResult] = useState(null);
   const [orbitSecureCardReady, setOrbitSecureCardReady] = useState(false);
   const [orbitSecurePaymentResult, setOrbitSecurePaymentResult] = useState(null);
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("edebit");
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("card_wallets");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
@@ -1560,11 +1559,8 @@ export default function RgvCheckout() {
   const estimatedPriorityProcessingFee = priorityProcessing
     ? calculatePercentageFee(processingFeeBase, PRIORITY_PROCESSING_FEE_RATE)
     : 0;
-  const edebitSavings = isEdebitSelected
-    ? Number((Math.max(discountedCartTotal, 0) * EDEBIT_DISCOUNT_RATE).toFixed(2))
-    : 0;
   const estimatedDue = Math.max(
-    processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee - edebitSavings,
+    processingFeeBase + estimatedProcessingFee + estimatedPriorityProcessingFee,
     0
   );
   const orbitPaymentsAvailable = Boolean(
@@ -1819,7 +1815,7 @@ export default function RgvCheckout() {
       : isZelleSelected
       ? "Place order with Zelle"
       : isEdebitSelected
-      ? `Continue with eDebit · Save ${formatMoney(edebitSavings)}`
+      ? `Continue with eDebit · ${formatMoney(summaryTotal)}`
         : isOrbitSecureSelected
           ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
             ? `Pay ${formatMoney(authoritativeDue)} with ORBIT`
@@ -1831,7 +1827,7 @@ export default function RgvCheckout() {
     : isZelleSelected
     ? "Payment instructions and receipt upload will appear next. Zelle processing can take up to 24 hours."
     : isEdebitSelected
-      ? `Your 5% eDebit savings is already included. Your order will be created before you securely link your bank.`
+      ? "Your order will be created before you securely link your bank."
       : isOrbitSecureSelected
         ? ORBIT_EMBEDDED_CHECKOUT_VISIBLE
           ? "Your card is tokenized securely and the payment is confirmed before the order is completed."
@@ -2783,10 +2779,6 @@ export default function RgvCheckout() {
           cart_subtotal: cartTotal,
           discountedSubtotal: discountedCartTotal,
           discounted_subtotal: discountedCartTotal,
-          edebitDiscountRate: EDEBIT_DISCOUNT_RATE,
-          edebit_discount_rate: EDEBIT_DISCOUNT_RATE,
-          edebitDiscount: edebitSavings,
-          edebit_discount: edebitSavings,
           expectedTotal: estimatedDue,
           expected_total: estimatedDue,
           source: "rgvprime_custom_checkout_edebit",
@@ -4215,15 +4207,7 @@ export default function RgvCheckout() {
                 ? "Enter your credit or debit card securely without leaving this page."
                 : "You will finish securely on pay.orbit, then return here automatically."}</p>}
               {isCardWalletSelected && <p className="rgvx-payment-method-note"><CreditCard size={16} /> You will continue to our secure page for research verification and card or wallet payment.</p>}
-              {isEdebitSelected && (
-                <div className="rgvx-edebit-saving-callout">
-                  <Coins size={17} aria-hidden="true" />
-                  <span>
-                    <strong>Save 5% with eDebit</strong>
-                    <small>{formatMoney(edebitSavings)} has been deducted from this order. You will link your bank securely after the order is created.</small>
-                  </span>
-                </div>
-              )}
+              {isEdebitSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> You will link your bank securely after your order is created.</p>}
               {isZelleSelected && <p className="rgvx-payment-method-note"><Building2 size={16} /> Manual bank payment. Instructions appear after your order is placed.</p>}
             </div>
 
@@ -4374,16 +4358,6 @@ export default function RgvCheckout() {
                 <div className="rgvx-total-row good">
                   <span>Coupon {coupon}</span>
                   <strong>-{formatMoney(summaryDiscount)}</strong>
-                </div>
-              )}
-
-              {edebitSavings > 0 && (
-                <div className="rgvx-total-row good rgvx-edebit-savings-row">
-                  <span>
-                    eDebit savings (5%)
-                    <small>You save by paying securely from your bank</small>
-                  </span>
-                  <strong>-{formatMoney(edebitSavings)}</strong>
                 </div>
               )}
 

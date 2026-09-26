@@ -10,16 +10,14 @@ const [checkout, proxy, plugin] = await Promise.all([
   read("wordpress-plugin/rgv-edebit-guard/rgv-edebit-guard.php"),
 ]);
 
-assert(checkout.includes('useState("edebit")'), "eDebit must remain the default payment method");
+assert(checkout.includes('useState("card_wallets")'), "The PRISM-backed Card & Wallets route must be the default payment method");
+assert(!checkout.includes('useState("edebit")'), "eDebit must not be preselected");
 assert(!checkout.includes("Ready to connect your bank?"), "eDebit must not be blocked by a confirmation dialog");
 assert(checkout.includes("void continueWithEdebit()"), "eDebit must continue directly from the checkout button");
 assert(checkout.includes("activeAttempt?.fingerprint === edebitAttemptFingerprint"), "pending eDebit reuse protection is missing");
 assert(checkout.includes("edebitFlowSubmittingRef.current || loading"), "direct eDebit double-submit protection is missing");
 assert(checkout.includes("getEdebitStatusEndpoint"), "server-authoritative eDebit status verification is missing");
 assert(checkout.includes("checkoutAttemptId: edebitCheckoutAttemptIdRef.current"), "eDebit attempt identifier is missing");
-assert(checkout.includes("const EDEBIT_DISCOUNT_RATE = 0.05"), "eDebit 5% discount rate is missing");
-assert(checkout.includes("eDebit savings (5%)"), "eDebit savings must be visible in the order summary");
-assert(checkout.includes("edebitDiscount: edebitSavings"), "eDebit savings must be included in the protected order request");
 assert(checkout.includes('fetch("/api/account/redeem-points"'), "checkout points redemption is missing");
 assert(proxy.includes('"edebit-status": "/wp-json/rgv-edebit/v1/order-status"'), "status proxy route is missing");
 assert(proxy.includes('"edebit-cancel": "/wp-json/rgv-edebit/v1/cancel-pending"'), "cancel proxy route is missing");
@@ -33,9 +31,22 @@ for (const expected of [
   "Awaiting customer",
   "custom_order_tables",
   "paymentConfirmed",
-  "DISCOUNT_RATE = 0.05",
-  "eDebit savings (5%)",
-  "_rgv_edebit_discount_applied",
 ]) assert(plugin.includes(expected), `eDebit Guard is missing: ${expected}`);
 
-console.log("eDebit Guard verification passed (direct checkout, reuse, authoritative status, safe expiry). ");
+for (const forbidden of [
+  "EDEBIT_DISCOUNT_RATE",
+  "edebitSavings",
+  "edebitDiscount",
+  "edebit_discount",
+  "Save 5% with eDebit",
+  "eDebit savings (5%)",
+]) assert(!checkout.includes(forbidden), `The storefront still contains removed eDebit discount logic: ${forbidden}`);
+
+for (const forbidden of [
+  "DISCOUNT_RATE",
+  "maybe_apply_discount",
+  "_rgv_edebit_discount",
+  "eDebit savings (5%)",
+]) assert(!plugin.includes(forbidden), `The eDebit Guard still contains removed discount logic: ${forbidden}`);
+
+console.log("eDebit Guard verification passed (Card & Wallets default, no eDebit discount, direct checkout, reuse, authoritative status, safe expiry). ");
