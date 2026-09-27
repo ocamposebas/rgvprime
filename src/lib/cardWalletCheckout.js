@@ -8,6 +8,8 @@ const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
 const ORDER_PROCESSING_FEE_NAME = "Service & Processing";
 const PRIORITY_PROCESSING_FEE_NAME = "Priority Processing (within 3 hours)";
+const ORDER_REUSE_WINDOW_MS = 60 * 60 * 1000;
+const orderCreationLocks = new Map();
 
 const SHIPPING_METHODS = {
   ups_2_day_air: { title: "UPS Shipping", cost: 15, freeShippingEligible: true },
@@ -176,6 +178,50 @@ function requestKey(value) {
   return createHash("sha256").update(clean).digest("hex");
 }
 
+function checkoutFingerprint({ items, billing, shipping, coupon, shippingMethod, priority, total, userId }) {
+  const canonicalItems = [...items]
+    .map((item) => [item.product_id, item.variation_id, item.quantity])
+    .sort((left, right) => left[0] - right[0] || left[1] - right[1] || left[2] - right[2]);
+  const canonical = {
+    version: 1,
+    userId: Number(userId || 0),
+    email: billing.email,
+    billing,
+    shipping,
+    coupon: String(coupon || ""),
+    shippingMethod: String(shippingMethod || ""),
+    priority: priority === true,
+    total: money(total),
+    items: canonicalItems,
+  };
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
+function recentUnpaidOrder(order) {
+  if (order?.date_paid || order?.date_paid_gmt) return false;
+  // A terminally failed order must never block a fresh independent payment.
+  if ("pending" !== String(order?.status || "").toLowerCase()) return false;
+
+  const rawDate = String(order?.date_created_gmt || order?.date_created || "");
+  if (!rawDate) return false;
+  const normalizedDate = /(?:Z|[+-]\d\d:\d\d)$/i.test(rawDate) ? rawDate : `${rawDate}Z`;
+  const createdAt = Date.parse(normalizedDate);
+  return Number.isFinite(createdAt) && createdAt >= Date.now() - ORDER_REUSE_WINDOW_MS;
+}
+
+async function withOrderCreationLock(key, callback) {
+  const prior = orderCreationLocks.get(key);
+  if (prior) return prior;
+
+  const current = Promise.resolve().then(callback);
+  orderCreationLocks.set(key, current);
+  try {
+    return await current;
+  } finally {
+    if (orderCreationLocks.get(key) === current) orderCreationLocks.delete(key);
+  }
+}
+
 async function loadProducts(items) {
   return Promise.all(items.map(async (item) => {
     const path = item.variation_id
@@ -251,10 +297,10 @@ async function validateCoupon(code, products, billingEmail, acceptance) {
   };
 }
 
-async function findExistingOrder(hash, billingEmail) {
+async function findExistingOrder({ requestHash, fingerprint, billingEmail }) {
   const query = new URLSearchParams({
     search: billingEmail,
-    per_page: "30",
+    per_page: "50",
     orderby: "date",
     order: "desc",
   });
@@ -262,8 +308,11 @@ async function findExistingOrder(hash, billingEmail) {
   return (Array.isArray(orders) ? orders : []).find((order) =>
     order?.payment_method === "psc" &&
     cleanEmail(order?.billing?.email) === billingEmail &&
-    metaValue(order, "_rgv_checkout_request_key") === hash &&
-    !["cancelled", "failed", "refunded", "trash"].includes(String(order?.status || "")),
+    recentUnpaidOrder(order) &&
+    (
+      metaValue(order, "_rgv_checkout_request_key") === requestHash ||
+      (fingerprint && metaValue(order, "_rgv_checkout_fingerprint_v1") === fingerprint)
+    ),
   ) || null;
 }
 
@@ -326,9 +375,7 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
     throw checkoutError("Use the email address from your signed-in account.", 403, "ACCOUNT_EMAIL_MISMATCH");
   }
 
-  const hash = requestKey(attemptId || body?.requestId || body?.request_id);
-  const existing = await findExistingOrder(hash, billing.email);
-  if (existing) return formatOrderResponse(await ensureComplianceOrderId(existing), true);
+  const requestHash = requestKey(attemptId || body?.requestId || body?.request_id);
 
   const products = await loadProducts(items);
   const subtotal = products.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -345,6 +392,17 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
   const feeBase = Math.max(0, subtotal - coupon.discount + shippingCost);
   const processingFee = Number(money(feeBase * ORDER_PROCESSING_FEE_RATE));
   const priorityFee = priority ? Number(money(feeBase * PRIORITY_PROCESSING_FEE_RATE)) : 0;
+  const totalDue = Number(money(Math.max(0, subtotal - coupon.discount) + shippingCost + processingFee + priorityFee));
+  const fingerprint = checkoutFingerprint({
+    items,
+    billing,
+    shipping,
+    coupon: coupon.code,
+    shippingMethod: requestedShipping || "usps_ground_advantage",
+    priority,
+    total: totalDue,
+    userId: acceptance?.userId,
+  });
   const totalQuantity = products.reduce((sum, item) => sum + item.quantity, 0);
   const reviewSignals = [
     ...(products.some((item) => item.quantity >= 5) ? ["five_or_more_of_one_item"] : []),
@@ -354,7 +412,8 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
 
   const metaData = [
     { key: "_rgv_payment_source", value: "rgv_custom_checkout_card_wallets" },
-    { key: "_rgv_checkout_request_key", value: hash },
+    { key: "_rgv_checkout_request_key", value: requestHash },
+    { key: "_rgv_checkout_fingerprint_v1", value: fingerprint },
     { key: "_rgv_storefront_user", value: String(Number(acceptance?.userId || 0)) },
     { key: "_rgv_priority_processing", value: priority ? "yes" : "no" },
     { key: "_rgv_compliance_policy_version", value: cleanText(acceptance?.policyVersion, 100) },
@@ -404,28 +463,33 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
     meta_data: metaData,
   };
 
-  let order;
-  try {
-    order = await wooRequest("orders", { method: "POST", body: payload, timeoutMs: 25000 });
-  } catch (error) {
-    const duplicate = await findExistingOrder(hash, billing.email).catch(() => null);
-    if (duplicate) return formatOrderResponse(await ensureComplianceOrderId(duplicate), true);
-    throw error;
-  }
+  return withOrderCreationLock(`${billing.email}:${fingerprint}`, async () => {
+    const existing = await findExistingOrder({ requestHash, fingerprint, billingEmail: billing.email });
+    if (existing) return formatOrderResponse(await ensureComplianceOrderId(existing), true);
 
-  order = await ensureComplianceOrderId(order);
+    let order;
+    try {
+      order = await wooRequest("orders", { method: "POST", body: payload, timeoutMs: 25000 });
+    } catch (error) {
+      const duplicate = await findExistingOrder({ requestHash, fingerprint, billingEmail: billing.email }).catch(() => null);
+      if (duplicate) return formatOrderResponse(await ensureComplianceOrderId(duplicate), true);
+      throw error;
+    }
 
-  if (reviewSignals.length && order?.id) {
-    await wooRequest(`orders/${order.id}/notes`, {
-      method: "POST",
-      body: {
-        note: `Manual misuse review required before fulfillment. Signals: ${reviewSignals.join(", ")}. Cancel the order if qualified research use cannot be established.`,
-        customer_note: false,
-      },
-    }).catch(() => null);
-  }
+    order = await ensureComplianceOrderId(order);
 
-  return formatOrderResponse(order, false);
+    if (reviewSignals.length && order?.id) {
+      await wooRequest(`orders/${order.id}/notes`, {
+        method: "POST",
+        body: {
+          note: `Manual misuse review required before fulfillment. Signals: ${reviewSignals.join(", ")}. Cancel the order if qualified research use cannot be established.`,
+          customer_note: false,
+        },
+      }).catch(() => null);
+    }
+
+    return formatOrderResponse(order, false);
+  });
 }
 
 function orderBelongsToUser(order, approvedUser) {

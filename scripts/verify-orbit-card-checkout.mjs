@@ -275,11 +275,19 @@ assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMetho
 assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethods.link, 'auto', "Link must be available as the wallet fallback");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
+  "Version: 1.3.0",
   "is_card_wallet_payment_submission",
   "guard_recursive_order_snippets",
   "woocommerce_update_order",
   "snippet-ops.php",
   "suppressed_recursive_callbacks",
+  "rgv_card_wallet_sweep_abandoned_orders",
+  "rgv_card_wallet_expire_abandoned_order",
+  "_psc_payment_id",
+  "Card & Wallets checkout expired after 60 minutes without starting a PRISM payment.",
+  "as_schedule_recurring_action",
+  "as_schedule_single_action",
+  "woocommerce_email_enabled_cancelled_order",
 ]) assert(cardWalletStabilityPlugin.includes(expected), `Card payment stability guard is missing: ${expected}`);
 assert(!cardWalletStabilityPlugin.includes("zelle"), "The card payment stability guard must remain isolated from Zelle");
 for (const expected of [
@@ -292,6 +300,10 @@ for (const expected of [
   "paymentUrlForOrder",
   "getCardWalletPaymentRedirect",
   "getCardWalletOrderStatus",
+  "checkoutFingerprint",
+  "_rgv_checkout_fingerprint_v1",
+  "ORDER_REUSE_WINDOW_MS",
+  "withOrderCreationLock",
 ]) assert(cardWalletBackend.includes(expected), `Card and wallet order handoff is missing: ${expected}`);
 assert(checkout.includes("getCardWalletPaymentRedirectEndpoint") && checkout.includes('handoffUrl.searchParams.set("order_id"'), "Card and wallet checkout must use the authenticated canonical payment redirect");
 
