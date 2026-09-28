@@ -69,6 +69,291 @@
   color: #fff;
 }
 
+@font-face {
+  font-family: "RGV Checkout Display";
+  src: url("/fonts/goldman/Goldman-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+.rgv-checkout--processor-update {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #090a0c;
+  color: #f0efeb;
+}
+
+.rgv-checkout--processor-update .rgvx-processor-nav {
+  position: absolute;
+  inset: 0 0 auto;
+  border-bottom-color: rgba(255, 255, 255, 0.11);
+  background: linear-gradient(180deg, rgba(9, 10, 12, 0.92), rgba(9, 10, 12, 0.48) 72%, transparent);
+  backdrop-filter: none;
+}
+
+.rgvx-processor-update {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100svh;
+  overflow: hidden;
+  align-items: stretch;
+  background: #090a0c;
+}
+
+.rgvx-processor-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rgvx-processor-backdrop::before {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, #090a0c 0%, rgba(9, 10, 12, 0.93) 34%, rgba(9, 10, 12, 0.2) 71%, rgba(9, 10, 12, 0.04)),
+    linear-gradient(0deg, #090a0c 0%, transparent 33%);
+  content: "";
+}
+
+.rgvx-processor-backdrop::after {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 62%);
+  content: "";
+}
+
+.rgvx-processor-ambient {
+  position: absolute;
+  inset: 8% -12% 0 38%;
+  background: radial-gradient(ellipse at 60% 45%, rgba(122, 20, 27, 0.32), rgba(62, 11, 17, 0.15) 42%, transparent 70%);
+  animation: rgvx-processor-ambient 12s ease-in-out infinite;
+}
+
+.rgvx-processor-ribbon {
+  position: absolute;
+  top: 50%;
+  right: -90px;
+  width: clamp(850px, 76vw, 1260px);
+  height: auto;
+  max-width: none;
+  opacity: 0.94;
+  transform: translateY(-50%) rotate(-2deg);
+  transform-origin: 76% 45%;
+  animation: rgvx-processor-drift 17s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.rgvx-processor-shell {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  width: min(1256px, calc(100% - 96px));
+  min-height: 100svh;
+  flex-direction: column;
+  justify-content: center;
+  margin-inline: auto;
+  padding: 126px 0 42px;
+}
+
+.rgvx-processor-copy {
+  width: min(780px, 70%);
+  padding: 34px 0 50px;
+}
+
+.rgvx-processor-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+  color: #c07a75;
+  font-size: 9px;
+  font-weight: 550;
+  letter-spacing: 0.14em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.rgvx-processor-kicker > span {
+  width: 26px;
+  height: 1px;
+  background: #a5373c;
+}
+
+.rgvx-processor-title {
+  margin: 0;
+  font-family: "RGV Checkout Display", "Arial Narrow", sans-serif;
+  font-size: clamp(64px, 8.2vw, 118px);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.93;
+  text-transform: uppercase;
+}
+
+.rgvx-processor-title > span {
+  display: block;
+  width: fit-content;
+  color: #f1f1ed;
+}
+
+.rgvx-processor-title .rgvx-processor-title-accent {
+  margin-top: 7px;
+  color: #deded9;
+  font-family: "RGV Sora", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76em;
+  font-weight: 560;
+  letter-spacing: -0.07em;
+  line-height: 1;
+  text-transform: none;
+}
+
+.rgvx-processor-title-accent > span {
+  color: #b52e35;
+}
+
+.rgvx-processor-intro {
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+  margin-top: 31px;
+}
+
+.rgvx-processor-intro > span {
+  width: 2px;
+  flex: 0 0 2px;
+  background: #81352f;
+}
+
+.rgvx-processor-intro p {
+  max-width: 600px;
+  margin: 0;
+  color: #b1b2b7;
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.rgvx-processor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 31px;
+}
+
+.rgvx-processor-primary {
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 19px;
+  padding: 13px 21px;
+  border: 1px solid #a2353b;
+  border-radius: 13px;
+  background: #851e25;
+  box-shadow: inset 0 1px 0 rgba(223, 134, 139, 0.1), 0 18px 48px rgba(61, 6, 12, 0.22);
+  color: #f7f5f2;
+  font-size: 11px;
+  font-weight: 550;
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.rgvx-processor-primary:hover {
+  border-color: #b7454b;
+  background: #9b282f;
+  transform: translateY(-1px);
+}
+
+.rgvx-processor-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #9c9ea4;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.rgvx-processor-status > svg {
+  flex: 0 0 auto;
+  color: #bd7770;
+}
+
+.rgvx-processor-status strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #d6d5d2;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rgvx-processor-baseline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: auto;
+  padding-top: 19px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #888b92;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.rgvx-processor-baseline strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #bdbbb7;
+  font-weight: 450;
+}
+
+.rgvx-processor-baseline i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #c44b4f;
+  box-shadow: 0 0 0 5px rgba(196, 75, 79, 0.1), 0 0 18px rgba(196, 75, 79, 0.55);
+  animation: rgvx-processor-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes rgvx-processor-drift {
+  0%, 100% { transform: translate3d(5px, calc(-50% - 14px), 0) rotate(-4deg) scale(1.01); }
+  50% { transform: translate3d(-34px, calc(-50% + 18px), 0) rotate(0.5deg) scale(1.025); }
+}
+
+@keyframes rgvx-processor-ambient {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+
+@keyframes rgvx-processor-pulse {
+  0%, 100% { opacity: 0.58; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 900px) {
+  .rgvx-processor-shell {
+    width: calc(100% - 64px);
+  }
+
+  .rgvx-processor-copy {
+    width: min(600px, 92%);
+  }
+
+  .rgvx-processor-title {
+    font-size: clamp(56px, 10.5vw, 78px);
+  }
+}
+
 body .rgvx-thanks-page {
   padding-top: 48px !important;
 }
@@ -99,5 +384,93 @@ body .rgvx-thanks-page {
 
   body .rgvx-thanks-page {
     padding-top: 32px !important;
+  }
+
+  .rgvx-processor-backdrop::before {
+    background:
+      linear-gradient(90deg, rgba(9, 10, 12, 0.96) 0%, rgba(9, 10, 12, 0.78) 52%, rgba(9, 10, 12, 0.22) 100%),
+      linear-gradient(0deg, #090a0c 0%, transparent 55%);
+  }
+
+  .rgvx-processor-ribbon {
+    top: 48%;
+    right: -192px;
+    width: 820px;
+    opacity: 0.78;
+  }
+
+  .rgvx-processor-shell {
+    width: calc(100% - 36px);
+    padding: 92px 0 24px;
+  }
+
+  .rgvx-processor-copy {
+    width: 100%;
+    padding: 34px 0 42px;
+  }
+
+  .rgvx-processor-kicker {
+    margin-bottom: 19px;
+    font-size: 8px;
+  }
+
+  .rgvx-processor-title {
+    font-size: clamp(45px, 14.2vw, 68px);
+    line-height: 0.96;
+  }
+
+  .rgvx-processor-title .rgvx-processor-title-accent {
+    margin-top: 5px;
+    font-size: 0.88em;
+  }
+
+  .rgvx-processor-intro {
+    gap: 13px;
+    margin-top: 25px;
+  }
+
+  .rgvx-processor-intro p {
+    max-width: 390px;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+
+  .rgvx-processor-actions {
+    align-items: flex-start;
+    gap: 19px;
+    margin-top: 26px;
+  }
+
+  .rgvx-processor-primary {
+    min-height: 48px;
+    padding: 12px 17px;
+    font-size: 10px;
+  }
+
+  .rgvx-processor-status {
+    width: 100%;
+  }
+
+  .rgvx-processor-baseline {
+    align-items: flex-start;
+    font-size: 8px;
+  }
+
+  .rgvx-processor-baseline strong {
+    max-width: 150px;
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rgvx-processor-ribbon,
+  .rgvx-processor-ambient,
+  .rgvx-processor-baseline i {
+    animation: none;
+  }
+
+  .rgvx-processor-primary {
+    transition: none;
   }
 }

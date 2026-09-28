@@ -16,6 +16,7 @@ import {
   getCardWalletPaymentRedirect,
   getCardWalletOrderStatus,
 } from "../../../lib/cardWalletCheckout";
+import { CHECKOUT_PROCESSOR_UPDATE_ENABLED } from "../../../lib/checkoutAvailability";
 
 export const prerender = false;
 
@@ -34,6 +35,21 @@ const ROUTES = {
   "orbit-card-order": "/wp-json/rgv/v1/orbit-card-order",
   "orbit-hosted-status": "/wp-json/orbit/v1/card-hosted-status",
 };
+const PAUSED_CREATION_ACTIONS = new Set([
+  "card-order",
+  "card-wallet-order",
+  "zelle-order",
+  "edebit-order",
+  "orbit-card-order",
+]);
+
+function processorUpdateResponse() {
+  return json({
+    success: false,
+    checkoutPaused: true,
+    message: "Checkout is temporarily paused while we finish our payment processor.",
+  }, 503);
+}
 
 function containsPuertoRicoAddress(body = {}) {
   return [body?.billing, body?.shipping].some((address) => {
@@ -52,6 +68,9 @@ export async function GET(context) {
   const action = String(context.params.action || "");
   if (action !== "card-wallet-pay") {
     return json({ success: false, message: "Checkout route was not found." }, 404);
+  }
+  if (CHECKOUT_PROCESSOR_UPDATE_ENABLED) {
+    return processorUpdateResponse();
   }
   if (!WP_URL || !COMPLIANCE_SECRET) {
     return json({ success: false, message: "Checkout route is unavailable." }, 503);
@@ -104,6 +123,12 @@ export async function POST(context) {
   }
 
   const action = String(context.params.action || "");
+  if (
+    CHECKOUT_PROCESSOR_UPDATE_ENABLED &&
+    PAUSED_CREATION_ACTIONS.has(action)
+  ) {
+    return processorUpdateResponse();
+  }
   const route = ROUTES[action];
   const isCardWalletAction = action === "card-wallet-order" || action === "card-wallet-status";
   if ((!route && !isCardWalletAction) || !WP_URL || !COMPLIANCE_SECRET) {
