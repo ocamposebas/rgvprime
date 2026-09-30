@@ -6,7 +6,7 @@ import AccountPortal from "./AccountPortal";
 export default function AccountPageShell() {
   return (
     <CartProvider>
-      <Navbar client:load transparent/> 
+      <Navbar transparent />
       <LazyCartDrawer />
       <AccountPortal />
     </CartProvider>

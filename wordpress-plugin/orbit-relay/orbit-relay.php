@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name: ORBIT Relay for WooCommerce
- * Plugin URI:  https://orbit.example/
  * Description: Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
  * Version:     1.5.0
  * Author:      ORBIT

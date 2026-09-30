@@ -114,11 +114,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/*
- * Keep display text readable across the site. Several components previously
- * used aggressive negative tracking that made headings, prices and product
- * names appear compressed.
- */
 :where([class*="tracking-[-"]) {
   letter-spacing: 0.005em !important;
 }
@@ -206,16 +201,11 @@ svg {
   }
 }
 
-/* ================================
-   RGV GLOBAL SCROLLBAR
-   ================================ */
-
 html {
   scrollbar-width: thin;
   scrollbar-color: #ef4444 #111111;
 }
 
-/* Main page scrollbar */
 ::-webkit-scrollbar {
   width: 14px;
   height: 14px;
@@ -255,13 +245,6 @@ html {
 ::-webkit-scrollbar-corner {
   background: #111111;
 }
-
-/* ================================
-   RGV LIGHT THEME
-
-   The current dark theme above remains the untouched default. Everything in
-   this section is opt-in and only applies after the visitor selects Light.
-   ================================ */
 
 .rgv-theme-toggle {
   position: fixed;
@@ -365,7 +348,6 @@ html[data-theme="light"] .site-shell::after {
   display: none;
 }
 
-/* Turn the dark page canvases into white surfaces. */
 html[data-theme="light"] :where(main, footer, .launch-page),
 html[data-theme="light"] :where(
   [class*="bg-[#0"],
@@ -393,8 +375,6 @@ html[data-theme="light"] .launch-page::before {
   background: #fff !important;
 }
 
-/* Dark-theme glows and overlays would muddy the white canvas. They are purely
-   decorative, so the light theme removes them and keeps actual images crisp. */
 html[data-theme="light"] .site-shell [class*="pointer-events-none"]:not(:has(svg)):not(:has(img)) {
   display: none !important;
 }
@@ -406,7 +386,6 @@ html[data-theme="light"] .site-shell :where(
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.09) !important;
 }
 
-/* All existing typography utilities become black/gray on white. */
 html[data-theme="light"] :where(
   [class*="text-white"],
   [class*="text-red-"],
@@ -431,7 +410,6 @@ html[data-theme="light"] :where(.gradient-text, [class*="bg-clip-text"]) {
   -webkit-text-fill-color: #050505 !important;
 }
 
-/* Borders, translucent cards and fields use a restrained monochrome scale. */
 html[data-theme="light"] :where(
   [class^="border-white"],
   [class*=" border-white"],
@@ -511,7 +489,6 @@ html[data-theme="light"] :where(
   color-scheme: light;
 }
 
-/* Primary actions use the brand red; hover-only utilities are left alone. */
 html[data-theme="light"] :where(
   [class~="bg-red-300"],
   [class~="bg-red-400"],
@@ -534,7 +511,6 @@ html[data-theme="light"] :where(
   color: #fff !important;
 }
 
-/* Keep checkmarks and state icons visible when a red control is selected. */
 html[data-theme="light"] :where(
   [aria-pressed="true"],
   [aria-checked="true"],
@@ -566,7 +542,6 @@ html[data-theme="light"] :where(
   color: #fff !important;
 }
 
-/* Home hero: clean editorial white, without the dark bottom fade. */
 html[data-theme="light"] .rgv-hero {
   background: #fff !important;
   color: #050505 !important;
@@ -608,7 +583,6 @@ html[data-theme="light"] .rgv-hero .rgv-trust-pill {
   border-color: #fecaca !important;
 }
 
-/* Featured products: white cards, visible labels and solid actions. */
 html[data-theme="light"] .rgv-featured-products {
   background: #fff !important;
   color: #050505 !important;
@@ -673,7 +647,6 @@ html[data-theme="light"] .rgv-products-secondary:hover {
   color: #fff !important;
 }
 
-/* Product variation panels need an explicit purchase action on white pages. */
 html[data-theme="light"] .rgv-variations-panel {
   background: #fff !important;
   border-color: #fecaca !important;
@@ -716,7 +689,6 @@ html[data-theme="light"] :where(
   opacity: 0.62 !important;
 }
 
-/* Navbar uses inline dark gradients, so its light surface is explicit. */
 html[data-theme="light"] header.fixed.top-0,
 html[data-theme="light"] header.fixed.top-0 > div,
 html[data-theme="light"] header.fixed.top-0 nav {
@@ -787,7 +759,6 @@ html[data-theme="light"] header.fixed.top-0 :where(
   color: #fff !important;
 }
 
-/* Full-screen dimmers stay recognizable instead of becoming white panels. */
 html[data-theme="light"] :where(.fixed.inset-0, [class*="backdrop"]):where(
   [class^="bg-black/"],
   [class*=" bg-black/"]
@@ -795,8 +766,6 @@ html[data-theme="light"] :where(.fixed.inset-0, [class*="backdrop"]):where(
   background: rgba(0, 0, 0, 0.34) !important;
 }
 
-/* Checkout has its own component stylesheet, so it receives an explicit
-   monochrome surface without changing any of its dark-theme declarations. */
 html[data-theme="light"] .rgvx-page {
   background: #fff !important;
   color: #080808 !important;
@@ -863,7 +832,6 @@ html[data-theme="light"] .rgvx-page :where(
   color: #fff !important;
 }
 
-/* Checkout keeps RGV red as the brand accent in light mode. */
 html[data-theme="light"] .rgvx-page .rgvx-ghost-link {
   background: #fff !important;
   border-color: #fca5a5 !important;
@@ -916,7 +884,6 @@ html[data-theme="light"] .rgvx-page .rgvx-payment-option.active em {
   color: #fff !important;
 }
 
-/* Coupon card: bright, readable and clearly branded instead of a dark block. */
 html[data-theme="light"] .rgvx-page .rgvx-mini-coupon,
 html[data-theme="light"] .rgvx-page .rgvx-mini-coupon.is-invalid,
 html[data-theme="light"] .rgvx-page .rgvx-mini-coupon.is-validating {
@@ -988,7 +955,6 @@ html[data-theme="light"] .rgvx-page .rgvx-coupon-message.is-valid {
   color: #166534 !important;
 }
 
-/* The welcome offer lives outside .site-shell and uses component CSS. */
 html[data-theme="light"] .rgv-welcome-popup__backdrop {
   background: rgba(255, 255, 255, 0.88) !important;
 }
@@ -1103,8 +1069,6 @@ html[data-theme="light"] .rgv-theme-toggle__moon {
     transition: none;
   }
 }
-
-/* Shared primary-action finish: matches the red CTA used in the home hero. */
 
 :is(a, button):where([class~="bg-red-600"], [class~="bg-red-700"]):not(:disabled):not([aria-disabled="true"]) {
   border-color: rgba(248, 113, 113, 0.25) !important;

@@ -4,6 +4,15 @@ dist/
 # generated types
 .astro/
 
+# local review and automation artifacts
+.artifacts/
+.*-tmp/
+work/
+.tmp-*
+*-review.png
+/*.zip
+*.lnk
+
 # dependencies
 node_modules/
 

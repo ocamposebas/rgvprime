@@ -47,7 +47,7 @@ const faqs = [
   },
 ];
 
-export default function FAQExperience() {
+export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (

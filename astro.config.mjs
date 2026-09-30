@@ -10,8 +10,6 @@ export default defineConfig({
   }),
   integrations: [react()],
   build: {
-    // Keep large stylesheets cacheable between pages instead of embedding the
-    // complete design system in every HTML response.
     inlineStylesheets: "auto",
   },
   prefetch: {

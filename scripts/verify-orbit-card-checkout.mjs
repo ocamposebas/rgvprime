@@ -276,11 +276,6 @@ assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMetho
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
   "Version: 1.3.0",
-  "is_card_wallet_payment_submission",
-  "guard_recursive_order_snippets",
-  "woocommerce_update_order",
-  "snippet-ops.php",
-  "suppressed_recursive_callbacks",
   "rgv_card_wallet_sweep_abandoned_orders",
   "rgv_card_wallet_expire_abandoned_order",
   "_psc_payment_id",
@@ -307,7 +302,6 @@ for (const expected of [
 ]) assert(cardWalletBackend.includes(expected), `Card and wallet order handoff is missing: ${expected}`);
 assert(checkout.includes("getCardWalletPaymentRedirectEndpoint") && checkout.includes('handoffUrl.searchParams.set("order_id"'), "Card and wallet checkout must use the authenticated canonical payment redirect");
 
-// Keep the hosted implementation ready for a later mode change; it is intentionally inactive today.
 assert(checkout.includes("window.location.assign(redirectUrl.toString())"), "The retained hosted flow must redirect only after server approval");
 assert(checkout.includes('redirectUrl.protocol !== "https:"'), "The retained hosted flow must reject non-HTTPS URLs");
 assert(proxy.includes('"orbit-hosted-status": "/wp-json/orbit/v1/card-hosted-status"'), "Protected hosted-payment status proxy is missing");

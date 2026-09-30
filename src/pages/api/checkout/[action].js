@@ -16,7 +16,7 @@ import {
   getCardWalletPaymentRedirect,
   getCardWalletOrderStatus,
 } from "../../../lib/cardWalletCheckout";
-import { CHECKOUT_PROCESSOR_UPDATE_ENABLED } from "../../../lib/checkoutAvailability";
+import { CHECKOUT_PAUSED } from "../../../lib/checkoutAvailability";
 
 export const prerender = false;
 
@@ -69,7 +69,7 @@ export async function GET(context) {
   if (action !== "card-wallet-pay") {
     return json({ success: false, message: "Checkout route was not found." }, 404);
   }
-  if (CHECKOUT_PROCESSOR_UPDATE_ENABLED) {
+  if (CHECKOUT_PAUSED) {
     return processorUpdateResponse();
   }
   if (!WP_URL || !COMPLIANCE_SECRET) {
@@ -124,7 +124,7 @@ export async function POST(context) {
 
   const action = String(context.params.action || "");
   if (
-    CHECKOUT_PROCESSOR_UPDATE_ENABLED &&
+    CHECKOUT_PAUSED &&
     PAUSED_CREATION_ACTIONS.has(action)
   ) {
     return processorUpdateResponse();

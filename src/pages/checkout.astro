@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Rgv from "../components/checkout/Exrgvcheckout";
+import CheckoutPage from "../components/checkout/CheckoutPage";
 ---
 
 <BaseLayout
@@ -10,5 +10,5 @@ import Rgv from "../components/checkout/Exrgvcheckout";
   showFooter={false}
   showPreFooter={false}
 >
-  <Rgv  client:load />
+  <CheckoutPage client:load />
 </BaseLayout>

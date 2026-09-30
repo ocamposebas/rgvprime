@@ -1,41 +1,90 @@
-# Astro Starter Kit: Basics
+# RGVPRIME Storefront
 
-## Card and wallet checkout handoff
+Astro and React storefront backed by WooCommerce. The repository also contains
+the WordPress plugins used for checkout, promotions, loyalty, order handling,
+and Certificate of Analysis records.
 
-The customer-facing checkout labels this route **Card & Wallets**. The Node
-server validates the signed-in storefront session, stock, current WooCommerce
-prices, coupon, shipping and fees, then creates one `pending` order associated
-with the signed-in account through private order metadata. The browser enters a
-protected storefront handoff that reloads the current order key immediately
-before redirecting to WooCommerce's top-level `order-pay` page.
+## Requirements
 
-Configure `WC_API_URL`, `WC_CONSUMER_KEY` and `WC_CONSUMER_SECRET` as private
-Node deployment variables. The key needs WooCommerce read/write permission.
-The existing `PORTAL_API_SECRET` (or dedicated `COMPLIANCE_SIGNING_SECRET`)
-continues to protect checkout acceptance evidence.
+- Node.js 22.12 or newer
+- A WordPress installation with WooCommerce
+- Private WooCommerce REST API credentials for server-side checkout operations
 
-Install `wordpress-plugin/rgv-storefront-card-return-2.0.5.zip` over the earlier
-RGV handoff helper. It no longer creates orders. It gives the payment route the
-neutral customer-facing name **Card & Wallets**, removes provider branding from
-the buyer surface, authorizes only exact valid storefront payment links, and
-returns a confirmed order to the Astro receipt page.
-WooCommerce's **Hold stock (minutes)** setting must remain at `60` so abandoned
+## Local development
+
+```sh
+npm install
+Copy-Item .env.example .env
+npm run dev
+```
+
+Review `.env.example` before starting the app. Private keys and secrets must
+never use a `PUBLIC_` prefix.
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Astro development server |
+| `npm run build` | Create the production server build |
+| `npm run preview` | Preview the production build locally |
+| `npm run test:seo` | Run SEO checks |
+| `npm run test:storefront` | Run storefront regression checks |
+| `npm run test:compliance` | Verify checkout compliance controls |
+| `npm run test:coa` | Verify the COA data pipeline and WordPress plugin |
+| `npm run test:account-orders` | Verify account order visibility |
+| `npm run test:orbit-card` | Verify the card and wallet handoff |
+| `npm run test:edebit` | Verify the eDebit guard |
+
+## Repository layout
+
+```text
+public/             Static assets, fonts, and COA PDFs
+src/                Astro pages, React components, styles, and server APIs
+scripts/            Verification and WordPress packaging scripts
+docs/               Operational documentation for COA and payment support
+wordpress-plugin/   Canonical plugin sources and installable packages
+```
+
+Generated builds, browser profiles, review screenshots, temporary worktrees,
+and ad hoc root-level ZIP exports are intentionally excluded from version control.
+
+## WordPress plugins
+
+Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
+`scripts/` create installable ZIP files in that same directory.
+
+| Feature | Package |
+| --- | --- |
+| Card and wallet return | `rgv-prism-checkout-3.8.3.zip` |
+| Zelle checkout | `rgv-zelle-checkout-1.3.8.zip` |
+| ORBIT card checkout | `rgv-orbit-card-checkout-1.1.3.zip` |
+| eDebit abandonment guard | `rgv-edebit-guard-1.1.2.zip` |
+| COA library | `rgv-coa-library-1.12.0.zip` |
+| Storewide promotion | `rgv-storewide-promotion-1.0.0.zip` |
+| Rush processing | `rgv-rush-processing-orders-1.0.0.zip` |
+| Welcome coupon guard | `rgv-welcome10-guard-1.0.0.zip` |
+
+Deploy matching storefront and plugin versions together when a change spans
+both applications.
+
+## Checkout configuration
+
+Set `WC_API_URL`, `WC_CONSUMER_KEY`, and `WC_CONSUMER_SECRET` as private server
+variables. The WooCommerce API key requires read/write access. The server
+validates the signed-in storefront session, inventory, prices, coupons,
+shipping, and fees before creating a pending order.
+
+The storefront and WordPress plugins must share the same compliance secret.
+By default the Node app uses `PORTAL_API_SECRET` and WordPress uses
+`RGV_PORTAL_API_SECRET`. To use a dedicated value, set
+`COMPLIANCE_SIGNING_SECRET` in the Node deployment and the identical
+`RGV_COMPLIANCE_SIGNING_SECRET` value in WordPress.
+
+WooCommerce's **Hold stock (minutes)** setting should remain at `60` so unpaid
 pending orders expire automatically.
 
-Zelle and eDebit remain independent payment routes and plugins.
+### ORBIT card processor
 
-## ORBIT embedded card checkout
-
-The custom checkout displays three separate payment choices: **ORBIT Payments**,
-**eDebit**, and **Zelle**. The new ORBIT form is embedded directly in checkout;
-it does not redirect the customer to a hosted payment page.
-
-Install and activate the standalone `RGV ORBIT Payments Checkout` plugin in
-WordPress. Keep the existing `RGV Zelle Checkout` plugin installed separately.
-Then add the four processor credentials as private environment variables on the
-WordPress service/container. Start with Sandbox keys and only switch to
-Production after an approved and a declined test transaction both behave
-correctly.
+Configure processor credentials only on the WordPress service:
 
 ```env
 WOMPI_PUBLIC_KEY=pub_test_REPLACE_ME
@@ -44,169 +93,41 @@ WOMPI_INTEGRITY_SECRET=test_integrity_REPLACE_ME
 WOMPI_EVENTS_SECRET=test_events_REPLACE_ME
 ```
 
-The plugin automatically obtains the currently valid official Colombian TRM
-from the Superfinanciera dataset on datos.gov.co. It caches the rate for six
-hours and retains a recent safe fallback for temporary outages. Checkout fails
-closed if neither a current nor recent safe rate is available.
-
-`WOMPI_COP_PER_USD` is now optional and should only be defined when a deliberate
-manual rate must override the official TRM.
-
-In the matching processor environment, configure the transaction event URL as:
+Use sandbox credentials until both approved and declined test transactions have
+been verified. Configure the matching transaction event URL as:
 
 ```text
 https://YOUR-WORDPRESS-DOMAIN/wp-json/rgv/v1/orbit-card-events
 ```
 
-Private, integrity, and event keys stay in WordPress. The browser receives only
-the public merchant key and tokenization key. Card number and CVC are JWE
-encrypted in the embedded form and sent directly to the payment processor; only
-the resulting card token reaches this application's checkout API.
+The plugin obtains the official Colombian TRM from datos.gov.co and keeps a
+bounded cache for temporary upstream outages. `WOMPI_COP_PER_USD` is optional
+and should only be set for an intentional manual override.
 
-The embedded card flow uses Wompi's standard transaction request and does not
-enable 3D Secure or render a bank challenge. Wompi currently processes only COP;
-the conversion stays server-side while the storefront continues to present its
-order total in USD. On submission, the current Wompi JS
-fingerprinting library silently supplies `session_id` and `device_id` when
-available for antifraud analysis; it does not open a panel or redirect the user.
+### Omnisend
 
-Restart or redeploy WordPress after changing these variables. They belong only
-to WordPress, never to the Astro/frontend environment.
-
-## Storewide promotion timer
-
-The storefront can receive a scheduled WooCommerce discount and countdown from
-the companion **RGV Storewide Promotion** plugin.
-
-1. Install `wordpress-plugin/rgv-storewide-promotion-1.0.0.zip` in WordPress.
-2. Activate the plugin and open **WooCommerce > Storewide Promotion**.
-3. Set the percentage, announcement text, start/end time and destination URL.
-4. Enable the campaign and save it.
-
-WooCommerce calculates the promotional price on the server for products,
-variations and orders. The Astro storefront reads the public campaign state
-through `/api/promotion`, replaces the normal top announcement with the live
-countdown, and returns to the normal announcement when the campaign expires.
-Stored carts also reconcile their prices with WooCommerce on the next visit.
-
-## Checkout compliance deployment
-
-The storefront and WooCommerce plugins now require the same private compliance
-secret. By default the Node app uses `PORTAL_API_SECRET` and WordPress must expose
-the matching value as `RGV_PORTAL_API_SECRET`. To use a separate secret, set
-`COMPLIANCE_SIGNING_SECRET` in the Node deployment and define the identical value
-as `RGV_COMPLIANCE_SIGNING_SECRET` in `wp-config.php`. Never use a `PUBLIC_`
-prefix. Deploy the updated RGV Zelle Checkout and ORBIT Relay plugins together
-with the storefront; otherwise checkout fails closed.
-
-## eDebit abandonment guard
-
-The custom eDebit flow requires the `RGV eDebit Guard` WordPress plugin in
-`wordpress-plugin/rgv-edebit-guard-1.1.2.zip`. Install and activate that plugin
-before deploying the matching storefront build. It provides authoritative
-WooCommerce order-status checks, safe cancellation of replaced attempts, and
-automatic expiry of unpaid eDebit orders that remain in `Pending payment` for
-60 minutes. Paid, `On hold`, `Processing`, and `Completed` orders are never
-expired by the guard.
-
-The checkout preselects Card & Wallets (the PRISM-backed route), not eDebit.
-Customers must select eDebit explicitly. A recent matching attempt can be
-resumed; starting over first closes the earlier pending order so duplicate
-orders are not created.
+Set `PUBLIC_OMNISEND_BRAND_ID` for browser tracking and the private Omnisend API
+key described in `.env.example` for server-side contact updates. The storefront
+sends native cart events plus enriched line-item and COA data for abandoned-cart
+campaigns.
 
 ## Maintenance mode
-
-The storefront includes a maintenance screen for VPS cleanup and code reviews.
-Configure these environment variables in Coolify (or in `.env` locally):
 
 ```env
 MAINTENANCE_MODE=true
 MAINTENANCE_DURATION_HOURS=2
 ```
 
-Restart or redeploy the Node service after changing the value. Set
-`MAINTENANCE_MODE=false` and restart/redeploy to reopen the storefront. While
-enabled, public pages return HTTP `503` with a two-hour `Retry-After` header and
-API routes return a JSON maintenance response. Static assets and `/api/health`
-remain available; use `/api/health` as the VPS/container health-check path.
+Restart or redeploy after changing maintenance settings. While enabled, public
+pages return HTTP `503`; static assets and `/api/health` remain available.
 
-## WordPress COA Library
+## Certificate of Analysis pipeline
 
-The storefront reads Certificate of Analysis records from the companion
-`RGV COA Library` WordPress plugin instead of importing
-`src/components/data/coas.json`.
+The storefront reads COA records from the `RGV COA Library` plugin through
+`/api/coas`. WordPress exposes the source endpoints under
+`/wp-json/rgv-coa/v1`.
 
-1. Install `wordpress-plugin/rgv-coa-library-1.12.0.zip` in WordPress.
-2. Activate the plugin and open **COA Library** in WordPress admin.
-3. Add a certificate, upload its PDF, link its WooCommerce product IDs, and
-   choose **Current Shipping** or **History**.
-4. Set `PUBLIC_WP_URL` to the WordPress base URL and redeploy the storefront.
-
-The storefront proxy is available at `/api/coas`. WordPress exposes the
-read-only source endpoints under `/wp-json/rgv-coa/v1`.
-
-Version 1.12 uses the laboratory PDF as the analytical source of truth, keeps
-analytes/results separate from product aliases, validates source hashes before
-migration, and exposes the schema-v2 fields while retaining legacy response
-keys for the existing COA UI. See `docs/coa-pipeline.md` for the snapshot,
-reprocessing, validation, and migration workflow.
-
-## Omnisend dynamic abandoned cart
-
-Set `PUBLIC_OMNISEND_BRAND_ID` in the deployment environment. The storefront then
-sends the official `added product to cart` and `started checkout` events with:
-
-- all current cart products in `properties.lineItems` for Omnisend's native
-  Abandoned Products block;
-- enriched product data in `properties.rgvLineItems`, including the variant,
-  research summary, product URL, and matching COA/documentation URL;
-- a cross-device recovery URL in `properties.abandonedCheckoutURL`.
-
-The Omnisend workflow must use the **Added product to cart** trigger. In the email
-builder, use one **Abandoned Products** item for the standard layout, or a Dynamic
-Content layout with `Raw -> Rgv Line Items` for separate product and COA buttons.
-
-```sh
-npm create astro@latest -- --template basics
-```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Laboratory PDFs remain the analytical source of truth. Source hashes are
+validated before migration, while analytes and results remain separate from
+product aliases. See [docs/coa-pipeline.md](docs/coa-pipeline.md) for the
+reprocessing and migration workflow.

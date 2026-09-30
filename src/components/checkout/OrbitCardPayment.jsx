@@ -48,55 +48,6 @@ function hasExpressMethods(methods) {
   return Boolean(methods) && Object.values(methods).some((value) => typeof value === "boolean" ? value : Boolean(value?.available));
 }
 
-function getExpressAvailability(methods) {
-  const isAvailable = (method) => {
-    const value = methods?.[method];
-    return typeof value === "boolean" ? value : Boolean(value?.available);
-  };
-
-  return {
-    applePayAvailable: isAvailable("applePay"),
-    googlePayAvailable: isAvailable("googlePay"),
-    linkAvailable: isAvailable("link"),
-    paypalAvailable: isAvailable("paypal"),
-    amazonPayAvailable: isAvailable("amazonPay"),
-    klarnaAvailable: isAvailable("klarna"),
-  };
-}
-
-function getWalletBrowserDiagnostics() {
-  if (typeof window === "undefined") return {};
-
-  const applePaySession = window.ApplePaySession;
-  let applePayCanMakePayments = null;
-  try {
-    applePayCanMakePayments = typeof applePaySession?.canMakePayments === "function"
-      ? applePaySession.canMakePayments()
-      : null;
-  } catch {
-    applePayCanMakePayments = false;
-  }
-
-  const permissionsPolicy = document.permissionsPolicy || document.featurePolicy;
-  let paymentPolicyAllowed = null;
-  try {
-    paymentPolicyAllowed = typeof permissionsPolicy?.allowsFeature === "function"
-      ? permissionsPolicy.allowsFeature("payment")
-      : null;
-  } catch {
-    paymentPolicyAllowed = false;
-  }
-
-  return {
-    secureContext: window.isSecureContext,
-    topLevel: window.top === window.self,
-    applePaySessionPresent: Boolean(applePaySession),
-    applePayCanMakePayments,
-    paymentPolicyAllowed,
-    userAgent: window.navigator.userAgent,
-  };
-}
-
 async function completePayment({ stripe, elements, context, onCreatePayment, onPreflight, isElementsCurrent }) {
   if (!context.isReturn) await onPreflight?.({ quoteId: context.quoteId, totalMinor: context.totalMinor });
   if (!isElementsCurrent?.()) {
@@ -227,12 +178,9 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
   const elements = useElements();
   const [expressStatus, setExpressStatus] = useState("loading");
   const [blockedNotice, setBlockedNotice] = useState("");
-  const [availableMethods, setAvailableMethods] = useState(null);
-  const [loadError, setLoadError] = useState("");
   const mountedRef = useRef(true);
   const elementsRef = useRef(elements);
   elementsRef.current = elements;
-  const walletDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("wallet_debug");
 
   useEffect(() => () => { mountedRef.current = false; }, []);
 
@@ -240,13 +188,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
     if (enabled) setBlockedNotice("");
   }, [enabled]);
 
-  function updateExpressStatus(methods, reportAvailability = false) {
-    const availability = getExpressAvailability(methods);
-    setAvailableMethods(availability);
-    if (reportAvailability) {
-      console.info("ORION_EXPRESS_PAYMENT_METHODS", availability);
-    }
-
+  function updateExpressStatus(methods) {
     setExpressStatus(hasExpressMethods(methods) ? "available" : "unavailable");
   }
 
@@ -278,14 +220,7 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
     }
   }
 
-  const walletDiagnostics = walletDebug ? {
-    stripeStatus: expressStatus,
-    stripeMethods: availableMethods,
-    stripeLoadError: loadError || null,
-    ...getWalletBrowserDiagnostics(),
-  } : null;
-
-  return <div className={`rgvx-express-checkout is-${expressStatus}${walletDebug ? " is-debug" : ""}`}>
+  return <div className={`rgvx-express-checkout is-${expressStatus}`}>
     <p className="rgvx-express-label">Fast payment options</p>
     <ExpressCheckoutElement
       onClick={async (event) => {
@@ -314,10 +249,9 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
         onBlocked?.();
         event.reject();
       }}
-      onReady={(event) => updateExpressStatus(event.availablePaymentMethods, true)}
-      onAvailablePaymentMethodsChange={(event) => updateExpressStatus(event.paymentMethods, true)}
-      onLoadError={(event) => {
-        setLoadError(event?.error?.message || "Stripe Express Checkout failed to load.");
+      onReady={(event) => updateExpressStatus(event.availablePaymentMethods)}
+      onAvailablePaymentMethodsChange={(event) => updateExpressStatus(event.paymentMethods)}
+      onLoadError={() => {
         setExpressStatus("unavailable");
       }}
       onConfirm={(event) => void confirmExpress(event)}
@@ -329,12 +263,6 @@ function ExpressPaymentForm({ context, enabled, onCreatePayment, onPreflight, on
         layout: { maxColumns: 3, maxRows: 0, overflow: "never" },
       }}
     />
-    {walletDebug && (
-      <div className="rgvx-wallet-debug" role="status">
-        <strong>Wallet diagnostics</strong>
-        <pre>{JSON.stringify(walletDiagnostics, null, 2)}</pre>
-      </div>
-    )}
     {!enabled && !blockedNotice && (
       <p className="rgvx-express-requirements" role="status">
         Complete the required checkout details and agreements to enable these buttons.
@@ -403,7 +331,7 @@ const OrbitCardPayment = forwardRef(function OrbitCardPayment({ context, enabled
     <p className="rgvx-stripe-powered">Secure payment powered by Stripe</p>
     {submitting && <div className="rgvx-stripe-processing" role="status" aria-live="polite"><span /> Securing payment and confirming your order...</div>}
     <style>{`
-      .rgvx-stripe-elements{position:relative;display:grid;gap:14px;min-width:0}.rgvx-express-checkout{display:grid;gap:10px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:76px}.rgvx-express-checkout.is-unavailable:not(.is-debug){display:none}.rgvx-express-checkout.is-available,.rgvx-express-checkout.is-debug{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:11px;font-weight:650;letter-spacing:.01em}.rgvx-express-requirements,.rgvx-express-feedback{margin:0;border:1px solid rgba(239,67,80,.2);border-radius:9px;background:rgba(216,33,50,.06);padding:9px 11px;color:#d9a6aa;font-size:10px;font-weight:600;line-height:1.45}.rgvx-express-feedback{border-color:rgba(239,67,80,.35);background:rgba(216,33,50,.1);color:#ffd4d7}.rgvx-wallet-debug{overflow:auto;border:1px solid rgba(245,158,11,.42);border-radius:9px;background:rgba(120,53,15,.16);padding:10px;color:#fde68a;font-size:10px;line-height:1.45}.rgvx-wallet-debug strong{display:block;margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}.rgvx-wallet-debug pre{margin:0;white-space:pre-wrap;word-break:break-word;font:inherit}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;margin-top:1px}.rgvx-stripe-divider span{height:1px;background:#2b2527}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#77717a;font-size:10px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-2px 0 0;text-align:center;letter-spacing:.08em}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;border:1px solid rgba(225,58,72,.18);border-radius:11px;background:#171113;color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-stripe-processing span{width:13px;height:13px;border:2px solid rgba(255,255,255,.16);border-top-color:#e13a48;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:12px}.rgvx-stripe-divider{gap:8px}}
+      .rgvx-stripe-elements{position:relative;display:grid;gap:14px;min-width:0}.rgvx-express-checkout{display:grid;gap:10px;min-width:0;visibility:hidden;opacity:0}.rgvx-express-checkout.is-loading{min-height:76px}.rgvx-express-checkout.is-unavailable{display:none}.rgvx-express-checkout.is-available{visibility:visible;opacity:1;animation:rgvx-stripe-reveal 180ms ease both}.rgvx-express-label{margin:0;color:#d8d1c7;font-size:11px;font-weight:650;letter-spacing:.01em}.rgvx-express-requirements,.rgvx-express-feedback{margin:0;border:1px solid rgba(239,67,80,.2);border-radius:9px;background:rgba(216,33,50,.06);padding:9px 11px;color:#d9a6aa;font-size:10px;font-weight:600;line-height:1.45}.rgvx-express-feedback{border-color:rgba(239,67,80,.35);background:rgba(216,33,50,.1);color:#ffd4d7}.rgvx-stripe-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;margin-top:1px}.rgvx-stripe-divider span{height:1px;background:#2b2527}.rgvx-stripe-divider small,.rgvx-stripe-powered{color:#77717a;font-size:10px;font-weight:550}.rgvx-stripe-divider small{letter-spacing:.01em}.rgvx-payment-element-inline{min-width:0;overflow:hidden;background:transparent;padding:0}.rgvx-stripe-powered{margin:-2px 0 0;text-align:center;letter-spacing:.08em}.rgvx-stripe-elements.is-submitting{pointer-events:none}.rgvx-stripe-elements.is-submitting>:not(.rgvx-stripe-processing){opacity:.46;transition:opacity 180ms ease}.rgvx-stripe-processing{display:flex;align-items:center;justify-content:center;gap:9px;min-height:42px;border:1px solid rgba(225,58,72,.18);border-radius:11px;background:#171113;color:#f4e9eb;font-size:11px;font-weight:650}.rgvx-stripe-processing span{width:13px;height:13px;border:2px solid rgba(255,255,255,.16);border-top-color:#e13a48;border-radius:50%;animation:rgvx-stripe-spin .7s linear infinite}@keyframes rgvx-stripe-spin{to{transform:rotate(360deg)}}@keyframes rgvx-stripe-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media(max-width:520px){.rgvx-stripe-elements{gap:12px}.rgvx-stripe-divider{gap:8px}}
     `}</style>
   </div>;
 });

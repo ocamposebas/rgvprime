@@ -6294,13 +6294,6 @@ const styles = `
     }
   }
 
-  /* =========================================================
-     CLEAN STICKY SUMMARY + MOBILE RESPONSIVE FIX
-     Desktop: summary stays in its right column and sticks while scrolling.
-     It no longer uses fixed positioning, so it will not float over the header.
-     Mobile/tablet: summary returns to normal flow and the bottom total bar stays visible.
-  ========================================================= */
-
   .rgvx-page,
   .rgvx-shell,
   .rgvx-clean-layout {
@@ -7146,7 +7139,6 @@ const styles = `
   }
 
 
-  /* Zelle thanks memo section - cleaner + fully responsive */
   .rgvx-zelle-payment-line-simple {
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr) auto;
     align-items: center;
@@ -7825,7 +7817,6 @@ const styles = `
     }
   }
 
-  /* Mobile policy checkbox fix */
   .rgvx-policy {
     width: 100%;
     max-width: 100%;
@@ -7971,13 +7962,6 @@ const styles = `
       min-width: 0 !important;
     }
   }
-  /* Mobile checkout order:
-     1. Order summary
-     2. Shipping
-     3. Payment
-     4. Age / policy confirmation
-     5. Continue button
-  */
   @media (max-width: 980px) {
     .rgvx-clean-layout {
       display: grid !important;
@@ -8019,8 +8003,6 @@ const styles = `
     }
   }
 
-  /* Desktop summary: no nested scrolling. Show totals, earned points and then
-     the coupon in the same natural reading order. */
   @media (min-width: 981px) {
     .rgvx-order-summary {
       position: static !important;
@@ -8102,7 +8084,6 @@ const styles = `
     }
   }
 
-  /* RGVPRIME editorial checkout — final visual layer */
   .rgvx-page {
     --rgvx-canvas: #0d0c0a;
     --rgvx-surface: #151411;
@@ -9360,7 +9341,6 @@ const styles = `
     }
   }
 
-  /* Keep the premium composition anchored to the existing RGVPRIME brand. */
   .rgvx-page {
     --rgvx-canvas: #070708;
     --rgvx-surface: #101011;
@@ -9474,7 +9454,6 @@ const styles = `
     outline-offset: 3px !important;
   }
 
-  /* Compact RGVPRIME red edition. */
   .rgvx-page {
     padding: 0 20px 72px !important;
     background:
@@ -10097,7 +10076,6 @@ const styles = `
     }
   }
 
-  /* Precision compact layer: tighter rhythm, lighter controls, RGVPRIME red accents. */
   .rgvx-page {
     padding: 0 16px 42px !important;
   }
@@ -10513,7 +10491,6 @@ const styles = `
     }
   }
 
-  /* Integrated checkout navigation. */
   .rgvx-checkout-masthead {
     min-height: 62px !important;
     grid-template-columns: auto minmax(390px, 1fr) auto !important;
@@ -10640,7 +10617,6 @@ const styles = `
     }
   }
 
-  /* The checkout does not need a second site navigation. */
   .rgvx-checkout-masthead {
     position: relative !important;
     top: auto !important;
@@ -10698,7 +10674,6 @@ const styles = `
     .rgvx-checkout-assurance { order: 8 !important; }
   }
 
-  /* The checkout uses the same fixed navigation as the rest of RGVPRIME. */
   .rgvx-page {
     padding-top: 134px !important;
   }
@@ -10743,7 +10718,6 @@ const styles = `
     to { transform: rotate(360deg); }
   }
 
-  /* Checkout clarity pass: rewards first, then details, then payment. */
   .rgvx-clean-header {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto !important;
@@ -11124,7 +11098,6 @@ const styles = `
     .rgvx-benefit-track > span { transition: none; }
   }
 
-  /* Open rewards rail inspired by the home hero CTAs. */
   .rgvx-reward-rail {
     margin: 0 0 28px;
     border-top: 1px solid rgba(255, 255, 255, .085);
@@ -11384,7 +11357,6 @@ const styles = `
     }
   }
 
-  /* Spacious confirmation and home-inspired payment actions. */
   .rgvx-review-confirm {
     display: grid !important;
     gap: 0 !important;

@@ -1,4 +1,3 @@
-// src/components/contact/ContactExperience.jsx
 import { CartProvider } from "../cart/CartContext";
 import LazyCartDrawer from "../cart/LazyCartDrawer";
 
@@ -34,13 +33,11 @@ export default function ContactExperience() {
         <Navbar transparent />
 
         <main className="relative overflow-hidden bg-[#030303]">
-          {/* FONDO NEGRO CON GLOW ROJO TIPO CATALOG */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_6%,rgba(220,38,38,0.18),transparent_32%),radial-gradient(circle_at_82%_8%,rgba(127,29,29,0.12),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.025),transparent_24%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/35 to-transparent" />
 
           <section className="relative z-10 pb-20 pt-[180px] text-white sm:pt-[192px] lg:pt-[205px]">
             <div className="mx-auto max-w-[1220px] px-3 sm:px-5 lg:px-6">
-              {/* HEADER */}
               <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
@@ -72,7 +69,6 @@ export default function ContactExperience() {
                 </a>
               </div>
 
-              {/* OPTIONS */}
               <div className="grid gap-3 md:grid-cols-3">
                 {contactOptions.map((item) => (
                   <a
@@ -97,7 +93,6 @@ export default function ContactExperience() {
                 ))}
               </div>
 
-              {/* NOTICE CON ROJO PERO NO PESADO */}
               <div className="mt-8 rounded-[1.35rem] border border-red-500/20 bg-red-500/[0.045] p-5 backdrop-blur sm:rounded-3xl sm:p-6">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
                   Research Use Only
@@ -112,7 +107,6 @@ export default function ContactExperience() {
                 </p>
               </div>
 
-              {/* SIMPLE CONTACT BLOCK */}
               <div className="mt-10 grid gap-6 border-t border-white/10 pt-8 lg:grid-cols-[0.75fr_1fr] lg:items-center">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-500">

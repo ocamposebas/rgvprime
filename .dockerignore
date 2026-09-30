@@ -4,10 +4,14 @@
 .env.*
 !.env.example
 .astro
+.artifacts
+.*-tmp
 .vercel
 .vscode
 dist
 node_modules
+work
+.tmp-*
 *.log
 *.zip
 *.php

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import TrackOrder from "../components/app/Trackorder.jsx";
+import TrackOrderPage from "../components/app/TrackOrderPage.jsx";
 ---
 
 <BaseLayout
@@ -8,5 +8,5 @@ import TrackOrder from "../components/app/Trackorder.jsx";
   title="Track Your Order | RGVPRIME LLC"
   description="Check an RGVPRIME LLC order using the billing email and confirmation number to view current status and available carrier tracking details."
 >
-  <TrackOrder  client:load />
+  <TrackOrderPage client:load />
 </BaseLayout>
