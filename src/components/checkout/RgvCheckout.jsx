@@ -703,7 +703,7 @@ function getCardWalletOrderEndpoint() {
 }
 
 function getCardWalletPaymentRedirectEndpoint() {
-  return "/api/checkout/card-wallet-pay";
+  return "/api/checkout/card-wallet-order";
 }
 
 function getCardWalletStatusEndpoint() {
