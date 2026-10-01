@@ -1,1 +1,1 @@
-export const CHECKOUT_PAUSED = true;
+export const CHECKOUT_PAUSED = false;
