@@ -3,10 +3,14 @@ Contributors: orbit
 Tags: woocommerce, integration, hmac, order synchronization
 Requires at least: 6.5
 Requires PHP: 8.1
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: Proprietary
 
 Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
+
+== Version 1.5.1 ==
+
+* Saves the $45 shipping line as `UPS 45` so Pirate Ship can distinguish it from standard UPS shipping.
 
 == Version 1.5.0 ==
 

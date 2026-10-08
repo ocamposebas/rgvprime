@@ -3,7 +3,7 @@ Contributors: rgvprime
 Tags: woocommerce, promotion, sale, countdown, storewide discount
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 
 Schedules a WooCommerce storewide discount and exposes a synchronized countdown announcement.
@@ -30,6 +30,11 @@ The discount is calculated from each product's current effective price. Existing
 5. Enable the campaign and save.
 
 == Changelog ==
+
+= 1.1.0 =
+* Redesigned the offer banner around the RGVPRIME storefront structure.
+* Added a larger campaign headline and countdown tiles for clearer mobile visibility.
+* Kept pricing, campaign expiration, and the public storefront message synchronized.
 
 = 1.0.0 =
 * Initial release.

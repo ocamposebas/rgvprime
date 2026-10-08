@@ -55,11 +55,11 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 | Feature | Package |
 | --- | --- |
 | Card and wallet return | `rgv-prism-checkout-3.8.3.zip` |
-| Zelle checkout | `rgv-zelle-checkout-1.3.8.zip` |
-| ORBIT card checkout | `rgv-orbit-card-checkout-1.1.3.zip` |
+| Zelle checkout | `rgv-zelle-checkout-1.3.9.zip` |
+| ORBIT card checkout | `rgv-orbit-card-checkout-1.1.4.zip` |
 | eDebit abandonment guard | `rgv-edebit-guard-1.1.2.zip` |
 | COA library | `rgv-coa-library-1.12.0.zip` |
-| Storewide promotion | `rgv-storewide-promotion-1.0.0.zip` |
+| Storewide promotion | `rgv-storewide-promotion-1.1.0.zip` |
 | Rush processing | `rgv-rush-processing-orders-1.0.0.zip` |
 | Welcome coupon guard | `rgv-welcome10-guard-1.0.0.zip` |
 

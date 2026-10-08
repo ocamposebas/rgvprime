@@ -13,7 +13,7 @@ const orderCreationLocks = new Map();
 
 const SHIPPING_METHODS = {
   ups_2_day_air: { title: "UPS Shipping", cost: 15, freeShippingEligible: true },
-  ups_expedited: { title: "UPS Shipping", cost: 45, freeShippingEligible: false },
+  ups_expedited: { title: "UPS 45", cost: 45, freeShippingEligible: false },
   usps_ground_advantage: { title: "USPS Ground", cost: 8, freeShippingEligible: true },
   usps_priority: { title: "USPS Priority Mail", cost: 12, freeShippingEligible: true },
 };

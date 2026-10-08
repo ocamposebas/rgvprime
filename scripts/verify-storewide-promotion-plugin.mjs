@@ -4,11 +4,13 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [main, engine, proxy, navbar, cartApi, cartContext] = await Promise.all([
+const [main, engine, proxy, navbar, navbarCss, nativeCss, cartApi, cartContext] = await Promise.all([
   read("wordpress-plugin/rgv-storewide-promotion/rgv-storewide-promotion.php"),
   read("wordpress-plugin/rgv-storewide-promotion/includes/class-rgv-storewide-promotion.php"),
   read("src/pages/api/promotion.js"),
   read("src/components/nav/Navbar.jsx"),
+  read("src/components/nav/Navbar.css"),
+  read("wordpress-plugin/rgv-storewide-promotion/assets/frontend.css"),
   read("src/pages/api/cart/validate-stock.js"),
   read("src/components/cart/CartContext.jsx"),
 ]);
@@ -38,6 +40,9 @@ for (const expected of [
 assert(proxy.includes("/wp-json/rgv-promotion/v1/current"), "Astro proxy endpoint is missing");
 assert(navbar.includes("function PromotionAnnouncement()"), "Promotion countdown is missing");
 assert(navbar.includes('fetch("/api/promotion"'), "Promotion countdown is not connected to the proxy");
+assert(navbar.includes("<strong>{campaign.headline}</strong>"), "Promotion headline must remain prominent");
+assert(navbarCss.includes("--rgv-announcement-height: 64px"), "Storefront campaign banner height is missing");
+assert(nativeCss.includes("min-height: 64px"), "Native WordPress campaign banner layout is missing");
 assert(cartApi.includes("price,regular_price,sale_price"), "Live cart validation must request current prices");
 assert(cartContext.includes("hasReconciledPricesRef"), "Persisted cart prices are not reconciled");
 

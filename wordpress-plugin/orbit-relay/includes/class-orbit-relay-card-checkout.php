@@ -21,7 +21,7 @@ final class ORBIT_Relay_Card_Checkout {
             'cost'  => 15.0,
         ),
         'ups_expedited' => array(
-            'title' => 'UPS Shipping',
+            'title' => 'UPS 45',
             'cost'  => 45.0,
             'free_shipping_eligible' => false,
         ),

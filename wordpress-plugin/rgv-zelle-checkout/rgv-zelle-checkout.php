@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.8
+ * Version: 1.3.9
  * Author: RGVPRIME LLC
  */
 
@@ -36,7 +36,7 @@ final class RGV_Zelle_Checkout {
       'cost' => 15.0,
     ],
     'ups_expedited' => [
-      'title' => 'UPS Shipping',
+      'title' => 'UPS 45',
       'cost' => 45.0,
       'free_shipping_eligible' => false,
     ],

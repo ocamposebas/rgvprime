@@ -4,12 +4,12 @@ Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\orbit-relay'))
+$pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-storewide-promotion'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'orbit-relay-for-woocommerce-1.5.1.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-storewide-promotion-1.1.0.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
-    throw "ORBIT Relay source directory was not found: $pluginRoot"
+    throw "Storewide promotion plugin source directory was not found: $pluginRoot"
 }
 
 if ([IO.Path]::GetDirectoryName($outputPath) -ne $outputDirectory) {
@@ -17,19 +17,12 @@ if ([IO.Path]::GetDirectoryName($outputPath) -ne $outputDirectory) {
 }
 
 $fileStream = [IO.File]::Open($outputPath, [IO.FileMode]::Create)
-$archive = [IO.Compression.ZipArchive]::new(
-    $fileStream,
-    [IO.Compression.ZipArchiveMode]::Create,
-    $false
-)
+$archive = [IO.Compression.ZipArchive]::new($fileStream, [IO.Compression.ZipArchiveMode]::Create, $false)
 
 try {
     Get-ChildItem -LiteralPath $pluginRoot -Recurse -File | ForEach-Object {
         $relativePath = $_.FullName.Substring($pluginRoot.Length).TrimStart([char[]]@('\', '/')).Replace('\', '/')
-        $entry = $archive.CreateEntry(
-            "orbit-relay/$relativePath",
-            [IO.Compression.CompressionLevel]::Optimal
-        )
+        $entry = $archive.CreateEntry("rgv-storewide-promotion/$relativePath", [IO.Compression.CompressionLevel]::Optimal)
         $entryStream = $entry.Open()
         $sourceStream = [IO.File]::OpenRead($_.FullName)
 
@@ -48,10 +41,7 @@ try {
 $validationArchive = [IO.Compression.ZipFile]::OpenRead($outputPath)
 
 try {
-    $invalidEntry = $validationArchive.Entries |
-        Where-Object { $_.FullName.Contains('\') } |
-        Select-Object -First 1
-
+    $invalidEntry = $validationArchive.Entries | Where-Object { $_.FullName.Contains('\') } | Select-Object -First 1
     if ($invalidEntry) {
         throw "ZIP contains an invalid backslash path: $($invalidEntry.FullName)"
     }

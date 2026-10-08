@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.1.3
+ * Version: 1.1.4
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -24,7 +24,7 @@ final class RGV_ORBIT_Card_Checkout {
   const PRIORITY_PROCESSING_FEE_RATE = 0.05;
   const SHIPPING_RATES = [
     'ups_2_day_air' => ['title' => 'UPS Shipping', 'cost' => 15.0],
-    'ups_expedited' => ['title' => 'UPS Shipping', 'cost' => 45.0, 'free_shipping_eligible' => false],
+    'ups_expedited' => ['title' => 'UPS 45', 'cost' => 45.0, 'free_shipping_eligible' => false],
     'usps_ground_advantage' => ['title' => 'USPS Ground', 'cost' => 8.0],
     'usps_priority' => ['title' => 'USPS Priority Mail', 'cost' => 12.0],
   ];

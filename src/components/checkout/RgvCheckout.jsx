@@ -72,8 +72,8 @@ const SHIPPING_METHODS = [
   },
   {
     id: "ups_expedited",
-    title: "UPS Shipping",
-    label: "UPS Shipping",
+    title: "UPS 45",
+    label: "UPS 45",
     description: "Estimated 2-4 Business days after processing",
     price: 45,
     carrier: "UPS",
@@ -694,29 +694,29 @@ function buildPaymentReference(order = {}) {
     .slice(0, 12);
 }
 
-function getManualOrderEndpoint() {
-  return "/api/checkout/zelle-order";
-}
+  function getManualOrderEndpoint() {
+    return "/api/checkout/zelle-order";
+  }
 
-function getCardWalletOrderEndpoint() {
-  return "/api/checkout/card-wallet-order";
-}
+  function getCardWalletOrderEndpoint() {
+    return "/api/checkout/card-wallet-order";
+  }
 
-function getCardWalletPaymentRedirectEndpoint() {
-  return "/api/checkout/card-wallet-pay";
-}
+  function getCardWalletPaymentRedirectEndpoint() {
+    return "/api/checkout/card-wallet-pay";
+  }
 
-function getCardWalletStatusEndpoint() {
-  return "/api/checkout/card-wallet-status";
-}
+  function getCardWalletStatusEndpoint() {
+    return "/api/checkout/card-wallet-status";
+  }
 
-function getPaymentProofEndpoint() {
-  return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/payment-proof`;
-}
+  function getPaymentProofEndpoint() {
+    return `${cleanUrl(WP_URL)}/wp-json/rgv/v1/payment-proof`;
+  }
 
-function getCouponValidateEndpoint() {
-  return "/api/checkout/coupon-validate";
-}
+  function getCouponValidateEndpoint() {
+    return "/api/checkout/coupon-validate";
+  }
 
 function getEdebitOrderEndpoint() {
   return "/api/checkout/edebit-order";
