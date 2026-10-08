@@ -275,7 +275,7 @@ assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMetho
 assert.equal(cardOnlyCapture.elementsByType.expressCheckout.options.paymentMethods.link, 'auto', "Link must be available as the wallet fallback");
 for (const expected of [
   "Plugin Name: RGV Card & Wallet Payment Stability",
-  "Version: 1.3.0",
+  "Version: 1.4.0",
   "rgv_card_wallet_sweep_abandoned_orders",
   "rgv_card_wallet_expire_abandoned_order",
   "_psc_payment_id",
@@ -283,6 +283,10 @@ for (const expected of [
   "as_schedule_recurring_action",
   "as_schedule_single_action",
   "woocommerce_email_enabled_cancelled_order",
+  "rest_request_after_callbacks",
+  "woocommerce_before_pay_action",
+  "wc_reserve_stock_for_order",
+  "_rgv_stock_reservation_applied",
 ]) assert(cardWalletStabilityPlugin.includes(expected), `Card payment stability guard is missing: ${expected}`);
 assert(!cardWalletStabilityPlugin.includes("zelle"), "The card payment stability guard must remain isolated from Zelle");
 for (const expected of [

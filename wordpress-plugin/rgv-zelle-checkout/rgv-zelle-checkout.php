@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.3.9
+ * Version: 1.4.0
  * Author: RGVPRIME LLC
  */
 
@@ -65,8 +65,22 @@ final class RGV_Zelle_Checkout {
 
     add_filter('woocommerce_email_enabled_customer_on_hold_order', [$this, 'disable_default_zelle_customer_email'], 10, 2);
     add_filter('woocommerce_email_enabled_customer_processing_order', [$this, 'disable_default_zelle_customer_email'], 10, 2);
+    add_filter('woocommerce_order_hold_stock_minutes', [$this, 'minimum_stock_hold_minutes'], 20, 2);
 
     add_filter('rest_pre_serve_request', [$this, 'send_cors_headers'], 10, 4);
+  }
+
+  public function minimum_stock_hold_minutes($minutes, $order) {
+    if (
+      $order instanceof WC_Order &&
+      $this->is_rgv_zelle_order($order) &&
+      !$order->is_paid() &&
+      $order->has_status('pending')
+    ) {
+      return max(60, (int) $minutes);
+    }
+
+    return $minutes;
   }
 
   public function register_routes() {
@@ -735,6 +749,30 @@ final class RGV_Zelle_Checkout {
       $order->update_meta_data('_rgv_zelle_payment_reference', $payment_reference);
       $order->update_meta_data('_rgv_background_finalization_pending', 'yes');
       $order->save();
+
+      try {
+        if (!function_exists('wc_reserve_stock_for_order')) {
+          throw new RuntimeException('WooCommerce stock reservation is unavailable.');
+        }
+
+        wc_reserve_stock_for_order($order);
+        $order->update_meta_data('_rgv_stock_reservation_applied', 'yes');
+        $order->save();
+      } catch (Throwable $stock_error) {
+        if (function_exists('wc_release_stock_for_order')) {
+          wc_release_stock_for_order($order);
+        }
+        $order->update_status(
+          'failed',
+          'Zelle checkout stopped before instructions were shown because the requested stock could not be reserved.'
+        );
+        delete_option($request_option_name);
+
+        return new WP_REST_Response([
+          'success' => false,
+          'message' => 'One or more products are no longer available in the requested quantity. Refresh your cart before trying again.',
+        ], 409);
+      }
 
       $this->complete_checkout_request($request_option_name, $order->get_id());
 

@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-card-wallet-stability'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-card-wallet-stability-1.3.0.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-card-wallet-stability-1.4.0.zip'))
 $pluginDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {

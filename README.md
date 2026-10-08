@@ -55,8 +55,10 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 | Feature | Package |
 | --- | --- |
 | Card and wallet return | `rgv-prism-checkout-3.8.3.zip` |
-| Zelle checkout | `rgv-zelle-checkout-1.3.9.zip` |
-| ORBIT card checkout | `rgv-orbit-card-checkout-1.1.4.zip` |
+| Card and wallet stock hold | `rgv-card-wallet-stability-1.4.0.zip` |
+| Zelle checkout | `rgv-zelle-checkout-1.4.0.zip` |
+| ORBIT Relay | `orbit-relay-for-woocommerce-1.5.2.zip` |
+| ORBIT card checkout | `rgv-orbit-card-checkout-1.2.0.zip` |
 | eDebit abandonment guard | `rgv-edebit-guard-1.1.2.zip` |
 | COA library | `rgv-coa-library-1.12.0.zip` |
 | Storewide promotion | `rgv-storewide-promotion-1.1.0.zip` |

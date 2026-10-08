@@ -10,6 +10,9 @@ $GLOBALS['rgv_scheduled'] = [];
 $GLOBALS['rgv_orders'] = [];
 $GLOBALS['rgv_sweep_orders'] = [];
 $GLOBALS['rgv_options'] = [];
+$GLOBALS['rgv_reserved_orders'] = [];
+$GLOBALS['rgv_released_orders'] = [];
+$GLOBALS['rgv_reservation_failure_order'] = 0;
 
 function add_action($hook, $callback, $priority = 10, $accepted_args = 1) { $GLOBALS['rgv_actions'][] = $hook; }
 function add_filter($hook, $callback, $priority = 10, $accepted_args = 1) { $GLOBALS['rgv_actions'][] = $hook; }
@@ -31,6 +34,43 @@ function wc_get_order($id) { return $GLOBALS['rgv_orders'][(int) $id] ?? false; 
 function wc_get_orders($args) { return $GLOBALS['rgv_sweep_orders']; }
 function update_option($key, $value, $autoload = null) { $GLOBALS['rgv_options'][$key] = $value; }
 function get_option($key, $default = false) { return $GLOBALS['rgv_options'][$key] ?? $default; }
+function absint($value) { return abs((int) $value); }
+function is_wp_error($value) { return $value instanceof WP_Error; }
+function wc_reserve_stock_for_order($order) {
+  if ((int) $order->get_id() === (int) $GLOBALS['rgv_reservation_failure_order']) {
+    throw new RuntimeException('Not enough stock.');
+  }
+  $GLOBALS['rgv_reserved_orders'][] = (int) $order->get_id();
+}
+function wc_release_stock_for_order($order) { $GLOBALS['rgv_released_orders'][] = (int) $order->get_id(); }
+
+class WP_Error {
+  public string $code;
+  public string $message;
+  public array $data;
+  public function __construct($code, $message, $data = []) {
+    $this->code = (string) $code;
+    $this->message = (string) $message;
+    $this->data = is_array($data) ? $data : [];
+  }
+}
+
+class WP_REST_Response {
+  private array $data;
+  public function __construct(array $data) { $this->data = $data; }
+  public function get_data() { return $this->data; }
+}
+
+class WP_REST_Request {
+  private string $method;
+  private string $route;
+  public function __construct(string $method, string $route) {
+    $this->method = $method;
+    $this->route = $route;
+  }
+  public function get_method() { return $this->method; }
+  public function get_route() { return $this->route; }
+}
 
 class WC_Order {
   public int $id;
@@ -55,6 +95,7 @@ class WC_Order {
   public function get_payment_method() { return $this->payment_method; }
   public function get_meta($key, $single = true) { return $this->meta[$key] ?? ''; }
   public function update_meta_data($key, $value) { $this->meta[$key] = $value; }
+  public function delete_meta_data($key) { unset($this->meta[$key]); }
   public function get_date_created() { return $this->created; }
   public function is_paid() { return $this->paid; }
   public function has_status($status) { return is_array($status) ? in_array($this->status, $status, true) : $this->status === $status; }
@@ -96,6 +137,55 @@ expect_true(
   'A new storefront PRISM order must receive an expiry action.'
 );
 
+$stock_order = new WC_Order(1005);
+$GLOBALS['rgv_orders'][1005] = $stock_order;
+$stock_response = new WP_REST_Response(['id' => 1005]);
+$stock_request = new WP_REST_Request('POST', '/wc/v3/orders');
+$returned_response = RGV_Card_Wallet_Payment_Stability::reserve_created_rest_order_stock($stock_response, null, $stock_request);
+expect_true($returned_response === $stock_response, 'A successful stock hold must preserve the WooCommerce REST response.');
+expect_true(in_array(1005, $GLOBALS['rgv_reserved_orders'], true), 'A new Card & Wallets order must reserve stock before payment.');
+expect_true('yes' === ($stock_order->meta['_rgv_stock_reservation_applied'] ?? ''), 'A successful stock hold must be recorded on the order.');
+expect_true(60 === RGV_Card_Wallet_Payment_Stability::minimum_stock_hold_minutes(0, $stock_order), 'A pending Card & Wallets order must hold stock for at least 60 minutes.');
+
+$failed_stock_order = new WC_Order(1006);
+$GLOBALS['rgv_orders'][1006] = $failed_stock_order;
+$GLOBALS['rgv_reservation_failure_order'] = 1006;
+$failed_response = RGV_Card_Wallet_Payment_Stability::reserve_created_rest_order_stock(
+  new WP_REST_Response(['id' => 1006]),
+  null,
+  $stock_request
+);
+expect_true($failed_response instanceof WP_Error, 'A failed stock hold must replace the success response with an error.');
+expect_true(409 === ($failed_response->data['status'] ?? 0), 'A failed stock hold must return an inventory conflict.');
+expect_true('failed' === $failed_stock_order->status, 'An order without a stock hold must be failed before payment.');
+expect_true(in_array(1006, $GLOBALS['rgv_released_orders'], true), 'A partial stock hold must be released after failure.');
+$GLOBALS['rgv_reservation_failure_order'] = 0;
+
+$retry_order = new WC_Order(1007, [
+  'status' => 'failed',
+  'meta' => [
+    '_rgv_payment_source' => 'rgv_custom_checkout_card_wallets',
+    '_rgv_stock_reservation_applied' => 'yes',
+  ],
+]);
+$GLOBALS['rgv_orders'][1007] = $retry_order;
+RGV_Card_Wallet_Payment_Stability::ensure_stock_before_payment($retry_order);
+expect_true('pending' === $retry_order->status, 'A failed payment retry must return to pending before renewing its stock hold.');
+expect_true(in_array(1007, $GLOBALS['rgv_reserved_orders'], true), 'A payment retry must renew its atomic stock hold before processor submission.');
+
+$blocked_retry = new WC_Order(1008, ['status' => 'failed']);
+$GLOBALS['rgv_orders'][1008] = $blocked_retry;
+$GLOBALS['rgv_reservation_failure_order'] = 1008;
+$retry_was_blocked = false;
+try {
+  RGV_Card_Wallet_Payment_Stability::ensure_stock_before_payment($blocked_retry);
+} catch (RuntimeException $error) {
+  $retry_was_blocked = str_contains($error->getMessage(), 'no longer available');
+}
+expect_true($retry_was_blocked, 'A payment retry without available stock must stop before processor submission.');
+expect_true('failed' === $blocked_retry->status, 'A blocked payment retry must remain failed.');
+$GLOBALS['rgv_reservation_failure_order'] = 0;
+
 $sweep_abandoned = new WC_Order(1010);
 $sweep_protected = new WC_Order(1011, ['meta' => [
   '_rgv_payment_source' => 'rgv_custom_checkout_card_wallets',
@@ -112,4 +202,4 @@ $last_sweep = $GLOBALS['rgv_options']['rgv_card_wallet_cleanup_last_sweep'] ?? [
 expect_true(1 === ($last_sweep['expired'] ?? 0), 'The sweep must report one expired order.');
 expect_true(1 === ($last_sweep['protected_in_flight'] ?? 0), 'The sweep must report one protected order.');
 
-echo "Card & Wallet stability verification passed (abandoned cleanup, in-flight protection, scheduling).\n";
+echo "Card & Wallet stability verification passed (atomic stock hold, failure blocking, cleanup, scheduling).\n";

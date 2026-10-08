@@ -38,6 +38,21 @@ final class ORBIT_Relay_Card_Checkout {
     public static function init(): void {
         add_filter( 'rest_pre_serve_request', array( __CLASS__, 'send_cors_headers' ), 10, 4 );
         add_filter( 'woocommerce_payment_complete_order_status', array( __CLASS__, 'hold_flagged_order_after_payment' ), 20, 3 );
+        add_filter( 'woocommerce_order_hold_stock_minutes', array( __CLASS__, 'minimum_stock_hold_minutes' ), 20, 2 );
+    }
+
+    public static function minimum_stock_hold_minutes( $minutes, $order ) {
+        if (
+            $order instanceof WC_Order &&
+            'orbit_card' === (string) $order->get_payment_method() &&
+            'rgv_custom_checkout_orbit_card' === (string) $order->get_meta( '_orbit_payment_source', true ) &&
+            ! $order->is_paid() &&
+            $order->has_status( 'pending' )
+        ) {
+            return max( 60, (int) $minutes );
+        }
+
+        return $minutes;
     }
 
     private static function start_request(): void {
@@ -377,6 +392,10 @@ final class ORBIT_Relay_Card_Checkout {
 
         if ( function_exists( 'wc_reserve_stock_for_order' ) ) {
             wc_reserve_stock_for_order( $order );
+            $order->update_meta_data( '_rgv_stock_reservation_applied', 'yes' );
+            $order->save();
+        } else {
+            throw new RuntimeException( 'WooCommerce stock reservation is unavailable.' );
         }
 
         return $order;

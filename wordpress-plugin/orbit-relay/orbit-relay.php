@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ORBIT Relay for WooCommerce
  * Description: Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
- * Version:     1.5.1
+ * Version:     1.5.2
  * Author:      ORBIT
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ORBIT_RELAY_VERSION', '1.5.1' );
+define( 'ORBIT_RELAY_VERSION', '1.5.2' );
 define( 'ORBIT_RELAY_FILE', __FILE__ );
 define( 'ORBIT_RELAY_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ORBIT_RELAY_URL', plugin_dir_url( __FILE__ ) );

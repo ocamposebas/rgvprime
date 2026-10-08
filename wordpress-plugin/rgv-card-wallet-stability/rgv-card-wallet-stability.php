@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: RGV Card & Wallet Payment Stability
- * Description: Expires abandoned card and wallet orders while preserving in-flight payment attempts.
- * Version: 1.3.0
+ * Description: Reserves inventory for card and wallet orders and expires abandoned payment attempts.
+ * Version: 1.4.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 8.1
@@ -20,6 +20,7 @@ final class RGV_Card_Wallet_Payment_Stability {
   private const PAYMENT_METHOD = 'psc';
   private const PAYMENT_SOURCE_META = '_rgv_payment_source';
   private const PAYMENT_ID_META = '_psc_payment_id';
+  private const STOCK_RESERVATION_META = '_rgv_stock_reservation_applied';
   private const ABANDONED_META = '_rgv_card_wallet_abandoned';
   private const EXPIRY_SECONDS = HOUR_IN_SECONDS;
   private const EXPIRY_HOOK = 'rgv_card_wallet_expire_abandoned_order';
@@ -37,7 +38,10 @@ final class RGV_Card_Wallet_Payment_Stability {
     add_action('woocommerce_after_order_object_save', [self::class, 'maybe_schedule_order_expiry'], 30, 1);
     add_action('woocommerce_payment_complete', [self::class, 'clear_order_expiry'], 30, 1);
     add_action('woocommerce_order_status_changed', [self::class, 'handle_status_change'], 30, 4);
+    add_action('woocommerce_before_pay_action', [self::class, 'ensure_stock_before_payment'], 5, 1);
     add_filter('woocommerce_email_enabled_cancelled_order', [self::class, 'suppress_abandoned_email'], 10, 2);
+    add_filter('woocommerce_order_hold_stock_minutes', [self::class, 'minimum_stock_hold_minutes'], 20, 2);
+    add_filter('rest_request_after_callbacks', [self::class, 'reserve_created_rest_order_stock'], 20, 3);
   }
 
   public static function cron_schedules($schedules) {
@@ -109,6 +113,137 @@ final class RGV_Card_Wallet_Payment_Stability {
     }
 
     self::clear_order_expiry((int) $order_id);
+
+    if (!$order->is_paid() && in_array((string) $to, ['failed', 'cancelled'], true)) {
+      if (function_exists('wc_release_stock_for_order')) {
+        wc_release_stock_for_order($order);
+      }
+      $order->delete_meta_data(self::STOCK_RESERVATION_META);
+      $order->save();
+    }
+  }
+
+  public static function minimum_stock_hold_minutes($minutes, $order) {
+    if (
+      $order instanceof WC_Order &&
+      self::is_target_order($order) &&
+      !$order->is_paid() &&
+      $order->has_status('pending')
+    ) {
+      return max(60, (int) $minutes);
+    }
+
+    return $minutes;
+  }
+
+  public static function reserve_created_rest_order_stock($response, $handler, $request) {
+    unset($handler);
+
+    if (
+      !is_object($request) ||
+      !is_callable([$request, 'get_method']) ||
+      !is_callable([$request, 'get_route']) ||
+      'POST' !== strtoupper((string) $request->get_method()) ||
+      !preg_match('#^/wc/v(?:2|3)/orders/?$#', (string) $request->get_route()) ||
+      (function_exists('is_wp_error') && is_wp_error($response))
+    ) {
+      return $response;
+    }
+
+    $data = is_object($response) && is_callable([$response, 'get_data'])
+      ? $response->get_data()
+      : $response;
+    $order_id = is_array($data) ? absint($data['id'] ?? 0) : 0;
+    $order = $order_id ? wc_get_order($order_id) : false;
+
+    if (
+      !$order instanceof WC_Order ||
+      !self::is_target_order($order) ||
+      $order->is_paid() ||
+      !$order->has_status('pending')
+    ) {
+      return $response;
+    }
+
+    if ('yes' === (string) $order->get_meta(self::STOCK_RESERVATION_META, true)) {
+      return $response;
+    }
+
+    try {
+      if (!function_exists('wc_reserve_stock_for_order')) {
+        throw new RuntimeException('WooCommerce stock reservation is unavailable.');
+      }
+
+      wc_reserve_stock_for_order($order);
+      $order->update_meta_data(self::STOCK_RESERVATION_META, 'yes');
+      $order->save();
+
+      return $response;
+    } catch (Throwable $error) {
+      if (function_exists('wc_release_stock_for_order')) {
+        wc_release_stock_for_order($order);
+      }
+
+      $order->update_status(
+        'failed',
+        'Card & Wallets checkout stopped before payment because the requested stock could not be reserved.',
+        false
+      );
+
+      return new WP_Error(
+        'rgv_card_wallet_stock_unavailable',
+        'One or more products are no longer available in the requested quantity. Refresh your cart before trying again.',
+        [
+          'status' => 409,
+          'order_id' => $order_id,
+        ]
+      );
+    }
+  }
+
+  public static function ensure_stock_before_payment($order) {
+    if (
+      !$order instanceof WC_Order ||
+      !self::is_target_order($order) ||
+      $order->is_paid() ||
+      !$order->has_status(['pending', 'failed'])
+    ) {
+      return;
+    }
+
+    if ($order->has_status('failed')) {
+      $order->update_status(
+        'pending',
+        'Card & Wallets payment retry started; renewing the inventory hold.',
+        false
+      );
+    }
+
+    try {
+      if (!function_exists('wc_reserve_stock_for_order')) {
+        throw new RuntimeException('WooCommerce stock reservation is unavailable.');
+      }
+
+      wc_reserve_stock_for_order($order);
+      $order->update_meta_data(self::STOCK_RESERVATION_META, 'yes');
+      $order->save();
+    } catch (Throwable $error) {
+      if (function_exists('wc_release_stock_for_order')) {
+        wc_release_stock_for_order($order);
+      }
+      $order->delete_meta_data(self::STOCK_RESERVATION_META);
+      $order->update_status(
+        'failed',
+        'Card & Wallets payment stopped before processor submission because the requested stock could not be reserved.',
+        false
+      );
+
+      throw new RuntimeException(
+        'One or more products are no longer available in the requested quantity. Refresh your cart before trying again.',
+        0,
+        $error
+      );
+    }
   }
 
   public static function expire_abandoned_order($order_id) {

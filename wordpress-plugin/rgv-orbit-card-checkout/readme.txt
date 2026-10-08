@@ -3,7 +3,7 @@ Contributors: rgvprime
 Requires at least: 6.4
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.1.4
+Stable tag: 1.2.0
 
 Standalone embedded credit and debit card checkout branded as ORBIT Payments. It does
 not replace or modify the RGV Zelle Checkout plugin.
@@ -38,7 +38,7 @@ The form stays embedded in the RGV storefront. Card number and CVC are JWE
 encrypted in the browser and sent directly to the card processor. Only the
 resulting token is submitted to the storefront and WordPress servers.
 
-Version 1.1.4 uses Wompi's standard direct card transaction flow. It does not
+Version 1.2.0 uses Wompi's standard direct card transaction flow. It does not
 request 3D Secure, open a hosted checkout, or render an issuer challenge. Wompi
 charges in COP while the storefront and WooCommerce retain the USD order total.
 Wompi's current browser fingerprinting
@@ -46,6 +46,10 @@ library supplies silent session and device identifiers for antifraud analysis
 when available.
 
 == Changelog ==
+
+= 1.2.0 =
+* Atomically reserves product stock before submitting a card charge.
+* Releases the reservation if checkout fails before payment submission.
 
 = 1.1.4 =
 * Saves the $45 shipping line as `UPS 45` so Pirate Ship can distinguish it from standard UPS shipping.

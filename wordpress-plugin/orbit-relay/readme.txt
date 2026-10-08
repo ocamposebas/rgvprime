@@ -3,10 +3,15 @@ Contributors: orbit
 Tags: woocommerce, integration, hmac, order synchronization
 Requires at least: 6.5
 Requires PHP: 8.1
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 License: Proprietary
 
 Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
+
+== Version 1.5.2 ==
+
+* Atomically reserves product stock before opening an ORBIT payment session.
+* Keeps the reservation active for at least 60 minutes while the order is pending.
 
 == Version 1.5.1 ==
 

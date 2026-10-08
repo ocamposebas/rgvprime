@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.1.4
+ * Version: 1.2.0
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -31,6 +31,21 @@ final class RGV_ORBIT_Card_Checkout {
 
   public function __construct() {
     add_action('rest_api_init', [$this, 'register_routes']);
+    add_filter('woocommerce_order_hold_stock_minutes', [$this, 'minimum_stock_hold_minutes'], 20, 2);
+  }
+
+  public function minimum_stock_hold_minutes($minutes, $order) {
+    if (
+      $order instanceof WC_Order &&
+      'rgv_orbit_card' === (string) $order->get_payment_method() &&
+      'rgv_custom_checkout_orbit_card' === (string) $order->get_meta('_rgv_payment_source', true) &&
+      !$order->is_paid() &&
+      $order->has_status('pending')
+    ) {
+      return max(60, (int) $minutes);
+    }
+
+    return $minutes;
   }
 
   public function register_routes() {
@@ -703,6 +718,13 @@ final class RGV_ORBIT_Card_Checkout {
       $this->flag_review($order, $items, $billing, $shipping, $compliance);
       $order->save();
 
+      if (!function_exists('wc_reserve_stock_for_order')) {
+        throw new RuntimeException('WooCommerce stock reservation is unavailable.');
+      }
+      wc_reserve_stock_for_order($order);
+      $order->update_meta_data('_rgv_stock_reservation_applied', 'yes');
+      $order->save();
+
       $total_usd = (float) $order->get_total();
       if (strtoupper((string) $order->get_currency()) !== 'USD' || $total_usd <= 0) throw new Exception('A positive USD order total is required before conversion.');
       if ((int) round($total_usd * 100) > self::MAX_CARD_ORDER_USD_CENTS) throw new Exception('ORBIT Payments is available only for orders of $600.00 USD or less.');
@@ -771,7 +793,10 @@ final class RGV_ORBIT_Card_Checkout {
         ], $this->order_response($order)), 503);
       }
       delete_option($request_option);
-      if ($order instanceof WC_Order && $order->get_id() && !$order->is_paid()) $order->update_status('failed', 'ORBIT checkout failed before the payment was submitted.');
+      if ($order instanceof WC_Order && $order->get_id() && !$order->is_paid()) {
+        if (function_exists('wc_release_stock_for_order')) wc_release_stock_for_order($order);
+        $order->update_status('failed', 'ORBIT checkout failed before the payment was submitted.');
+      }
       return new WP_REST_Response(['success' => false, 'message' => $error->getMessage()], 500);
     }
   }
