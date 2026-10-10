@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-storewide-promotion'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-storewide-promotion-1.1.0.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-storewide-promotion-1.3.0.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "Storewide promotion plugin source directory was not found: $pluginRoot"

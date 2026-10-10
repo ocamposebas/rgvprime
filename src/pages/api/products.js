@@ -8,6 +8,7 @@ import {
   getPublicProductSlug,
   getWooProductSlug,
 } from "../../lib/seo";
+import { isProductNew } from "../../lib/productNewness";
 
 export const prerender = false;
 
@@ -297,6 +298,8 @@ function mapProductForCatalog(product) {
       sanitizeProductDescription(product.short_description),
       product.slug,
     ),
+    date_created: product.date_created,
+    date_created_gmt: product.date_created_gmt,
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image_alt: imageAlt,
@@ -336,6 +339,7 @@ function mapProductForCatalog(product) {
     tags: Array.isArray(product.tags)
       ? product.tags.map(mapTaxonomyItem)
       : [],
+    is_new: isProductNew(product),
   };
 }
 
@@ -361,6 +365,8 @@ function mapProductForDetail(product) {
       sanitizeProductDescription(product.short_description),
       product.slug,
     ),
+    date_created: product.date_created,
+    date_created_gmt: product.date_created_gmt,
     date_modified: product.date_modified,
     date_modified_gmt: product.date_modified_gmt,
     image: getWooImage(product),
@@ -383,6 +389,7 @@ function mapProductForDetail(product) {
     tags: Array.isArray(product.tags)
       ? product.tags.map(mapTaxonomyItem)
       : [],
+    is_new: isProductNew(product),
     permalink: product.permalink,
   };
 }
@@ -463,6 +470,8 @@ function buildWooEndpoint({
         "price_html",
         "description",
         "short_description",
+        "date_created",
+        "date_created_gmt",
         "date_modified",
         "date_modified_gmt",
         "images",
@@ -504,6 +513,8 @@ function buildWooEndpoint({
       "regular_price",
       "sale_price",
       "short_description",
+      "date_created",
+      "date_created_gmt",
       "date_modified",
       "date_modified_gmt",
       "images",

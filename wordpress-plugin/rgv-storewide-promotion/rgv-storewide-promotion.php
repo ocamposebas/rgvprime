@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: RGV Storewide Promotion
- * Description: Schedules a storewide WooCommerce discount and publishes a synchronized countdown announcement.
- * Version: 1.1.0
+ * Plugin Name: RGV Ofertas y Anuncios
+ * Description: Publishes informational banners and schedules storewide or product-specific WooCommerce discounts.
+ * Version: 1.3.0
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 7.4
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'RGV_PROMOTION_VERSION', '1.1.0' );
+define( 'RGV_PROMOTION_VERSION', '1.3.0' );
 define( 'RGV_PROMOTION_FILE', __FILE__ );
 define( 'RGV_PROMOTION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'RGV_PROMOTION_URL', plugin_dir_url( __FILE__ ) );

@@ -12,6 +12,10 @@ import { useCart } from "../cart/CartContext";
 import { isProductAvailable } from "../../lib/inventory";
 import { calculateLoyaltyPoints, formatPoints } from "../../lib/loyaltyProgram";
 import {
+  getProductCreatedTime,
+  isProductNew,
+} from "../../lib/productNewness";
+import {
   getFormatMeta,
   getProductFormatSupport,
   isApparelProduct,
@@ -42,7 +46,7 @@ const formatFilters = [
 ];
 
 const sortOptions = [
-  { label: "Featured", value: "featured" },
+  { label: "New & Featured", value: "featured" },
   { label: "Name A-Z", value: "name" },
 ];
 
@@ -1767,6 +1771,8 @@ export function ProductCard({
       ? "Adding…"
       : "Add to cart";
 
+  const newProduct = isProductNew(product);
+
   useEffect(() => {
     const nextSelection = getVariationSelectionForFormat(
       product,
@@ -1835,6 +1841,11 @@ export function ProductCard({
         <span className="rgv-card-view" aria-hidden="true">
           <ArrowUpRight size={18} strokeWidth={1.6} />
         </span>
+        {newProduct && (
+          <span className="rgv-card-new-badge" aria-label="New product">
+            New
+          </span>
+        )}
         {discountBadge && (
           <span
             className="rgv-card-sale-badge"
@@ -2212,6 +2223,17 @@ export default function ProductCatalog({ initialProducts = [] }) {
     return [...result].sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
 
+      const newA = isProductNew(a);
+      const newB = isProductNew(b);
+
+      if (newA !== newB) return newA ? -1 : 1;
+      if (newA && newB) {
+        const createdDifference =
+          getProductCreatedTime(b) - getProductCreatedTime(a);
+
+        if (createdDifference !== 0) return createdDifference;
+      }
+
       const orderA = getCustomProductRank(a);
       const orderB = getCustomProductRank(b);
 
@@ -2222,6 +2244,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
       return a.name.localeCompare(b.name);
     });
   }, [formatProducts, searchTerm, activeCategory, availabilityFilter, sortBy]);
+  const newProductCount = filteredProducts.filter(isProductNew).length;
 
   useEffect(() => {
     if (!configuredProduct) return;
@@ -2528,6 +2551,12 @@ export default function ProductCatalog({ initialProducts = [] }) {
             of <strong>{filteredProducts.length}</strong>{" "}
             {activeFormat === PRODUCT_FORMATS.KIT ? "kits" : "products"}
           </p>
+          {newProductCount > 0 && sortBy === "featured" && (
+            <p className="rgv-catalog-new-summary">
+              <span>New</span>
+              {newProductCount} recent {newProductCount === 1 ? "arrival" : "arrivals"} shown first
+            </p>
+          )}
           {(searchTerm ||
             activeCategory !== "all" ||
             availabilityFilter !== "all" ||

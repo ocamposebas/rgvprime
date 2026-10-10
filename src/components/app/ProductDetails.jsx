@@ -24,6 +24,7 @@ import {
   getMaximumPurchasableQuantity,
   isProductAvailable,
 } from "../../lib/inventory";
+import { isProductNew } from "../../lib/productNewness";
 import {
   getFormatMeta,
   isApparelProduct,
@@ -1928,7 +1929,12 @@ export default function ProductDetails({ slug, initialProduct = null }) {
 
         <section className="rgv-product-stage">
           <header className="rgv-product-heading">
-            <p className="rgv-kicker">{category}</p>
+            <div className="rgv-product-heading__eyebrow">
+              <p className="rgv-kicker">{category}</p>
+              {isProductNew(product) && (
+                <span className="rgv-product-new-badge">New arrival</span>
+              )}
+            </div>
             <h1 className="rgv-product-title">{product.name}</h1>
             <div className="rgv-product-heading__meta">
               <span

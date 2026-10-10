@@ -125,6 +125,9 @@
   .rgv-nav-brand img { width: clamp(104px,30vw,120px); }
   .rgv-nav-mobile__inner { width: calc(100% - 36px); padding-block: 21px 24px; }
 }
+@media (max-width: 700px) {
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 88px; }
+}
 @media (max-width: 639px) {
   .rgv-nav-search-trigger,.rgv-nav-account { display: none; }
   .rgv-nav-shop { display: inline-flex; height: 40px; flex-shrink: 0; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid #ffffff24; border-radius: 11px; color: #e6e6e3; background: #ffffff03; font-size: 10px; font-weight: 500; }
