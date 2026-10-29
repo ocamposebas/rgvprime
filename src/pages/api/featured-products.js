@@ -6,6 +6,7 @@ import {
 const CACHE_TTL = 1000 * 60 * 10;
 const STALE_TTL = 1000 * 60 * 60 * 12;
 const REQUEST_TIMEOUT = 8000;
+const INTERNAL_PRODUCT_SKUS = new Set(["RGV-MYSTERY-VIAL"]);
 
 let cachedPayload = null;
 let cachedAt = 0;
@@ -92,6 +93,11 @@ function mapProduct(product) {
     tags,
     permalink: product.permalink,
   };
+}
+
+function isPublicCatalogProduct(product) {
+  const sku = String(product?.sku || "").trim().toUpperCase();
+  return !INTERNAL_PRODUCT_SKUS.has(sku);
 }
 
 async function fetchWooFeaturedProducts() {
@@ -189,7 +195,7 @@ async function fetchWooFeaturedProducts() {
     }
 
     const mappedProducts = Array.isArray(products)
-      ? products.map(mapProduct)
+      ? products.filter(isPublicCatalogProduct).map(mapProduct)
       : [];
 
     return {

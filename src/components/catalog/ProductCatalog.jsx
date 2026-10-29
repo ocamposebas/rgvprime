@@ -31,6 +31,14 @@ const VARIATION_CACHE_TTL_MS = 60 * 1000;
 const variationRequestCache = new Map();
 const variationSummaryCache = new Map();
 const variationSummaryRequestCache = new Map();
+const INTERNAL_PRODUCT_SKUS = new Set(["RGV-MYSTERY-VIAL"]);
+
+function publicCatalogProducts(products) {
+  return (Array.isArray(products) ? products : []).filter((product) => {
+    const sku = String(product?.sku || "").trim().toUpperCase();
+    return !INTERNAL_PRODUCT_SKUS.has(sku);
+  });
+}
 
 const formatFilters = [
   {
@@ -2035,10 +2043,10 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
 export default function ProductCatalog({ initialProducts = [] }) {
   const catalogTopRef = useRef(null);
-  const hasInitialProducts =
-    Array.isArray(initialProducts) && initialProducts.length > 0;
+  const publicInitialProducts = publicCatalogProducts(initialProducts);
+  const hasInitialProducts = publicInitialProducts.length > 0;
   const [products, setProducts] = useState(() =>
-    hasInitialProducts ? initialProducts : [],
+    hasInitialProducts ? publicInitialProducts : [],
   );
   const [status, setStatus] = useState(
     hasInitialProducts ? "success" : "loading",
@@ -2104,7 +2112,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
           throw new Error(data?.message || "Could not load products.");
         }
 
-        setProducts(Array.isArray(data.products) ? data.products : []);
+        setProducts(publicCatalogProducts(data.products));
         setStatus("success");
       } catch (error) {
         if (!active) return;

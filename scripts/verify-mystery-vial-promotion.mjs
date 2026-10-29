@@ -19,6 +19,10 @@ const [
   relay,
   orbitCard,
   packageScript,
+  productsApi,
+  featuredProductsApi,
+  productCatalog,
+  navbar,
 ] = await Promise.all([
   read("wordpress-plugin/rgv-mystery-vial-promotion/rgv-mystery-vial-promotion.php"),
   read("wordpress-plugin/rgv-mystery-vial-promotion/includes/class-rgv-mystery-vial-promotion.php"),
@@ -30,6 +34,10 @@ const [
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
   read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
   read("scripts/package-mystery-vial-promotion.ps1"),
+  read("src/pages/api/products.js"),
+  read("src/pages/api/featured-products.js"),
+  read("src/components/catalog/ProductCatalog.jsx"),
+  read("src/components/nav/Navbar.jsx"),
 ]);
 
 for (const expected of [
@@ -97,10 +105,23 @@ for (const expected of [
   "$60 net · 1 vial",
   "$150 net · 2 vials",
   "Confirmed when the order is created · while supplies last",
-  "mysteryReward.productSku",
+  "/images/mystery-vial-gift-v1.webp",
+  "Complimentary · Limited release",
 ]) {
   assert(checkout.includes(expected), `Checkout experience is missing: ${expected}`);
 }
+
+for (const source of [productsApi, featuredProductsApi, productCatalog, navbar]) {
+  assert(
+    source.includes('INTERNAL_PRODUCT_SKUS') && source.includes('RGV-MYSTERY-VIAL'),
+    "The fulfillment-only Mystery Vial product must be excluded from every public catalog surface",
+  );
+}
+
+assert(
+  productsApi.includes('catalog_visibility", "visible"'),
+  "The public product API must request visible WooCommerce products only",
+);
 
 for (const expected of [
   ".rgvx-mystery-promo",

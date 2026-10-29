@@ -617,12 +617,14 @@ function MysteryVialVisual({ count = 1 }) {
       className={`rgvx-mystery-vials rgvx-mystery-vials--${visibleCount}`}
       aria-hidden="true"
     >
-      {Array.from({ length: visibleCount }, (_, index) => (
-        <i key={index}>
-          <b />
-          <span>?</span>
-        </i>
-      ))}
+      <img
+        src="/images/mystery-vial-gift-v1.webp"
+        alt=""
+        width="80"
+        height="80"
+        loading="eager"
+        decoding="async"
+      />
     </span>
   );
 }
@@ -4462,8 +4464,8 @@ export default function RgvCheckout() {
                     <span>{mysteryReward.quantity}</span>
                   </div>
                   <div>
-                    <strong>{mysteryReward.productName}</strong>
-                    <small>{mysteryReward.productSku} · Complimentary</small>
+                    <strong>Mystery Vial Gift</strong>
+                    <small>Complimentary · Limited release</small>
                   </div>
                   <em>FREE</em>
                 </div>

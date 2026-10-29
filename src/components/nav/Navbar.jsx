@@ -21,6 +21,14 @@ const navLinks = [
 const FALLBACK_IMAGE = "/logo.webp";
 const SUPPORT_PHONE = "+19565408538";
 const SUPPORT_PHONE_DISPLAY = "(956) 540-8538";
+const INTERNAL_PRODUCT_SKUS = new Set(["RGV-MYSTERY-VIAL"]);
+
+function publicCatalogProducts(products) {
+  return (Array.isArray(products) ? products : []).filter((product) => {
+    const sku = String(product?.sku || "").trim().toUpperCase();
+    return !INTERNAL_PRODUCT_SKUS.has(sku);
+  });
+}
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -1658,7 +1666,7 @@ export default function Navbar({ transparent = false }) {
         throw new Error(data.message || "Could not load products.");
       }
 
-      setProducts(Array.isArray(data.products) ? data.products : []);
+      setProducts(publicCatalogProducts(data.products));
       setProductsStatus("success");
     } catch (error) {
       console.error(error);

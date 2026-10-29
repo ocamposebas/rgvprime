@@ -19,6 +19,12 @@ const MAX_VARIATION_SUMMARY_PRODUCTS = 16;
 const PRODUCT_CACHE_TTL_MS = 60 * 1000;
 const PRODUCT_STALE_TTL_MS = 15 * 60 * 1000;
 const productResponseCache = new Map();
+const INTERNAL_PRODUCT_SKUS = new Set(["RGV-MYSTERY-VIAL"]);
+
+function isPublicCatalogProduct(product) {
+  const sku = String(product?.sku || "").trim().toUpperCase();
+  return !INTERNAL_PRODUCT_SKUS.has(sku);
+}
 
 function storeProductResponse(cacheKey, payload) {
   productResponseCache.set(cacheKey, { payload, cachedAt: Date.now() });
@@ -494,6 +500,7 @@ function buildWooEndpoint({
   }
 
   endpoint.searchParams.set("per_page", String(limit));
+  endpoint.searchParams.set("catalog_visibility", "visible");
   endpoint.searchParams.set("orderby", "menu_order");
   endpoint.searchParams.set("order", "asc");
 
@@ -934,7 +941,10 @@ export async function GET({ request }) {
       );
     }
 
-    const products = result.products;
+    // WooCommerce's authenticated products endpoint also returns hidden
+    // fulfillment-only products. Never expose those through the public API,
+    // including direct slug requests, search, navigation, and the sitemap.
+    const products = result.products.filter(isPublicCatalogProduct);
 
     if (isDetailRequest) {
       const rawProduct = products[0] || null;
