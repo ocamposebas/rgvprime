@@ -948,7 +948,7 @@
 
 .rgvx-mystery-promo__top {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 11px;
 }
@@ -986,21 +986,6 @@
   color: rgba(255, 255, 255, 0.56);
   font-size: 8.5px;
   line-height: 1.35;
-}
-
-.rgvx-mystery-promo__top > em {
-  align-self: start;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 5px 7px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 7px;
-  font-style: normal;
-  font-weight: 850;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .rgvx-mystery-vials {
@@ -1419,10 +1404,6 @@
   .rgvx-mystery-promo__top {
     grid-template-columns: 36px minmax(0, 1fr);
     gap: 9px;
-  }
-
-  .rgvx-mystery-promo__top > em {
-    display: none;
   }
 
   .rgvx-mystery-vials {

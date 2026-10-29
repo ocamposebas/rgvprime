@@ -4409,7 +4409,6 @@ export default function RgvCheckout() {
                           : `Add ${formatMoney(mysteryReward.amountToNext)} in net products after discounts to unlock one.`}
                     </p>
                   </div>
-                  <em>{mysteryReward.remaining} left</em>
                 </div>
 
                 <div
