@@ -1140,7 +1140,7 @@
   object-fit: cover;
 }
 
-.rgvx-item-image > span {
+.rgvx-item-image > .rgvx-item-quantity {
   position: absolute;
   top: -7px;
   right: -7px;

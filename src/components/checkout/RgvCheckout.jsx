@@ -4445,7 +4445,7 @@ export default function RgvCheckout() {
                         width="58"
                         height="58"
                       />
-                      <span>{item.quantity}</span>
+                      <span className="rgvx-item-quantity">{item.quantity}</span>
                     </div>
 
                     <div>
@@ -4461,7 +4461,7 @@ export default function RgvCheckout() {
                 <div className="rgvx-summary-item rgvx-summary-item--mystery">
                   <div className="rgvx-item-image rgvx-item-image--mystery">
                     <MysteryVialVisual count={mysteryReward.quantity >= 2 ? 2 : 1} />
-                    <span>{mysteryReward.quantity}</span>
+                    <span className="rgvx-item-quantity">{mysteryReward.quantity}</span>
                   </div>
                   <div>
                     <strong>Mystery Vial Gift</strong>
