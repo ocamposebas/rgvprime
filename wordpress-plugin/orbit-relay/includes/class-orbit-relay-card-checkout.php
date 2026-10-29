@@ -364,6 +364,10 @@ final class ORBIT_Relay_Card_Checkout {
             $order->add_order_note( sprintf( 'Coupon %s was verified by WooCommerce for ORBIT card checkout.', $coupon_code ) );
         }
 
+        if ( function_exists( 'rgv_mystery_vials_apply_to_order' ) ) {
+            rgv_mystery_vials_apply_to_order( $order );
+        }
+
         $free_shipping_minimum = max(
             0,
             (float) apply_filters( 'orbit_relay_card_free_shipping_minimum', self::FREE_SHIPPING_MINIMUM )

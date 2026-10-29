@@ -723,6 +723,10 @@ final class RGV_Zelle_Checkout {
         }
       }
 
+      if (function_exists('rgv_mystery_vials_apply_to_order')) {
+        rgv_mystery_vials_apply_to_order($order);
+      }
+
       $free_shipping_minimum = max(0, (float) apply_filters(
         'rgv_zelle_free_shipping_minimum',
         self::FREE_SHIPPING_MINIMUM
@@ -789,6 +793,10 @@ final class RGV_Zelle_Checkout {
     } catch (Exception $error) {
       if ($owns_request_lock) {
         delete_option($request_option_name);
+      }
+
+      if (isset($order) && $order instanceof WC_Order && $order->get_id() && !$order->is_paid()) {
+        $order->update_status('failed', 'Zelle checkout failed before payment instructions were issued.', false);
       }
 
       return new WP_REST_Response([

@@ -25,6 +25,10 @@ import {
   trackOmnisendStartedCheckout,
 } from "../../lib/omnisendCart";
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
+import {
+  getMysteryRewardState,
+  normalizeMysteryPromotion,
+} from "../../lib/mysteryVialPromotion";
 import OrbitSecureCardPayment from "./OrbitSecureCardPayment";
 import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
 
@@ -605,6 +609,24 @@ function getBlankCheckoutForm() {
   };
 }
 
+function MysteryVialVisual({ count = 1 }) {
+  const visibleCount = Math.max(1, Math.min(2, Number(count) || 1));
+
+  return (
+    <span
+      className={`rgvx-mystery-vials rgvx-mystery-vials--${visibleCount}`}
+      aria-hidden="true"
+    >
+      {Array.from({ length: visibleCount }, (_, index) => (
+        <i key={index}>
+          <b />
+          <span>?</span>
+        </i>
+      ))}
+    </span>
+  );
+}
+
 function getInitialCheckoutForm() {
   const blankForm = getBlankCheckoutForm();
   if (typeof window === "undefined") return blankForm;
@@ -1134,6 +1156,7 @@ export default function RgvCheckout() {
   const [sessionCustomerLoading, setSessionCustomerLoading] = useState(true);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [rewardsMessage, setRewardsMessage] = useState("");
+  const [mysteryPromotion, setMysteryPromotion] = useState(null);
   const omnisendFingerprintRef = useRef("");
   const sessionCustomerPromiseRef = useRef(null);
   const edebitFlowSubmittingRef = useRef(false);
@@ -1228,6 +1251,40 @@ export default function RgvCheckout() {
 
     clearForeignCartCache();
     localStorage.removeItem("rgv_checkout_coupon");
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let disposed = false;
+    let refreshTimer;
+
+    async function loadMysteryPromotion() {
+      try {
+        const response = await fetch("/api/mystery-vials", {
+          cache: "no-store",
+          signal: controller.signal,
+          headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+          },
+        });
+        const payload = await response.json();
+        if (!disposed) setMysteryPromotion(normalizeMysteryPromotion(payload));
+      } catch (promotionError) {
+        if (!disposed && promotionError?.name !== "AbortError") {
+          setMysteryPromotion(null);
+        }
+      }
+    }
+
+    void loadMysteryPromotion();
+    refreshTimer = window.setInterval(loadMysteryPromotion, 60 * 1000);
+
+    return () => {
+      disposed = true;
+      controller.abort();
+      window.clearInterval(refreshTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -1771,6 +1828,10 @@ export default function RgvCheckout() {
     ? Number(checkoutQuote.priorityProcessingFeeMinor || 0) / 100
     : estimatedPriorityProcessingFee;
   const summaryTotal = usesOrbitQuote ? authoritativeDue : estimatedDue;
+  const mysteryReward = getMysteryRewardState(
+    Math.max(0, summarySubtotal - summaryDiscount),
+    mysteryPromotion || {},
+  );
   const loyalty = sessionCustomer?.loyalty || null;
   const loyaltyPoints = Math.max(0, Number(loyalty?.points || 0));
   const loyaltyMinimum = Math.max(1, Number(loyalty?.minimum_points || 1000));
@@ -4320,6 +4381,53 @@ export default function RgvCheckout() {
               <h2>Order summary</h2>
             </div>
 
+            {mysteryReward.active && mysteryReward.remaining > 0 && (
+              <section
+                className={`rgvx-mystery-promo ${mysteryReward.quantity > 0 ? "is-unlocked" : ""}`}
+                aria-label="Mystery Vial promotion"
+              >
+                <div className="rgvx-mystery-promo__top">
+                  <MysteryVialVisual count={mysteryReward.quantity >= 2 ? 2 : 1} />
+                  <div className="rgvx-mystery-promo__copy">
+                    <span>Limited 150-vial drop</span>
+                    <strong>
+                      {mysteryReward.quantity >= 2
+                        ? "2 Mystery Vials unlocked"
+                        : mysteryReward.quantity === 1
+                          ? "1 Mystery Vial unlocked"
+                          : "Unlock a Mystery Vial"}
+                    </strong>
+                    <p>
+                      {mysteryReward.quantity >= 2
+                        ? "Your complimentary pair will be added to this order."
+                        : mysteryReward.quantity === 1
+                          ? mysteryReward.remaining < 2 || !mysteryReward.nextThreshold
+                            ? "You're in — the final available vial will be added to this order."
+                            : `${formatMoney(mysteryReward.amountToNext)} more in net products unlocks a second vial.`
+                          : `Add ${formatMoney(mysteryReward.amountToNext)} in net products after discounts to unlock one.`}
+                    </p>
+                  </div>
+                  <em>{mysteryReward.remaining} left</em>
+                </div>
+
+                <div
+                  className="rgvx-mystery-promo__track"
+                  style={{ "--rgvx-mystery-progress": `${mysteryReward.progress}%` }}
+                  aria-hidden="true"
+                >
+                  <span />
+                  <i className="tier-one" />
+                  <i className="tier-two" />
+                </div>
+
+                <footer>
+                  <span>$60 net · 1 vial</span>
+                  <span>$150 net · 2 vials</span>
+                </footer>
+                <small>Confirmed when the order is created · while supplies last</small>
+              </section>
+            )}
+
             <div className="rgvx-items-list">
               {displayedSummaryItems.map((item) => (
                   <div
@@ -4346,6 +4454,20 @@ export default function RgvCheckout() {
                     <em>{formatMoney(item.lineTotal)}</em>
                   </div>
                 ))}
+
+              {mysteryReward.quantity > 0 && (
+                <div className="rgvx-summary-item rgvx-summary-item--mystery">
+                  <div className="rgvx-item-image rgvx-item-image--mystery">
+                    <MysteryVialVisual count={mysteryReward.quantity >= 2 ? 2 : 1} />
+                    <span>{mysteryReward.quantity}</span>
+                  </div>
+                  <div>
+                    <strong>{mysteryReward.productName}</strong>
+                    <small>{mysteryReward.productSku} · Complimentary</small>
+                  </div>
+                  <em>FREE</em>
+                </div>
+              )}
             </div>
 
             <div className="rgvx-totals">

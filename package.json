@@ -18,6 +18,7 @@
     "test:ups": "node scripts/verify-ups-shipping-label.mjs",
     "test:stock": "node scripts/run-stock-verification.mjs",
     "test:promotion": "node scripts/run-promotion-verification.mjs",
+    "test:mystery": "node scripts/verify-mystery-vial-promotion.mjs",
     "test:welcome": "node scripts/verify-welcome10-guard.mjs",
     "test:account-orders": "node scripts/verify-account-order-visibility.mjs",
     "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs",

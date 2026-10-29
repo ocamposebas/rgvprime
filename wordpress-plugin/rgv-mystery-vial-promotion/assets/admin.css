@@ -1,0 +1,217 @@
+.rgv-mystery-admin {
+  --rgv-wine: #7f1426;
+  --rgv-red: #c41f3a;
+  --rgv-ink: #171217;
+  --rgv-muted: #6f6468;
+  max-width: 1180px;
+}
+
+.rgv-mystery-admin__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 18px 0;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 111, 132, .25), transparent 24rem),
+    linear-gradient(135deg, #21080e, #7f1426 62%, #a81730);
+  padding: 28px 30px;
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(65, 10, 22, .18);
+}
+
+.rgv-mystery-admin__kicker {
+  margin: 0 0 7px;
+  color: #ffb4c0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.rgv-mystery-admin__hero h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.rgv-mystery-admin__hero p:last-child {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, .72);
+}
+
+.rgv-mystery-admin__status {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .10);
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rgv-mystery-admin__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr);
+  gap: 18px;
+}
+
+.rgv-mystery-card {
+  border: 1px solid #e4dadd;
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 12px 34px rgba(36, 20, 25, .06);
+}
+
+.rgv-mystery-card h2 {
+  margin: 0 0 6px;
+  color: var(--rgv-ink);
+}
+
+.rgv-mystery-card > p {
+  margin-top: 0;
+  color: var(--rgv-muted);
+}
+
+.rgv-mystery-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #eee5e7;
+  padding-bottom: 20px;
+}
+
+.rgv-mystery-toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--rgv-red);
+}
+
+.rgv-mystery-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.rgv-mystery-fields label,
+.rgv-mystery-product dl div {
+  display: grid;
+  gap: 6px;
+}
+
+.rgv-mystery-fields span,
+.rgv-mystery-product dt {
+  color: #3d3437;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rgv-mystery-fields input[type="number"] {
+  min-height: 42px;
+  border-color: #d8cbcf;
+  border-radius: 8px;
+}
+
+.rgv-mystery-fields small {
+  color: #85787d;
+}
+
+.rgv-mystery-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.rgv-mystery-stat {
+  border-radius: 12px;
+  background: #f8f3f4;
+  padding: 15px;
+}
+
+.rgv-mystery-stat span {
+  display: block;
+  color: #7b6d72;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rgv-mystery-stat strong {
+  display: block;
+  margin-top: 5px;
+  color: #2b2024;
+  font-size: 25px;
+}
+
+.rgv-mystery-stat--remaining {
+  background: linear-gradient(135deg, #7f1426, #bd1f38);
+}
+
+.rgv-mystery-stat--remaining span,
+.rgv-mystery-stat--remaining strong {
+  color: #fff;
+}
+
+.rgv-mystery-product dl {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+}
+
+.rgv-mystery-product dl div {
+  grid-template-columns: 88px 1fr;
+  border-top: 1px solid #eee5e7;
+  padding-top: 12px;
+}
+
+.rgv-mystery-product dd {
+  margin: 0;
+  color: #4c4145;
+  word-break: break-word;
+}
+
+.rgv-mystery-audit {
+  grid-column: 1 / -1;
+}
+
+.rgv-mystery-audit table {
+  margin-top: 16px;
+}
+
+.rgv-mystery-pill {
+  display: inline-block;
+  border-radius: 999px;
+  background: #f1e7ea;
+  padding: 4px 8px;
+  color: #742033;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rgv-mystery-admin .button-primary {
+  border-color: #8f172b;
+  background: linear-gradient(100deg, #7f1426, #bd1f38);
+}
+
+@media (max-width: 900px) {
+  .rgv-mystery-admin__grid { grid-template-columns: 1fr; }
+  .rgv-mystery-audit { grid-column: auto; }
+}
+
+@media (max-width: 600px) {
+  .rgv-mystery-admin__hero { display: grid; padding: 22px; }
+  .rgv-mystery-fields { grid-template-columns: 1fr; }
+  .rgv-mystery-stats { grid-template-columns: 1fr; }
+}

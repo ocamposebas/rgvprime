@@ -707,6 +707,9 @@ final class RGV_ORBIT_Card_Checkout {
         if (is_wp_error($coupon_result)) throw new Exception($coupon_result->get_error_message());
         $coupon_free_shipping = (bool) (new WC_Coupon($coupon))->get_free_shipping();
       }
+      if (function_exists('rgv_mystery_vials_apply_to_order')) {
+        rgv_mystery_vials_apply_to_order($order);
+      }
       $shipping_details = $this->shipping($data, $subtotal >= self::FREE_SHIPPING_MINIMUM || $coupon_free_shipping);
       $shipping_item = new WC_Order_Item_Shipping();
       $shipping_item->set_method_title($shipping_details['title']);
