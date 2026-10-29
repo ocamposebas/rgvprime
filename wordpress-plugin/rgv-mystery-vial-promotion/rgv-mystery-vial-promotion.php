@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Mystery Vial Promotion
  * Description: Awards complimentary Mystery Vials by net merchandise spend and records them as physical WooCommerce order items for fulfillment.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: RGVPRIME LLC
  * Requires at least: 6.5
  * Requires PHP: 7.4
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'RGV_MYSTERY_VIALS_VERSION', '1.0.0' );
+define( 'RGV_MYSTERY_VIALS_VERSION', '1.0.1' );
 define( 'RGV_MYSTERY_VIALS_FILE', __FILE__ );
 define( 'RGV_MYSTERY_VIALS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'RGV_MYSTERY_VIALS_URL', plugin_dir_url( __FILE__ ) );

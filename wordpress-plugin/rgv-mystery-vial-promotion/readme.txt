@@ -3,7 +3,7 @@ Contributors: rgvprime
 Tags: woocommerce, free gift, promotion, fulfillment, inventory
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 
 Awards complimentary Mystery Vials from net merchandise spend and adds them to WooCommerce orders as physical fulfillment items.
@@ -38,6 +38,10 @@ Pirate Ship normally imports WooCommerce orders when they reach Processing statu
 The generated WooCommerce product is hidden from the catalog and cannot be purchased directly. Its stock is governed by the campaign ledger rather than WooCommerce product stock so allocation can be released safely when an unpaid order fails or is cancelled.
 
 == Changelog ==
+
+= 1.0.1 =
+* Reuses the existing fulfillment product when the saved product option is stale.
+* Prevents duplicate-SKU setup errors from taking down WordPress.
 
 = 1.0.0 =
 * Initial limited Mystery Vial campaign.

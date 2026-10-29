@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgv-mystery-vial-promotion'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-mystery-vial-promotion-1.0.0.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgv-mystery-vial-promotion-1.0.1.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "Mystery Vial promotion plugin source directory was not found: $pluginRoot"

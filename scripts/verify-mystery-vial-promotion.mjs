@@ -34,7 +34,7 @@ const [
 
 for (const expected of [
   "Plugin Name: RGV Mystery Vial Promotion",
-  "Version: 1.0.0",
+  "Version: 1.0.1",
   "Requires Plugins: woocommerce",
   "declare_compatibility( 'custom_order_tables'",
   "rgv_mystery_vials_apply_to_order",
@@ -50,6 +50,9 @@ for (const expected of [
   "Mystery Vial Complimentary",
   "set_virtual( false )",
   "set_catalog_visibility( 'hidden' )",
+  "safe_ensure_product",
+  "wc_get_product_id_by_sku( self::SKU )",
+  "never receives a duplicate-SKU assignment",
   "woocommerce_before_order_object_save",
   "woocommerce_checkout_order_created",
   "woocommerce_rest_insert_shop_order_object",
@@ -135,7 +138,7 @@ assert.equal(
 assert.equal(getMysteryRewardState(45, livePromotion).amountToNext, 15);
 assert.equal(getMysteryRewardState(100, livePromotion).amountToNext, 50);
 
-assert(packageScript.includes("rgv-mystery-vial-promotion-1.0.0.zip"));
+assert(packageScript.includes("rgv-mystery-vial-promotion-1.0.1.zip"));
 assert(packageScript.includes("rgv-mystery-vial-promotion/$relativePath"));
 
 console.log(

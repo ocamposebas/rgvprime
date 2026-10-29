@@ -62,7 +62,7 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 | eDebit abandonment guard | `rgv-edebit-guard-1.1.2.zip` |
 | COA library | `rgv-coa-library-1.12.0.zip` |
 | Storewide promotion | `rgv-storewide-promotion-1.1.0.zip` |
-| Mystery Vial promotion | `rgv-mystery-vial-promotion-1.0.0.zip` |
+| Mystery Vial promotion | `rgv-mystery-vial-promotion-1.0.1.zip` |
 | Rush processing | `rgv-rush-processing-orders-1.0.0.zip` |
 | Welcome coupon guard | `rgv-welcome10-guard-1.0.0.zip` |
 

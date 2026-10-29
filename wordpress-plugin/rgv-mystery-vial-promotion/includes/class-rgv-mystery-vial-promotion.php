@@ -11,6 +11,7 @@ final class RGV_Mystery_Vial_Promotion {
 	private const SETTINGS_OPTION = 'rgv_mystery_vial_settings';
 	private const PRODUCT_OPTION = 'rgv_mystery_vial_product_id';
 	private const DB_VERSION_OPTION = 'rgv_mystery_vial_db_version';
+	private const SETUP_ERROR_OPTION = 'rgv_mystery_vial_setup_error';
 	private const DB_VERSION = '1.0.0';
 	private const MENU_SLUG = 'rgv-mystery-vials';
 	private const REST_NAMESPACE = 'rgv-mystery/v1';
@@ -35,7 +36,7 @@ final class RGV_Mystery_Vial_Promotion {
 		self::install_schema();
 
 		if ( class_exists( 'WooCommerce' ) && class_exists( 'WC_Product_Simple' ) ) {
-			self::ensure_product();
+			self::safe_ensure_product();
 		}
 	}
 
@@ -44,13 +45,14 @@ final class RGV_Mystery_Vial_Promotion {
 	 */
 	public static function init(): void {
 		add_action( 'admin_notices', array( __CLASS__, 'woocommerce_notice' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'setup_error_notice' ) );
 
 		if ( ! class_exists( 'WooCommerce' ) ) {
 			return;
 		}
 
 		self::maybe_upgrade();
-		self::ensure_product();
+		self::safe_ensure_product();
 
 		add_action( 'admin_menu', array( __CLASS__, 'admin_menu' ), 35 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_assets' ) );
@@ -146,6 +148,46 @@ final class RGV_Mystery_Vial_Promotion {
 		echo '<div class="notice notice-error"><p><strong>RGV Mystery Vial Promotion</strong> requires WooCommerce.</p></div>';
 	}
 
+	public static function setup_error_notice(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		$error = get_option( self::SETUP_ERROR_OPTION, array() );
+		if ( ! is_array( $error ) || empty( $error['message'] ) ) {
+			return;
+		}
+
+		echo '<div class="notice notice-error"><p><strong>RGV Mystery Vial Promotion:</strong> ' . esc_html( (string) $error['message'] ) . '</p></div>';
+	}
+
+	private static function safe_ensure_product() {
+		try {
+			$product = self::ensure_product();
+			if ( $product instanceof WC_Product ) {
+				delete_option( self::SETUP_ERROR_OPTION );
+			}
+			return $product;
+		} catch ( Throwable $error ) {
+			update_option(
+				self::SETUP_ERROR_OPTION,
+				array(
+					'message' => 'The fulfillment product could not be prepared. The campaign is paused until this is resolved.',
+					'detail'  => sanitize_text_field( $error->getMessage() ),
+					'time'    => gmdate( 'c' ),
+				),
+				false
+			);
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->error(
+					'Mystery Vial product setup failed: ' . $error->getMessage(),
+					array( 'source' => 'rgv-mystery-vials' )
+				);
+			}
+			return false;
+		}
+	}
+
 	/**
 	 * Create or repair the hidden physical fulfillment product.
 	 */
@@ -156,10 +198,14 @@ final class RGV_Mystery_Vial_Promotion {
 
 		$product_id = absint( get_option( self::PRODUCT_OPTION, 0 ) );
 		$product = $product_id ? wc_get_product( $product_id ) : false;
+		$sku_product_id = absint( wc_get_product_id_by_sku( self::SKU ) );
 
-		if ( ! $product instanceof WC_Product ) {
-			$product_id = wc_get_product_id_by_sku( self::SKU );
-			$product = $product_id ? wc_get_product( $product_id ) : false;
+		// The stored option can be stale after an interrupted activation. Always
+		// prefer the product that already owns the fulfillment SKU so WooCommerce
+		// never receives a duplicate-SKU assignment.
+		if ( $sku_product_id > 0 && ( ! $product instanceof WC_Product || $product->get_id() !== $sku_product_id ) ) {
+			$product_id = $sku_product_id;
+			$product = wc_get_product( $product_id );
 		}
 
 		if ( ! $product instanceof WC_Product ) {
@@ -181,7 +227,7 @@ final class RGV_Mystery_Vial_Promotion {
 		$product->set_sold_individually( false );
 		$product->set_description( 'Complimentary physical Mystery Vial awarded automatically by the limited RGVPRIME promotion.' );
 
-		if ( '' === (string) $product->get_sku( 'edit' ) ) {
+		if ( self::SKU !== (string) $product->get_sku( 'edit' ) ) {
 			$product->set_sku( self::SKU );
 		}
 
@@ -438,7 +484,7 @@ final class RGV_Mystery_Vial_Promotion {
 	}
 
 	private static function sync_order_item( WC_Order $order, int $quantity, float $net_subtotal ): void {
-		$product = self::ensure_product();
+		$product = self::safe_ensure_product();
 		if ( $quantity > 0 && ! $product instanceof WC_Product ) {
 			throw new RuntimeException( 'Mystery Vial fulfillment product is unavailable.' );
 		}
@@ -638,11 +684,11 @@ final class RGV_Mystery_Vial_Promotion {
 		unset( $request );
 		$settings = self::settings();
 		$counts = self::counts();
-		$product = self::ensure_product();
+		$product = self::safe_ensure_product();
 		$response = rest_ensure_response(
 			array(
 				'active'          => ! empty( $settings['enabled'] ),
-				'available'       => ! empty( $settings['enabled'] ) && $counts['remaining'] > 0,
+				'available'       => ! empty( $settings['enabled'] ) && $counts['remaining'] > 0 && $product instanceof WC_Product,
 				'inventory_limit' => $counts['limit'],
 				'remaining'       => $counts['remaining'],
 				'product_name'    => (string) $settings['product_name'],
@@ -721,7 +767,7 @@ final class RGV_Mystery_Vial_Promotion {
 
 		update_option( self::SETTINGS_OPTION, $next, false );
 		self::$settings = $next;
-		self::ensure_product();
+		self::safe_ensure_product();
 
 		wp_safe_redirect( admin_url( 'admin.php?page=' . self::MENU_SLUG . '&rgv_status=saved' ) );
 		exit;
@@ -735,7 +781,7 @@ final class RGV_Mystery_Vial_Promotion {
 		global $wpdb;
 		$settings = self::settings();
 		$counts = self::counts();
-		$product = self::ensure_product();
+		$product = self::safe_ensure_product();
 		$errors = get_transient( 'rgv_mystery_errors_' . get_current_user_id() );
 		delete_transient( 'rgv_mystery_errors_' . get_current_user_id() );
 		$table = self::table_name();
