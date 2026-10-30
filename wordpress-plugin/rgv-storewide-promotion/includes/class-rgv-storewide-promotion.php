@@ -245,7 +245,8 @@ final class RGV_Storewide_Promotion {
 			exit;
 		}
 
-		$headline = isset( $_POST['headline'] ) ? sanitize_text_field( wp_unslash( $_POST['headline'] ) ) : '';
+		$headline = isset( $_POST['headline'] ) ? sanitize_textarea_field( wp_unslash( $_POST['headline'] ) ) : '';
+		$headline = wp_html_excerpt( $headline, 240, '' );
 		$eyebrow  = isset( $_POST['eyebrow'] ) ? sanitize_text_field( wp_unslash( $_POST['eyebrow'] ) ) : '';
 		$cta      = isset( $_POST['cta_label'] ) ? sanitize_text_field( wp_unslash( $_POST['cta_label'] ) ) : '';
 		$cta_url  = isset( $_POST['cta_url'] ) ? esc_url_raw( wp_unslash( $_POST['cta_url'] ) ) : '';
@@ -292,7 +293,7 @@ final class RGV_Storewide_Promotion {
 		}
 
 		if ( 'product' === $scope && $product instanceof WC_Product ) {
-			return wp_html_excerpt( self::format_percent( $discount ) . ' OFF ' . wp_strip_all_tags( $product->get_name() ), 80, '' );
+			return wp_html_excerpt( self::format_percent( $discount ) . ' OFF ' . wp_strip_all_tags( $product->get_name() ), 240, '' );
 		}
 
 		return self::format_percent( $discount ) . ' OFF STOREWIDE';
@@ -463,7 +464,8 @@ final class RGV_Storewide_Promotion {
 							</div>
 							<label class="rgv-field-wide">
 								<span>Mensaje principal</span>
-								<input type="text" name="headline" maxlength="80" required value="<?php echo esc_attr( $settings['headline'] ); ?>">
+								<textarea name="headline" maxlength="240" rows="3" required data-rgv-headline><?php echo esc_textarea( $settings['headline'] ); ?></textarea>
+								<small>Ahora admite hasta 240 caracteres y varias lineas. <b data-rgv-headline-count>0/240</b></small>
 								<small>Ejemplo: “Llegó más stock de RG-TZ 60mg”.</small>
 							</label>
 						</section>

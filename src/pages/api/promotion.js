@@ -68,7 +68,7 @@ export async function GET() {
       product_name: String(payload?.product_name || "").slice(0, 120),
       discount_percent: Number(payload?.discount_percent || 0),
       eyebrow: String(payload?.eyebrow || "LIMITED-TIME OFFER").slice(0, 40),
-      headline: String(payload?.headline || "").slice(0, 80),
+      headline: String(payload?.headline || "").slice(0, 240),
       cta_label: String(payload?.cta_label || "").slice(0, 24),
       cta_url: String(payload?.cta_url || ""),
       show_countdown: payload?.show_countdown === true,

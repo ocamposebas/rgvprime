@@ -1013,6 +1013,7 @@ function PromotionAnnouncement() {
     Boolean(campaign.ends_at) &&
     safeRemaining > 0;
   const hasCta = Boolean(campaign.cta_label && campaign.cta_url);
+  const hasLongCopy = String(campaign.headline || "").length > 80 || String(campaign.headline || "").includes("\n");
   const endLabel = campaign.ends_at
     ? new Date(campaign.ends_at).toLocaleString(undefined, {
         dateStyle: "medium",
@@ -1021,7 +1022,10 @@ function PromotionAnnouncement() {
     : "";
 
   return (
-    <div className="rgv-announcement-wrap rgv-campaign-bar" aria-label="Store announcement">
+    <div
+      className={`rgv-announcement-wrap rgv-campaign-bar ${(hasCountdown || hasCta) ? "has-action" : "is-copy-only"} ${hasLongCopy ? "is-long-copy" : ""}`}
+      aria-label="Store announcement"
+    >
       <div className="rgv-campaign-bar__inner">
         <div className="rgv-campaign-bar__copy">
           <span className="rgv-campaign-bar__eyebrow">
@@ -1125,7 +1129,6 @@ function PromotionAnnouncement() {
           min-width: 0;
           align-items: center;
           gap: 14px;
-          white-space: nowrap;
         }
 
         .rgv-campaign-bar__eyebrow {
@@ -1156,13 +1159,16 @@ function PromotionAnnouncement() {
           display: block;
           overflow: hidden;
           color: #fff;
-          font-size: 15px;
+          font-size: clamp(13px, 1.15vw, 15px);
           font-weight: 900;
-          letter-spacing: 0.035em;
-          line-height: 1.1;
-          text-overflow: ellipsis;
+          letter-spacing: 0.025em;
+          line-height: 1.25;
           text-transform: uppercase;
-          white-space: nowrap;
+          white-space: pre-line;
+          overflow-wrap: anywhere;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 4;
         }
 
         .rgv-campaign-bar__action {
@@ -1246,7 +1252,7 @@ function PromotionAnnouncement() {
           line-height: 1;
         }
 
-        @media (max-width: 700px) {
+        @media (max-width: 900px) {
           .rgv-campaign-bar {
             background:
               radial-gradient(circle at 18% 20%, rgba(255, 153, 164, 0.24), transparent 30%),
@@ -1258,8 +1264,8 @@ function PromotionAnnouncement() {
             width: calc(100% - 24px);
             grid-template-columns: minmax(0, 1fr);
             align-content: center;
-            gap: 8px;
-            padding-block: 8px;
+            gap: 10px;
+            padding-block: 10px;
           }
 
           .rgv-campaign-bar__eyebrow,
@@ -1270,7 +1276,7 @@ function PromotionAnnouncement() {
           .rgv-site-header .rgv-campaign-bar__copy {
             width: 100%;
             flex: none;
-            overflow: hidden;
+            overflow: visible;
           }
 
           .rgv-campaign-bar__copy strong {
@@ -1278,9 +1284,10 @@ function PromotionAnnouncement() {
             width: 100%;
             max-width: 100%;
             font-size: 11px;
-            letter-spacing: 0.025em;
-            line-height: 1.2;
+            letter-spacing: 0.015em;
+            line-height: 1.3;
             text-align: center;
+            -webkit-line-clamp: 4;
           }
 
           .rgv-campaign-bar__action {
@@ -1345,6 +1352,7 @@ function PromotionAnnouncement() {
 
           .rgv-campaign-bar__copy strong {
             font-size: 10px;
+            line-height: 1.35;
           }
 
           .rgv-campaign-bar__link {

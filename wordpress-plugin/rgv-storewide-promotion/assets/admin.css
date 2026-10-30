@@ -106,7 +106,9 @@
 .rgv-fields label, .rgv-field-wide { display: grid; gap: 7px; }
 .rgv-field-wide { margin-top: 18px; }
 .rgv-fields label > span, .rgv-field-wide > span { font-weight: 650; }
-.rgv-fields input, .rgv-fields select, .rgv-field-wide input, .rgv-field-wide select { width: 100%; min-height: 42px; margin: 0; border-color: #b7b9bd; background: #fff; color: #1d2327; color-scheme: light; }
+.rgv-fields input, .rgv-fields select, .rgv-field-wide input, .rgv-field-wide select, .rgv-field-wide textarea { width: 100%; min-height: 42px; margin: 0; border-color: #b7b9bd; background: #fff; color: #1d2327; color-scheme: light; }
+.rgv-field-wide textarea { min-height: 92px; padding: 10px 12px; line-height: 1.45; resize: vertical; }
+.rgv-field-wide [data-rgv-headline-count] { float: right; color: #8a2424; font-variant-numeric: tabular-nums; }
 .rgv-fields option, .rgv-field-wide option { background: #fff; color: #1d2327; }
 .rgv-fields small, .rgv-field-wide small { color: #646970; font-weight: 400; line-height: 1.45; }
 [data-rgv-product-target][hidden], [data-rgv-discount-field][hidden] { display: none; }

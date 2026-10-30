@@ -18,7 +18,7 @@ const [main, engine, proxy, navbar, navbarCss, nativeCss, adminJs, cartApi, cart
 
 for (const expected of [
   "Plugin Name: RGV Ofertas y Anuncios",
-  "Version: 1.3.0",
+  "Version: 1.4.0",
   "Requires Plugins: woocommerce",
   "declare_compatibility( 'custom_order_tables'",
 ]) {
@@ -59,8 +59,11 @@ assert(navbar.includes("const hasCta"), "Optional storefront button is missing")
 assert(navbar.includes("function PromotionAnnouncement()"), "Promotion countdown is missing");
 assert(navbar.includes('fetch("/api/promotion"'), "Promotion countdown is not connected to the proxy");
 assert(navbar.includes("<strong>{campaign.headline}</strong>"), "Promotion headline must remain prominent");
-assert(navbarCss.includes("--rgv-announcement-height: 64px"), "Storefront campaign banner height is missing");
-assert(nativeCss.includes("min-height: 64px"), "Native WordPress campaign banner layout is missing");
+assert(navbarCss.includes("--rgv-announcement-height: 80px"), "Expanded storefront campaign banner height is missing");
+assert(nativeCss.includes("min-height: 80px"), "Expanded native WordPress campaign banner layout is missing");
+assert(engine.includes('maxlength="240"'), "Expanded promotion message field is missing");
+assert(proxy.includes("slice(0, 240)"), "Expanded promotion message is truncated by the storefront proxy");
+assert(adminJs.includes('headline.value.length + "/240"'), "Promotion character counter is not wired up");
 assert(cartApi.includes("price,regular_price,sale_price"), "Live cart validation must request current prices");
 assert(cartContext.includes("hasReconciledPricesRef"), "Persisted cart prices are not reconciled");
 

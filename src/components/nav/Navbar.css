@@ -17,7 +17,9 @@
   -webkit-font-smoothing: antialiased;
 }
 .rgv-site-header.is-overlay { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 64px; }
+.rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 80px; }
+.rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 72px; }
+.rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 96px; }
 .rgv-site-header .rgv-campaign-bar { display: flex; justify-content: center; border-bottom-color: #b9505945; background: radial-gradient(circle at 20% 0,#a2374029,transparent 34%),linear-gradient(110deg,#170609,#521016 58%,#120507); }
 .rgv-site-header button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .rgv-site-header :where(a,button):focus-visible { outline: 2px solid #df999a; outline-offset: 4px; }
@@ -81,10 +83,18 @@
 .rgv-nav-search-dialog > .pointer-events-none { display: none; }
 
 @media (max-width: 1100px) {
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 96px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 80px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 120px; }
   .rgv-nav-shell { width: calc(100% - 64px); }
   .rgv-nav-row { gap: 14px; }
   .rgv-nav-link { padding-inline: 11px; }
   .rgv-nav-cart-label { display: none; }
+}
+@media (max-width: 900px) {
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 116px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 88px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 136px; }
 }
 @media (max-width: 1023px) {
   .rgv-nav-row { display: flex; justify-content: space-between; }
@@ -118,7 +128,9 @@
 }
 @media (max-width: 767px) {
   .rgv-site-header { --rgv-navigation-height: 66px; }
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 72px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 116px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 88px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 136px; }
   .rgv-nav-shell { width: calc(100% - 36px); }
   .rgv-announcement-marquee__item { gap: 16px; padding-inline: 20px; font-size: 8px; letter-spacing: .1em; }
   .rgv-site-header .rgv-campaign-bar__copy { display: flex; }
@@ -126,7 +138,7 @@
   .rgv-nav-mobile__inner { width: calc(100% - 36px); padding-block: 21px 24px; }
 }
 @media (max-width: 700px) {
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 88px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 116px; }
 }
 @media (max-width: 639px) {
   .rgv-nav-search-trigger,.rgv-nav-account { display: none; }

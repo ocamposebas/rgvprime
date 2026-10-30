@@ -9,6 +9,8 @@
     var discountField = document.querySelector("[data-rgv-discount-field]");
     var countdown = document.querySelector("[data-rgv-countdown]");
     var endsAt = document.querySelector("[data-rgv-ends-at]");
+    var headline = document.querySelector("[data-rgv-headline]");
+    var headlineCount = document.querySelector("[data-rgv-headline-count]");
 
     if (!scopes.length) return;
 
@@ -36,11 +38,18 @@
       if (endsAt) endsAt.required = Boolean(countdown && countdown.checked);
     }
 
+    function updateHeadlineCount() {
+      if (!headline || !headlineCount) return;
+      headlineCount.textContent = headline.value.length + "/240";
+    }
+
     scopes.forEach(function (input) {
       input.addEventListener("change", updateFields);
     });
     if (countdown) countdown.addEventListener("change", updateFields);
+    if (headline) headline.addEventListener("input", updateHeadlineCount);
     updateFields();
+    updateHeadlineCount();
   }
 
   if (document.readyState === "loading") {

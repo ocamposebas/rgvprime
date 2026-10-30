@@ -3,7 +3,7 @@ Contributors: rgvprime
 Tags: woocommerce, promotion, sale, countdown, product discount
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 
 Publishes informational banners and schedules WooCommerce storewide or single-product discounts.
@@ -36,6 +36,11 @@ The discount is calculated from each product's current effective price. Existing
 6. Enable the campaign and save.
 
 == Changelog ==
+
+= 1.4.0 =
+* Expanded the main banner message from 80 to 240 characters.
+* Added a multiline editor with a live character counter in WooCommerce.
+* Redesigned headless and native banners to show longer announcements clearly on desktop and mobile.
 
 = 1.3.0 =
 * Added information-only banners that do not change product prices.
