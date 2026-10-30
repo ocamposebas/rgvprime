@@ -69,6 +69,27 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 Deploy matching storefront and plugin versions together when a change spans
 both applications.
 
+## Affiliate product feed
+
+`GET /api/feed` publishes the current public catalog as a versioned JSON feed.
+Product and variation links include the `sammyc` affiliate coupon plus UTM
+attribution. The response includes normalized prices, images, stock status,
+variants, cache metadata, CORS headers, and an ETag for conditional requests.
+
+Optional query parameters:
+
+| Parameter | Values | Purpose |
+| --- | --- | --- |
+| `q` | Text | Match a product name, slug, or SKU |
+| `type` | `simple`, `variable`, `all` | Filter product type |
+| `stock` | `in`, `out`, `all` | Filter availability |
+| `category` | Category name or slug | Filter product category |
+| `limit` | `1`–`100` | Limit returned products |
+
+Coupon eligibility and the final discount remain subject to WooCommerce
+validation at checkout. Opening a feed link stores the affiliate code for 30
+days and prepares it in the checkout coupon field.
+
 ## Checkout configuration
 
 Set `WC_API_URL`, `WC_CONSUMER_KEY`, and `WC_CONSUMER_SECRET` as private server

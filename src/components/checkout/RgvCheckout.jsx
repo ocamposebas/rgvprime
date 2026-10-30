@@ -1253,6 +1253,25 @@ export default function RgvCheckout() {
 
     clearForeignCartCache();
     localStorage.removeItem("rgv_checkout_coupon");
+
+    try {
+      const affiliate = JSON.parse(
+        localStorage.getItem("rgv_affiliate_coupon") || "null",
+      );
+      const affiliateCode = normalizeCoupon(affiliate?.code || "");
+      const affiliateExpiresAt = Number(affiliate?.expires_at || 0);
+
+      if (affiliateCode === "SAMMYC" && affiliateExpiresAt > Date.now()) {
+        setCouponInput(affiliateCode);
+        setCouponMessage(
+          "Affiliate code SAMMYC is ready. Enter your email and select Apply coupon.",
+        );
+      } else if (affiliate && affiliateExpiresAt <= Date.now()) {
+        localStorage.removeItem("rgv_affiliate_coupon");
+      }
+    } catch {
+      localStorage.removeItem("rgv_affiliate_coupon");
+    }
   }, []);
 
   useEffect(() => {

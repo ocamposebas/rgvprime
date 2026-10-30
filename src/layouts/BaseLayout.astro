@@ -279,6 +279,39 @@ const webpageSchema = {
       set:html={JSON.stringify(websiteSchema)}
     />
 
+    <script is:inline>
+      (() => {
+        const storageKey = "rgv_affiliate_coupon";
+        const allowedCoupon = "sammyc";
+        const coupon = new URLSearchParams(window.location.search)
+          .get("coupon")
+          ?.trim()
+          .toLowerCase();
+
+        if (coupon !== allowedCoupon) return;
+
+        try {
+          const capturedAt = Date.now();
+          window.localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              code: allowedCoupon,
+              captured_at: capturedAt,
+              expires_at: capturedAt + 30 * 24 * 60 * 60 * 1000,
+              landing_path: window.location.pathname,
+            }),
+          );
+          window.dispatchEvent(
+            new CustomEvent("rgv:affiliate-coupon", {
+              detail: { code: allowedCoupon },
+            }),
+          );
+        } catch {
+          // The link remains usable even if browser storage is unavailable.
+        }
+      })();
+    </script>
+
     {
       !errorPage && (
         <script
