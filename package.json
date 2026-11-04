@@ -23,7 +23,8 @@
     "test:account-orders": "node scripts/verify-account-order-visibility.mjs",
     "test:auth": "node scripts/verify-access-gate-auth.mjs",
     "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs",
-    "test:edebit": "node scripts/verify-edebit-guard.mjs"
+    "test:edebit": "node scripts/verify-edebit-guard.mjs",
+    "test:cookies": "node scripts/verify-cookie-consent.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.3",

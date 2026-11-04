@@ -13,8 +13,13 @@
 .rgv-footer-links { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 30px; padding-top: 20px; }
 .rgv-footer-links h2 { margin: 0 0 19px; color: #b88a81; font-size: 9px; font-weight: 500; line-height: 1.6; letter-spacing: .04em; }
 .rgv-footer-links ul { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.rgv-footer-links a { display: inline-flex; min-height: 35px; align-items: center; padding-block: 7px; color: #b6b7bf; font-size: 11px; font-weight: 400; line-height: 1.7; }
-.rgv-footer-links a:hover { color: #e5c4bd; }
+.rgv-footer-links a,
+.rgv-footer-links button { display: inline-flex; min-height: 35px; align-items: center; padding-block: 7px; color: #b6b7bf; font: inherit; font-size: 11px; font-weight: 400; line-height: 1.7; text-align: left; }
+.rgv-footer-links button { padding-inline: 0; border: 0; background: transparent; cursor: pointer; }
+.rgv-footer-links a:hover,
+.rgv-footer-links button:hover { color: #e5c4bd; }
+.rgv-footer-links a:focus-visible,
+.rgv-footer-links button:focus-visible { border-radius: 3px; outline: 2px solid #d18d87; outline-offset: 3px; }
 .rgv-footer-support { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 38px; margin-top: 35px; padding: 24px; border: 1px solid #ffffff21; border-radius: 16px; background: #111215; scroll-margin-top: 140px; }
 .rgv-footer-support__intro { display: flex; align-items: center; gap: 17px; min-width: 0; }
 .rgv-footer-support__intro > span { display: grid; width: 40px; height: 40px; flex-shrink: 0; place-items: center; border: 1px solid #ffffff20; border-radius: 11px; background: #ffffff02; color: #b48e84; }
@@ -45,7 +50,8 @@
   .rgv-footer-brand > a:last-child { font-size: 9px; }
   .rgv-footer-links { gap: 15px; padding-top: 12px; border-top: 1px solid #ffffff19; }
   .rgv-footer-links h2 { margin: 12px 0 10px; font-size: 8px; }
-  .rgv-footer-links a { min-height: 38px; font-size: 10px; line-height: 1.6; }
+  .rgv-footer-links a,
+  .rgv-footer-links button { min-height: 38px; font-size: 10px; line-height: 1.6; }
   .rgv-footer-support { grid-template-columns: minmax(0,1fr) auto; gap: 20px 12px; margin-top: 28px; padding: 21px 18px; border-radius: 14px; }
   .rgv-footer-support__intro { gap: 12px; }
   .rgv-footer-support__intro h2 { font-size: 13px; }
@@ -61,5 +67,5 @@
   .rgv-footer-bottom p { font-size: 8px; }
   .rgv-footer-bottom > span { font-size: 7px; }
 }
-@media (max-width: 359px) { .rgv-footer-shell { width: calc(100% - 28px); } .rgv-footer-support { grid-template-columns: 1fr; } .rgv-footer-support__intro { grid-column: auto; } .rgv-footer-button { width: 100%; font-size: 10px; } .rgv-footer-links { gap: 12px; } .rgv-footer-links a { font-size: 9px; } }
+@media (max-width: 359px) { .rgv-footer-shell { width: calc(100% - 28px); } .rgv-footer-support { grid-template-columns: 1fr; } .rgv-footer-support__intro { grid-column: auto; } .rgv-footer-button { width: 100%; font-size: 10px; } .rgv-footer-links { gap: 12px; } .rgv-footer-links a, .rgv-footer-links button { font-size: 9px; } }
 @media (prefers-reduced-motion: reduce) { .rgv-footer * { transition: none; } }

@@ -4,6 +4,12 @@ import "../styles/global.css";
 import Agegate from "../components/agegate/AgeGate";
 import SiteFooter from "../components/footer/SiteFooter.jsx";
 import ResearchDispatch from "../components/marketing/ResearchDispatch.jsx";
+import CookieConsent from "../components/privacy/CookieConsent.astro";
+import {
+  COOKIE_CONSENT_COOKIE_NAME,
+  COOKIE_CONSENT_STORAGE_KEY,
+  COOKIE_CONSENT_VERSION,
+} from "../lib/cookieConsent";
 import {
   normalizeCanonicalPath,
   SITE_NAME,
@@ -288,46 +294,88 @@ const webpageSchema = {
       )
     }
 
-    <script is:inline define:vars={{ omnisendBrandId }}>
-      window.__RGV_OMNISEND_ENABLED__ = Boolean(omnisendBrandId);
+    <script
+      is:inline
+      define:vars={{
+        omnisendBrandId,
+        consentCookieName: COOKIE_CONSENT_COOKIE_NAME,
+        consentStorageKey: COOKIE_CONSENT_STORAGE_KEY,
+        consentVersion: COOKIE_CONSENT_VERSION,
+      }}
+    >
+      (() => {
+        const gpc = navigator.globalPrivacyControl === true;
 
-      if (omnisendBrandId) {
-        window.omnisend = window.omnisend || [];
+        const normalizeConsent = (value) => {
+          const valid = value && value.version === consentVersion && value.necessary === true;
+          return {
+            version: consentVersion,
+            necessary: true,
+            analytics: false,
+            marketing: valid && !gpc ? value.marketing === true : false,
+            decided: valid && value.decided === true,
+            gpc,
+            updatedAt: valid && value.updatedAt ? value.updatedAt : "",
+          };
+        };
 
-        window.omnisend.push(["brandID", omnisendBrandId]);
-        window.omnisend.push(["track", "$pageViewed"]);
+        const readCookieConsent = () => {
+          const prefix = `${consentCookieName}=`;
+          const match = document.cookie
+            .split(";")
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(prefix));
+          if (!match) return null;
 
-        if (
-          !document.querySelector(
-            'script[src="https://omnisnippet1.com/inshop/launcher-v2.js"]',
-          )
-        ) {
-          var loadOmnisend = function () {
-            if (
-              document.querySelector(
-                'script[src="https://omnisnippet1.com/inshop/launcher-v2.js"]',
-              )
-            ) {
-              return;
+          try {
+            return JSON.parse(decodeURIComponent(match.slice(prefix.length)));
+          } catch {
+            return null;
+          }
+        };
+
+        const readConsent = () => {
+          try {
+            const stored = JSON.parse(localStorage.getItem(consentStorageKey) || "null");
+            if (stored?.version === consentVersion && stored?.necessary === true) {
+              return normalizeConsent(stored);
             }
+          } catch {}
 
-            var omnisendScript = document.createElement("script");
+          return normalizeConsent(readCookieConsent());
+        };
 
+        window.__RGV_COOKIE_CONSENT__ = readConsent();
+        window.__RGV_OMNISEND_ENABLED__ = Boolean(omnisendBrandId);
+
+        window.__RGV_LOAD_OMNISEND__ = () => {
+          if (
+            !omnisendBrandId ||
+            gpc ||
+            window.__RGV_COOKIE_CONSENT__?.marketing !== true ||
+            window.__RGV_OMNISEND_BOOTED__
+          ) {
+            return false;
+          }
+
+          window.__RGV_OMNISEND_BOOTED__ = true;
+          window.omnisend = window.omnisend || [];
+          window.omnisend.push(["brandID", omnisendBrandId]);
+          window.omnisend.push(["track", "$pageViewed"]);
+
+          const loadOmnisend = () => {
+            if (document.querySelector('script[data-rgv-omnisend]')) return;
+
+            const omnisendScript = document.createElement("script");
             omnisendScript.type = "text/javascript";
             omnisendScript.async = true;
-            omnisendScript.src =
-              "https://omnisnippet1.com/inshop/launcher-v2.js";
-
-            omnisendScript.setAttribute(
-              "data-rgv-omnisend",
-              "true",
-            );
-
+            omnisendScript.src = "https://omnisnippet1.com/inshop/launcher-v2.js";
+            omnisendScript.setAttribute("data-rgv-omnisend", "true");
             document.head.appendChild(omnisendScript);
           };
 
-          var scheduleOmnisend = function () {
-            window.setTimeout(function () {
+          const scheduleOmnisend = () => {
+            window.setTimeout(() => {
               if ("requestIdleCallback" in window) {
                 window.requestIdleCallback(loadOmnisend, { timeout: 4000 });
               } else {
@@ -336,13 +384,19 @@ const webpageSchema = {
             }, 2500);
           };
 
-          if (document.readyState === "complete") {
-            scheduleOmnisend();
-          } else {
-            window.addEventListener("load", scheduleOmnisend, { once: true });
-          }
-        }
-      }
+          if (document.readyState === "complete") scheduleOmnisend();
+          else window.addEventListener("load", scheduleOmnisend, { once: true });
+
+          return true;
+        };
+
+        window.addEventListener("rgv-cookie-consent-change", (event) => {
+          window.__RGV_COOKIE_CONSENT__ = normalizeConsent(event.detail);
+          if (window.__RGV_COOKIE_CONSENT__.marketing) window.__RGV_LOAD_OMNISEND__();
+        });
+
+        window.__RGV_LOAD_OMNISEND__();
+      })();
     </script>
 
     <slot name="head" />
@@ -357,6 +411,8 @@ const webpageSchema = {
       {showPreFooter && <ResearchDispatch currentPath={currentPath} />}
       {showFooter && <SiteFooter />}
     </div>
+
+    <CookieConsent />
 
     <button
       id="rgv-theme-toggle"

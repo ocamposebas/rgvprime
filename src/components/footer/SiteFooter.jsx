@@ -24,6 +24,9 @@ const footerLinks = [
     links: [
       { label: "Terms & Conditions", href: "/policies#terms" },
       { label: "Privacy Policy", href: "/policies#privacy" },
+      { label: "Cookie Policy", href: "/policies#cookies" },
+      { label: "Accessibility", href: "/policies#accessibility" },
+      { label: "Privacy Choices", action: "cookies" },
       {
         label: "Research Use Disclaimer",
         href: "/policies#research-use",
@@ -53,7 +56,13 @@ export default function SiteFooter() {
             {footerLinks.map((group) => (
               <div key={group.title}>
                 <h2>{group.title}</h2>
-                <ul>{group.links.map((link) => <li key={link.label}><a href={link.href}>{link.label}</a></li>)}</ul>
+                <ul>{group.links.map((link) => (
+                  <li key={link.label}>
+                    {link.action === "cookies"
+                      ? <button type="button" data-cookie-preferences>{link.label}</button>
+                      : <a href={link.href}>{link.label}</a>}
+                  </li>
+                ))}</ul>
               </div>
             ))}
           </nav>

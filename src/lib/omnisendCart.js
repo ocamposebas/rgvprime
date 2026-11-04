@@ -449,9 +449,15 @@ export function buildOmnisendCartEvent(items = [], addedItem = null, contact = {
   return payload;
 }
 
+function hasMarketingConsent() {
+  return Boolean(
+    isBrowser() && window.__RGV_COOKIE_CONSENT__?.marketing === true
+  );
+}
+
 function canUseOmnisend() {
   return Boolean(
-    isBrowser() &&
+    hasMarketingConsent() &&
       window.__RGV_OMNISEND_ENABLED__ &&
       window.omnisend &&
       typeof window.omnisend.push === "function"
@@ -466,7 +472,7 @@ function queueOmnisendEvent(eventName, payload) {
 }
 
 export function trackOmnisendCart(items = [], addedItem = null, contact = {}) {
-  if (!Array.isArray(items) || !items.length) return false;
+  if (!canUseOmnisend() || !Array.isArray(items) || !items.length) return false;
 
   return queueOmnisendEvent(
     "added product to cart",
@@ -475,7 +481,7 @@ export function trackOmnisendCart(items = [], addedItem = null, contact = {}) {
 }
 
 export function trackOmnisendStartedCheckout(items = [], contact = {}) {
-  if (!Array.isArray(items) || !items.length) return false;
+  if (!canUseOmnisend() || !Array.isArray(items) || !items.length) return false;
 
   const payload = buildOmnisendCartEvent(items, items.at(-1), contact);
   delete payload.properties.addedItem;
@@ -486,7 +492,7 @@ export function trackOmnisendStartedCheckout(items = [], contact = {}) {
 export function identifyOmnisendContact(contact = {}) {
   const email = normalizeEmail(contact.email);
 
-  if (!isBrowser() || !isValidEmail(email) || !window.__RGV_OMNISEND_ENABLED__) {
+  if (!hasMarketingConsent() || !isValidEmail(email) || !window.__RGV_OMNISEND_ENABLED__) {
     return Promise.resolve(false);
   }
 
@@ -520,7 +526,7 @@ export function identifyOmnisendContact(contact = {}) {
 }
 
 export function getRememberedOmnisendEmail() {
-  if (!isBrowser()) return "";
+  if (!hasMarketingConsent()) return "";
 
   const email = normalizeEmail(window.localStorage.getItem(IDENTIFIED_EMAIL_STORAGE_KEY));
   return isValidEmail(email) ? email : "";

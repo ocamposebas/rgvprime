@@ -1,0 +1,319 @@
+---
+import {
+  COOKIE_CONSENT_COOKIE_NAME,
+  COOKIE_CONSENT_MAX_AGE_SECONDS,
+  COOKIE_CONSENT_STORAGE_KEY,
+  COOKIE_CONSENT_VERSION,
+} from "../../lib/cookieConsent";
+---
+
+<div class="rgv-cookie-consent" data-cookie-consent-root hidden>
+  <section class="rgv-cookie-banner" data-cookie-banner role="dialog" aria-labelledby="rgv-cookie-title" aria-describedby="rgv-cookie-description">
+    <div class="rgv-cookie-banner__mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M20.2 13.1A8.7 8.7 0 0 1 10.9 3.8 8.7 8.7 0 1 0 20.2 13.1Z" />
+        <circle cx="8.4" cy="10" r=".9" fill="currentColor" stroke="none" />
+        <circle cx="11.2" cy="15.1" r=".9" fill="currentColor" stroke="none" />
+        <circle cx="6.8" cy="16.1" r=".7" fill="currentColor" stroke="none" />
+      </svg>
+    </div>
+
+    <div class="rgv-cookie-banner__copy">
+      <span>Privacy choices</span>
+      <h2 id="rgv-cookie-title">You control optional cookies.</h2>
+      <p id="rgv-cookie-description">
+        We use necessary storage for secure access, your cart and checkout. With your permission, we also use marketing technology to understand visits and recover carts.{" "}
+        <span class="rgv-cookie-banner__links"><a href="/policies#cookies">Cookie Policy</a><span aria-hidden="true"> · </span><a href="/policies#privacy">Privacy Policy</a></span>
+      </p>
+      <p class="rgv-cookie-banner__gpc" data-cookie-gpc hidden>
+        Your Global Privacy Control signal is active, so optional marketing technology remains off.
+      </p>
+    </div>
+
+    <div class="rgv-cookie-banner__actions">
+      <button type="button" class="rgv-cookie-button rgv-cookie-button--ghost" data-cookie-reject>Reject non-essential</button>
+      <button type="button" class="rgv-cookie-button rgv-cookie-button--ghost" data-cookie-manage>Manage choices</button>
+      <button type="button" class="rgv-cookie-button rgv-cookie-button--primary" data-cookie-accept>Accept all</button>
+    </div>
+  </section>
+</div>
+
+<div class="rgv-cookie-modal" data-cookie-modal hidden>
+  <button type="button" class="rgv-cookie-modal__scrim" data-cookie-modal-close aria-label="Close cookie preferences"></button>
+  <section class="rgv-cookie-preferences" role="dialog" aria-modal="true" aria-labelledby="rgv-cookie-preferences-title">
+    <header>
+      <div>
+        <span>RGVPRIME privacy center</span>
+        <h2 id="rgv-cookie-preferences-title">Cookie preferences</h2>
+      </div>
+      <button type="button" data-cookie-modal-close aria-label="Close cookie preferences">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+
+    <p class="rgv-cookie-preferences__intro">
+      Necessary technology is always active because the account, security checks, cart and payment flow cannot work without it. Marketing technology is optional.
+    </p>
+
+    <div class="rgv-cookie-preferences__list">
+      <div class="rgv-cookie-choice">
+        <span>
+          <strong>Strictly necessary</strong>
+          <small>Account and compliance sessions, fraud prevention, cart, checkout, security and your saved privacy choice.</small>
+        </span>
+        <span class="rgv-cookie-choice__required">Always active</span>
+      </div>
+
+      <label class="rgv-cookie-choice">
+        <span>
+          <strong>Marketing and cart recovery</strong>
+          <small>Allows Omnisend to measure page and cart activity, identify a contact after email entry, and support cart-recovery messages.</small>
+        </span>
+        <span class="rgv-cookie-switch">
+          <input type="checkbox" data-cookie-marketing />
+          <i aria-hidden="true"></i>
+          <span class="sr-only">Allow marketing cookies</span>
+        </span>
+      </label>
+    </div>
+
+    <p class="rgv-cookie-preferences__gpc" data-cookie-gpc hidden>
+      Global Privacy Control is enabled in your browser. Marketing technology is locked off while this signal is active.
+    </p>
+
+    <footer>
+      <button type="button" class="rgv-cookie-button rgv-cookie-button--ghost" data-cookie-reject>Reject non-essential</button>
+      <button type="button" class="rgv-cookie-button rgv-cookie-button--primary" data-cookie-save>Save preferences</button>
+    </footer>
+  </section>
+</div>
+
+<button type="button" class="rgv-cookie-reopen" data-cookie-preferences hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 13.1A8.7 8.7 0 0 1 10.9 3.8 8.7 8.7 0 1 0 20.2 13.1Z" /></svg>
+  Privacy choices
+</button>
+
+<script
+  is:inline
+  define:vars={{
+    consentCookieName: COOKIE_CONSENT_COOKIE_NAME,
+    consentMaxAge: COOKIE_CONSENT_MAX_AGE_SECONDS,
+    consentStorageKey: COOKIE_CONSENT_STORAGE_KEY,
+    consentVersion: COOKIE_CONSENT_VERSION,
+  }}
+>
+  (() => {
+    const root = document.querySelector("[data-cookie-consent-root]");
+    const banner = document.querySelector("[data-cookie-banner]");
+    const modal = document.querySelector("[data-cookie-modal]");
+    const reopen = document.querySelector(".rgv-cookie-reopen[data-cookie-preferences]");
+    const marketingInput = document.querySelector("[data-cookie-marketing]");
+    const acceptButtons = document.querySelectorAll("[data-cookie-accept]");
+    const rejectButtons = document.querySelectorAll("[data-cookie-reject]");
+    const closeButtons = document.querySelectorAll("[data-cookie-modal-close]");
+    const saveButton = document.querySelector("[data-cookie-save]");
+    const gpcNotices = document.querySelectorAll("[data-cookie-gpc]");
+    const gpc = navigator.globalPrivacyControl === true;
+
+    if (!root || !banner || !modal || !reopen || !marketingInput) return;
+
+    const getCookieValue = () => {
+      const prefix = `${consentCookieName}=`;
+      const match = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith(prefix));
+      if (!match) return null;
+
+      try {
+        return JSON.parse(decodeURIComponent(match.slice(prefix.length)));
+      } catch {
+        return null;
+      }
+    };
+
+    const normalizeConsent = (value) => {
+      const valid = value && value.version === consentVersion && value.necessary === true;
+      return {
+        version: consentVersion,
+        necessary: true,
+        analytics: false,
+        marketing: valid && !gpc ? value.marketing === true : false,
+        decided: valid && value.decided === true,
+        gpc,
+        updatedAt: valid && value.updatedAt ? value.updatedAt : "",
+      };
+    };
+
+    const readConsent = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(consentStorageKey) || "null");
+        if (stored?.version === consentVersion && stored?.necessary === true) {
+          return normalizeConsent(stored);
+        }
+      } catch {}
+
+      return normalizeConsent(getCookieValue());
+    };
+
+    const clearMarketingStorage = () => {
+      const knownKeys = [
+        "rgv-prime-omnisend-cart-id",
+        "rgv-prime-omnisend-email",
+        "rgv-prime-omnisend-checkout-signature-v1",
+      ];
+
+      [localStorage, sessionStorage].forEach((storage) => {
+        const keys = [];
+        try {
+          for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (key && (knownKeys.includes(key) || /omnisend|soundest/i.test(key))) keys.push(key);
+          }
+          keys.forEach((key) => storage.removeItem(key));
+        } catch {}
+      });
+
+      document.cookie.split(";").forEach((part) => {
+        const name = part.split("=")[0]?.trim();
+        if (name && /omnisend|soundest/i.test(name)) {
+          document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
+        }
+      });
+    };
+
+    const persistConsent = (marketing) => {
+      const previous = readConsent();
+      const next = normalizeConsent({
+        version: consentVersion,
+        necessary: true,
+        analytics: false,
+        marketing: Boolean(marketing),
+        decided: true,
+        gpc,
+        updatedAt: new Date().toISOString(),
+      });
+      next.decided = true;
+      next.updatedAt = new Date().toISOString();
+
+      try { localStorage.setItem(consentStorageKey, JSON.stringify(next)); } catch {}
+
+      const secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `${consentCookieName}=${encodeURIComponent(JSON.stringify(next))}; Max-Age=${consentMaxAge}; Path=/; SameSite=Lax${secure}`;
+      window.__RGV_COOKIE_CONSENT__ = next;
+
+      if (!next.marketing) clearMarketingStorage();
+
+      window.dispatchEvent(new CustomEvent("rgv-cookie-consent-change", { detail: next }));
+      closePreferences();
+      root.hidden = true;
+      reopen.hidden = false;
+
+      if (previous.marketing && !next.marketing && document.querySelector("script[data-rgv-omnisend]")) {
+        location.reload();
+      }
+    };
+
+    const openPreferences = () => {
+      const current = readConsent();
+      marketingInput.checked = !gpc && current.marketing;
+      marketingInput.disabled = gpc;
+      root.hidden = true;
+      modal.hidden = false;
+      document.documentElement.classList.add("rgv-cookie-modal-open");
+      window.setTimeout(() => (gpc ? saveButton : marketingInput)?.focus(), 0);
+    };
+
+    function closePreferences() {
+      modal.hidden = true;
+      document.documentElement.classList.remove("rgv-cookie-modal-open");
+    }
+
+    const current = readConsent();
+    window.__RGV_COOKIE_CONSENT__ = current;
+    gpcNotices.forEach((notice) => { notice.hidden = !gpc; });
+    marketingInput.disabled = gpc;
+    marketingInput.checked = !gpc && current.marketing;
+
+    if (gpc) {
+      acceptButtons.forEach((button) => { button.textContent = "Continue with privacy signal"; });
+    }
+
+    if (current.decided) reopen.hidden = false;
+    else root.hidden = false;
+
+    acceptButtons.forEach((button) => button.addEventListener("click", () => persistConsent(!gpc)));
+    rejectButtons.forEach((button) => button.addEventListener("click", () => persistConsent(false)));
+    document.addEventListener("click", (event) => {
+      const trigger = event.target instanceof Element
+        ? event.target.closest("[data-cookie-manage], [data-cookie-preferences]")
+        : null;
+      if (!trigger) return;
+      event.preventDefault();
+      openPreferences();
+    });
+    closeButtons.forEach((button) => button.addEventListener("click", () => {
+      closePreferences();
+      if (!readConsent().decided) root.hidden = false;
+    }));
+    saveButton?.addEventListener("click", () => persistConsent(marketingInput.checked));
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modal.hidden) {
+        closePreferences();
+        if (!readConsent().decided) root.hidden = false;
+      }
+    });
+  })();
+</script>
+
+<style>
+  .rgv-cookie-consent[hidden],.rgv-cookie-modal[hidden],.rgv-cookie-reopen[hidden] { display:none!important; }
+  .rgv-cookie-consent,.rgv-cookie-modal,.rgv-cookie-reopen { font-family:"RGV Sora",ui-sans-serif,system-ui,sans-serif; }
+  .rgv-cookie-consent { position:fixed;z-index:2147483000;right:18px;bottom:18px;left:18px;display:flex;justify-content:center;pointer-events:none; }
+  .rgv-cookie-banner { display:grid;width:min(1180px,100%);grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;padding:17px 18px;border:1px solid #ffffff24;border-radius:18px;background:#0c0d10f5;box-shadow:0 24px 90px #000c,0 0 0 1px #0008;backdrop-filter:blur(18px);color:#ecebe9;pointer-events:auto; }
+  .rgv-cookie-banner__mark { display:grid;width:42px;height:42px;place-items:center;border:1px solid #7b343d80;border-radius:12px;background:#721a2438;color:#d49a91; }
+  .rgv-cookie-banner__mark svg { width:21px;height:21px;stroke:currentColor;stroke-width:1.5; }
+  .rgv-cookie-banner__copy>span,.rgv-cookie-preferences header span { color:#bd7772;font-size:8px;font-weight:650;letter-spacing:.12em;text-transform:uppercase; }
+  .rgv-cookie-banner h2 { margin:3px 0 0;color:#f1f0ed;font-size:15px;font-weight:560;letter-spacing:-.025em; }
+  .rgv-cookie-banner p { max-width:680px;margin:5px 0 0;color:#a5a6ad;font-size:10px;line-height:1.65; }
+  .rgv-cookie-banner p a { color:#d5aaa3;text-decoration-color:#a55f5860;text-underline-offset:3px; }
+  .rgv-cookie-banner__links { white-space:nowrap; }
+  .rgv-cookie-banner__gpc { color:#b7c9b2!important; }
+  .rgv-cookie-banner__actions { display:flex;align-items:center;justify-content:flex-end;gap:8px; }
+  .rgv-cookie-button { min-height:40px;padding:9px 13px;border-radius:10px;font:inherit;font-size:9px;font-weight:580;letter-spacing:.02em;cursor:pointer; }
+  .rgv-cookie-button--ghost { border:1px solid #ffffff22;background:#ffffff04;color:#c6c6ca; }
+  .rgv-cookie-button--ghost:hover { border-color:#ffffff3c;background:#ffffff09;color:#fff; }
+  .rgv-cookie-button--primary { border:1px solid #a43c45;background:#851e27;color:#fff; }
+  .rgv-cookie-button--primary:hover { background:#9a2932; }
+  .rgv-cookie-modal { position:fixed;z-index:2147483001;inset:0;display:grid;place-items:center;padding:18px; }
+  .rgv-cookie-modal__scrim { position:absolute;inset:0;border:0;background:#020204d9;backdrop-filter:blur(7px);cursor:pointer; }
+  .rgv-cookie-preferences { position:relative;width:min(590px,100%);max-height:min(720px,calc(100svh - 36px));overflow:auto;padding:24px;border:1px solid #ffffff24;border-radius:20px;background:#101114;color:#eeece9;box-shadow:0 35px 120px #000e; }
+  .rgv-cookie-preferences header { display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:18px;border-bottom:1px solid #ffffff17; }
+  .rgv-cookie-preferences h2 { margin:5px 0 0;font-size:26px;font-weight:500;letter-spacing:-.045em; }
+  .rgv-cookie-preferences header>button { display:grid;width:36px;height:36px;place-items:center;border:1px solid #ffffff1e;border-radius:10px;background:#ffffff04;color:#aaaab1;cursor:pointer; }
+  .rgv-cookie-preferences header>button:hover { background:#ffffff09;color:#fff; }
+  .rgv-cookie-preferences header svg { width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6; }
+  .rgv-cookie-preferences__intro { margin:18px 0;color:#9b9da5;font-size:11px;line-height:1.75; }
+  .rgv-cookie-preferences__list { display:grid;gap:9px; }
+  .rgv-cookie-choice { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:15px;border:1px solid #ffffff17;border-radius:13px;background:#0b0c0f; }
+  .rgv-cookie-choice>span:first-child { display:grid;gap:4px; }
+  .rgv-cookie-choice strong { color:#dfdedb;font-size:11px;font-weight:550; }
+  .rgv-cookie-choice small { color:#8f919a;font-size:9px;line-height:1.65; }
+  .rgv-cookie-choice__required { color:#b3c5ae;font-size:8px;font-weight:620;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap; }
+  .rgv-cookie-switch { position:relative;display:block;width:42px;height:24px; }
+  .rgv-cookie-switch input { position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer; }
+  .rgv-cookie-switch i { position:absolute;inset:0;border:1px solid #ffffff25;border-radius:999px;background:#25262b;pointer-events:none;transition:background-color 160ms ease,border-color 160ms ease; }
+  .rgv-cookie-switch i::after { content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#a2a3aa;transition:transform 160ms ease,background-color 160ms ease; }
+  .rgv-cookie-switch input:checked+i { border-color:#a9444d;background:#7d1c26; }
+  .rgv-cookie-switch input:checked+i::after { background:#fff;transform:translateX(18px); }
+  .rgv-cookie-switch input:focus-visible+i { outline:2px solid #d2857d;outline-offset:3px; }
+  .rgv-cookie-switch input:disabled { cursor:not-allowed; }
+  .rgv-cookie-switch input:disabled+i { opacity:.45; }
+  .rgv-cookie-preferences__gpc { margin:12px 0 0;padding:11px 12px;border:1px solid #52704e66;border-radius:10px;background:#263d2a26;color:#b8cbb2;font-size:9px;line-height:1.6; }
+  .rgv-cookie-preferences footer { display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:18px;border-top:1px solid #ffffff17; }
+  .rgv-cookie-reopen { position:fixed;z-index:2147482999;bottom:14px;left:14px;display:flex;min-height:34px;align-items:center;gap:7px;padding:7px 10px;border:1px solid #ffffff20;border-radius:10px;background:#0c0d10e8;color:#aaaab0;font:inherit;font-size:8px;box-shadow:0 10px 35px #0008;backdrop-filter:blur(12px);cursor:pointer; }
+  .rgv-cookie-reopen:hover { border-color:#91414a;color:#fff; }
+  .rgv-cookie-reopen svg { width:13px;height:13px;fill:none;stroke:#c3827b;stroke-width:1.6; }
+  .rgv-cookie-modal-open { overflow:hidden; }
+  @media(max-width:900px){.rgv-cookie-banner{grid-template-columns:auto minmax(0,1fr)}.rgv-cookie-banner__actions{grid-column:1/-1;justify-content:stretch}.rgv-cookie-banner__actions .rgv-cookie-button{flex:1}}
+  @media(max-width:600px){.rgv-cookie-consent{right:10px;bottom:10px;left:10px}.rgv-cookie-banner{display:block;padding:17px;border-radius:16px}.rgv-cookie-banner__mark{width:36px;height:36px;margin-bottom:12px}.rgv-cookie-banner h2{font-size:16px}.rgv-cookie-banner p{font-size:10px}.rgv-cookie-banner__actions{display:grid;grid-template-columns:1fr 1fr;margin-top:14px}.rgv-cookie-banner__actions .rgv-cookie-button--primary{grid-column:1/-1;grid-row:1}.rgv-cookie-button{min-height:42px}.rgv-cookie-preferences{padding:20px 16px}.rgv-cookie-preferences h2{font-size:23px}.rgv-cookie-choice{gap:12px;padding:13px}.rgv-cookie-preferences footer{display:grid;grid-template-columns:1fr 1fr}.rgv-cookie-reopen{bottom:10px;left:10px}}
+  @media(prefers-reduced-motion:reduce){.rgv-cookie-consent *,.rgv-cookie-modal *,.rgv-cookie-reopen{transition:none!important}}
+</style>
