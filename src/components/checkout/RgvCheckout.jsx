@@ -12,6 +12,8 @@ import {
   Lock,
   Mail,
   MapPin,
+  Plus,
+  Search,
   ShieldCheck,
   Tag,
   Truck,
@@ -1103,6 +1105,342 @@ function ComplianceConfirm({
           </span>
         </span>
       </label>
+    </section>
+  );
+}
+
+function isQuickAddAvailable(product = {}) {
+  return (
+    product.purchasable !== false &&
+    String(product.stock_status || "instock").toLowerCase() !== "outofstock"
+  );
+}
+
+function getQuickAddPrice(product = {}) {
+  return toMoneyNumber(
+    product.price || product.sale_price || product.regular_price,
+    0,
+  );
+}
+
+function getQuickAddVariationLabel(variation = {}, index = 0) {
+  const attributes = Array.isArray(variation.attributes)
+    ? variation.attributes
+    : [];
+  const label = attributes
+    .map((attribute) => attribute?.option || attribute?.value || attribute?.name || "")
+    .filter(Boolean)
+    .join(" / ");
+
+  return label || variation.name || variation.sku || `Option ${index + 1}`;
+}
+
+function buildQuickAddVariation(product, variation, index = 0) {
+  const variationId = Number(variation.id || variation.variation_id || 0);
+  const selectionLabel = getQuickAddVariationLabel(variation, index);
+  const variationPrice = getQuickAddPrice(variation) || getQuickAddPrice(product);
+  const variationImage =
+    variation.image || variation.image_data?.src || getItemImage(product);
+  const selectedOptions = Object.fromEntries(
+    (Array.isArray(variation.attributes) ? variation.attributes : [])
+      .map((attribute) => [
+        String(attribute?.name || attribute?.slug || "option"),
+        attribute?.option || attribute?.value || "",
+      ])
+      .filter(([, value]) => Boolean(value)),
+  );
+
+  return {
+    ...product,
+    ...variation,
+    id: variationId,
+    parent_id: product.id,
+    parentId: product.id,
+    product_id: product.id,
+    variation_id: variationId,
+    variationId,
+    type: "variation",
+    name: `${product.name} — ${selectionLabel}`,
+    slug: product.slug,
+    price: variationPrice,
+    regular_price: variation.regular_price || variationPrice,
+    sale_price: variation.sale_price || "",
+    image: variationImage,
+    stock_status: variation.stock_status || product.stock_status,
+    stock_quantity: variation.stock_quantity ?? null,
+    selected_option: selectionLabel,
+    selectedOptions,
+    variation: selectedOptions,
+  };
+}
+
+function CheckoutQuickAdd({ cart, cartItems }) {
+  const [products, setProducts] = useState([]);
+  const [status, setStatus] = useState("loading");
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(null);
+  const [variations, setVariations] = useState([]);
+  const [variationStatus, setVariationStatus] = useState("idle");
+  const [addingKey, setAddingKey] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      try {
+        const response = await fetch("/api/products?limit=70", {
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json();
+        const availableProducts = Array.isArray(data?.products)
+          ? data.products.filter(isQuickAddAvailable)
+          : [];
+
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || "Products are temporarily unavailable.");
+        }
+
+        setProducts(availableProducts);
+        setStatus("ready");
+      } catch (productError) {
+        if (productError?.name === "AbortError") return;
+        setStatus("error");
+      }
+    }
+
+    void loadProducts();
+    return () => controller.abort();
+  }, []);
+
+  const cartProductIds = useMemo(
+    () => new Set(
+      (Array.isArray(cartItems) ? cartItems : [])
+        .map((item) => Number(getOfficialProductId(item)))
+        .filter((id) => id > 0),
+    ),
+    [cartItems],
+  );
+
+  const matchingProducts = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase();
+    const ranked = products
+      .filter((product) => {
+        if (!cleanQuery) return true;
+        return [product.name, product.slug, product.sku]
+          .some((value) => String(value || "").toLowerCase().includes(cleanQuery));
+      })
+      .sort((left, right) => {
+        const leftInCart = cartProductIds.has(Number(left.id)) ? 1 : 0;
+        const rightInCart = cartProductIds.has(Number(right.id)) ? 1 : 0;
+        if (leftInCart !== rightInCart) return leftInCart - rightInCart;
+        if (String(left.type) !== String(right.type)) {
+          return String(left.type) === "simple" ? -1 : 1;
+        }
+        if (Boolean(left.featured) !== Boolean(right.featured)) {
+          return left.featured ? -1 : 1;
+        }
+        return String(left.name || "").localeCompare(String(right.name || ""));
+      });
+
+    return ranked.slice(0, cleanQuery || expanded ? 12 : 4);
+  }, [cartProductIds, expanded, products, query]);
+
+  const closeOptions = () => {
+    setActiveProduct(null);
+    setVariations([]);
+    setVariationStatus("idle");
+  };
+
+  const loadProductOptions = async (product) => {
+    if (activeProduct?.id === product.id) {
+      closeOptions();
+      return;
+    }
+
+    setActiveProduct(product);
+    setVariations([]);
+    setVariationStatus("loading");
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/products?slug=${encodeURIComponent(product.slug)}`, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json();
+      const productVariations = Array.isArray(data?.product?.variations)
+        ? data.product.variations.filter(isQuickAddAvailable)
+        : [];
+
+      if (!response.ok || data?.success === false || !productVariations.length) {
+        throw new Error(data?.message || "No options are available right now.");
+      }
+
+      setActiveProduct(data.product || product);
+      setVariations(productVariations);
+      setVariationStatus("ready");
+    } catch {
+      setVariationStatus("error");
+    }
+  };
+
+  const addProduct = async (product, key) => {
+    if (typeof cart?.addItem !== "function" || addingKey) return;
+
+    setAddingKey(key);
+    setNotice("");
+
+    try {
+      const result = await cart.addItem(product, 1, { openCart: false });
+
+      if (result?.valid) {
+        setNotice(`${product.name} added to your order.`);
+        setQuery("");
+        setExpanded(false);
+        closeOptions();
+      } else {
+        setNotice(result?.message || "That product could not be added. Please try again.");
+      }
+    } catch {
+      setNotice("That product could not be added. Please try again.");
+    } finally {
+      setAddingKey("");
+    }
+  };
+
+  return (
+    <section className="rgvx-quick-add" aria-labelledby="rgvx-quick-add-title">
+      <div className="rgvx-quick-add__heading">
+        <span>
+          <small>Stay in checkout</small>
+          <strong id="rgvx-quick-add-title">Add something else</strong>
+        </span>
+        <Plus size={16} aria-hidden="true" />
+      </div>
+      <p className="rgvx-quick-add__intro">
+        Add products here without losing your checkout details.
+      </p>
+
+      <label className="rgvx-quick-add__search">
+        <Search size={14} aria-hidden="true" />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setExpanded(Boolean(event.target.value));
+            closeOptions();
+          }}
+          placeholder="Search the catalog"
+          aria-label="Search products to add"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setExpanded(false);
+              closeOptions();
+            }}
+            aria-label="Clear product search"
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        )}
+      </label>
+
+      {status === "loading" && <p className="rgvx-quick-add__status">Loading quick picks…</p>}
+      {status === "error" && (
+        <p className="rgvx-quick-add__status">Quick add is temporarily unavailable.</p>
+      )}
+
+      {status === "ready" && (
+        <>
+          <div className="rgvx-quick-add__list">
+            {matchingProducts.map((product) => {
+              const isVariable = String(product.type).toLowerCase() === "variable";
+              const productKey = `product-${product.id}`;
+              const isAdding = addingKey === productKey;
+              const isOpen = activeProduct?.id === product.id;
+
+              return (
+                <article className={`rgvx-quick-add__item${isOpen ? " is-open" : ""}`} key={product.id}>
+                  <img src={getItemImage(product)} alt="" width="44" height="50" loading="lazy" />
+                  <span>
+                    <strong>{product.name}</strong>
+                    <small>{isVariable ? "Select an option" : formatMoney(getQuickAddPrice(product))}</small>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={Boolean(addingKey)}
+                    aria-expanded={isVariable ? isOpen : undefined}
+                    onClick={() => isVariable
+                      ? void loadProductOptions(product)
+                      : void addProduct(product, productKey)}
+                  >
+                    {isAdding ? "Adding…" : isVariable ? (isOpen ? "Close" : "Choose") : "Add"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+
+          {!query && products.length > 4 && (
+            <button
+              type="button"
+              className="rgvx-quick-add__more"
+              onClick={() => {
+                setExpanded((current) => !current);
+                closeOptions();
+              }}
+            >
+              {expanded ? "Show fewer products" : "Browse more products"}
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          )}
+
+          {query && matchingProducts.length === 0 && (
+            <p className="rgvx-quick-add__status">No matching products found.</p>
+          )}
+        </>
+      )}
+
+      {activeProduct && (
+        <div className="rgvx-quick-add__options" aria-live="polite">
+          <div>
+            <strong>Choose {activeProduct.name}</strong>
+            <button type="button" onClick={closeOptions} aria-label="Close product options">
+              <X size={13} aria-hidden="true" />
+            </button>
+          </div>
+
+          {variationStatus === "loading" && <p>Loading available options…</p>}
+          {variationStatus === "error" && <p>Options could not be loaded. Please try again.</p>}
+          {variationStatus === "ready" && variations.map((variation, index) => {
+            const option = buildQuickAddVariation(activeProduct, variation, index);
+            const optionKey = `variation-${option.variation_id}`;
+
+            return (
+              <button
+                type="button"
+                key={optionKey}
+                disabled={Boolean(addingKey)}
+                onClick={() => void addProduct(option, optionKey)}
+              >
+                <span>{getQuickAddVariationLabel(variation, index)}</span>
+                <strong>{addingKey === optionKey ? "Adding…" : formatMoney(option.price)}</strong>
+                <Plus size={13} aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {notice && <p className="rgvx-quick-add__notice" role="status">{notice}</p>}
     </section>
   );
 }
@@ -4470,6 +4808,8 @@ export default function RgvCheckout() {
                 </div>
               )}
             </div>
+
+            <CheckoutQuickAdd cart={cart} cartItems={cartItems} />
 
             <div className="rgvx-totals">
               <div className="rgvx-total-row">

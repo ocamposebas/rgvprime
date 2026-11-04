@@ -642,7 +642,8 @@ export function CartProvider({ children }) {
     });
   }, [hasHydrated, validateStock]);
 
-  async function addItem(product, quantity = 1) {
+  async function addItem(product, quantity = 1, options = {}) {
+    const shouldOpenCart = options?.openCart !== false;
     const newItem = normalizeProduct(product, quantity);
 
     if (!newItem.product_id) {
@@ -655,7 +656,7 @@ export function CartProvider({ children }) {
 
     if (hasKnownInventory && !isProductAvailable(newItem, quantity)) {
       setCartNotice(`${newItem.name} is sold out and was not added to your cart.`);
-      openCart();
+      if (shouldOpenCart) openCart();
       return { success: true, valid: false };
     }
 
@@ -688,7 +689,7 @@ export function CartProvider({ children }) {
           );
         }
 
-        openCart();
+        if (shouldOpenCart) openCart();
         return { ...validation, valid: false };
       }
 
@@ -744,7 +745,7 @@ export function CartProvider({ children }) {
       });
 
       setCartNotice("");
-      openCart();
+      if (shouldOpenCart) openCart();
       return { success: true, valid: true, item: verifiedItem };
     } finally {
       pendingAdditionsRef.current.delete(newItem.id);
