@@ -671,6 +671,13 @@ export default function AgeGate() {
                       <GoogleSignInButton
                         clientId={GOOGLE_CLIENT_ID}
                         enabled={confirmationsComplete && botReady && !loading}
+                        pendingMessage={
+                          loading
+                            ? "Signing you in securely…"
+                            : confirmationsComplete
+                              ? "Completing the security check…"
+                              : "Complete the required confirmations to continue."
+                        }
                         onCredential={handleGoogleCredential}
                         onError={() =>
                           setError(
@@ -908,6 +915,7 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
 function GoogleSignInButton({
   clientId,
   enabled,
+  pendingMessage,
   onCredential,
   onError,
 }) {
@@ -919,7 +927,13 @@ function GoogleSignInButton({
   onErrorRef.current = onError;
 
   useEffect(() => {
-    if (!clientId) return undefined;
+    if (!clientId || !enabled) {
+      if (containerRef.current) {
+        containerRef.current.replaceChildren();
+      }
+
+      return undefined;
+    }
 
     let active = true;
     const ready = window.google?.accounts?.id
@@ -962,9 +976,9 @@ function GoogleSignInButton({
           theme: "filled_black",
           size: "large",
           text: "continue_with",
-          shape: "rectangular",
+          shape: "pill",
           logo_alignment: "left",
-          width: Math.min(400, containerRef.current.clientWidth || 400),
+          width: Math.min(340, containerRef.current.clientWidth || 340),
         });
       })
       .catch(() => {
@@ -978,20 +992,27 @@ function GoogleSignInButton({
         containerRef.current.replaceChildren();
       }
     };
-  }, [clientId]);
+  }, [clientId, enabled]);
+
+  if (!enabled) {
+    return (
+      <div className="rgv-gate-google rgv-gate-google--pending">
+        <div className="rgv-gate-google__prompt" role="status">
+          <span className="rgv-gate-google__prompt-dot" aria-hidden="true" />
+          <span>
+            <strong>Google sign-in</strong>
+            {pendingMessage}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rgv-gate-google">
-      <div
-        className={`rgv-gate-google__button${enabled ? "" : " is-disabled"}`}
-        aria-disabled={!enabled}
-        inert={!enabled ? "" : undefined}
-      >
+      <div className="rgv-gate-google__button">
         <div ref={containerRef} />
       </div>
-      {!enabled && (
-        <small>Complete the required confirmations to enable Google.</small>
-      )}
     </div>
   );
 }
