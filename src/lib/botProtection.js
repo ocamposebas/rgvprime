@@ -4,7 +4,9 @@ const TURNSTILE_SITE_KEY = String(
   import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "",
 ).trim();
 const TURNSTILE_SECRET_KEY = String(
-  import.meta.env.TURNSTILE_SECRET_KEY || "",
+  process.env.TURNSTILE_SECRET_KEY ||
+    import.meta.env.TURNSTILE_SECRET_KEY ||
+    "",
 ).trim();
 
 const SITEVERIFY_URL =
