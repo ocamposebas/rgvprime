@@ -666,30 +666,24 @@ export default function AgeGate() {
                     onTermsChange={setTermsAccepted}
                   />
 
-                  {GOOGLE_CLIENT_ID && (
-                    <>
-                      <GoogleSignInButton
-                        clientId={GOOGLE_CLIENT_ID}
-                        enabled={confirmationsComplete && botReady && !loading}
-                        pendingMessage={
-                          loading
-                            ? "Signing you in securely…"
-                            : confirmationsComplete
-                              ? "Completing the security check…"
-                              : "Complete the required confirmations to continue."
-                        }
-                        onCredential={handleGoogleCredential}
-                        onError={() =>
-                          setError(
-                            "Google sign-in could not load. Please use email and password or try again.",
-                          )
-                        }
-                      />
-                      <div className="rgv-gate__divider" aria-hidden="true">
-                        <span>or continue with email</span>
-                      </div>
-                    </>
-                  )}
+                  {GOOGLE_CLIENT_ID &&
+                    confirmationsComplete && botReady &&
+                    !loading && (
+                      <>
+                        <GoogleSignInButton
+                          clientId={GOOGLE_CLIENT_ID}
+                          onCredential={handleGoogleCredential}
+                          onError={() =>
+                            setError(
+                              "Google sign-in could not load. Please use email and password or try again.",
+                            )
+                          }
+                        />
+                        <div className="rgv-gate__divider" aria-hidden="true">
+                          <span>or continue with email</span>
+                        </div>
+                      </>
+                    )}
                 </div>
               )}
 
@@ -914,8 +908,6 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
 
 function GoogleSignInButton({
   clientId,
-  enabled,
-  pendingMessage,
   onCredential,
   onError,
 }) {
@@ -927,13 +919,7 @@ function GoogleSignInButton({
   onErrorRef.current = onError;
 
   useEffect(() => {
-    if (!clientId || !enabled) {
-      if (containerRef.current) {
-        containerRef.current.replaceChildren();
-      }
-
-      return undefined;
-    }
+    if (!clientId) return undefined;
 
     let active = true;
     const ready = window.google?.accounts?.id
@@ -992,21 +978,7 @@ function GoogleSignInButton({
         containerRef.current.replaceChildren();
       }
     };
-  }, [clientId, enabled]);
-
-  if (!enabled) {
-    return (
-      <div className="rgv-gate-google rgv-gate-google--pending">
-        <div className="rgv-gate-google__prompt" role="status">
-          <span className="rgv-gate-google__prompt-dot" aria-hidden="true" />
-          <span>
-            <strong>Google sign-in</strong>
-            {pendingMessage}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  }, [clientId]);
 
   return (
     <div className="rgv-gate-google">
