@@ -962,11 +962,12 @@ function GoogleSignInButton({
         window.google.accounts.id.renderButton(containerRef.current, {
           type: "standard",
           theme: "filled_black",
-          size: "large",
+          size: "medium",
           text: "continue_with",
           shape: "pill",
           logo_alignment: "left",
-          width: Math.min(340, containerRef.current.clientWidth || 340),
+          locale: "en",
+          width: Math.min(400, containerRef.current.clientWidth || 400),
         });
       })
       .catch(() => {
