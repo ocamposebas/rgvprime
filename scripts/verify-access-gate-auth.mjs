@@ -30,20 +30,32 @@ const [
   read("package.json"),
 ]);
 
-assert(ageGate.includes("GoogleSignInButton"), "the gate must render Google sign-in");
+assert(ageGate.includes("GoogleAccessButton"), "the gate must render Google sign-in");
 assert(ageGate.includes("accounts.google.com/gsi/client"), "the official Google Identity script must be used");
+assert(ageGate.includes("accounts.oauth2.initTokenClient"), "Google OAuth must use the official token client");
+assert(ageGate.includes("requestAccessToken"), "Google OAuth must start from an explicit user action");
 assert(ageGate.includes("appearance: \"interaction-only\""), "Turnstile should stay unobtrusive for legitimate visitors");
 assert(ageGate.includes("turnstileToken"), "the browser must submit the Turnstile token");
-assert(ageGate.includes("confirmationsComplete && botReady"), "Google sign-in must wait for compliance and bot checks");
+assert(
+  ageGate.includes('!confirmationsComplete') && ageGate.includes('!botReady'),
+  "Google sign-in must wait for compliance and bot checks",
+);
 
 assert.match(packageJson, /"google-auth-library"/);
 assert(googleIdentity.includes("verifyIdToken"), "the Google ID token must be verified server-side");
 assert(googleIdentity.includes("audience: GOOGLE_CLIENT_ID"), "the Google token audience must be pinned");
+assert(googleIdentity.includes("tokenInfo?.aud"), "Google access-token audience must be pinned");
+assert(googleIdentity.includes("openidconnect.googleapis.com/v1/userinfo"), "Google user info must come from the verified access token");
 assert(googleIdentity.includes("email_verified"), "Google email verification must be enforced");
 assert(
   googleEndpoint.indexOf("verifyGoogleCredential") <
     googleEndpoint.indexOf('portalRequest("google-login"'),
   "WordPress must only receive a server-verified Google identity",
+);
+assert(
+  googleEndpoint.indexOf("verifyGoogleAccessToken") <
+    googleEndpoint.indexOf('portalRequest("google-login"'),
+  "WordPress must only receive a server-verified Google access identity",
 );
 
 for (const [name, endpoint] of Object.entries({

@@ -17,7 +17,10 @@ import {
   botProtectionResponse,
   verifyBotProtection,
 } from "../../../lib/botProtection";
-import { verifyGoogleCredential } from "../../../lib/googleIdentity";
+import {
+  verifyGoogleAccessToken,
+  verifyGoogleCredential,
+} from "../../../lib/googleIdentity";
 import { filterVisibleAccountOrders } from "../../../lib/accountOrderVisibility";
 
 export const prerender = false;
@@ -64,7 +67,9 @@ export async function POST({ request, cookies, url }) {
       return botProtectionResponse(botCheck);
     }
 
-    const googleIdentity = await verifyGoogleCredential(body.credential);
+    const googleIdentity = body.accessToken
+      ? await verifyGoogleAccessToken(body.accessToken)
+      : await verifyGoogleCredential(body.credential);
     const data = await portalRequest("google-login", {
       body: googleIdentity,
     });

@@ -420,14 +420,19 @@ export default function AgeGate() {
     if (data?.success) openAuthenticatedSession(data);
   }
 
-  async function handleGoogleCredential(credential) {
+  async function handleGoogleAccessToken(accessToken) {
     if (!confirmationsComplete) {
       setError("Please complete all three required confirmations to continue.");
       return;
     }
 
+    if (!botReady) {
+      setError("The security check is still running. Please wait a moment and try again.");
+      return;
+    }
+
     const data = await submit("/api/account/google", {
-      credential,
+      accessToken,
       ageConfirmed,
       researchUseAcknowledged,
       termsAccepted,
@@ -667,24 +672,25 @@ export default function AgeGate() {
                   />
 
                   {GOOGLE_CLIENT_ID && (
-                    <>
-                      {confirmationsComplete && botReady && !loading ? (
-                        <GoogleSignInButton
-                          clientId={GOOGLE_CLIENT_ID}
-                          onCredential={handleGoogleCredential}
-                          onError={() =>
-                            setError(
-                              "Google sign-in could not load. Please use email and password or try again.",
-                            )
-                          }
-                        />
-                      ) : (
-                        <GoogleSignInPreview loading={loading} />
-                      )}
-                      <div className="rgv-gate__divider" aria-hidden="true">
-                        <span>or continue with email</span>
-                      </div>
-                    </>
+                    <GoogleAccessButton
+                      clientId={GOOGLE_CLIENT_ID}
+                      state={
+                        loading
+                          ? "loading"
+                          : !confirmationsComplete
+                            ? "confirmations"
+                            : !botReady
+                              ? "security"
+                              : "ready"
+                      }
+                      onAccessToken={handleGoogleAccessToken}
+                      onError={(message) =>
+                        setError(
+                          message ||
+                            "Google sign-in could not open. Please try again.",
+                        )
+                      }
+                    />
                   )}
                 </div>
               )}
@@ -846,6 +852,7 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
 
     let active = true;
     let widgetId = null;
+    let failureTimer = 0;
 
     const ready = window.turnstile
       ? Promise.resolve()
@@ -863,13 +870,23 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
           theme: "dark",
           size: "flexible",
           appearance: "interaction-only",
+          execution: "render",
           action: "account_access",
-          callback: (token) => onTokenRef.current(String(token || "")),
+          retry: "auto",
+          "retry-interval": 2000,
+          callback: (token) => {
+            window.clearTimeout(failureTimer);
+            failureTimer = 0;
+            onTokenRef.current(String(token || ""));
+          },
           "expired-callback": () => onTokenRef.current(""),
           "timeout-callback": () => onTokenRef.current(""),
           "error-callback": () => {
             onTokenRef.current("");
-            onErrorRef.current();
+            window.clearTimeout(failureTimer);
+            failureTimer = window.setTimeout(() => {
+              if (active) onErrorRef.current();
+            }, 6000);
           },
           "refresh-expired": "auto",
           "refresh-timeout": "auto",
@@ -889,6 +906,7 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
 
     return () => {
       active = false;
+      window.clearTimeout(failureTimer);
       registerResetRef.current(() => {});
 
       if (widgetId !== null && window.turnstile) {
@@ -908,23 +926,26 @@ function BotChallenge({ siteKey, onToken, onError, registerReset }) {
   );
 }
 
-function GoogleSignInButton({
+function GoogleAccessButton({
   clientId,
-  onCredential,
+  state,
+  onAccessToken,
   onError,
 }) {
-  const containerRef = useRef(null);
-  const onCredentialRef = useRef(onCredential);
+  const tokenClientRef = useRef(null);
+  const onAccessTokenRef = useRef(onAccessToken);
   const onErrorRef = useRef(onError);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
-  onCredentialRef.current = onCredential;
+  onAccessTokenRef.current = onAccessToken;
   onErrorRef.current = onError;
 
   useEffect(() => {
     if (!clientId) return undefined;
 
     let active = true;
-    const ready = window.google?.accounts?.id
+    const ready = window.google?.accounts?.oauth2
       ? Promise.resolve()
       : loadExternalScript({
           id: "rgv-google-identity-script",
@@ -933,42 +954,45 @@ function GoogleSignInButton({
 
     ready
       .then(() => {
-        if (
-          !active ||
-          !containerRef.current ||
-          !window.google?.accounts?.id
-        ) {
+        if (!active || !window.google?.accounts?.oauth2) {
           return;
         }
 
-        window.google.accounts.id.initialize({
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          callback: (response) => {
-            const credential = String(response?.credential || "");
+          scope: "openid email profile",
+          include_granted_scopes: false,
+          callback: async (response) => {
+            const accessToken = String(response?.access_token || "");
 
-            if (!credential) {
-              onErrorRef.current();
+            if (!accessToken || response?.error) {
+              setRequesting(false);
+              onErrorRef.current(
+                response?.error_description ||
+                  "Google did not complete the sign-in request.",
+              );
               return;
             }
 
-            onCredentialRef.current(credential);
+            try {
+              await onAccessTokenRef.current(accessToken);
+            } finally {
+              if (active) setRequesting(false);
+            }
           },
-          ux_mode: "popup",
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
+          error_callback: (error) => {
+            setRequesting(false);
 
-        containerRef.current.replaceChildren();
-        window.google.accounts.id.renderButton(containerRef.current, {
-          type: "standard",
-          theme: "filled_black",
-          size: "medium",
-          text: "continue_with",
-          shape: "pill",
-          logo_alignment: "left",
-          locale: "en",
-          width: Math.min(400, containerRef.current.clientWidth || 400),
+            if (error?.type !== "popup_closed") {
+              onErrorRef.current(
+                error?.type === "popup_failed_to_open"
+                  ? "Your browser blocked the Google sign-in window. Please allow pop-ups and try again."
+                  : "Google sign-in could not open. Please try again.",
+              );
+            }
+          },
         });
+        setSdkReady(true);
       })
       .catch(() => {
         if (active) onErrorRef.current();
@@ -976,33 +1000,45 @@ function GoogleSignInButton({
 
     return () => {
       active = false;
-
-      if (containerRef.current) {
-        containerRef.current.replaceChildren();
-      }
+      tokenClientRef.current = null;
     };
   }, [clientId]);
 
-  return (
-    <div className="rgv-gate-google">
-      <div className="rgv-gate-google__button">
-        <div ref={containerRef} />
-      </div>
-    </div>
-  );
-}
+  const ready = state === "ready" && sdkReady && !requesting;
+  const label = requesting
+    ? "Opening Google..."
+    : state === "loading"
+      ? "Signing in..."
+      : state === "confirmations"
+        ? "Accept the requirements to continue"
+        : state === "security"
+          ? "Completing security check..."
+          : !sdkReady
+            ? "Loading Google..."
+            : "Continue with Google";
 
-function GoogleSignInPreview({ loading = false }) {
+  function requestGoogleAccess() {
+    if (!ready || !tokenClientRef.current) return;
+
+    setRequesting(true);
+    tokenClientRef.current.requestAccessToken({ prompt: "select_account" });
+  }
+
   return (
     <div className="rgv-gate-google">
       <button
         type="button"
-        className="rgv-gate-google__preview"
-        disabled
-        title="Complete the required confirmations to continue with Google"
+        className={`rgv-gate-google__button${ready ? " is-ready" : ""}`}
+        disabled={!ready}
+        onClick={requestGoogleAccess}
+        aria-live="polite"
       >
-        <GoogleMark />
-        <span>{loading ? "Connecting with Google..." : "Continue with Google"}</span>
+        {requesting || state === "loading" || state === "security" ? (
+          <span className="rgv-gate__spinner rgv-gate-google__spinner" />
+        ) : (
+          <GoogleMark />
+        )}
+        <span>{label}</span>
       </button>
     </div>
   );
