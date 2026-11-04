@@ -31,6 +31,7 @@ never use a `PUBLIC_` prefix.
 | `npm run test:compliance` | Verify checkout compliance controls |
 | `npm run test:coa` | Verify the COA data pipeline and WordPress plugin |
 | `npm run test:account-orders` | Verify account order visibility |
+| `npm run test:auth` | Verify Google account linking and anti-bot enforcement |
 | `npm run test:orbit-card` | Verify the card and wallet handoff |
 | `npm run test:edebit` | Verify the eDebit guard |
 
@@ -65,9 +66,30 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 | Mystery Vial promotion | `rgv-mystery-vial-promotion-1.0.1.zip` |
 | Rush processing | `rgv-rush-processing-orders-1.0.0.zip` |
 | Welcome coupon guard | `rgv-welcome10-guard-1.0.0.zip` |
+| Google customer-account linking | `rgv-google-login-1.0.0.zip` |
 
 Deploy matching storefront and plugin versions together when a change spans
 both applications.
+
+## Gate authentication
+
+The access gate supports the existing email/password flow plus Google Identity
+Services. Google ID tokens are verified by the Node server against the configured
+OAuth Web client ID. WordPress then finds the verified email before creating any
+customer: an existing email is linked to that same WordPress user ID, while a
+new customer is created only when no account owns the email. The stable Google
+subject is stored separately so later sign-ins do not depend on a mutable name.
+
+Install and activate `rgv-google-login-1.0.0.zip` beside the existing RGV Customer
+Portal API plugin. Set `PUBLIC_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` to the
+same OAuth Web client ID. Add every production and preview storefront origin to
+that client's authorized JavaScript origins.
+
+Cloudflare Turnstile protects Google sign-in, password sign-in, registration,
+password recovery, and password reset. Configure a Managed widget and set
+`PUBLIC_TURNSTILE_SITE_KEY` plus the private `TURNSTILE_SECRET_KEY`. When both
+variables are absent the integration stays dormant for backwards-compatible
+local development; a partial configuration fails closed.
 
 ## Checkout configuration
 

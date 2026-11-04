@@ -13,6 +13,10 @@ import {
   hasRequiredAcknowledgements,
   issueComplianceSession,
 } from "../../../lib/complianceSession";
+import {
+  botProtectionResponse,
+  verifyBotProtection,
+} from "../../../lib/botProtection";
 import { filterVisibleAccountOrders } from "../../../lib/accountOrderVisibility";
 
 export async function POST({ request, cookies, url }) {
@@ -39,6 +43,15 @@ export async function POST({ request, cookies, url }) {
 
     if (!hasRequiredAcknowledgements(body)) {
       return json({ success: false, message: "Confirm that you are 21+, accept the Research Use Only policy, and accept the Terms." }, 400);
+    }
+
+    const botCheck = await verifyBotProtection({
+      request,
+      token: body.turnstileToken,
+    });
+
+    if (!botCheck.success) {
+      return botProtectionResponse(botCheck);
     }
 
     const data = await portalRequest("register", {

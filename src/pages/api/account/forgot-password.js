@@ -4,6 +4,10 @@ import {
   isRequestBodyTooLarge,
   requestSecurityResponse,
 } from "../../../lib/requestSecurity";
+import {
+  botProtectionResponse,
+  verifyBotProtection,
+} from "../../../lib/botProtection";
 
 export const prerender = false;
 
@@ -70,6 +74,15 @@ export async function POST({ request, url }) {
         422
       )
     );
+  }
+
+  const botCheck = await verifyBotProtection({
+    request,
+    token: body.turnstileToken,
+  });
+
+  if (!botCheck.success) {
+    return botProtectionResponse(botCheck);
   }
 
   try {

@@ -4,6 +4,10 @@ import {
   isRequestBodyTooLarge,
   requestSecurityResponse,
 } from "../../../lib/requestSecurity";
+import {
+  botProtectionResponse,
+  verifyBotProtection,
+} from "../../../lib/botProtection";
 
 export const prerender = false;
 
@@ -46,6 +50,15 @@ export async function POST({ request }) {
         },
         400
       );
+    }
+
+    const botCheck = await verifyBotProtection({
+      request,
+      token: body.turnstileToken,
+    });
+
+    if (!botCheck.success) {
+      return botProtectionResponse(botCheck);
     }
 
     const data = await portalRequest("reset-password", {

@@ -21,6 +21,7 @@
     "test:mystery": "node scripts/verify-mystery-vial-promotion.mjs",
     "test:welcome": "node scripts/verify-welcome10-guard.mjs",
     "test:account-orders": "node scripts/verify-account-order-visibility.mjs",
+    "test:auth": "node scripts/verify-access-gate-auth.mjs",
     "test:orbit-card": "node scripts/verify-orbit-card-checkout.mjs",
     "test:edebit": "node scripts/verify-edebit-guard.mjs"
   },
@@ -33,6 +34,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "astro": "^7.2.3",
+    "google-auth-library": "^10.9.1",
     "lucide-react": "^1.32.0",
     "motion": "^12.43.0",
     "react": "^19.2.8",

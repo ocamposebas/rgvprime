@@ -12,7 +12,7 @@ globalSecurityStore.__rgvRequestRateBuckets = buckets;
 
 let lastCleanupAt = 0;
 
-function getClientIp(request) {
+export function getClientIp(request) {
   const forwardedFor = request.headers.get("x-forwarded-for") || "";
 
   return String(

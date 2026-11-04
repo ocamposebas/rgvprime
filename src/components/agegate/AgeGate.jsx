@@ -14,6 +14,49 @@ import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 import "./AgeGate.css";
 
 const PUBLIC_PATHS = ["/policies"];
+const GOOGLE_CLIENT_ID = String(
+  import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || "",
+).trim();
+const TURNSTILE_SITE_KEY = String(
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "",
+).trim();
+
+function loadExternalScript({ id, src }) {
+  if (typeof document === "undefined") {
+    return Promise.reject(new Error("Browser scripts are unavailable."));
+  }
+
+  const existing = document.getElementById(id);
+
+  if (existing?.dataset.loaded === "true") {
+    return Promise.resolve();
+  }
+
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", reject, { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        resolve();
+      },
+      { once: true },
+    );
+    script.addEventListener("error", reject, { once: true });
+    document.head.appendChild(script);
+  });
+}
 
 function isPublicPath() {
   if (typeof window === "undefined") return false;
@@ -128,14 +171,20 @@ export default function AgeGate() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const gateWasVisibleRef = useRef(false);
+  const resetTurnstileRef = useRef(() => {});
 
   const checks = useMemo(() => passwordChecks(password), [password]);
   const resetChecks = useMemo(() => passwordChecks(resetPassword), [resetPassword]);
   const strongPassword = checks.every((item) => item.valid);
   const strongResetPassword = resetChecks.every((item) => item.valid);
+  const confirmationsComplete =
+    ageConfirmed && researchUseAcknowledged && termsAccepted;
+  const botReady = !TURNSTILE_SITE_KEY || Boolean(turnstileToken);
 
   useEffect(() => {
     if (isPublicPath()) {
@@ -258,6 +307,11 @@ export default function AgeGate() {
   }
 
   async function submit(endpoint, payload) {
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Please wait for the security check and try again.");
+      return null;
+    }
+
     setLoading(true);
     setError("");
     setNotice("");
@@ -271,7 +325,10 @@ export default function AgeGate() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          turnstileToken,
+        }),
       });
       const text = await response.text();
       let data = {};
@@ -292,6 +349,8 @@ export default function AgeGate() {
       return null;
     } finally {
       setLoading(false);
+      setTurnstileToken("");
+      resetTurnstileRef.current();
     }
   }
 
@@ -358,6 +417,22 @@ export default function AgeGate() {
       researchUseAcknowledged,
       termsAccepted,
     });
+    if (data?.success) openAuthenticatedSession(data);
+  }
+
+  async function handleGoogleCredential(credential) {
+    if (!confirmationsComplete) {
+      setError("Please complete all three required confirmations to continue.");
+      return;
+    }
+
+    const data = await submit("/api/account/google", {
+      credential,
+      ageConfirmed,
+      researchUseAcknowledged,
+      termsAccepted,
+    });
+
     if (data?.success) openAuthenticatedSession(data);
   }
 
@@ -556,9 +631,60 @@ export default function AgeGate() {
               </div>
 
               <div className="rgv-gate__messages">
-                <StatusMessage type="error">{error}</StatusMessage>
+                <StatusMessage type="error">
+                  {error ||
+                    (turnstileFailed
+                      ? "The security check could not load. Please refresh and try again."
+                      : "")}
+                </StatusMessage>
                 <StatusMessage type="success">{notice}</StatusMessage>
               </div>
+
+              <BotChallenge
+                siteKey={TURNSTILE_SITE_KEY}
+                onToken={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileFailed(false);
+                }}
+                onError={() => {
+                  setTurnstileToken("");
+                  setTurnstileFailed(true);
+                }}
+                registerReset={(reset) => {
+                  resetTurnstileRef.current = reset;
+                }}
+              />
+
+              {isAccessMode && (
+                <div className="rgv-gate__access-options">
+                  <AccessConfirmation
+                    ageConfirmed={ageConfirmed}
+                    researchUseAcknowledged={researchUseAcknowledged}
+                    termsAccepted={termsAccepted}
+                    onAgeChange={setAgeConfirmed}
+                    onResearchUseChange={setResearchUseAcknowledged}
+                    onTermsChange={setTermsAccepted}
+                  />
+
+                  {GOOGLE_CLIENT_ID && (
+                    <>
+                      <GoogleSignInButton
+                        clientId={GOOGLE_CLIENT_ID}
+                        enabled={confirmationsComplete && botReady && !loading}
+                        onCredential={handleGoogleCredential}
+                        onError={() =>
+                          setError(
+                            "Google sign-in could not load. Please use email and password or try again.",
+                          )
+                        }
+                      />
+                      <div className="rgv-gate__divider" aria-hidden="true">
+                        <span>or continue with email</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {mode === "login" && (
                 <form onSubmit={handleLogin} className="rgv-gate__form">
@@ -585,15 +711,7 @@ export default function AgeGate() {
                     </button>
                   </div>
 
-                  <AccessConfirmation
-                    ageConfirmed={ageConfirmed}
-                    researchUseAcknowledged={researchUseAcknowledged}
-                    termsAccepted={termsAccepted}
-                    onAgeChange={setAgeConfirmed}
-                    onResearchUseChange={setResearchUseAcknowledged}
-                    onTermsChange={setTermsAccepted}
-                  />
-                  <SubmitButton loading={loading} disabled={!ageConfirmed || !researchUseAcknowledged || !termsAccepted}>
+                  <SubmitButton loading={loading} disabled={!confirmationsComplete || !botReady}>
                     Sign in & enter
                   </SubmitButton>
                 </form>
@@ -653,15 +771,7 @@ export default function AgeGate() {
                     </span>
                   </label>
 
-                  <AccessConfirmation
-                    ageConfirmed={ageConfirmed}
-                    researchUseAcknowledged={researchUseAcknowledged}
-                    termsAccepted={termsAccepted}
-                    onAgeChange={setAgeConfirmed}
-                    onResearchUseChange={setResearchUseAcknowledged}
-                    onTermsChange={setTermsAccepted}
-                  />
-                  <SubmitButton loading={loading} disabled={!ageConfirmed || !researchUseAcknowledged || !termsAccepted || !strongPassword}>
+                  <SubmitButton loading={loading} disabled={!confirmationsComplete || !strongPassword || !botReady}>
                     Create account & enter
                   </SubmitButton>
                 </form>
@@ -680,7 +790,7 @@ export default function AgeGate() {
                     autoFocus
                     required
                   />
-                  <SubmitButton loading={loading}>Send secure link</SubmitButton>
+                  <SubmitButton loading={loading} disabled={!botReady}>Send secure link</SubmitButton>
                   <button type="button" onClick={() => changeMode("login")} className="rgv-gate__secondary-button">
                     Back to sign in
                   </button>
@@ -697,7 +807,7 @@ export default function AgeGate() {
                     placeholder="Build a secure password"
                   />
                   <PasswordRequirements checks={activePasswordChecks} />
-                  <SubmitButton loading={loading} disabled={!strongResetPassword}>
+                  <SubmitButton loading={loading} disabled={!strongResetPassword || !botReady}>
                     Update password
                   </SubmitButton>
                 </form>
@@ -714,6 +824,174 @@ export default function AgeGate() {
           </section>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BotChallenge({ siteKey, onToken, onError, registerReset }) {
+  const containerRef = useRef(null);
+  const onTokenRef = useRef(onToken);
+  const onErrorRef = useRef(onError);
+  const registerResetRef = useRef(registerReset);
+
+  onTokenRef.current = onToken;
+  onErrorRef.current = onError;
+  registerResetRef.current = registerReset;
+
+  useEffect(() => {
+    if (!siteKey) return undefined;
+
+    let active = true;
+    let widgetId = null;
+
+    const ready = window.turnstile
+      ? Promise.resolve()
+      : loadExternalScript({
+          id: "rgv-turnstile-script",
+          src: "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
+        });
+
+    ready
+      .then(() => {
+        if (!active || !containerRef.current || !window.turnstile) return;
+
+        widgetId = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          theme: "dark",
+          size: "flexible",
+          appearance: "interaction-only",
+          action: "account_access",
+          callback: (token) => onTokenRef.current(String(token || "")),
+          "expired-callback": () => onTokenRef.current(""),
+          "timeout-callback": () => onTokenRef.current(""),
+          "error-callback": () => {
+            onTokenRef.current("");
+            onErrorRef.current();
+          },
+          "refresh-expired": "auto",
+          "refresh-timeout": "auto",
+        });
+
+        registerResetRef.current(() => {
+          onTokenRef.current("");
+
+          if (widgetId !== null && window.turnstile) {
+            window.turnstile.reset(widgetId);
+          }
+        });
+      })
+      .catch(() => {
+        if (active) onErrorRef.current();
+      });
+
+    return () => {
+      active = false;
+      registerResetRef.current(() => {});
+
+      if (widgetId !== null && window.turnstile) {
+        window.turnstile.remove(widgetId);
+      }
+    };
+  }, [siteKey]);
+
+  if (!siteKey) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="rgv-gate__turnstile"
+      aria-label="Automated traffic security check"
+    />
+  );
+}
+
+function GoogleSignInButton({
+  clientId,
+  enabled,
+  onCredential,
+  onError,
+}) {
+  const containerRef = useRef(null);
+  const onCredentialRef = useRef(onCredential);
+  const onErrorRef = useRef(onError);
+
+  onCredentialRef.current = onCredential;
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    if (!clientId) return undefined;
+
+    let active = true;
+    const ready = window.google?.accounts?.id
+      ? Promise.resolve()
+      : loadExternalScript({
+          id: "rgv-google-identity-script",
+          src: "https://accounts.google.com/gsi/client",
+        });
+
+    ready
+      .then(() => {
+        if (
+          !active ||
+          !containerRef.current ||
+          !window.google?.accounts?.id
+        ) {
+          return;
+        }
+
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            const credential = String(response?.credential || "");
+
+            if (!credential) {
+              onErrorRef.current();
+              return;
+            }
+
+            onCredentialRef.current(credential);
+          },
+          ux_mode: "popup",
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        containerRef.current.replaceChildren();
+        window.google.accounts.id.renderButton(containerRef.current, {
+          type: "standard",
+          theme: "filled_black",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: Math.min(400, containerRef.current.clientWidth || 400),
+        });
+      })
+      .catch(() => {
+        if (active) onErrorRef.current();
+      });
+
+    return () => {
+      active = false;
+
+      if (containerRef.current) {
+        containerRef.current.replaceChildren();
+      }
+    };
+  }, [clientId]);
+
+  return (
+    <div className="rgv-gate-google">
+      <div
+        className={`rgv-gate-google__button${enabled ? "" : " is-disabled"}`}
+        aria-disabled={!enabled}
+        inert={!enabled ? "" : undefined}
+      >
+        <div ref={containerRef} />
+      </div>
+      {!enabled && (
+        <small>Complete the required confirmations to enable Google.</small>
+      )}
     </div>
   );
 }
