@@ -29,12 +29,24 @@ const [checkout, cardWallet, promotionApi, zelle, edebit, orbitCard, orbitRelay]
 
 assert.match(checkout, /freeShippingPromotionActive \|\|\s*freeShippingQualifiedBySubtotal/);
 assert.match(checkout, /Free standard shipping — no minimum through Sunday at 11 PM/);
+assert.match(checkout, /`\$\{methodLabel\} - \$\{FREE_SHIPPING_LABEL\}`/);
 assert.match(cardWallet, /freeShippingPromotionActive \|\|\s*subtotal >= FREE_SHIPPING_MINIMUM/);
+assert.match(cardWallet, /method_id: selectedShippingMethodId/);
+assert.match(cardWallet, /`\$\{method\.title\} - Free Shipping`/);
+assert.doesNotMatch(cardWallet, /method_id: freeShipping \? "free_shipping"/);
 assert.match(promotionApi, /getFreeShippingPromotionPayload/);
 
 for (const source of [zelle, edebit, orbitCard, orbitRelay]) {
   assert.match(source, /2026-11-09T04:00:00Z/);
   assert.match(source, /is_free_shipping_promotion_active/);
+}
+
+for (const source of [zelle, edebit]) {
+  assert.match(source, / - Free Shipping/);
+  assert.doesNotMatch(source, /'id'\s*=>\s*'free_shipping'/);
+}
+
+for (const source of [orbitCard, orbitRelay]) {
   assert.match(source, /Free Shipping \(Limited-Time Promotion\)/);
 }
 

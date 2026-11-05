@@ -389,7 +389,10 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
     body?.shippingMethod || body?.shipping_method || body?.shippingMethodId || body?.shipping_method_id,
     80,
   );
-  const method = SHIPPING_METHODS[requestedShipping] || SHIPPING_METHODS.usps_ground_advantage;
+  const selectedShippingMethodId = requestedShipping in SHIPPING_METHODS
+    ? requestedShipping
+    : "usps_ground_advantage";
+  const method = SHIPPING_METHODS[selectedShippingMethodId];
   const priority = body?.priorityProcessing === true || body?.priority_processing === true;
   const freeShippingPromotionActive = isFreeShippingPromotionActive();
   const freeShipping = method.freeShippingEligible && (
@@ -458,12 +461,8 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
       total: money(item.price * item.quantity),
     })),
     shipping_lines: [{
-      method_id: freeShipping ? "free_shipping" : requestedShipping in SHIPPING_METHODS ? requestedShipping : "usps_ground_advantage",
-      method_title: freeShipping
-        ? freeShippingPromotionActive
-          ? "Free Shipping (Limited-Time Promotion)"
-          : "Free Shipping (Orders Over $200)"
-        : method.title,
+      method_id: selectedShippingMethodId,
+      method_title: freeShipping ? `${method.title} - Free Shipping` : method.title,
       total: money(shippingCost),
     }],
     fee_lines: [

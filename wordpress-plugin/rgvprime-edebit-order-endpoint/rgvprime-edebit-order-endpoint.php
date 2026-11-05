@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGVPRIME eDebit Order Endpoint
  * Description: Creates WooCommerce orders from the RGVPRIME custom frontend checkout and returns the eDebit hosted-payment redirect URL.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
 }
 
 final class RGVPRIME_Edebit_Order_Endpoint {
-    const VERSION = '1.2.1';
+    const VERSION = '1.2.2';
 
     /** New REST namespace used by RGVPRIME. */
     const NAMESPACE = 'rgvprime/v1';
@@ -245,16 +245,10 @@ final class RGVPRIME_Edebit_Order_Endpoint {
         );
 
         if ($is_free) {
-            $title = $promotion_active
-                ? 'Free Shipping (Limited-Time Promotion)'
-                : ($coupon_free_shipping
-                    ? 'Free Shipping (Coupon)'
-                    : 'Free Shipping (Orders Over $200)');
-
             return [
-                'id'               => 'free_shipping',
+                'id'               => $method_id,
                 'selected_id'      => $method_id,
-                'title'            => $title,
+                'title'            => self::clean_string($rate['title'] ?? 'Shipping') . ' - Free Shipping',
                 'cost'             => 0.0,
                 'promotion_active' => $promotion_active,
             ];

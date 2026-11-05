@@ -110,9 +110,9 @@ const SHIPPING_METHODS = [
 ];
 
 function getShippingOrderLabel(shippingMethod, freeShipping = false) {
-  if (freeShipping) return FREE_SHIPPING_LABEL;
+  const methodLabel = shippingMethod?.label || shippingMethod?.title || "USPS Ground";
 
-  return shippingMethod?.label || shippingMethod?.title || "USPS Ground";
+  return freeShipping ? `${methodLabel} - ${FREE_SHIPPING_LABEL}` : methodLabel;
 }
 
 function CarrierLogo({ carrier }) {

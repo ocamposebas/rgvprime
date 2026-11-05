@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.4.1
+ * Version: 1.4.2
  * Author: RGVPRIME LLC
  */
 
@@ -1152,10 +1152,8 @@ final class RGV_Zelle_Checkout {
 
       if ($is_free_shipping && false !== ($shipping_method['free_shipping_eligible'] ?? true)) {
         return [
-          'id' => 'free_shipping',
-          'title' => $this->is_free_shipping_promotion_active()
-            ? 'Free Shipping (Limited-Time Promotion)'
-            : "Free Shipping (Order's Over $200)",
+          'id' => $method_id,
+          'title' => sanitize_text_field((string) ($shipping_method['title'] ?? 'Shipping')) . ' - Free Shipping',
           'cost' => 0.0,
         ];
       }
@@ -1173,10 +1171,8 @@ final class RGV_Zelle_Checkout {
 
     if ($is_free_shipping && false !== ($fallback['free_shipping_eligible'] ?? true)) {
       return [
-        'id' => 'free_shipping',
-        'title' => $this->is_free_shipping_promotion_active()
-          ? 'Free Shipping (Limited-Time Promotion)'
-          : "Free Shipping (Order's Over $200)",
+        'id' => 'usps_ground_advantage',
+        'title' => sanitize_text_field((string) ($fallback['title'] ?? 'USPS Ground')) . ' - Free Shipping',
         'cost' => 0.0,
       ];
     }

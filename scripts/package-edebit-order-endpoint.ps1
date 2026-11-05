@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pluginRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin\rgvprime-edebit-order-endpoint'))
 $outputDirectory = [IO.Path]::GetFullPath((Join-Path $workspace 'wordpress-plugin'))
-$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgvprime-edebit-order-endpoint-1.2.1.zip'))
+$outputPath = [IO.Path]::GetFullPath((Join-Path $outputDirectory 'rgvprime-edebit-order-endpoint-1.2.2.zip'))
 
 if (-not (Test-Path -LiteralPath $pluginRoot -PathType Container)) {
     throw "RGVPRIME eDebit order endpoint source directory was not found: $pluginRoot"
