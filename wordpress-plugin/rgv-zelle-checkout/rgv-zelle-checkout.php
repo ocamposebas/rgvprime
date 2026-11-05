@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Author: RGVPRIME LLC
  */
 
@@ -26,6 +26,7 @@ final class RGV_Zelle_Checkout {
   const MAX_ORDER_ITEMS = 50;
   const MAX_ITEM_QUANTITY = 100;
   const FREE_SHIPPING_MINIMUM = 200.0;
+  const FREE_SHIPPING_PROMOTION_ENDS_AT = '2026-11-09T04:00:00Z';
   const ORDER_PROCESSING_FEE_RATE = 0.03;
   const PRIORITY_PROCESSING_FEE_RATE = 0.05;
   const ORDER_PROCESSING_FEE_NAME = 'Service & Processing';
@@ -733,7 +734,7 @@ final class RGV_Zelle_Checkout {
       ));
       $shipping_method = $this->get_shipping_method_details(
         $data,
-        $subtotal >= $free_shipping_minimum
+        $this->is_free_shipping_promotion_active() || $subtotal >= $free_shipping_minimum
       );
       $shipping_total = (float) $shipping_method['cost'];
 
@@ -1123,6 +1124,10 @@ final class RGV_Zelle_Checkout {
     return (bool) filter_var($value, FILTER_VALIDATE_BOOLEAN);
   }
 
+  private function is_free_shipping_promotion_active() {
+    return time() < strtotime(self::FREE_SHIPPING_PROMOTION_ENDS_AT);
+  }
+
   private function get_shipping_method_details($data, $is_free_shipping) {
     $shipping_methods = apply_filters('rgv_zelle_shipping_rates', self::SHIPPING_RATES);
 
@@ -1148,7 +1153,9 @@ final class RGV_Zelle_Checkout {
       if ($is_free_shipping && false !== ($shipping_method['free_shipping_eligible'] ?? true)) {
         return [
           'id' => 'free_shipping',
-          'title' => "Free Shipping (Order's Over $200)",
+          'title' => $this->is_free_shipping_promotion_active()
+            ? 'Free Shipping (Limited-Time Promotion)'
+            : "Free Shipping (Order's Over $200)",
           'cost' => 0.0,
         ];
       }
@@ -1167,7 +1174,9 @@ final class RGV_Zelle_Checkout {
     if ($is_free_shipping && false !== ($fallback['free_shipping_eligible'] ?? true)) {
       return [
         'id' => 'free_shipping',
-        'title' => "Free Shipping (Order's Over $200)",
+        'title' => $this->is_free_shipping_promotion_active()
+          ? 'Free Shipping (Limited-Time Promotion)'
+          : "Free Shipping (Order's Over $200)",
         'cost' => 0.0,
       ];
     }

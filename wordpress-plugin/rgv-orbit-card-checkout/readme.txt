@@ -3,7 +3,7 @@ Contributors: rgvprime
 Requires at least: 6.4
 Requires PHP: 7.4
 Requires Plugins: woocommerce
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 
 Standalone embedded credit and debit card checkout branded as ORBIT Payments. It does
 not replace or modify the RGV Zelle Checkout plugin.
@@ -46,6 +46,9 @@ library supplies silent session and device identifiers for antifraud analysis
 when available.
 
 == Changelog ==
+
+= 1.2.1 =
+* Activates no-minimum standard shipping through November 8, 2026 at 11:00 p.m. Colombia time, then restores the $200 threshold automatically.
 
 = 1.2.0 =
 * Atomically reserves product stock before submitting a card charge.

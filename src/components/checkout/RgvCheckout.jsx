@@ -31,6 +31,11 @@ import {
   getMysteryRewardState,
   normalizeMysteryPromotion,
 } from "../../lib/mysteryVialPromotion";
+import {
+  FREE_SHIPPING_PROMOTION_ENDS_AT,
+  isFreeShippingPromotionActive,
+  STANDARD_FREE_SHIPPING_MINIMUM,
+} from "../../lib/freeShippingPromotion";
 import OrbitSecureCardPayment from "./OrbitSecureCardPayment";
 import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
 
@@ -52,10 +57,11 @@ const ZELLE_PAYMENT_RECIPIENT = "sales@rgvprimellc.com";
 
 const ZELLE_PAYMENT_NAME = "RGVPRIME LLC";
 
-const FREE_SHIPPING_MINIMUM = 200;
-const FREE_SHIPPING_DISPLAY_MINIMUM = 200;
+const FREE_SHIPPING_MINIMUM = STANDARD_FREE_SHIPPING_MINIMUM;
+const FREE_SHIPPING_DISPLAY_MINIMUM = STANDARD_FREE_SHIPPING_MINIMUM;
 const FREE_SHIPPING_LABEL = "Free Shipping";
 const FREE_SHIPPING_METHOD_LABEL = "Free shipping on orders over $200";
+const FREE_SHIPPING_PROMOTION_LABEL = "Free standard shipping — no minimum through Sunday at 11 PM";
 const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
 const PAYMENT_SESSION_IDLE_MS = 20 * 60 * 1000;
@@ -1471,6 +1477,9 @@ export default function RgvCheckout() {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState(
     SHIPPING_METHODS[0].id
   );
+  const [freeShippingPromotionActive, setFreeShippingPromotionActive] = useState(
+    () => isFreeShippingPromotionActive()
+  );
   const [priorityProcessing, setPriorityProcessing] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState("");
@@ -1512,6 +1521,20 @@ export default function RgvCheckout() {
   const quoteRequestIdRef = useRef(0);
   const lastPaymentActivityRef = useRef(Date.now());
   const couponEmailRef = useRef(normalizeEmail(checkoutForm.email));
+
+  useEffect(() => {
+    const updatePromotionState = () => {
+      setFreeShippingPromotionActive(isFreeShippingPromotionActive());
+    };
+    const promotionEndsAt = Date.parse(FREE_SHIPPING_PROMOTION_ENDS_AT);
+    const timeout = window.setTimeout(
+      updatePromotionState,
+      Math.max(0, promotionEndsAt - Date.now() + 250),
+    );
+
+    updatePromotionState();
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   const markPaymentActivity = useCallback(() => {
     lastPaymentActivityRef.current = Date.now();
@@ -1933,6 +1956,7 @@ export default function RgvCheckout() {
   const freeShippingQualifiedBySubtotal =
     Math.max(cartTotal, 0) >= FREE_SHIPPING_MINIMUM;
   const freeShippingBenefitUnlocked =
+    freeShippingPromotionActive ||
     freeShippingQualifiedBySubtotal ||
     (couponStatus === "valid" && Boolean(couponValidation?.free_shipping));
   const isFreeShippingUnlocked = (shippingMethod = selectedShippingMethod) =>
@@ -4483,8 +4507,10 @@ export default function RgvCheckout() {
                 <div className="rgvx-shipping-options-head">
                   <span>Delivery options</span>
                   <strong>
-                    {freeShippingUnlocked
-                      ? FREE_SHIPPING_METHOD_LABEL
+                    {freeShippingPromotionActive && freeShippingUnlocked
+                      ? FREE_SHIPPING_PROMOTION_LABEL
+                      : freeShippingUnlocked
+                        ? FREE_SHIPPING_METHOD_LABEL
                       : freeShippingBenefitUnlocked
                         ? "Free shipping available on eligible methods"
                       : `${formatMoney(amountUntilFreeShipping)} away from free shipping`}
@@ -4515,7 +4541,9 @@ export default function RgvCheckout() {
                             <small>{method.description}</small>
                             {methodHasFreeShipping && (
                               <small className="rgvx-shipping-free-note">
-                                {FREE_SHIPPING_LABEL}
+                                {freeShippingPromotionActive
+                                  ? "Limited-time free shipping"
+                                  : FREE_SHIPPING_LABEL}
                               </small>
                             )}
                             {method.freeShippingEligible === false && (

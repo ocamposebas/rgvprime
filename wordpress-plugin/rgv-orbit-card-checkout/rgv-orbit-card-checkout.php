@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV ORBIT Payments Checkout
  * Description: Embedded ORBIT Payments credit and debit card checkout for WooCommerce.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: RGVPRIME LLC
  * Requires Plugins: woocommerce
  */
@@ -20,6 +20,7 @@ final class RGV_ORBIT_Card_Checkout {
   const MAX_ITEM_QUANTITY = 100;
   const MAX_CARD_ORDER_USD_CENTS = 60000;
   const FREE_SHIPPING_MINIMUM = 200.0;
+  const FREE_SHIPPING_PROMOTION_ENDS_AT = '2026-11-09T04:00:00Z';
   const ORDER_PROCESSING_FEE_RATE = 0.03;
   const PRIORITY_PROCESSING_FEE_RATE = 0.05;
   const SHIPPING_RATES = [
@@ -506,13 +507,23 @@ final class RGV_ORBIT_Card_Checkout {
     $id = sanitize_key((string) $value);
     $selected = isset($rates[$id]) && is_array($rates[$id]) ? $rates[$id] : ($rates['usps_ground_advantage'] ?? self::SHIPPING_RATES['usps_ground_advantage']);
     if ($free && false !== ($selected['free_shipping_eligible'] ?? true)) {
-      return ['id' => 'free_shipping', 'title' => "Free Shipping (Order's Over $200)", 'cost' => 0.0];
+      return [
+        'id' => 'free_shipping',
+        'title' => $this->is_free_shipping_promotion_active()
+          ? 'Free Shipping (Limited-Time Promotion)'
+          : "Free Shipping (Order's Over $200)",
+        'cost' => 0.0,
+      ];
     }
     return [
       'id' => $id && isset($rates[$id]) ? $id : 'usps_ground_advantage',
       'title' => sanitize_text_field((string) ($selected['title'] ?? 'Shipping')),
       'cost' => max(0, (float) ($selected['cost'] ?? 8)),
     ];
+  }
+
+  private function is_free_shipping_promotion_active() {
+    return time() < strtotime(self::FREE_SHIPPING_PROMOTION_ENDS_AT);
   }
 
   private function add_fee(WC_Order $order, $name, $amount) {
@@ -710,7 +721,12 @@ final class RGV_ORBIT_Card_Checkout {
       if (function_exists('rgv_mystery_vials_apply_to_order')) {
         rgv_mystery_vials_apply_to_order($order);
       }
-      $shipping_details = $this->shipping($data, $subtotal >= self::FREE_SHIPPING_MINIMUM || $coupon_free_shipping);
+      $shipping_details = $this->shipping(
+        $data,
+        $this->is_free_shipping_promotion_active() ||
+          $subtotal >= self::FREE_SHIPPING_MINIMUM ||
+          $coupon_free_shipping
+      );
       $shipping_item = new WC_Order_Item_Shipping();
       $shipping_item->set_method_title($shipping_details['title']);
       $shipping_item->set_method_id($shipping_details['id']);

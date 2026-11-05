@@ -1,9 +1,13 @@
 import { Buffer } from "node:buffer";
 import { createHash, timingSafeEqual } from "node:crypto";
+import {
+  isFreeShippingPromotionActive,
+  STANDARD_FREE_SHIPPING_MINIMUM,
+} from "./freeShippingPromotion";
 
 const MAX_ITEMS = 50;
 const MAX_QUANTITY = 100;
-const FREE_SHIPPING_MINIMUM = 200;
+const FREE_SHIPPING_MINIMUM = STANDARD_FREE_SHIPPING_MINIMUM;
 const ORDER_PROCESSING_FEE_RATE = 0.03;
 const PRIORITY_PROCESSING_FEE_RATE = 0.05;
 const ORDER_PROCESSING_FEE_NAME = "Service & Processing";
@@ -387,7 +391,12 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
   );
   const method = SHIPPING_METHODS[requestedShipping] || SHIPPING_METHODS.usps_ground_advantage;
   const priority = body?.priorityProcessing === true || body?.priority_processing === true;
-  const freeShipping = method.freeShippingEligible && (subtotal >= FREE_SHIPPING_MINIMUM || coupon.freeShipping);
+  const freeShippingPromotionActive = isFreeShippingPromotionActive();
+  const freeShipping = method.freeShippingEligible && (
+    freeShippingPromotionActive ||
+    subtotal >= FREE_SHIPPING_MINIMUM ||
+    coupon.freeShipping
+  );
   const shippingCost = freeShipping ? 0 : method.cost;
   const feeBase = Math.max(0, subtotal - coupon.discount + shippingCost);
   const processingFee = Number(money(feeBase * ORDER_PROCESSING_FEE_RATE));
@@ -450,7 +459,11 @@ export async function createCardWalletOrder({ body, acceptance, attemptId }) {
     })),
     shipping_lines: [{
       method_id: freeShipping ? "free_shipping" : requestedShipping in SHIPPING_METHODS ? requestedShipping : "usps_ground_advantage",
-      method_title: freeShipping ? "Free Shipping (Orders Over $200)" : method.title,
+      method_title: freeShipping
+        ? freeShippingPromotionActive
+          ? "Free Shipping (Limited-Time Promotion)"
+          : "Free Shipping (Orders Over $200)"
+        : method.title,
       total: money(shippingCost),
     }],
     fee_lines: [

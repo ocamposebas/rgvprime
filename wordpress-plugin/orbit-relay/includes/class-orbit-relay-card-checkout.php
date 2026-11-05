@@ -11,6 +11,7 @@ final class ORBIT_Relay_Card_Checkout {
     private const MAX_ORDER_ITEMS = 50;
     private const MAX_ITEM_QUANTITY = 100;
     private const FREE_SHIPPING_MINIMUM = 200.0;
+    private const FREE_SHIPPING_PROMOTION_ENDS_AT = '2026-11-09T04:00:00Z';
     private const ORDER_PROCESSING_FEE_RATE = 0.03;
     private const PRIORITY_PROCESSING_FEE_RATE = 0.05;
     private const ORDER_PROCESSING_FEE_NAME = 'Service & Processing';
@@ -374,7 +375,9 @@ final class ORBIT_Relay_Card_Checkout {
         );
         $shipping_method = self::shipping_method(
             $data,
-            $subtotal >= $free_shipping_minimum || $coupon_free_shipping
+            self::is_free_shipping_promotion_active() ||
+                $subtotal >= $free_shipping_minimum ||
+                $coupon_free_shipping
         );
         $shipping_item = new WC_Order_Item_Shipping();
         $shipping_item->set_method_title( $shipping_method['title'] );
@@ -807,7 +810,12 @@ final class ORBIT_Relay_Card_Checkout {
             $coupon_free_shipping = (bool) $coupon->get_free_shipping();
         }
         $free_shipping_minimum = max( 0, (float) apply_filters( 'orbit_relay_card_free_shipping_minimum', self::FREE_SHIPPING_MINIMUM ) );
-        $shipping_method = self::shipping_method( $data, $subtotal >= $free_shipping_minimum || $coupon_free_shipping );
+        $shipping_method = self::shipping_method(
+            $data,
+            self::is_free_shipping_promotion_active() ||
+                $subtotal >= $free_shipping_minimum ||
+                $coupon_free_shipping
+        );
         $shipping_item = new WC_Order_Item_Shipping();
         $shipping_item->set_method_title( $shipping_method['title'] );
         $shipping_item->set_method_id( $shipping_method['id'] );
@@ -1107,6 +1115,10 @@ final class ORBIT_Relay_Card_Checkout {
         return substr( (string) $message, 0, 500 );
     }
 
+    private static function is_free_shipping_promotion_active(): bool {
+        return time() < strtotime( self::FREE_SHIPPING_PROMOTION_ENDS_AT );
+    }
+
     private static function shipping_method( array $data, bool $is_free ): array {
         $rates = apply_filters( 'orbit_relay_card_shipping_rates', self::SHIPPING_RATES );
         $rates = is_array( $rates ) ? $rates : self::SHIPPING_RATES;
@@ -1127,7 +1139,9 @@ final class ORBIT_Relay_Card_Checkout {
         if ( $is_free && false !== ( $rate['free_shipping_eligible'] ?? true ) ) {
             return array(
                 'id'    => 'free_shipping',
-                'title' => 'Free Shipping',
+                'title' => self::is_free_shipping_promotion_active()
+                    ? 'Free Shipping (Limited-Time Promotion)'
+                    : 'Free Shipping',
                 'cost'  => 0.0,
             );
         }

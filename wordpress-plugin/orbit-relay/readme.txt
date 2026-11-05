@@ -3,10 +3,14 @@ Contributors: orbit
 Tags: woocommerce, integration, hmac, order synchronization
 Requires at least: 6.5
 Requires PHP: 8.1
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: Proprietary
 
 Secure commerce synchronization layer between RGVPRIME WooCommerce and the ORBIT platform.
+
+== Version 1.5.3 ==
+
+* Activates no-minimum standard shipping through November 8, 2026 at 11:00 p.m. Colombia time, then restores the $200 threshold automatically.
 
 == Version 1.5.2 ==
 

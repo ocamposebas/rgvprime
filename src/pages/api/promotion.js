@@ -1,3 +1,5 @@
+import { getFreeShippingPromotionPayload } from "../../lib/freeShippingPromotion";
+
 export const prerender = false;
 
 const CACHE_CONTROL =
@@ -30,6 +32,12 @@ function inactivePayload(reason) {
 }
 
 export async function GET() {
+  const freeShippingPromotion = getFreeShippingPromotionPayload();
+
+  if (freeShippingPromotion) {
+    return json(freeShippingPromotion);
+  }
+
   const wordpressUrl = cleanUrl(
     import.meta.env.PUBLIC_WP_URL ||
       import.meta.env.WC_API_URL ||
