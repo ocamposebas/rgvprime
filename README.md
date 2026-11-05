@@ -60,6 +60,7 @@ Canonical plugin source lives under `wordpress-plugin/`. Packaging scripts in
 | Zelle checkout | `rgv-zelle-checkout-1.4.1.zip` |
 | ORBIT Relay | `orbit-relay-for-woocommerce-1.5.3.zip` |
 | ORBIT card checkout | `rgv-orbit-card-checkout-1.2.1.zip` |
+| eDebit order endpoint | `rgvprime-edebit-order-endpoint-1.2.1.zip` |
 | eDebit abandonment guard | `rgv-edebit-guard-1.1.2.zip` |
 | COA library | `rgv-coa-library-1.12.0.zip` |
 | Storewide promotion | `rgv-storewide-promotion-1.4.0.zip` |

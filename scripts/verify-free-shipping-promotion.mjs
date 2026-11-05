@@ -17,11 +17,12 @@ assert.match(
 );
 assert.equal(getFreeShippingPromotionPayload("2026-11-09T04:00:00.000Z"), null);
 
-const [checkout, cardWallet, promotionApi, zelle, orbitCard, orbitRelay] = await Promise.all([
+const [checkout, cardWallet, promotionApi, zelle, edebit, orbitCard, orbitRelay] = await Promise.all([
   read("src/components/checkout/RgvCheckout.jsx"),
   read("src/lib/cardWalletCheckout.js"),
   read("src/pages/api/promotion.js"),
   read("wordpress-plugin/rgv-zelle-checkout/rgv-zelle-checkout.php"),
+  read("wordpress-plugin/rgvprime-edebit-order-endpoint/rgvprime-edebit-order-endpoint.php"),
   read("wordpress-plugin/rgv-orbit-card-checkout/rgv-orbit-card-checkout.php"),
   read("wordpress-plugin/orbit-relay/includes/class-orbit-relay-card-checkout.php"),
 ]);
@@ -31,11 +32,15 @@ assert.match(checkout, /Free standard shipping — no minimum through Sunday at 
 assert.match(cardWallet, /freeShippingPromotionActive \|\|\s*subtotal >= FREE_SHIPPING_MINIMUM/);
 assert.match(promotionApi, /getFreeShippingPromotionPayload/);
 
-for (const source of [zelle, orbitCard, orbitRelay]) {
+for (const source of [zelle, edebit, orbitCard, orbitRelay]) {
   assert.match(source, /2026-11-09T04:00:00Z/);
   assert.match(source, /is_free_shipping_promotion_active/);
   assert.match(source, /Free Shipping \(Limited-Time Promotion\)/);
 }
+
+assert.match(edebit, /rgvprime_edebit_shipping_rates/);
+assert.match(edebit, /\$order->get_subtotal\(\)/);
+assert.match(edebit, /\$shipping_item->set_total\(\$shipping_total\)/);
 
 console.log(
   "Free-shipping promotion verification passed (no minimum, automatic cutoff, banner, storefront, and WordPress checkout paths).",
