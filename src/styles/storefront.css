@@ -517,12 +517,13 @@
   object-fit: contain;
   object-position: center;
   opacity: 1;
-  transform: scale(1.38);
+  filter: drop-shadow(0 8px 7px rgb(15 15 20 / 12%));
+  transform: scale(1.1);
   transform-origin: center;
   transition: transform 220ms ease;
 }
 .rgv-product-card:hover .rgv-card-media img {
-  transform: scale(1.42);
+  transform: scale(1.13);
 }
 .rgv-product-card.is-apparel .rgv-card-media img {
   padding: 10px;
@@ -1154,7 +1155,8 @@
   max-width: 100%;
   max-height: 550px;
   object-fit: contain;
-  transform: scale(1.12);
+  filter: drop-shadow(0 14px 14px rgb(15 15 20 / 10%));
+  transform: none;
   transform-origin: center;
   animation: none;
 }
