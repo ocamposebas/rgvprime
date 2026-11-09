@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RGV Zelle Checkout
  * Description: RGVPRIME custom checkout bridge for WooCommerce/Tagada card cart sync, manual Zelle orders, Zelle receipt upload, and admin payment approval.
- * Version: 1.4.2
+ * Version: 1.5.0
  * Author: RGVPRIME LLC
  */
 
@@ -1816,16 +1816,16 @@ final class RGV_Zelle_Checkout {
     $message = $this->email_wrapper(sprintf('
       <h2>Your order was received</h2>
       <p>Your order is currently on hold until your Zelle payment is verified.</p>
-      <table cellpadding="8" cellspacing="0" border="0" style="width:100%%;border-collapse:collapse;margin:18px 0;background:#111;color:#fff;border-radius:12px;overflow:hidden;">
-        <tr><td><strong>Order</strong></td><td>#%s</td></tr>
-        <tr><td><strong>Amount to send</strong></td><td>%s</td></tr>
-        <tr><td><strong>Zelle</strong></td><td>%s</td></tr>
-        <tr><td><strong>Name</strong></td><td>%s</td></tr>
-        <tr><td><strong>Memo</strong></td><td><strong>%s</strong></td></tr>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#17171a" style="width:100%%;border-collapse:separate;border-spacing:0;margin:20px 0;background:#17171a;color:#f4f4f5;border:1px solid #303035;border-radius:12px;overflow:hidden;">
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Order</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">#%s</td></tr>
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Amount to send</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">%s</td></tr>
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Zelle</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">%s</td></tr>
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Name</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">%s</td></tr>
+        <tr><td style="padding:11px 14px;color:#a7a7b0;"><strong style="color:#ffffff;">Memo</strong></td><td style="padding:11px 14px;color:#ff5961;"><strong style="color:#ff5961;">%s</strong></td></tr>
       </table>
       <p><strong>Important:</strong> use exactly this memo code in Zelle. Do not include product names, product details, or any extra notes.</p>
       <p>After sending your payment, return to the thank-you page and upload your receipt.</p>
-    ', esc_html($order->get_order_number()), wc_price($order->get_total()), esc_html($this->zelle_recipient()), esc_html($this->zelle_name()), esc_html($reference)));
+    ', esc_html($order->get_order_number()), wc_price($order->get_total()), esc_html($this->zelle_recipient()), esc_html($this->zelle_name()), esc_html($reference)), 'ZELLE PAYMENT', 'Payment instructions,', 'in detail.');
 
     return wp_mail($to, $subject, $message, ['Content-Type: text/html; charset=UTF-8']);
   }
@@ -2088,26 +2088,55 @@ final class RGV_Zelle_Checkout {
     $message = $this->email_wrapper(sprintf('
       <h2>Your payment was validated</h2>
       <p>We have reviewed and validated your Zelle payment for order <strong>#%s</strong>.</p>
-      <table cellpadding="8" cellspacing="0" border="0" style="width:100%%;border-collapse:collapse;margin:18px 0;background:#111;color:#fff;border-radius:12px;overflow:hidden;">
-        <tr><td><strong>Order</strong></td><td>#%s</td></tr>
-        <tr><td><strong>Total</strong></td><td>%s</td></tr>
-        <tr><td><strong>Status</strong></td><td>Processing</td></tr>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#17171a" style="width:100%%;border-collapse:separate;border-spacing:0;margin:20px 0;background:#17171a;color:#f4f4f5;border:1px solid #303035;border-radius:12px;overflow:hidden;">
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Order</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">#%s</td></tr>
+        <tr><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#a7a7b0;"><strong style="color:#ffffff;">Total</strong></td><td style="padding:11px 14px;border-bottom:1px solid #303035;color:#ffffff;">%s</td></tr>
+        <tr><td style="padding:11px 14px;color:#a7a7b0;"><strong style="color:#ffffff;">Status</strong></td><td style="padding:11px 14px;color:#7ee2a8;"><strong style="color:#7ee2a8;">Processing</strong></td></tr>
       </table>
       <p>Your order is now being processed. You will receive additional updates when the order status changes.</p>
-    ', esc_html($order->get_order_number()), esc_html($order->get_order_number()), wc_price($order->get_total())));
+    ', esc_html($order->get_order_number()), esc_html($order->get_order_number()), wc_price($order->get_total())), 'PAYMENT CONFIRMED', 'Your payment,', 'is validated.');
 
     wp_mail($to, $subject, $message, ['Content-Type: text/html; charset=UTF-8']);
   }
 
-  private function email_wrapper($content) {
-    return '
-      <div style="margin:0;padding:28px;background:#050505;color:#ffffff;font-family:Arial,sans-serif;">
-        <div style="max-width:620px;margin:0 auto;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:#0b0b0b;padding:28px;">
-          <p style="margin:0 0 10px;color:#ef4444;font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;">RGVPRIME LLC</p>
-          ' . $content . '
-        </div>
-      </div>
-    ';
+  private function email_wrapper($content, $eyebrow = 'PAYMENT UPDATE', $title = 'Your order,', $accent = 'in detail.') {
+    $logo = 'https://th9llsxpg16laoh4.public.blob.vercel-storage.com/orgs/acc_614e82d26faf/images/e38eb1cf-7878-4976-b4ea-2b86cab2cb0c';
+    $content = preg_replace('/^\s*<h2\b[^>]*>.*?<\/h2>/is', '', (string) $content, 1);
+
+    return '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <style>
+    :root{color-scheme:light dark!important;supported-color-schemes:light dark!important}
+    body{margin:0!important;padding:0!important;background:#eeefec!important;color:#18191b!important;font-family:Arial,Helvetica,sans-serif!important}
+    .rgv-zelle-content p{margin:0 0 15px!important;color:#66676c!important;font-size:14px!important;line-height:1.65!important}.woocommerce-Price-amount{color:inherit!important}
+    @media (prefers-color-scheme:dark){body,.rgv-zelle-page{background:#090a0c!important;background-image:linear-gradient(#090a0c,#090a0c)!important;color:#efefed!important}.rgv-zelle-shell,.rgv-zelle-content{background:#101114!important;background-image:linear-gradient(#101114,#101114)!important;color:#efefed!important;border-color:#2a2b2f!important}.rgv-zelle-content p{color:#b6b7bc!important}.rgv-zelle-content strong{color:#fff!important}.rgv-zelle-footer{background:#0b0c0e!important;background-image:linear-gradient(#0b0c0e,#0b0c0e)!important;border-color:#27282c!important;color:#777980!important}}
+    @media only screen and (max-width:600px){.rgv-zelle-outer{padding:18px 9px!important}.rgv-zelle-header,.rgv-zelle-content{padding-left:20px!important;padding-right:20px!important}}
+  </style>
+</head>
+<body bgcolor="#eeefec">
+  <table role="presentation" class="rgv-zelle-page" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#eeefec" style="width:100%;margin:0;background:#eeefec;">
+    <tr><td class="rgv-zelle-outer" align="center" style="padding:32px 14px;">
+      <table role="presentation" class="rgv-zelle-shell" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #d5d5d1;border-radius:18px;overflow:hidden;">
+        <tr><td style="height:4px;background:#d92832;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td class="rgv-zelle-header" bgcolor="#0c0c0e" style="padding:24px 30px 21px;background:#0c0c0e;border-bottom:1px solid #2b2b30;">
+          <img src="' . esc_url($logo) . '" width="180" alt="RGVPRIME LLC" style="display:block;width:180px;max-width:100%;height:auto;border:0;" />
+          <p style="margin:25px 0 10px!important;color:#d05b62!important;font-size:9px!important;line-height:1.4!important;font-weight:800!important;letter-spacing:2px!important;text-transform:uppercase!important;">— &nbsp;' . esc_html($eyebrow) . '</p>
+          <h1 style="margin:0;color:#f6f5f2;font-size:42px;line-height:.99;letter-spacing:-2px;font-weight:800;">' . esc_html($title) . '<span style="display:block;margin-top:3px;color:#c43b43;">' . esc_html($accent) . '</span></h1>
+        </td></tr>
+        <tr><td class="rgv-zelle-content" bgcolor="#ffffff" style="padding:28px 30px 30px;background:#ffffff;color:#18191b;">' . $content . '</td></tr>
+        <tr><td class="rgv-zelle-footer" bgcolor="#efefec" align="center" style="padding:20px 26px;background:#efefec;border-top:1px solid #dbdbd8;color:#6c6d72;font-size:11px;line-height:1.6;">
+          <strong style="color:inherit;letter-spacing:1px;">RGVPRIME LLC</strong><br />Research Use Only
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>';
   }
 
   private function zelle_recipient() {
