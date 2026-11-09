@@ -16,6 +16,10 @@ COPY . .
 
 RUN npm run build
 
+# The runtime only needs production dependencies. The development-only COA
+# tooling (Canvas, PDF.js and Tesseract) stays out of the deployed image.
+RUN npm prune --omit=dev
+
 
 FROM node:22-alpine AS runtime
 
