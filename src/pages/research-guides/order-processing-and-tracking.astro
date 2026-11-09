@@ -1,0 +1,36 @@
+---
+import ResearchGuideLayout from "../../layouts/ResearchGuideLayout.astro";
+---
+
+<ResearchGuideLayout
+  title="Order Processing and Shipment Tracking Guide"
+  description="Learn how RGVPRIME order confirmation, payment review, processing, fulfillment, carrier tracking, and shipment-status updates work."
+  eyebrow="ORDER GUIDE"
+  heading="From order confirmation to tracking."
+  introduction="Every order moves through a sequence of confirmation, review, processing, fulfillment, and carrier updates. Timing can vary, but the status record shows the latest available stage."
+>
+  <p>Submitting an order creates a record, but it does not mean every later step has already been completed. Payment review, inventory confirmation, fulfillment workload, and carrier acceptance can each affect when the next update appears.</p>
+
+  <h2>The order-status sequence</h2>
+  <ol class="rgv-guide-steps">
+    <li><div><strong>Order received</strong><span>The order record was created and a confirmation should be sent to the billing email.</span></div></li>
+    <li><div><strong>Payment or manual review</strong><span>Some payment methods or risk checks require confirmation before fulfillment begins.</span></div></li>
+    <li><div><strong>Processing</strong><span>The order has entered the preparation workflow, subject to inventory and order-volume conditions.</span></div></li>
+    <li><div><strong>Fulfilled</strong><span>The package has been prepared and the available shipment information is attached to the order.</span></div></li>
+    <li><div><strong>Carrier tracking</strong><span>Tracking scans and delivery estimates are controlled by the carrier after acceptance.</span></div></li>
+  </ol>
+
+  <h2>Where to check an order</h2>
+  <p>Use the <a href="/track-order">Track Order page</a> with the billing email and order number. Customers with an account can also review recent order records in the <a href="/account">customer portal</a>.</p>
+
+  <h2>Why a tracking number may not update immediately</h2>
+  <p>A shipment record can be created before the carrier completes its first physical scan. Carrier estimates, routing, weather, local delivery conditions, and scan timing remain outside the storefront’s direct control.</p>
+
+  <div class="rgv-guide-callout">
+    <strong>Keep the confirmation email</strong>
+    <p>The order number and billing email are the fastest way to retrieve a status. Tracking messages can occasionally be filtered into Promotions, Spam, or Junk folders.</p>
+  </div>
+
+  <h2>When to contact support</h2>
+  <p>Contact support when the submitted email is incorrect, the order record cannot be found, the status appears inconsistent, or available carrier information needs clarification. Include the order number but do not place product-sensitive information in payment descriptions.</p>
+</ResearchGuideLayout>

@@ -1,0 +1,79 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ResearchGuideNav from "../../components/guides/ResearchGuideNav.jsx";
+import { SITE_URL } from "../../lib/seo";
+import "../../styles/research-guides.css";
+
+const guides = [
+  {
+    number: "01",
+    title: "How to read a Certificate of Analysis",
+    description: "A practical framework for reviewing product identity, lot information, methods, results, and report details.",
+    href: "/research-guides/how-to-read-a-certificate-of-analysis",
+  },
+  {
+    number: "02",
+    title: "Research product documentation",
+    description: "Understand how product names, SKUs, lots, configurations, labels, and COA records connect.",
+    href: "/research-guides/research-product-documentation",
+  },
+  {
+    number: "03",
+    title: "Order processing and tracking",
+    description: "Learn what happens after an order is submitted and where to find status and carrier updates.",
+    href: "/research-guides/order-processing-and-tracking",
+  },
+];
+
+const collectionSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": `${SITE_URL}/research-guides#collection`,
+  url: `${SITE_URL}/research-guides`,
+  name: "RGVPRIME Research Documentation Guides",
+  description: "Practical guides to Certificates of Analysis, product records, ordering, and tracking for laboratory research customers.",
+  isPartOf: { "@id": `${SITE_URL}/#website` },
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: guides.map((guide, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: guide.title,
+      url: new URL(guide.href, SITE_URL).toString(),
+    })),
+  },
+};
+---
+
+<BaseLayout
+  title="Research Documentation Guides | RGVPRIME LLC"
+  description="Read practical RGVPRIME guides covering Certificates of Analysis, product documentation, SKU and lot records, order processing, and shipment tracking."
+>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(collectionSchema).replace(/</g, "\\u003c")}
+    />
+  </Fragment>
+
+  <ResearchGuideNav client:load />
+  <main class="rgv-guides-index">
+    <header class="rgv-guides-index__hero">
+      <div class="rgv-guide-shell">
+        <p class="rgv-guide-eyebrow">RGVPRIME / RESEARCH LIBRARY</p>
+        <h1>Research records, <span>explained clearly.</span></h1>
+        <p>Use these guides to understand product documentation, review Certificate of Analysis records, and follow an order from confirmation to carrier tracking.</p>
+      </div>
+    </header>
+    <section class="rgv-guide-shell rgv-guides-grid" aria-label="Research guides">
+      {guides.map((guide) => (
+        <a class="rgv-guide-card" href={guide.href}>
+          <span>{guide.number} / Guide</span>
+          <h2>{guide.title}</h2>
+          <p>{guide.description}</p>
+          <footer><span>Read the guide</span><b aria-hidden="true">↗</b></footer>
+        </a>
+      ))}
+    </section>
+  </main>
+</BaseLayout>

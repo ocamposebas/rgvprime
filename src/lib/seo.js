@@ -1,6 +1,13 @@
 export const SITE_NAME = "RGVPRIME LLC";
 export const SITE_URL = "https://rgvprimellc.com";
 
+const SELLER_SCHEMA = {
+  "@type": "Organization",
+  "@id": `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  url: SITE_URL,
+};
+
 // WooCommerce remains the source of truth for product and variation IDs. These
 // aliases change only the public storefront slug.
 export const PUBLIC_PRODUCT_SLUGS = new Map([
@@ -113,11 +120,10 @@ export function getProductImageAlt(product = {}) {
 
 export function getProductSeo(product = {}) {
   const name = getProductName(product);
-  const categoryLabel = getProductCategoryLabel(product);
 
   return {
-    title: `${name} ${categoryLabel}`,
-    description: `Review ${name} ${categoryLabel} details, configurations, availability, and laboratory documentation for research use only.`,
+    title: `${name} Research Product — COA & Availability`,
+    description: `${name}: view price, research configurations, inventory status, and COA documentation from RGVPRIME LLC. Laboratory research use only.`,
     imageAlt: getProductImageAlt(product),
   };
 }
@@ -166,6 +172,8 @@ export function buildProductOffers(product = {}, canonicalUrl) {
         priceCurrency: "USD",
         price: price.toFixed(2),
         availability: getAvailability(variation?.stock_status),
+        itemCondition: "https://schema.org/NewCondition",
+        seller: SELLER_SCHEMA,
         ...(variation?.sku ? { sku: String(variation.sku) } : {}),
       })),
     };
@@ -183,6 +191,8 @@ export function buildProductOffers(product = {}, canonicalUrl) {
     priceCurrency: "USD",
     price: price.toFixed(2),
     availability: getAvailability(product?.stock_status),
+    itemCondition: "https://schema.org/NewCondition",
+    seller: SELLER_SCHEMA,
     ...(product?.sku ? { sku: String(product.sku) } : {}),
   };
 }

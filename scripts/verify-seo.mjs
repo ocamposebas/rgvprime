@@ -85,6 +85,14 @@ function getTagContent(html, pattern) {
   return html.match(pattern)?.[1] || "";
 }
 
+function getJsonLdSchemas(html) {
+  return [
+    ...html.matchAll(
+      /<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi,
+    ),
+  ].map((match) => JSON.parse(match[1]));
+}
+
 async function fetchManual(path, options = {}) {
   return fetch(`${baseUrl}${path}`, {
     redirect: "manual",
@@ -174,17 +182,67 @@ async function assertIntegration() {
   await assertRedirect("/product/retatrutide-30mg", 301, "/product/rg-rt");
   await assertRedirect("/product/tirzepatide-40mg", 301, "/product/rg-tz");
 
-  await assertPage("/", {
+  const home = await assertPage("/", {
     canonical: `${SITE_URL}/`,
-    title: "Laboratory Research Products | RGVPRIME LLC",
+    title: "Research Peptides and Laboratory Products | RGVPRIME LLC",
   });
-  await assertPage("/shop", {
+  const organizationSchema = getJsonLdSchemas(home.html).find(
+    (schema) => schema?.["@type"] === "OnlineStore",
+  );
+  assert.equal(organizationSchema?.email, "sales@rgvprimellc.com");
+  assert.equal(organizationSchema?.telephone, "+1-956-540-8538");
+  assert.equal(organizationSchema?.contactPoint?.areaServed, "US");
+
+  const shop = await assertPage("/shop", {
     canonical: `${SITE_URL}/shop`,
-    title: "Research Product Catalog | RGVPRIME LLC",
+    title: "Research Peptides and Laboratory Product Catalog | RGVPRIME LLC",
   });
+  const shopCollectionSchema = getJsonLdSchemas(shop.html).find(
+    (schema) => schema?.["@type"] === "CollectionPage",
+  );
+  assert.equal(shopCollectionSchema?.url, `${SITE_URL}/shop`);
+  assert.ok(
+    shopCollectionSchema?.mainEntity?.itemListElement?.length > 0,
+    "Shop ItemList contains products",
+  );
+
   await assertPage("/track-order", {
     canonical: `${SITE_URL}/track-order`,
-    title: "Track Your Order | RGVPRIME LLC",
+    title: "Track an RGVPRIME Order | Status and Shipping Updates | RGVPRIME LLC",
+  });
+
+  const faq = await assertPage("/faq", {
+    canonical: `${SITE_URL}/faq`,
+    title: "Ordering, COA and Shipping FAQ | RGVPRIME LLC",
+  });
+  const faqSchema = getJsonLdSchemas(faq.html).find(
+    (schema) => schema?.["@type"] === "FAQPage",
+  );
+  assert.equal(faqSchema?.mainEntity?.length, 6);
+  assert.ok(
+    faqSchema.mainEntity.every(
+      (question) =>
+        question?.["@type"] === "Question" &&
+        question?.acceptedAnswer?.["@type"] === "Answer",
+    ),
+  );
+
+  await assertPage("/research-guides", {
+    canonical: `${SITE_URL}/research-guides`,
+    title: "Research Documentation Guides | RGVPRIME LLC",
+  });
+  await assertPage("/research-guides/how-to-read-a-certificate-of-analysis", {
+    canonical: `${SITE_URL}/research-guides/how-to-read-a-certificate-of-analysis`,
+    title: "How to Read a Certificate of Analysis (COA) | RGVPRIME LLC",
+  });
+  await assertPage("/research-guides/research-product-documentation", {
+    canonical: `${SITE_URL}/research-guides/research-product-documentation`,
+    title:
+      "Research Product Documentation: SKU, Lot and COA Guide | RGVPRIME LLC",
+  });
+  await assertPage("/research-guides/order-processing-and-tracking", {
+    canonical: `${SITE_URL}/research-guides/order-processing-and-tracking`,
+    title: "Order Processing and Shipment Tracking Guide | RGVPRIME LLC",
   });
 
   const account = await assertPage("/account", {
@@ -199,16 +257,23 @@ async function assertIntegration() {
     const { html } = await assertPage(`/product/${slug}`, {
       canonical: `${SITE_URL}/product/${slug}`,
     });
-    const schemas = [...html.matchAll(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)]
-      .map((match) => JSON.parse(match[1]))
+    const schemas = getJsonLdSchemas(html)
       .filter((schema) => schema?.["@type"] === "Product");
 
     assert.equal(schemas.length, 1, `${slug} Product schema count`);
     assert.equal(schemas[0].url, `${SITE_URL}/product/${slug}`);
+    assert.equal(schemas[0].brand?.name, "RGVPRIME");
+    assert.equal(schemas[0].itemCondition, "https://schema.org/NewCondition");
     assert.equal(schemas[0].offers?.["@type"], "AggregateOffer");
     assert.ok(Number(schemas[0].offers?.offerCount) > 0);
     assert.ok(Number(schemas[0].offers?.lowPrice) > 0);
     assert.ok(Number(schemas[0].offers?.highPrice) >= Number(schemas[0].offers?.lowPrice));
+    assert.ok(
+      schemas[0].offers?.offers?.every(
+        (offer) => offer?.seller?.["@id"] === `${SITE_URL}/#organization`,
+      ),
+      `${slug} offers identify the seller`,
+    );
   }
 
   const catalogResponse = await fetchManual("/api/products?limit=100");
@@ -233,12 +298,7 @@ async function assertIntegration() {
       html,
       /<link rel="canonical" href="([^"]+)"/i,
     );
-    const productSchemas = [
-      ...html.matchAll(
-        /<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi,
-      ),
-    ]
-      .map((match) => JSON.parse(match[1]))
+    const productSchemas = getJsonLdSchemas(html)
       .filter((schema) => schema?.["@type"] === "Product");
 
     assert.equal(response.status, 200, `${product.slug} page status`);
@@ -256,6 +316,11 @@ async function assertIntegration() {
     assert.equal(productSchemas.length, 1, `${product.slug} Product schema`);
     assert.equal(productSchemas[0].url, canonical);
     assert.equal(productSchemas[0].sku, product.sku);
+    assert.equal(productSchemas[0].brand?.name, "RGVPRIME");
+    assert.equal(
+      productSchemas[0].itemCondition,
+      "https://schema.org/NewCondition",
+    );
     assert.equal(productSchemas[0].offers?.url, canonical);
     assert.equal(productSchemas[0].offers?.priceCurrency, "USD");
     assert.match(
@@ -308,6 +373,19 @@ async function assertIntegration() {
   assert.equal(sitemap.status, 200);
   assert.match(sitemapText, /\/product\/ll-37-5mg<\/loc>/);
   assert.match(sitemapText, /\/product\/ss-31<\/loc>/);
+  assert.match(sitemapText, /\/research-guides<\/loc>/);
+  assert.match(
+    sitemapText,
+    /\/research-guides\/how-to-read-a-certificate-of-analysis<\/loc>/,
+  );
+  assert.match(
+    sitemapText,
+    /\/research-guides\/research-product-documentation<\/loc>/,
+  );
+  assert.match(
+    sitemapText,
+    /\/research-guides\/order-processing-and-tracking<\/loc>/,
+  );
   assert.doesNotMatch(sitemapText, /\/product\/ll-375-5mg<\/loc>/);
   assert.doesNotMatch(sitemapText, /\/product\/ss-31-10mg<\/loc>/);
 }

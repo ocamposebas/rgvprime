@@ -83,11 +83,24 @@ const ogImageType =
 
 const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "OnlineStore",
   "@id": `${siteUrl}/#organization`,
   name: brandName,
+  alternateName: "RGVPRIME",
   legalName: brandName,
   url: siteUrl,
+  description:
+    "RGVPRIME LLC is an online catalog for laboratory and in-vitro research products, product records, and Certificate of Analysis access.",
+  email: "sales@rgvprimellc.com",
+  telephone: "+1-956-540-8538",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    telephone: "+1-956-540-8538",
+    email: "sales@rgvprimellc.com",
+    areaServed: "US",
+    availableLanguage: ["en"],
+  },
   logo: {
     "@type": "ImageObject",
     "@id": `${siteUrl}/#logo`,

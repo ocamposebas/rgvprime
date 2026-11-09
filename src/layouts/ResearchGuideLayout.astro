@@ -1,0 +1,118 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import ResearchGuideNav from "../components/guides/ResearchGuideNav.jsx";
+import { SITE_NAME, SITE_URL } from "../lib/seo";
+import "../styles/research-guides.css";
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  heading: string;
+  introduction: string;
+  datePublished?: string;
+  dateModified?: string;
+}
+
+const {
+  title,
+  description,
+  eyebrow,
+  heading,
+  introduction,
+  datePublished = "2026-11-09",
+  dateModified = "2026-11-09",
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).toString();
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "@id": `${canonicalUrl}#article`,
+  headline: heading,
+  description,
+  url: canonicalUrl,
+  mainEntityOfPage: canonicalUrl,
+  inLanguage: "en-US",
+  datePublished,
+  dateModified,
+  author: { "@id": `${SITE_URL}/#organization` },
+  publisher: { "@id": `${SITE_URL}/#organization` },
+  isPartOf: { "@id": `${SITE_URL}/#website` },
+  about: [
+    "laboratory research documentation",
+    "Certificates of Analysis",
+    "research product records",
+  ],
+};
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Research Guides",
+      item: `${SITE_URL}/research-guides`,
+    },
+    { "@type": "ListItem", position: 3, name: heading, item: canonicalUrl },
+  ],
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(articleSchema).replace(/</g, "\\u003c")}
+    />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c")}
+    />
+  </Fragment>
+
+  <ResearchGuideNav client:load />
+
+  <main class="rgv-guide-page">
+    <header class="rgv-guide-hero">
+      <div class="rgv-guide-shell">
+        <nav class="rgv-guide-breadcrumbs" aria-label="Breadcrumb">
+          <a href="/">Home</a><span aria-hidden="true">/</span>
+          <a href="/research-guides">Research Guides</a><span aria-hidden="true">/</span>
+          <span>{eyebrow}</span>
+        </nav>
+        <p class="rgv-guide-eyebrow">RGVPRIME / {eyebrow}</p>
+        <h1>{heading}</h1>
+        <p class="rgv-guide-introduction">{introduction}</p>
+        <div class="rgv-guide-meta">
+          <span>RGVPRIME Editorial</span>
+          <span>Updated {dateModified}</span>
+          <span>Research documentation</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="rgv-guide-shell rgv-guide-layout">
+      <article class="rgv-guide-article">
+        <slot />
+      </article>
+
+      <aside class="rgv-guide-aside" aria-label="Related resources">
+        <p>Related resources</p>
+        <a href="/coa"><strong>COA library</strong><span>Search product and lot records.</span></a>
+        <a href="/shop"><strong>Research catalog</strong><span>Review available configurations.</span></a>
+        <a href="/faq"><strong>Customer FAQ</strong><span>Ordering, support, and documentation.</span></a>
+        <a href="/contact"><strong>Contact support</strong><span>Get help locating a product record.</span></a>
+      </aside>
+    </div>
+
+    <section class="rgv-guide-disclaimer" aria-label="Research-use notice">
+      <div class="rgv-guide-shell">
+        <strong>Research use only</strong>
+        <p>RGVPRIME products and documentation are intended strictly for qualified laboratory and in-vitro research. They are not for human or animal use.</p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

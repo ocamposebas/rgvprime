@@ -1,4 +1,5 @@
 import { PERMANENT_PRODUCT_REDIRECTS } from "../lib/seo";
+import { getServerProductsResponse } from "./api/products.js";
 
 export const prerender = false;
 
@@ -12,6 +13,10 @@ const STATIC_PAGES = [
   "/faq",
   "/policies",
   "/track-order",
+  "/research-guides",
+  "/research-guides/how-to-read-a-certificate-of-analysis",
+  "/research-guides/research-product-documentation",
+  "/research-guides/order-processing-and-tracking",
 ];
 
 // Keeps the sitemap complete if WooCommerce is temporarily unavailable while
@@ -100,12 +105,14 @@ export async function GET({ url }) {
   let products = ACTIVE_PRODUCT_SLUGS.map((slug) => ({ slug }));
 
   try {
-    const response = await fetch(new URL("/api/products?limit=100", url.origin), {
-      headers: {
-        Accept: "application/json",
-        "Cache-Control": "no-cache",
-      },
-    });
+    const response = await getServerProductsResponse(
+      new Request(new URL("/api/products?limit=100", url.origin), {
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+        },
+      }),
+    );
 
     if (response.ok) {
       const payload = await response.json();

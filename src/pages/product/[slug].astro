@@ -7,6 +7,7 @@ import {
   getProductSeo,
   SITE_URL,
 } from "../../lib/seo";
+import { getServerProductsResponse } from "../api/products.js";
 
 const { slug } = Astro.params;
 const routeSlug = String(slug || "").trim();
@@ -21,14 +22,18 @@ let product = null;
 let productFetchStatus = 503;
 
 try {
-  const productResponse = await fetch(
-    new URL(`/api/products?slug=${encodeURIComponent(routeSlug)}`, Astro.url.origin),
-    {
-      headers: {
-        Accept: "application/json",
+  const productResponse = await getServerProductsResponse(
+    new Request(
+      new URL(
+        `/api/products?slug=${encodeURIComponent(routeSlug)}`,
+        Astro.url.origin,
+      ),
+      {
+        headers: {
+          Accept: "application/json",
+        },
       },
-      signal: AbortSignal.timeout(7000),
-    },
+    ),
   );
 
   productFetchStatus = productResponse.status;
@@ -64,6 +69,7 @@ const productImageAlt = productSeo.imageAlt;
 const canonicalValue = `/product/${product?.slug || routeSlug}`;
 const canonicalUrl = new URL(canonicalValue, SITE_URL).toString();
 const offers = product ? buildProductOffers(product, canonicalUrl) : null;
+const productCategory = product?.categories?.[0]?.name || "Laboratory Research Products";
 
 const productSchema = {
   "@context": "https://schema.org",
@@ -73,6 +79,17 @@ const productSchema = {
   url: canonicalUrl,
   image: [new URL(productImage, SITE_URL).toString()],
   ...(product?.sku ? { sku: String(product.sku) } : {}),
+  ...(product?.sku ? { mpn: String(product.sku) } : {}),
+  category: productCategory,
+  brand: {
+    "@type": "Brand",
+    name: "RGVPRIME",
+  },
+  itemCondition: "https://schema.org/NewCondition",
+  audience: {
+    "@type": "PeopleAudience",
+    audienceType: "Qualified laboratory and in-vitro researchers",
+  },
   ...(offers ? { offers } : {}),
 };
 

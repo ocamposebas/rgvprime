@@ -13,7 +13,7 @@ import {
 import { getMeOnce, resetMeCache } from "../../lib/accountSession";
 import "./AgeGate.css";
 
-const PUBLIC_PATHS = ["/policies"];
+const PUBLIC_PATHS = ["/policies", "/research-guides"];
 const GOOGLE_CLIENT_ID = String(
   import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || "",
 ).trim();

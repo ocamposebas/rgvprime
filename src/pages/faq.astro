@@ -1,12 +1,33 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import FAQSection from "../components/sections/FAQSection.jsx";
+import { FAQ_ITEMS } from "../data/faq";
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://rgvprimellc.com/faq#faq",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
 ---
 
 <BaseLayout
   bodyClass="rgv-service-page"
-  title="FAQ | RGVPRIME LLC"
-  description="Frequently asked questions about RGVPRIME LLC, order support, COA documentation, tracking, and research-use-only product information."
+  title="Ordering, COA and Shipping FAQ | RGVPRIME LLC"
+  description="Get clear answers about RGVPRIME ordering, processing, shipping, tracking, Certificates of Analysis, support, and research-use-only product documentation."
 >
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(faqSchema).replace(/</g, "\\u003c")}
+    />
+  </Fragment>
   <FAQSection client:load />
 </BaseLayout>

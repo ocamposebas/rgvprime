@@ -1,14 +1,17 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ShopPage from "../components/app/ShopPage.jsx";
+import { getPublicProductSlug, SITE_URL } from "../lib/seo";
+import { getServerProductsResponse } from "./api/products.js";
 
 let initialProducts = [];
 
 try {
-  const response = await fetch(new URL("/api/products?limit=70", Astro.url.origin), {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(7000),
-  });
+  const response = await getServerProductsResponse(
+    new Request(new URL("/api/products?limit=70", Astro.url.origin), {
+      headers: { Accept: "application/json" },
+    }),
+  );
 
   if (response.ok) {
     const payload = await response.json();
@@ -17,11 +20,42 @@ try {
 } catch {
   initialProducts = [];
 }
+
+const catalogItems = initialProducts
+  .filter((product) => product?.slug && product?.name)
+  .map((product, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    url: new URL(`/product/${getPublicProductSlug(product.slug)}`, SITE_URL).toString(),
+    name: product.name,
+  }));
+
+const catalogSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": `${SITE_URL}/shop#catalog`,
+  url: `${SITE_URL}/shop`,
+  name: "RGVPRIME Research Peptides and Laboratory Product Catalog",
+  description:
+    "Browse research peptides and laboratory products with current availability, configurations, and Certificate of Analysis access.",
+  isPartOf: { "@id": `${SITE_URL}/#website` },
+  mainEntity: {
+    "@type": "ItemList",
+    numberOfItems: catalogItems.length,
+    itemListElement: catalogItems,
+  },
+};
 ---
 
 <BaseLayout
-  title="Research Product Catalog | RGVPRIME LLC"
-  description="Explore the RGVPRIME LLC research catalog with product identifiers, available configurations, inventory status, and certificate documentation."
+  title="Research Peptides and Laboratory Product Catalog | RGVPRIME LLC"
+  description="Browse RGVPRIME research peptides and laboratory products by format, availability, price, configuration, and Certificate of Analysis documentation."
 >
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(catalogSchema).replace(/</g, "\\u003c")}
+    />
+  </Fragment>
   <ShopPage initialProducts={initialProducts} client:load />
   </BaseLayout>

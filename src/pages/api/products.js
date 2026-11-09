@@ -801,7 +801,10 @@ async function fetchVariationSummaryBatch({
   return { summaries, failedIds };
 }
 
-export async function GET({ request }) {
+async function handleProductsRequest(
+  { request },
+  { skipRateLimit = false } = {},
+) {
   const requestUrl = new URL(request.url);
 
   const requestedSlug = requestUrl.searchParams.get("slug");
@@ -836,22 +839,24 @@ export async function GET({ request }) {
     return jsonResponse(cached.payload, 200, "HIT", true);
   }
 
-  const rate = checkRateLimit(request, {
-    namespace: "products",
-    limit: 120,
-    windowMs: 60 * 1000,
-  });
+  if (!skipRateLimit) {
+    const rate = checkRateLimit(request, {
+      namespace: "products",
+      limit: 120,
+      windowMs: 60 * 1000,
+    });
 
-  if (!rate.allowed) {
-    if (!refresh && !debug && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
-      return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
+    if (!rate.allowed) {
+      if (!refresh && !debug && cached && cacheAge < PRODUCT_STALE_TTL_MS) {
+        return jsonResponse({ ...cached.payload, stale: true }, 200, "STALE", true);
+      }
+
+      return requestSecurityResponse(
+        "Too many product requests. Please wait and try again.",
+        429,
+        rate.retryAfter,
+      );
     }
-
-    return requestSecurityResponse(
-      "Too many product requests. Please wait and try again.",
-      429,
-      rate.retryAfter,
-    );
   }
 
   const wcUrl = import.meta.env.WC_API_URL || import.meta.env.PUBLIC_WP_URL;
@@ -1047,4 +1052,12 @@ export async function GET({ request }) {
       500
     );
   }
+}
+
+export async function GET(context) {
+  return handleProductsRequest(context);
+}
+
+export async function getServerProductsResponse(request) {
+  return handleProductsRequest({ request }, { skipRateLimit: true });
 }
