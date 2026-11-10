@@ -1480,6 +1480,7 @@ export default function Navbar({ transparent = false }) {
       header.style.setProperty("--rgv-header-bg", String(0.94 * progress));
       header.style.setProperty("--rgv-border", String(0.11 * progress));
       header.style.setProperty("--rgv-shadow", String(0.32 * progress));
+      header.classList.toggle("is-scrolled", window.scrollY > 72 || menuOpen || supportMenuOpen);
     };
 
     if (!transparent) {

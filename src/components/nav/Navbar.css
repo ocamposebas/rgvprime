@@ -21,6 +21,136 @@
 .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 34px; }
 .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 42px; }
 .rgv-site-header .rgv-campaign-bar { display: grid; place-items: center; border-bottom-color: #8d2f352b; background: #08090b; }
+@media (min-width: 901px) {
+  .rgv-site-header.is-overlay:has(.rgv-campaign-bar) { --rgv-announcement-height: 0px; }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) {
+    position: absolute;
+    top: calc(var(--rgv-navigation-height) + 44px);
+    right: max(48px, calc((100vw - 1256px) / 2));
+    width: clamp(236px, 20vw, 284px);
+    height: auto;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    opacity: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 20px 38px #0009);
+    transform: translate3d(0,0,0);
+    transition: opacity 220ms ease, transform 260ms ease, visibility 220ms ease;
+  }
+  .rgv-site-header.is-overlay.is-scrolled .rgv-nav-announcement:has(.rgv-campaign-bar) {
+    visibility: hidden;
+    opacity: 0;
+    transform: translate3d(0,-14px,0);
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 126px;
+    overflow: visible;
+    border: 1px solid #ffffff1f;
+    border-radius: 0;
+    background: linear-gradient(145deg,#111216f2,#090a0df5 58%,#170b0ef2);
+    box-shadow: inset 0 1px #ffffff0a;
+    clip-path: polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    pointer-events: auto;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar)::before {
+    position: absolute;
+    top: 42px;
+    left: -78px;
+    width: 78px;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,#aa3b44 72%,#d8757d);
+    content: "";
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar)::after {
+    position: absolute;
+    top: 38px;
+    left: -82px;
+    display: block;
+    width: 8px;
+    height: 8px;
+    border: 1px solid #c65b64;
+    background: #0a0b0e;
+    content: "";
+    transform: rotate(45deg);
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__inner {
+    display: grid;
+    width: 100%;
+    height: auto;
+    grid-template-columns: 1fr;
+    align-items: start;
+    justify-content: stretch;
+    gap: 14px;
+    padding: 17px 18px 15px;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy {
+    display: block;
+    overflow: visible;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy::before {
+    display: block;
+    margin-bottom: 9px;
+    color: #b95159;
+    content: "CAMPAIGN / RGV-01";
+    font-family: ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-size: 6px;
+    font-weight: 600;
+    letter-spacing: .16em;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy strong {
+    color: #f2f0ed;
+    font-size: 11px;
+    font-weight: 620;
+    letter-spacing: .035em;
+    line-height: 1.45;
+    white-space: normal;
+    text-overflow: clip;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__action {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: end;
+    gap: 8px 12px;
+    padding-top: 11px;
+    border-top: 1px solid #ffffff14;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__ends {
+    grid-column: 1 / -1;
+    color: #777981;
+    font-size: 5px;
+    letter-spacing: .18em;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__time {
+    display: grid;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    gap: 0;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__time > span {
+    display: flex;
+    min-width: 0;
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding-left: 8px;
+  }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__time > span:first-child { padding-left: 0; }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__time b { color: #dedbd8; font-size: 10px; }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__time small { color: #686a71; font-size: 4px; }
+  .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__link {
+    align-self: end;
+    color: #cf747b;
+    font-size: 6px;
+    letter-spacing: .11em;
+  }
+}
 .rgv-site-header button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .rgv-site-header :where(a,button):focus-visible { outline: 2px solid #df999a; outline-offset: 4px; }
 .rgv-nav-shell { width: min(1256px,calc(100% - 96px)); margin-inline: auto; }
