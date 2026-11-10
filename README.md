@@ -108,6 +108,18 @@ By default the Node app uses `PORTAL_API_SECRET` and WordPress uses
 WooCommerce's **Hold stock (minutes)** setting should remain at `60` so unpaid
 pending orders expire automatically.
 
+### Checkout address assistance
+
+Set `PUBLIC_GOOGLE_MAPS_API_KEY` to enable US address suggestions, automatic
+city/state/ZIP completion, a map preview, and Google Address Validation in the
+checkout. The checkout remains fully usable with manual address entry when the
+key or Google service is unavailable.
+
+In Google Cloud, enable **Maps JavaScript API**, **Places API (New)**, and
+**Address Validation API**. Restrict the browser key to those APIs and to the
+production storefront HTTPS referrers, including `https://rgvprimellc.com/*`
+and `https://www.rgvprimellc.com/*` if the `www` host remains reachable.
+
 ### ORBIT card processor
 
 Configure processor credentials only on the WordPress service:

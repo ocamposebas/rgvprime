@@ -37,6 +37,7 @@ import {
   STANDARD_FREE_SHIPPING_MINIMUM,
 } from "../../lib/freeShippingPromotion";
 import OrbitSecureCardPayment from "./OrbitSecureCardPayment";
+import AddressAssist from "./AddressAssist";
 import cleanCheckoutStyles from "./RgvCheckout.clean.css?raw";
 
 const OrbitCardPayment = lazy(() => import("./OrbitCardPayment"));
@@ -2452,6 +2453,17 @@ export default function RgvCheckout() {
     setPaymentNotice("");
   };
 
+  const updateCheckoutAddress = (addressPatch) => {
+    setCheckoutForm((current) => ({
+      ...current,
+      ...addressPatch,
+      country: "US",
+    }));
+    setShippingAddressConfirmed(false);
+    setError("");
+    setPaymentNotice("");
+  };
+
   const validateBaseCheckout = ({ throwOnFailure = false } = {}) => {
     const fail = (message) => {
       setError(message);
@@ -4388,15 +4400,12 @@ export default function RgvCheckout() {
                       />
                     </Field>
 
-                    <Field label="Address" wide>
-                      <input
-                        type="text"
-                        value={checkoutForm.address1}
-                        onChange={(event) => updateCheckoutField("address1", event.target.value)}
-                        placeholder="123 Main Street"
-                        autoComplete="address-line1"
-                      />
-                    </Field>
+                    <AddressAssist
+                      form={checkoutForm}
+                      onFieldChange={updateCheckoutField}
+                      onAddressPatch={updateCheckoutAddress}
+                      disabled={loading}
+                    />
 
                     <Field label="Apartment, suite, etc." wide>
                       <input
@@ -4478,8 +4487,8 @@ export default function RgvCheckout() {
                         }}
                       />
                       <span>
-                        <strong>Address verified</strong>
-                        <small>I confirm that the shipping information above is complete and correct.</small>
+                        <strong>Confirm shipping address</strong>
+                        <small>I reviewed the map or recommendation and confirm that this is where my order should be delivered.</small>
                       </span>
                     </label>
                   </div>

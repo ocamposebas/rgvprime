@@ -1,0 +1,415 @@
+.rgvx-address-assist {
+  position: relative;
+  z-index: 4;
+}
+
+.rgvx-address-assist__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rgvx-address-assist__label > span {
+  color: #dfd3d6;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rgvx-address-assist__label em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ff7180;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rgvx-address-search {
+  position: relative;
+}
+
+.rgvx-address-search > svg:first-child {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 15px;
+  color: #9c848a;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.rgvx-address-search input {
+  padding-right: 44px !important;
+  padding-left: 44px !important;
+}
+
+.rgvx-address-search__spinner {
+  position: absolute;
+  top: calc(50% - 8px);
+  right: 15px;
+  color: #f04a5e;
+  animation: rgvx-address-spin 800ms linear infinite;
+}
+
+.rgvx-address-suggestions {
+  position: absolute;
+  z-index: 30;
+  top: 78px;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 15px;
+  background: rgba(13, 8, 10, 0.985);
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(18px);
+}
+
+.rgvx-address-suggestions > button {
+  display: grid;
+  width: 100%;
+  min-height: 52px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+  background: transparent;
+  padding: 9px 13px;
+  color: #e9e0e2;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rgvx-address-suggestions > button:last-of-type {
+  border-bottom: 0;
+}
+
+.rgvx-address-suggestions > button:hover,
+.rgvx-address-suggestions > button.is-active {
+  background: linear-gradient(90deg, rgba(227, 38, 61, 0.17), rgba(227, 38, 61, 0.045));
+}
+
+.rgvx-address-suggestions > button svg {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 9px;
+  background: rgba(220, 38, 38, 0.08);
+  padding: 7px;
+  color: #f04a5e;
+}
+
+.rgvx-address-suggestions footer {
+  display: flex;
+  min-height: 31px;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 6px 12px;
+  color: #8f7c81;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rgvx-address-assist__hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.rgvx-address-assist__hint > span {
+  color: #8f7c81;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.rgvx-address-assist__hint button,
+.rgvx-address-verification__actions button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(248, 113, 113, 0.23);
+  border-radius: 9px;
+  background: rgba(220, 38, 38, 0.07);
+  padding: 7px 10px;
+  color: #d9cdd0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.rgvx-address-assist__hint button:hover:not(:disabled),
+.rgvx-address-verification__actions button:hover {
+  border-color: rgba(248, 113, 113, 0.52);
+  background: rgba(220, 38, 38, 0.14);
+  color: #fff;
+}
+
+.rgvx-address-assist__hint button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rgvx-address-assist__service-note {
+  margin: 0;
+  color: #b59ea3;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.rgvx-address-verification {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(56, 20, 27, 0.55), rgba(13, 9, 10, 0.82));
+  padding: 15px;
+}
+
+.rgvx-address-verification.is-verified,
+.rgvx-address-verification.is-manual {
+  border-color: rgba(74, 222, 128, 0.24);
+  background: linear-gradient(145deg, rgba(20, 83, 45, 0.2), rgba(10, 18, 13, 0.75));
+}
+
+.rgvx-address-verification > header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+}
+
+.rgvx-address-verification > header > svg {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 8px;
+  color: #ff7180;
+}
+
+.rgvx-address-verification.is-verified > header > svg,
+.rgvx-address-verification.is-manual > header > svg {
+  border-color: rgba(74, 222, 128, 0.25);
+  background: rgba(34, 197, 94, 0.09);
+  color: #86efac;
+}
+
+.rgvx-address-verification > header > div {
+  display: grid;
+  gap: 4px;
+}
+
+.rgvx-address-verification > header strong {
+  color: #f5eaec;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rgvx-address-verification > header small {
+  color: #af9da1;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.rgvx-address-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.rgvx-address-choice {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 92px;
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 12px;
+}
+
+.rgvx-address-choice.is-recommended {
+  border-color: rgba(248, 113, 113, 0.28);
+  background: rgba(127, 29, 29, 0.11);
+}
+
+.rgvx-address-choice span {
+  color: #8e7b80;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rgvx-address-choice strong {
+  color: #d9ced1;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 1.55;
+}
+
+.rgvx-address-verification__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rgvx-address-verification__actions button.primary {
+  border-color: #bd2f43;
+  background: linear-gradient(135deg, #d52d43, #9e1d31);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(152, 24, 44, 0.2);
+}
+
+.rgvx-address-map-card {
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: 15px;
+  background: #120b0d;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.22);
+}
+
+.rgvx-address-map {
+  width: 100%;
+  height: 210px;
+  background:
+    radial-gradient(circle at 45% 48%, rgba(227, 38, 61, 0.16), transparent 24%),
+    linear-gradient(135deg, #181114, #0c090a);
+}
+
+.rgvx-address-map__pin {
+  position: absolute;
+  top: 105px;
+  left: 50%;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50% 50% 50% 0;
+  background: #d7273d;
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(107, 10, 27, 0.42);
+  pointer-events: none;
+  transform: translate(-50%, -88%) rotate(-45deg);
+}
+
+.rgvx-address-map__pin svg {
+  transform: rotate(45deg);
+}
+
+.rgvx-address-map-card > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+.rgvx-address-map-card > footer > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.rgvx-address-map-card > footer span {
+  color: #9b7a81;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rgvx-address-map-card > footer strong {
+  overflow: hidden;
+  color: #ddd1d4;
+  font-size: 10px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rgvx-address-map-card > footer a {
+  flex: 0 0 auto;
+  color: #ff7180;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.rgvx-address-map-card > footer a:hover {
+  color: #fff;
+}
+
+.rgvx-address-assist .is-spinning {
+  animation: rgvx-address-spin 800ms linear infinite;
+}
+
+@keyframes rgvx-address-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+  .rgvx-address-assist__hint {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rgvx-address-assist__hint button {
+    width: 100%;
+  }
+
+  .rgvx-address-choices {
+    grid-template-columns: 1fr;
+  }
+
+  .rgvx-address-verification__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rgvx-address-verification__actions button {
+    width: 100%;
+  }
+
+  .rgvx-address-map {
+    height: 180px;
+  }
+
+  .rgvx-address-map__pin {
+    top: 90px;
+  }
+
+  .rgvx-address-map-card > footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rgvx-address-search__spinner,
+  .rgvx-address-assist .is-spinning {
+    animation-duration: 1.8s;
+  }
+}
