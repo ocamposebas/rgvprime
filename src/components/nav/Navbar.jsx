@@ -1028,7 +1028,6 @@ function PromotionAnnouncement() {
     >
       <div className="rgv-campaign-bar__inner">
         <div className="rgv-campaign-bar__copy">
-          <span className="rgv-campaign-bar__signal" aria-hidden="true" />
           <strong>{campaign.headline}</strong>
         </div>
 
@@ -1077,16 +1076,14 @@ function PromotionAnnouncement() {
           overflow: hidden;
           mask-image: none;
           -webkit-mask-image: none;
-          background:
-            radial-gradient(circle at 50% -140%, rgba(177, 68, 81, 0.22), transparent 58%),
-            linear-gradient(100deg, #12080a 0%, #260d11 48%, #12080a 100%);
+          background: #08090b;
         }
 
         .rgv-campaign-bar::before {
           position: absolute;
           inset: auto 0 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(196, 83, 94, 0.34), transparent);
+          background: linear-gradient(90deg, transparent, rgba(155, 48, 57, 0.28), transparent);
           content: "";
           pointer-events: none;
         }
@@ -1099,11 +1096,11 @@ function PromotionAnnouncement() {
           position: relative;
           display: flex;
           z-index: 1;
-          width: min(1120px, calc(100% - 48px));
+          width: min(1120px, calc(100% - 36px));
           height: 100%;
           align-items: center;
           justify-content: center;
-          gap: 22px;
+          gap: 18px;
           font-variant-numeric: tabular-nums;
         }
 
@@ -1112,46 +1109,33 @@ function PromotionAnnouncement() {
           min-width: 0;
           align-items: center;
           justify-content: center;
-          gap: 10px;
-        }
-
-        .rgv-campaign-bar__signal {
-          width: 6px;
-          height: 6px;
-          flex: 0 0 auto;
-          border-radius: 999px;
-          background: #bc4c56;
-          box-shadow: 0 0 0 4px rgba(188, 76, 86, 0.11), 0 0 12px rgba(188, 76, 86, 0.42);
         }
 
         .rgv-campaign-bar__copy strong {
           display: block;
           overflow: hidden;
-          color: #f3eeee;
-          font-size: clamp(10px, 0.78vw, 11px);
-          font-weight: 720;
-          letter-spacing: 0.045em;
-          line-height: 1.2;
+          color: #d9d7d7;
+          font-size: clamp(9px, 0.72vw, 10px);
+          font-weight: 620;
+          letter-spacing: 0.055em;
+          line-height: 1;
           text-transform: uppercase;
-          white-space: pre-line;
-          overflow-wrap: anywhere;
-          display: -webkit-box;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 2;
+          white-space: nowrap;
+          text-overflow: ellipsis;
         }
 
         .rgv-campaign-bar__action {
           display: flex;
           flex: 0 0 auto;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
         }
 
         .rgv-campaign-bar__ends {
-          color: rgba(255, 255, 255, 0.36);
-          font-size: 7px;
-          font-weight: 650;
-          letter-spacing: 0.14em;
+          color: rgba(255, 255, 255, 0.28);
+          font-size: 6px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
           text-transform: uppercase;
         }
 
@@ -1160,146 +1144,114 @@ function PromotionAnnouncement() {
           flex: 0 0 auto;
           align-items: center;
           gap: 0;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 999px;
-          background: rgba(0, 0, 0, 0.18);
-          padding: 0 5px;
+          padding: 0;
         }
 
         .rgv-campaign-bar__time > span {
           display: inline-flex;
-          min-width: 30px;
-          height: 28px;
+          min-width: 27px;
+          height: auto;
           flex-direction: row;
           align-items: center;
           justify-content: center;
           gap: 2px;
-          color: #f4eeee;
+          color: #aaa7a8;
         }
 
         .rgv-campaign-bar__time > span + span {
-          border-left: 1px solid rgba(255, 255, 255, 0.08);
+          border-left: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         .rgv-campaign-bar__time b {
-          font-size: 9px;
-          font-weight: 720;
+          font-size: 8px;
+          font-weight: 650;
           line-height: 1;
           letter-spacing: 0;
         }
 
         .rgv-campaign-bar__time small {
-          color: rgba(255, 255, 255, 0.3);
-          font-size: 5px;
-          font-weight: 650;
+          color: rgba(255, 255, 255, 0.24);
+          font-size: 4px;
+          font-weight: 600;
           line-height: 1;
           text-transform: uppercase;
         }
 
         .rgv-campaign-bar__link {
           display: inline-flex;
-          min-height: 28px;
+          min-height: auto;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           flex: 0 0 auto;
-          border: 1px solid rgba(213, 121, 130, 0.28);
-          border-radius: 999px;
-          background: rgba(151, 42, 53, 0.18);
-          padding: 0 11px;
-          color: #f4e8e8;
-          font-size: 8px;
-          font-weight: 680;
-          letter-spacing: 0.08em;
+          border: 0;
+          background: transparent;
+          padding: 0;
+          color: #bd6a70;
+          font-size: 7px;
+          font-weight: 650;
+          letter-spacing: 0.1em;
           text-transform: uppercase;
-          box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
-          transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+          transition: color 160ms ease;
         }
 
         .rgv-campaign-bar__link:hover {
-          border-color: rgba(226, 143, 151, 0.5);
-          background: rgba(164, 48, 59, 0.3);
-          color: #fff;
+          color: #e9a3a8;
         }
 
         .rgv-campaign-bar__link-arrow {
-          font-size: 10px;
+          font-size: 9px;
           line-height: 1;
         }
 
         @media (max-width: 900px) {
           .rgv-campaign-bar {
-            background:
-              radial-gradient(circle at 50% -120%, rgba(177, 68, 81, 0.22), transparent 62%),
-              linear-gradient(100deg, #12080a 0%, #260d11 50%, #12080a 100%);
+            background: #08090b;
           }
 
           .rgv-campaign-bar__inner {
-            display: grid;
-            width: min(560px, calc(100% - 24px));
-            grid-template-columns: minmax(0, 1fr);
-            align-content: center;
-            justify-items: center;
-            gap: 3px;
-            padding-block: 4px;
+            display: flex;
+            width: calc(100% - 24px);
+            justify-content: center;
+            gap: 12px;
+            padding: 0;
           }
 
-          .rgv-campaign-bar__ends {
+          .rgv-campaign-bar__ends,
+          .rgv-campaign-bar__time {
             display: none;
           }
 
           .rgv-site-header .rgv-campaign-bar__copy {
-            width: 100%;
-            flex: none;
-            overflow: visible;
-            justify-content: center;
-            gap: 8px;
+            width: auto;
+            flex: 0 1 auto;
+            overflow: hidden;
           }
 
           .rgv-campaign-bar__copy strong {
-            width: auto;
-            max-width: calc(100% - 18px);
-            font-size: 9px;
-            letter-spacing: 0.035em;
-            line-height: 1.2;
+            max-width: 100%;
+            font-size: clamp(7.5px, 2.25vw, 9px);
+            letter-spacing: 0.045em;
+            line-height: 1;
             text-align: center;
-            -webkit-line-clamp: 2;
           }
 
           .rgv-campaign-bar__action {
             width: auto;
-            min-height: 24px;
+            min-width: max-content;
+            min-height: 0;
             justify-content: center;
-            gap: 7px;
-          }
-
-          .rgv-campaign-bar__time {
-            min-height: 24px;
             gap: 0;
-            padding-inline: 3px;
-          }
-
-          .rgv-campaign-bar__time > span {
-            min-width: 25px;
-            height: 22px;
-          }
-
-          .rgv-campaign-bar__time b {
-            font-size: 8px;
-          }
-
-          .rgv-campaign-bar__time small {
-            font-size: 4px;
           }
 
           .rgv-campaign-bar__link {
             min-width: 0;
-            min-height: 24px;
+            min-height: 0;
             flex: 0 0 auto;
             justify-content: center;
-            padding: 3px 9px;
+            padding: 0;
             font-size: 7px;
             line-height: 1;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.075em;
             text-align: center;
           }
 
@@ -1315,28 +1267,18 @@ function PromotionAnnouncement() {
 
         @media (max-width: 420px) {
           .rgv-campaign-bar__inner {
-            width: calc(100% - 20px);
-          }
-
-          .rgv-campaign-bar__time > span {
-            min-width: 23px;
-            height: 22px;
-          }
-
-          .rgv-campaign-bar__time small {
-            font-size: 4px;
+            width: calc(100% - 18px);
+            gap: 9px;
           }
 
           .rgv-campaign-bar__copy strong {
-            font-size: 8.5px;
-            line-height: 1.18;
+            font-size: clamp(7px, 2.2vw, 8px);
+            line-height: 1;
           }
 
           .rgv-campaign-bar__link {
-            min-height: 23px;
-            padding-inline: 7px;
             font-size: 6.5px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.065em;
           }
         }
 
