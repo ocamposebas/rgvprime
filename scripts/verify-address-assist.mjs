@@ -67,11 +67,12 @@ assert(mapUrls.embedUrl.startsWith("https://www.openstreetmap.org/export/embed.h
 assert(mapUrls.embedUrl.includes("marker=37.422%2C-122.084"));
 assert(mapUrls.openUrl.includes("#map=17/37.422/-122.084"));
 
-const [component, checkout, envExample, readme] = await Promise.all([
+const [component, checkout, envExample, readme, dockerfile] = await Promise.all([
   read("src/components/checkout/AddressAssist.jsx"),
   read("src/components/checkout/RgvCheckout.jsx"),
   read(".env.example"),
   read("README.md"),
+  read("Dockerfile"),
 ]);
 
 for (const required of [
@@ -97,6 +98,14 @@ assert(checkout.includes("<AddressAssist"), "Checkout must render the address as
 assert(checkout.includes("setShippingAddressConfirmed(false)"), "Address edits must clear final confirmation");
 assert(envExample.includes("PUBLIC_GEOAPIFY_API_KEY="), "Geoapify browser key must be documented");
 assert(!envExample.includes("PUBLIC_GOOGLE_MAPS_API_KEY="), "Paid Google Maps key should be removed");
+assert(
+  dockerfile.includes("ARG PUBLIC_GEOAPIFY_API_KEY"),
+  "The Docker build must accept the public Geoapify key from Coolify",
+);
+assert(
+  dockerfile.includes("ENV PUBLIC_GEOAPIFY_API_KEY=${PUBLIC_GEOAPIFY_API_KEY}"),
+  "The Geoapify key must be available while Astro builds the browser bundle",
+);
 assert(readme.includes("3,000 credits"), "Free daily allowance must be documented");
 assert(readme.includes("does not require a credit card"), "No-card setup must be documented");
 

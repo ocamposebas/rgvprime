@@ -11,6 +11,12 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+# Astro replaces PUBLIC_ variables while building the browser bundle. Coolify
+# supplies this value as a build argument; declaring it here makes the smart
+# address integration available to the checkout without storing a private key.
+ARG PUBLIC_GEOAPIFY_API_KEY
+ENV PUBLIC_GEOAPIFY_API_KEY=${PUBLIC_GEOAPIFY_API_KEY}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
