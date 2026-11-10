@@ -129,7 +129,7 @@
   .rgv-hero__desktop-break { display: none; }
 }
 @media (max-width: 767px) {
-  .rgv-hero { padding-top: 137px; }
+  .rgv-hero { padding-top: 150px; }
   .rgv-hero__backdrop::after { background: linear-gradient(90deg, #090a0ce8 0%, #090a0ca8 42%, #090a0c3d 78%, #090a0c18 100%), linear-gradient(0deg, #090a0c 0%, #090a0c00 52%); }
   .rgv-hero__ribbon {
     --rgv-hero-ribbon-opacity: .96;

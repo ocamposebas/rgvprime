@@ -1209,16 +1209,22 @@ function PromotionAnnouncement() {
           }
 
           .rgv-campaign-bar__inner {
-            display: flex;
+            display: grid;
             width: calc(100% - 24px);
-            justify-content: center;
-            gap: 12px;
-            padding: 0;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            align-content: center;
+            justify-content: stretch;
+            gap: 5px;
+            padding: 6px 0 5px;
           }
 
-          .rgv-campaign-bar__ends,
-          .rgv-campaign-bar__time {
+          .rgv-campaign-bar__ends {
             display: none;
+          }
+
+          .rgv-campaign-bar__time {
+            display: flex;
           }
 
           .rgv-site-header .rgv-campaign-bar__copy {
@@ -1229,18 +1235,30 @@ function PromotionAnnouncement() {
 
           .rgv-campaign-bar__copy strong {
             max-width: 100%;
-            font-size: clamp(7.5px, 2.25vw, 9px);
+            font-size: clamp(7.5px, 2.2vw, 9px);
             letter-spacing: 0.045em;
             line-height: 1;
             text-align: center;
           }
 
           .rgv-campaign-bar__action {
-            width: auto;
-            min-width: max-content;
+            width: 100%;
+            min-width: 0;
             min-height: 0;
             justify-content: center;
-            gap: 0;
+            gap: 10px;
+          }
+
+          .rgv-campaign-bar__time > span {
+            min-width: 22px;
+          }
+
+          .rgv-campaign-bar__time b {
+            font-size: 8px;
+          }
+
+          .rgv-campaign-bar__time small {
+            font-size: 4px;
           }
 
           .rgv-campaign-bar__link {
@@ -1248,7 +1266,8 @@ function PromotionAnnouncement() {
             min-height: 0;
             flex: 0 0 auto;
             justify-content: center;
-            padding: 0;
+            padding: 0 0 0 10px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
             font-size: 7px;
             line-height: 1;
             letter-spacing: 0.075em;
@@ -1268,7 +1287,7 @@ function PromotionAnnouncement() {
         @media (max-width: 420px) {
           .rgv-campaign-bar__inner {
             width: calc(100% - 18px);
-            gap: 9px;
+            gap: 5px;
           }
 
           .rgv-campaign-bar__copy strong {
@@ -1279,6 +1298,10 @@ function PromotionAnnouncement() {
           .rgv-campaign-bar__link {
             font-size: 6.5px;
             letter-spacing: 0.065em;
+          }
+
+          .rgv-campaign-bar__time > span {
+            min-width: 20px;
           }
         }
 

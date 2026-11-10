@@ -21,20 +21,20 @@
 .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 34px; }
 .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 42px; }
 .rgv-site-header .rgv-campaign-bar { display: grid; place-items: center; border-bottom-color: #8d2f352b; background: #08090b; }
-@media (min-width: 901px) {
+@media (min-width: 1181px) {
   .rgv-site-header.is-overlay:has(.rgv-campaign-bar) { --rgv-announcement-height: 0px; }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) {
     position: absolute;
-    top: calc(var(--rgv-navigation-height) + 44px);
-    right: max(48px, calc((100vw - 1256px) / 2));
-    width: clamp(236px, 20vw, 284px);
+    top: clamp(274px,38vh,356px);
+    right: max(42px, calc((100vw - 1360px) / 2));
+    width: clamp(296px,22vw,342px);
     height: auto;
     overflow: visible;
     border: 0;
     background: transparent;
     opacity: 1;
     pointer-events: none;
-    filter: drop-shadow(0 20px 38px #0009);
+    filter: drop-shadow(0 24px 48px #000a);
     transform: translate3d(0,0,0);
     transition: opacity 220ms ease, transform 260ms ease, visibility 220ms ease;
   }
@@ -48,30 +48,30 @@
     display: block;
     width: 100%;
     height: auto;
-    min-height: 126px;
+    min-height: 118px;
     overflow: visible;
     border: 1px solid #ffffff1f;
     border-radius: 0;
-    background: linear-gradient(145deg,#111216f2,#090a0df5 58%,#170b0ef2);
-    box-shadow: inset 0 1px #ffffff0a;
-    clip-path: polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%);
+    background: linear-gradient(112deg,#111216f5,#090a0df5 62%,#1a0b0ff0);
+    box-shadow: inset 0 1px #ffffff0c,inset 3px 0 #9f3039;
+    clip-path: polygon(16px 0,100% 0,100% 100%,0 100%,0 16px);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     pointer-events: auto;
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar)::before {
     position: absolute;
-    top: 42px;
-    left: -78px;
-    width: 78px;
+    top: 58px;
+    left: -112px;
+    width: 112px;
     height: 1px;
     background: linear-gradient(90deg,transparent,#aa3b44 72%,#d8757d);
     content: "";
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar)::after {
     position: absolute;
-    top: 38px;
-    left: -82px;
+    top: 54px;
+    left: -116px;
     display: block;
     width: 8px;
     height: 8px;
@@ -87,8 +87,8 @@
     grid-template-columns: 1fr;
     align-items: start;
     justify-content: stretch;
-    gap: 14px;
-    padding: 17px 18px 15px;
+    gap: 12px;
+    padding: 16px 20px 15px 22px;
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy {
     display: block;
@@ -96,17 +96,17 @@
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy::before {
     display: block;
-    margin-bottom: 9px;
+    margin-bottom: 8px;
     color: #b95159;
-    content: "CAMPAIGN / RGV-01";
+    content: "ACTIVE RESEARCH CAMPAIGN / 01";
     font-family: ui-monospace,SFMono-Regular,Consolas,monospace;
-    font-size: 6px;
+    font-size: 5.5px;
     font-weight: 600;
     letter-spacing: .16em;
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__copy strong {
     color: #f2f0ed;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 620;
     letter-spacing: .035em;
     line-height: 1.45;
@@ -117,8 +117,8 @@
     display: grid;
     grid-template-columns: minmax(0,1fr) auto;
     align-items: end;
-    gap: 8px 12px;
-    padding-top: 11px;
+    gap: 7px 14px;
+    padding-top: 10px;
     border-top: 1px solid #ffffff14;
   }
   .rgv-site-header.is-overlay .rgv-nav-announcement:has(.rgv-campaign-bar) .rgv-campaign-bar__ends {
@@ -220,9 +220,9 @@
   .rgv-nav-cart-label { display: none; }
 }
 @media (max-width: 900px) {
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 38px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 34px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 42px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 54px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 36px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 58px; }
 }
 @media (max-width: 1023px) {
   .rgv-nav-row { display: flex; justify-content: space-between; }
@@ -256,9 +256,9 @@
 }
 @media (max-width: 767px) {
   .rgv-site-header { --rgv-navigation-height: 66px; }
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 38px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 34px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 42px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 54px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 36px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 58px; }
   .rgv-nav-shell { width: calc(100% - 36px); }
   .rgv-announcement-marquee__item { gap: 16px; padding-inline: 20px; font-size: 8px; letter-spacing: .1em; }
   .rgv-site-header .rgv-campaign-bar__copy { display: flex; }
@@ -266,7 +266,7 @@
   .rgv-nav-mobile__inner { width: calc(100% - 36px); padding-block: 21px 24px; }
 }
 @media (max-width: 700px) {
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 38px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 54px; }
 }
 @media (max-width: 639px) {
   .rgv-nav-search-trigger,.rgv-nav-account { display: none; }
@@ -275,9 +275,9 @@
   .rgv-nav-search-dialog { margin-top: 46px; max-height: calc(100svh - 78px); }
 }
 @media (max-width: 359px) {
-  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 40px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 36px; }
-  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 44px; }
+  .rgv-site-header:has(.rgv-campaign-bar) { --rgv-announcement-height: 56px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-copy-only) { --rgv-announcement-height: 38px; }
+  .rgv-site-header:has(.rgv-campaign-bar.is-long-copy) { --rgv-announcement-height: 60px; }
   .rgv-nav-shell,.rgv-nav-mobile__inner { width: calc(100% - 28px); }
   .rgv-nav-actions { gap: 5px; }
   .rgv-nav-shop { padding-inline: 10px; }

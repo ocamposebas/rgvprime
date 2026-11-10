@@ -60,10 +60,12 @@ assert(navbar.includes("function PromotionAnnouncement()"), "Promotion countdown
 assert(navbar.includes('fetch("/api/promotion"'), "Promotion countdown is not connected to the proxy");
 assert(navbar.includes("<strong>{campaign.headline}</strong>"), "Promotion headline must remain prominent");
 assert(navbarCss.includes("--rgv-announcement-height: 36px"), "Editorial storefront campaign bar height is missing");
-assert(navbarCss.includes("@media (min-width: 901px)"), "Desktop campaign visibility breakpoint is missing");
-assert(navbarCss.includes('content: "CAMPAIGN / RGV-01"'), "Desktop research campaign annotation is missing");
+assert(navbarCss.includes("@media (min-width: 1181px)"), "Desktop hero campaign breakpoint is missing");
+assert(navbarCss.includes('content: "ACTIVE RESEARCH CAMPAIGN / 01"'), "Desktop research campaign annotation is missing");
 assert(navbarCss.includes("clip-path: polygon("), "Desktop campaign card geometry is missing");
 assert(navbar.includes('header.classList.toggle("is-scrolled"'), "Desktop campaign scroll dismissal is missing");
+assert(navbarCss.includes("--rgv-announcement-height: 54px"), "Mobile campaign timer height is missing");
+assert(/\.rgv-campaign-bar__time\s*\{\s*display:\s*flex;/.test(navbar), "Mobile campaign countdown must remain visible");
 assert(!navbar.includes('className="rgv-campaign-bar__signal"'), "Legacy campaign signal is still rendered");
 assert(!navbar.includes('className="rgv-campaign-bar__eyebrow"'), "Legacy campaign eyebrow pill is still rendered");
 assert(nativeCss.includes("min-height: 80px"), "Expanded native WordPress campaign banner layout is missing");
