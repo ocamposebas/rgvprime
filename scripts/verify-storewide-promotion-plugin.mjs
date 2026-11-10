@@ -59,7 +59,9 @@ assert(navbar.includes("const hasCta"), "Optional storefront button is missing")
 assert(navbar.includes("function PromotionAnnouncement()"), "Promotion countdown is missing");
 assert(navbar.includes('fetch("/api/promotion"'), "Promotion countdown is not connected to the proxy");
 assert(navbar.includes("<strong>{campaign.headline}</strong>"), "Promotion headline must remain prominent");
-assert(navbarCss.includes("--rgv-announcement-height: 80px"), "Expanded storefront campaign banner height is missing");
+assert(navbarCss.includes("--rgv-announcement-height: 44px"), "Compact storefront campaign banner height is missing");
+assert(navbar.includes('className="rgv-campaign-bar__signal"'), "Compact storefront campaign signal is missing");
+assert(!navbar.includes('className="rgv-campaign-bar__eyebrow"'), "Legacy campaign eyebrow pill is still rendered");
 assert(nativeCss.includes("min-height: 80px"), "Expanded native WordPress campaign banner layout is missing");
 assert(engine.includes('maxlength="240"'), "Expanded promotion message field is missing");
 assert(proxy.includes("slice(0, 240)"), "Expanded promotion message is truncated by the storefront proxy");
