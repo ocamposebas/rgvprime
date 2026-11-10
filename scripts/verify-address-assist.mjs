@@ -82,6 +82,12 @@ for (const required of [
   "Powered by",
   "OpenStreetMap preview",
   "Manual address entry still works",
+  "selectTypedAddressWithKeyboard",
+  "event.key === \"Enter\"",
+  "event.key === \"Home\"",
+  "event.key === \"End\"",
+  "enterKeyHint=\"search\"",
+  "press Enter to use the best match",
 ]) {
   assert(component.includes(required), `Address assistance is missing: ${required}`);
 }

@@ -197,6 +197,59 @@ export default function AddressAssist({
     }
   }, [address, applyAddress]);
 
+  const selectTypedAddressWithKeyboard = useCallback(async () => {
+    const selectedIndex = activeSuggestion >= 0 ? activeSuggestion : 0;
+    const visibleSuggestion = suggestions[selectedIndex] || suggestions[0];
+
+    if (visibleSuggestion) {
+      await selectSuggestion(visibleSuggestion);
+      return;
+    }
+
+    const streetQuery = String(address.address1 || "").trim();
+    if (!smartAssistAvailable || disabled || streetQuery.length < MIN_QUERY_LENGTH) return;
+
+    const lookupText = buildLookupText(address);
+    const cacheKey = lookupText.toLowerCase();
+    const cached = suggestionCacheRef.current.get(cacheKey);
+
+    setFocused(false);
+    setSuggestions([]);
+    setActiveSuggestion(-1);
+    setSuggestionsLoading(true);
+    setProviderError(false);
+
+    try {
+      const matches = cached || await fetchGeoapifySuggestions(lookupText, { limit: 5 });
+      suggestionCacheRef.current.set(cacheKey, matches);
+
+      if (!matches.length) {
+        setValidation({
+          kind: "incomplete",
+          message: "We could not find a matching suggestion. Continue entering the address manually or use Check address after completing the form.",
+        });
+        return;
+      }
+
+      await selectSuggestion(matches[0]);
+    } catch (error) {
+      setProviderError(true);
+      setValidation({
+        kind: "error",
+        message: "Address suggestions are temporarily unavailable. You can continue entering the address manually.",
+      });
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [
+    activeSuggestion,
+    address,
+    disabled,
+    selectSuggestion,
+    smartAssistAvailable,
+    suggestions,
+  ]);
+
   useEffect(() => {
     if (!previousSignatureRef.current) {
       previousSignatureRef.current = addressSignature;
@@ -297,6 +350,12 @@ export default function AddressAssist({
   }, []);
 
   const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.nativeEvent?.isComposing) {
+      event.preventDefault();
+      void selectTypedAddressWithKeyboard();
+      return;
+    }
+
     if (!suggestions.length) {
       if (event.key === "Escape") setFocused(false);
       return;
@@ -310,10 +369,14 @@ export default function AddressAssist({
       setActiveSuggestion((current) =>
         current <= 0 ? suggestions.length - 1 : current - 1,
       );
-    } else if (event.key === "Enter" && activeSuggestion >= 0) {
+    } else if (event.key === "Home") {
       event.preventDefault();
-      void selectSuggestion(suggestions[activeSuggestion]);
+      setActiveSuggestion(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setActiveSuggestion(suggestions.length - 1);
     } else if (event.key === "Escape") {
+      setFocused(false);
       setSuggestions([]);
       setActiveSuggestion(-1);
     }
@@ -367,6 +430,7 @@ export default function AddressAssist({
           onKeyDown={handleKeyDown}
           placeholder="Start typing your street address"
           autoComplete="shipping address-line1"
+          enterKeyHint="search"
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={showSuggestions}
@@ -410,7 +474,7 @@ export default function AddressAssist({
       <div className="rgvx-address-assist__hint">
         <span>
           {smartAssistAvailable
-            ? "Choose a suggestion to fill city, state, and ZIP automatically — or keep typing manually."
+            ? "Choose a suggestion or press Enter to use the best match. You can still enter the address manually."
             : "Enter the delivery address exactly as it should appear on the label."}
         </span>
         {smartAssistAvailable && (
