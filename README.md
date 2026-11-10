@@ -110,15 +110,17 @@ pending orders expire automatically.
 
 ### Checkout address assistance
 
-Set `PUBLIC_GOOGLE_MAPS_API_KEY` to enable US address suggestions, automatic
-city/state/ZIP completion, a map preview, and Google Address Validation in the
-checkout. The checkout remains fully usable with manual address entry when the
-key or Google service is unavailable.
+Set `PUBLIC_GEOAPIFY_API_KEY` to enable US address suggestions, automatic
+city/state/ZIP completion, address confidence review, and an OpenStreetMap
+preview in checkout. Manual address entry remains fully usable when the key or
+the Geoapify service is unavailable.
 
-In Google Cloud, enable **Maps JavaScript API**, **Places API (New)**, and
-**Address Validation API**. Restrict the browser key to those APIs and to the
-production storefront HTTPS referrers, including `https://rgvprimellc.com/*`
-and `https://www.rgvprimellc.com/*` if the `www` host remains reachable.
+Create the key in [Geoapify MyProjects](https://myprojects.geoapify.com/). Its
+Free plan currently allows commercial production use, includes 3,000 credits
+per day, and does not require a credit card. Restrict the key to the production
+storefront HTTP referrers/origins, including `https://rgvprimellc.com/*` and
+`https://www.rgvprimellc.com/*` if the `www` host remains reachable. Geoapify
+and OpenStreetMap attribution must remain visible in the checkout.
 
 ### ORBIT card processor
 

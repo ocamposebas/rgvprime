@@ -11,18 +11,8 @@ function clean(value) {
   return String(value || "").trim();
 }
 
-function componentValue(component, short = false) {
-  return clean(
-    short
-      ? component?.shortText || component?.short_name || component?.longText || component?.long_name
-      : component?.longText || component?.long_name || component?.shortText || component?.short_name,
-  );
-}
-
-function findComponent(components, ...types) {
-  return (Array.isArray(components) ? components : []).find((component) =>
-    types.some((type) => component?.types?.includes(type)),
-  );
+function normalizeState(value) {
+  return clean(value).replace(/^US-/i, "").toUpperCase();
 }
 
 export function normalizeAddress(address = {}) {
@@ -30,7 +20,7 @@ export function normalizeAddress(address = {}) {
     address1: clean(address.address1),
     address2: clean(address.address2),
     city: clean(address.city),
-    state: clean(address.state).toUpperCase(),
+    state: normalizeState(address.state),
     postcode: clean(address.postcode).toUpperCase(),
     country: clean(address.country || "US").toUpperCase(),
   };
@@ -64,97 +54,94 @@ export function formatCheckoutAddress(address = {}) {
     .join(" · ");
 }
 
-export function parseGooglePlace(place = {}, fallback = {}) {
-  const components = Array.isArray(place.addressComponents)
-    ? place.addressComponents
-    : Array.isArray(place.address_components)
-      ? place.address_components
-      : [];
-  const streetNumber = componentValue(findComponent(components, "street_number"));
-  const route = componentValue(findComponent(components, "route"));
-  const subpremise = componentValue(findComponent(components, "subpremise"));
-  const cityComponent = findComponent(
-    components,
-    "locality",
-    "postal_town",
-    "sublocality_level_1",
-  );
-  const stateComponent = findComponent(components, "administrative_area_level_1");
-  const postcodeComponent = findComponent(components, "postal_code");
-  const postcodeSuffix = findComponent(components, "postal_code_suffix");
-  const countryComponent = findComponent(components, "country");
-  const formattedAddress = clean(place.formattedAddress || place.formatted_address);
-  const formattedStreet = formattedAddress.split(",")[0] || "";
-  const postcode = [
-    componentValue(postcodeComponent),
-    componentValue(postcodeSuffix),
-  ].filter(Boolean).join("-");
+export function parseGeoapifySuggestion(result = {}, fallback = {}) {
+  const streetAddress = [clean(result.housenumber), clean(result.street)]
+    .filter(Boolean)
+    .join(" ");
 
   return normalizeAddress({
     ...fallback,
-    address1: [streetNumber, route].filter(Boolean).join(" ") || formattedStreet || fallback.address1,
-    address2: subpremise || fallback.address2,
-    city: componentValue(cityComponent) || fallback.city,
-    state: componentValue(stateComponent, true) || fallback.state,
-    postcode: postcode || fallback.postcode,
-    country: componentValue(countryComponent, true) || fallback.country || "US",
+    address1: streetAddress || clean(result.address_line1) || fallback.address1,
+    address2: fallback.address2,
+    city:
+      clean(result.city) ||
+      clean(result.town) ||
+      clean(result.village) ||
+      clean(result.municipality) ||
+      fallback.city,
+    state: normalizeState(result.state_code || result.state) || fallback.state,
+    postcode: clean(result.postcode) || fallback.postcode,
+    country: clean(result.country_code || fallback.country || "US"),
   });
 }
 
-export function parseValidatedAddress(result = {}, fallback = {}) {
-  const postal = result?.address?.postalAddress || result?.address?.postal_address || {};
-  const addressLines = Array.isArray(postal.addressLines)
-    ? postal.addressLines
-    : Array.isArray(postal.address_lines)
-      ? postal.address_lines
-      : [];
-
-  return normalizeAddress({
-    ...fallback,
-    address1: addressLines[0] || fallback.address1,
-    address2: addressLines.slice(1).join(", ") || fallback.address2,
-    city: postal.locality || fallback.city,
-    state: postal.administrativeArea || postal.administrative_area || fallback.state,
-    postcode: postal.postalCode || postal.postal_code || fallback.postcode,
-    country: postal.regionCode || postal.region_code || fallback.country || "US",
-  });
-}
-
-export function getLatLngLiteral(location) {
+export function getLatLngLiteral(location = {}) {
   if (!location) return null;
 
-  const lat = typeof location.lat === "function"
-    ? location.lat()
-    : Number(location.lat ?? location.latitude);
-  const lng = typeof location.lng === "function"
-    ? location.lng()
-    : Number(location.lng ?? location.longitude);
+  const lat = Number(location.lat ?? location.latitude);
+  const lng = Number(location.lon ?? location.lng ?? location.longitude);
 
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
-export function getAddressValidationDecision(result = {}, enteredAddress = {}) {
-  const verdict = result?.verdict || {};
-  const suggestedAddress = parseValidatedAddress(result, enteredAddress);
+export function getGeoapifyValidationDecision(result = {}, enteredAddress = {}) {
+  const suggestedAddress = parseGeoapifySuggestion(result, enteredAddress);
+  const confidence = Number(result?.rank?.confidence || 0);
+  const matchType = clean(result?.rank?.match_type);
   const changed = !addressesMatch(enteredAddress, suggestedAddress);
-  const incomplete = verdict.addressComplete === false;
-  const hasUnconfirmed = verdict.hasUnconfirmedComponents === true;
-  const changedByGoogle =
-    verdict.hasInferredComponents === true || verdict.hasReplacedComponents === true;
-  const nextAction = clean(verdict.possibleNextAction || verdict.possible_next_action).toUpperCase();
-  const needsReview =
-    changed || incomplete || hasUnconfirmed || changedByGoogle ||
-    (nextAction && !nextAction.includes("ACCEPT"));
+  const incomplete = !(
+    suggestedAddress.address1 &&
+    suggestedAddress.city &&
+    suggestedAddress.state &&
+    suggestedAddress.postcode &&
+    clean(result.housenumber)
+  );
+  const lowConfidence = confidence < 0.9;
+  const needsReview = changed || incomplete || lowConfidence;
+
+  let message = "The address matches a complete, high-confidence result.";
+  if (incomplete) {
+    message = "We found the area, but the building number or another delivery detail may be missing.";
+  } else if (lowConfidence) {
+    message = "This is the closest match we found. Review it before choosing which version to use.";
+  } else if (changed) {
+    message = "We found a standardized version that may be easier for the carrier to locate.";
+  }
 
   return {
     kind: needsReview ? "review" : "verified",
     enteredAddress: normalizeAddress(enteredAddress),
     suggestedAddress,
-    formattedAddress: clean(result?.address?.formattedAddress || result?.address?.formatted_address),
+    formattedAddress: clean(result.formatted) || formatCheckoutAddress(suggestedAddress),
     needsReview,
     incomplete,
-    hasUnconfirmed,
+    lowConfidence,
     changed,
-    nextAction,
+    confidence,
+    matchType,
+    message,
+  };
+}
+
+export function buildOpenStreetMapUrls(location) {
+  const point = getLatLngLiteral(location);
+  if (!point) return { embedUrl: "", openUrl: "" };
+
+  const offset = 0.006;
+  const bbox = [
+    point.lng - offset,
+    point.lat - offset,
+    point.lng + offset,
+    point.lat + offset,
+  ].join(",");
+  const embedParams = new URLSearchParams({
+    bbox,
+    layer: "mapnik",
+    marker: `${point.lat},${point.lng}`,
+  });
+
+  return {
+    embedUrl: `https://www.openstreetmap.org/export/embed.html?${embedParams.toString()}`,
+    openUrl: `https://www.openstreetmap.org/?mlat=${point.lat}&mlon=${point.lng}#map=17/${point.lat}/${point.lng}`,
   };
 }

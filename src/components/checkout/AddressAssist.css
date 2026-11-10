@@ -112,6 +112,8 @@
   min-height: 31px;
   align-items: center;
   justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
   background: rgba(255, 255, 255, 0.025);
   padding: 6px 12px;
   color: #8f7c81;
@@ -119,6 +121,15 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.rgvx-address-suggestions footer a {
+  color: #c6b6ba;
+  text-decoration: none;
+}
+
+.rgvx-address-suggestions footer a:hover {
+  color: #fff;
 }
 
 .rgvx-address-assist__hint {
@@ -291,8 +302,10 @@
 }
 
 .rgvx-address-map {
+  display: block;
   width: 100%;
   height: 210px;
+  border: 0;
   background:
     radial-gradient(circle at 45% 48%, rgba(227, 38, 61, 0.16), transparent 24%),
     linear-gradient(135deg, #181114, #0c090a);

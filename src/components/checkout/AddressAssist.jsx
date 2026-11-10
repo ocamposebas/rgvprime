@@ -9,24 +9,62 @@ import {
   Sparkles,
 } from "lucide-react";
 import {
+  buildOpenStreetMapUrls,
   formatCheckoutAddress,
   getAddressSignature,
-  getAddressValidationDecision,
+  getGeoapifyValidationDecision,
   getLatLngLiteral,
   normalizeAddress,
-  parseGooglePlace,
+  parseGeoapifySuggestion,
 } from "../../lib/addressAssist";
-import { loadGoogleMaps } from "../../lib/googleMapsLoader";
 import "./AddressAssist.css";
 
-const GOOGLE_MAPS_API_KEY = String(
-  import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || "",
+const GEOAPIFY_API_KEY = String(
+  import.meta.env.PUBLIC_GEOAPIFY_API_KEY || "",
 ).trim();
-const MIN_QUERY_LENGTH = 3;
-const AUTOCOMPLETE_DELAY_MS = 240;
+const MIN_QUERY_LENGTH = 4;
+const AUTOCOMPLETE_DELAY_MS = 360;
 
 function suggestionLabel(suggestion) {
-  return String(suggestion?.placePrediction?.text?.toString?.() || "").trim();
+  return String(
+    suggestion?.formatted ||
+    [suggestion?.address_line1, suggestion?.address_line2].filter(Boolean).join(", "),
+  ).trim();
+}
+
+function buildLookupText(address) {
+  return [
+    address.address1,
+    address.address2,
+    address.city,
+    address.state,
+    address.postcode,
+    "USA",
+  ].filter(Boolean).join(", ");
+}
+
+async function fetchGeoapifySuggestions(text, { limit = 5, signal } = {}) {
+  if (!GEOAPIFY_API_KEY) throw new Error("Geoapify is not configured.");
+
+  const params = new URLSearchParams({
+    text,
+    format: "json",
+    filter: "countrycode:us",
+    lang: "en",
+    limit: String(limit),
+    apiKey: GEOAPIFY_API_KEY,
+  });
+  const response = await fetch(
+    `https://api.geoapify.com/v1/geocode/autocomplete?${params.toString()}`,
+    { signal, headers: { Accept: "application/json" } },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Geoapify request failed with status ${response.status}.`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload?.results) ? payload.results : [];
 }
 
 function AddressChoice({ label, address, accent = false }) {
@@ -46,22 +84,17 @@ export default function AddressAssist({
 }) {
   const rootRef = useRef(null);
   const inputRef = useRef(null);
-  const mapContainerRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const placesLibraryRef = useRef(null);
-  const sessionTokenRef = useRef(null);
   const newestRequestRef = useRef(0);
+  const suggestionCacheRef = useRef(new Map());
   const skipResetSignatureRef = useRef("");
   const previousSignatureRef = useRef("");
   const [focused, setFocused] = useState(false);
-  const [mapsStatus, setMapsStatus] = useState(
-    GOOGLE_MAPS_API_KEY ? "idle" : "unconfigured",
-  );
   const [suggestions, setSuggestions] = useState([]);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [validationLoading, setValidationLoading] = useState(false);
+  const [providerError, setProviderError] = useState(false);
   const [validation, setValidation] = useState(null);
   const [location, setLocation] = useState(null);
   const [selectedFormattedAddress, setSelectedFormattedAddress] = useState("");
@@ -70,36 +103,8 @@ export default function AddressAssist({
   const canValidate = Boolean(
     address.address1 && address.city && address.state && address.postcode,
   );
-  const smartAssistAvailable = Boolean(GOOGLE_MAPS_API_KEY);
-
-  const ensureMaps = useCallback(async () => {
-    if (!GOOGLE_MAPS_API_KEY) throw new Error("Google Maps is not configured.");
-
-    setMapsStatus((current) => current === "ready" ? current : "loading");
-
-    try {
-      const maps = await loadGoogleMaps(GOOGLE_MAPS_API_KEY);
-      setMapsStatus("ready");
-      return maps;
-    } catch (error) {
-      setMapsStatus("error");
-      throw error;
-    }
-  }, []);
-
-  const ensurePlaces = useCallback(async () => {
-    if (placesLibraryRef.current) return placesLibraryRef.current;
-
-    const maps = await ensureMaps();
-    placesLibraryRef.current = await maps.importLibrary("places");
-    return placesLibraryRef.current;
-  }, [ensureMaps]);
-
-  const createSessionToken = useCallback(async () => {
-    const { AutocompleteSessionToken } = await ensurePlaces();
-    sessionTokenRef.current = new AutocompleteSessionToken();
-    return sessionTokenRef.current;
-  }, [ensurePlaces]);
+  const smartAssistAvailable = Boolean(GEOAPIFY_API_KEY);
+  const mapUrls = useMemo(() => buildOpenStreetMapUrls(location), [location]);
 
   const applyAddress = useCallback((nextAddress) => {
     const normalized = normalizeAddress({ ...address, ...nextAddress, country: "US" });
@@ -107,10 +112,7 @@ export default function AddressAssist({
     onAddressPatch(normalized);
   }, [address, onAddressPatch]);
 
-  const validateAddress = useCallback(async (
-    addressToValidate = address,
-    { locationFallback = null } = {},
-  ) => {
+  const validateAddress = useCallback(async (addressToValidate = address) => {
     const enteredAddress = normalizeAddress(addressToValidate);
     if (!enteredAddress.address1 || !enteredAddress.city || !enteredAddress.state || !enteredAddress.postcode) {
       setValidation({
@@ -121,33 +123,34 @@ export default function AddressAssist({
     }
 
     setValidationLoading(true);
+    setProviderError(false);
     setSuggestions([]);
     setActiveSuggestion(-1);
 
     try {
-      const maps = await ensureMaps();
-      const { AddressValidation } = await maps.importLibrary("addressValidation");
-      const result = await AddressValidation.fetchAddressValidation({
-        address: {
-          regionCode: "US",
-          languageCode: "en",
-          addressLines: [enteredAddress.address1, enteredAddress.address2].filter(Boolean),
-          locality: enteredAddress.city,
-          administrativeArea: enteredAddress.state,
-          postalCode: enteredAddress.postcode,
-        },
+      const [bestMatch] = await fetchGeoapifySuggestions(buildLookupText(enteredAddress), {
+        limit: 1,
       });
-      const decision = getAddressValidationDecision(result, enteredAddress);
-      const validatedLocation = getLatLngLiteral(result?.geocode?.location) || locationFallback;
+
+      if (!bestMatch) {
+        setValidation({
+          kind: "error",
+          message: "We could not find a close match. You can edit the address or keep it exactly as entered.",
+        });
+        return null;
+      }
+
+      const decision = getGeoapifyValidationDecision(bestMatch, enteredAddress);
+      const validatedLocation = getLatLngLiteral(bestMatch);
 
       setValidation(decision);
       setSelectedFormattedAddress(
         decision.formattedAddress || formatCheckoutAddress(decision.suggestedAddress),
       );
       if (validatedLocation) setLocation(validatedLocation);
-
       return decision;
     } catch (error) {
+      setProviderError(true);
       setValidation({
         kind: "error",
         message: "We could not check this address right now. You can still keep it and confirm it manually below.",
@@ -156,31 +159,34 @@ export default function AddressAssist({
     } finally {
       setValidationLoading(false);
     }
-  }, [address, ensureMaps]);
+  }, [address]);
 
   const selectSuggestion = useCallback(async (suggestion) => {
-    const prediction = suggestion?.placePrediction;
-    if (!prediction) return;
+    if (!suggestion) return;
 
     setSelectionLoading(true);
+    setFocused(false);
     setSuggestions([]);
     setActiveSuggestion(-1);
+    setProviderError(false);
 
     try {
-      const place = prediction.toPlace();
-      await place.fetchFields({
-        fields: ["addressComponents", "formattedAddress", "location", "viewport"],
-      });
-      const selectedAddress = parseGooglePlace(place, address);
-      const selectedLocation = getLatLngLiteral(place.location);
+      const selectedAddress = parseGeoapifySuggestion(suggestion, address);
+      const selectedLocation = getLatLngLiteral(suggestion);
 
       applyAddress(selectedAddress);
       setSelectedFormattedAddress(
-        String(place.formattedAddress || formatCheckoutAddress(selectedAddress)),
+        suggestionLabel(suggestion) || formatCheckoutAddress(selectedAddress),
       );
       if (selectedLocation) setLocation(selectedLocation);
-      sessionTokenRef.current = null;
-      await validateAddress(selectedAddress, { locationFallback: selectedLocation });
+      setValidation({
+        kind: "verified",
+        source: "selection",
+        enteredAddress: selectedAddress,
+        suggestedAddress: selectedAddress,
+        formattedAddress: suggestionLabel(suggestion),
+        message: "This address was selected from the suggestions. Confirm the delivery location below.",
+      });
     } catch (error) {
       setValidation({
         kind: "error",
@@ -189,7 +195,7 @@ export default function AddressAssist({
     } finally {
       setSelectionLoading(false);
     }
-  }, [address, applyAddress, validateAddress]);
+  }, [address, applyAddress]);
 
   useEffect(() => {
     if (!previousSignatureRef.current) {
@@ -207,45 +213,53 @@ export default function AddressAssist({
 
     setValidation(null);
     setSelectedFormattedAddress("");
+    setLocation(null);
   }, [addressSignature]);
 
   useEffect(() => {
     if (!focused || !smartAssistAvailable || disabled) return undefined;
 
-    const query = String(address.address1 || "").trim();
-    if (query.length < MIN_QUERY_LENGTH) {
+    const streetQuery = String(address.address1 || "").trim();
+    if (streetQuery.length < MIN_QUERY_LENGTH) {
       setSuggestions([]);
       setActiveSuggestion(-1);
       return undefined;
     }
 
+    const lookupText = buildLookupText(address);
+    const cacheKey = lookupText.toLowerCase();
+    const cached = suggestionCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSuggestions(cached);
+      setActiveSuggestion(cached.length ? 0 : -1);
+      return undefined;
+    }
+
     const requestId = newestRequestRef.current + 1;
     newestRequestRef.current = requestId;
+    const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setSuggestionsLoading(true);
+      setProviderError(false);
 
       try {
-        const { AutocompleteSuggestion } = await ensurePlaces();
-        const sessionToken = sessionTokenRef.current || await createSessionToken();
-        const { suggestions: nextSuggestions = [] } =
-          await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: [query, address.city, address.state, address.postcode]
-              .filter(Boolean)
-              .join(", "),
-            includedRegionCodes: ["us"],
-            language: "en-US",
-            region: "us",
-            sessionToken,
-          });
-
+        const nextSuggestions = await fetchGeoapifySuggestions(lookupText, {
+          limit: 5,
+          signal: controller.signal,
+        });
         if (requestId !== newestRequestRef.current) return;
-        const addressSuggestions = nextSuggestions
-          .filter((item) => item?.placePrediction)
-          .slice(0, 5);
-        setSuggestions(addressSuggestions);
-        setActiveSuggestion(addressSuggestions.length ? 0 : -1);
+
+        suggestionCacheRef.current.set(cacheKey, nextSuggestions);
+        if (suggestionCacheRef.current.size > 40) {
+          const oldestKey = suggestionCacheRef.current.keys().next().value;
+          suggestionCacheRef.current.delete(oldestKey);
+        }
+        setSuggestions(nextSuggestions);
+        setActiveSuggestion(nextSuggestions.length ? 0 : -1);
       } catch (error) {
+        if (error?.name === "AbortError") return;
         if (requestId === newestRequestRef.current) {
+          setProviderError(true);
           setSuggestions([]);
           setActiveSuggestion(-1);
         }
@@ -254,52 +268,20 @@ export default function AddressAssist({
       }
     }, AUTOCOMPLETE_DELAY_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [
     address.address1,
+    address.address2,
     address.city,
     address.postcode,
     address.state,
-    createSessionToken,
     disabled,
-    ensurePlaces,
     focused,
     smartAssistAvailable,
   ]);
-
-  useEffect(() => {
-    if (!location || !mapContainerRef.current || !smartAssistAvailable) return undefined;
-
-    let cancelled = false;
-
-    ensureMaps()
-      .then(async (maps) => {
-        const { Map } = await maps.importLibrary("maps");
-        if (cancelled || !mapContainerRef.current) return;
-
-        if (!mapInstanceRef.current) {
-          mapInstanceRef.current = new Map(mapContainerRef.current, {
-            center: location,
-            zoom: 16,
-            disableDefaultUI: true,
-            clickableIcons: false,
-            keyboardShortcuts: false,
-            gestureHandling: "cooperative",
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-          });
-        } else {
-          mapInstanceRef.current.setCenter(location);
-          mapInstanceRef.current.setZoom(16);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ensureMaps, location, smartAssistAvailable]);
 
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
@@ -344,7 +326,7 @@ export default function AddressAssist({
       ...validation,
       kind: "verified",
       enteredAddress: validation.suggestedAddress,
-      message: "Google's recommended format is now in the shipping form.",
+      message: "The recommended format is now in the shipping form.",
     });
   };
 
@@ -358,7 +340,6 @@ export default function AddressAssist({
 
   const showSuggestions = focused && suggestions.length > 0;
   const busy = suggestionsLoading || selectionLoading;
-  const mapQuery = location ? `${location.lat},${location.lng}` : "";
 
   return (
     <div className="rgvx-field wide rgvx-address-assist" ref={rootRef}>
@@ -380,13 +361,9 @@ export default function AddressAssist({
             onFieldChange("address1", event.target.value);
             setFocused(true);
             setValidation(null);
+            setProviderError(false);
           }}
-          onFocus={() => {
-            setFocused(true);
-            if (smartAssistAvailable && mapsStatus === "idle") {
-              void ensurePlaces().catch(() => {});
-            }
-          }}
+          onFocus={() => setFocused(true)}
           onKeyDown={handleKeyDown}
           placeholder="Start typing your street address"
           autoComplete="shipping address-line1"
@@ -408,7 +385,7 @@ export default function AddressAssist({
         <div className="rgvx-address-suggestions" id="rgvx-address-suggestions" role="listbox">
           {suggestions.map((suggestion, index) => (
             <button
-              key={`${suggestionLabel(suggestion)}-${index}`}
+              key={`${suggestion.place_id || suggestionLabel(suggestion)}-${index}`}
               id={`rgvx-address-suggestion-${index}`}
               type="button"
               role="option"
@@ -422,7 +399,11 @@ export default function AddressAssist({
               <span>{suggestionLabel(suggestion)}</span>
             </button>
           ))}
-          <footer>Powered by Google</footer>
+          <footer>
+            Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a>
+            <span aria-hidden="true">·</span>
+            © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors
+          </footer>
         </div>
       )}
 
@@ -445,7 +426,7 @@ export default function AddressAssist({
         )}
       </div>
 
-      {mapsStatus === "error" && (
+      {providerError && (
         <p className="rgvx-address-assist__service-note" role="status">
           Smart suggestions are temporarily unavailable. Manual address entry still works.
         </p>
@@ -458,20 +439,14 @@ export default function AddressAssist({
             <div>
               <strong>
                 {validation.kind === "verified"
-                  ? "Address matched"
+                  ? validation.source === "selection" ? "Address selected" : "Address matched"
                   : validation.kind === "manual"
                     ? "Using your address"
                     : validation.kind === "review"
-                      ? "Review Google's suggestion"
+                      ? "Review this suggestion"
                       : "Address check unavailable"}
               </strong>
-              <small>
-                {validation.message || (
-                  validation.kind === "verified"
-                    ? "Google found a complete match. Confirm it below before payment."
-                    : "A small correction may help the carrier find this destination."
-                )}
-              </small>
+              <small>{validation.message}</small>
             </div>
           </header>
 
@@ -499,25 +474,22 @@ export default function AddressAssist({
         </section>
       )}
 
-      {location && (
+      {location && mapUrls.embedUrl && (
         <section className="rgvx-address-map-card">
-          <div
-            ref={mapContainerRef}
+          <iframe
             className="rgvx-address-map"
-            role="img"
-            aria-label={`Map location for ${selectedFormattedAddress || formatCheckoutAddress(address)}`}
+            src={mapUrls.embedUrl}
+            title={`Map location for ${selectedFormattedAddress || formatCheckoutAddress(address)}`}
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
           />
           <span className="rgvx-address-map__pin" aria-hidden="true"><MapPin size={21} /></span>
           <footer>
             <div>
-              <span>Map preview</span>
+              <span>OpenStreetMap preview</span>
               <strong>{selectedFormattedAddress || formatCheckoutAddress(address)}</strong>
             </div>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >Open map</a>
+            <a href={mapUrls.openUrl} target="_blank" rel="noopener noreferrer">Open map</a>
           </footer>
         </section>
       )}

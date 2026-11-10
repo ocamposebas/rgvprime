@@ -1,28 +1,35 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
-  addressesMatch,
-  getAddressValidationDecision,
+  buildOpenStreetMapUrls,
+  getGeoapifyValidationDecision,
   getLatLngLiteral,
-  parseGooglePlace,
+  parseGeoapifySuggestion,
 } from "../src/lib/addressAssist.js";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const parsedPlace = parseGooglePlace({
-  formattedAddress: "1600 Amphitheatre Parkway, Mountain View, CA 94043, USA",
-  addressComponents: [
-    { longText: "1600", shortText: "1600", types: ["street_number"] },
-    { longText: "Amphitheatre Parkway", shortText: "Amphitheatre Pkwy", types: ["route"] },
-    { longText: "Mountain View", shortText: "Mountain View", types: ["locality"] },
-    { longText: "California", shortText: "CA", types: ["administrative_area_level_1"] },
-    { longText: "94043", shortText: "94043", types: ["postal_code"] },
-    { longText: "United States", shortText: "US", types: ["country"] },
-  ],
-});
+const geoapifyResult = {
+  place_id: "51f2-example",
+  housenumber: "1600",
+  street: "Amphitheatre Parkway",
+  city: "Mountain View",
+  state: "California",
+  state_code: "CA",
+  postcode: "94043",
+  country_code: "us",
+  formatted: "1600 Amphitheatre Parkway, Mountain View, CA 94043, United States",
+  lat: 37.422,
+  lon: -122.084,
+  rank: {
+    confidence: 0.98,
+    match_type: "full_match",
+  },
+};
 
-assert.deepEqual(parsedPlace, {
+const parsedSuggestion = parseGeoapifySuggestion(geoapifyResult);
+assert.deepEqual(parsedSuggestion, {
   address1: "1600 Amphitheatre Parkway",
   address2: "",
   city: "Mountain View",
@@ -30,41 +37,35 @@ assert.deepEqual(parsedPlace, {
   postcode: "94043",
   country: "US",
 });
-assert.equal(
-  addressesMatch(
-    parsedPlace,
-    { ...parsedPlace, address1: "1600 amphitheatre pkwy." },
-  ),
-  false,
-  "Meaningfully different street text should remain reviewable",
-);
-assert.deepEqual(getLatLngLiteral({ latitude: 37.422, longitude: -122.084 }), {
+
+assert.deepEqual(getLatLngLiteral(geoapifyResult), {
   lat: 37.422,
   lng: -122.084,
 });
+assert.equal(getLatLngLiteral(null), null);
 
-const validationDecision = getAddressValidationDecision({
-  verdict: {
-    addressComplete: true,
-    hasUnconfirmedComponents: false,
-    hasInferredComponents: false,
-    hasReplacedComponents: true,
-    possibleNextAction: "CONFIRM",
-  },
-  address: {
-    formattedAddress: "1600 Amphitheatre Pkwy, Mountain View, CA 94043, USA",
-    postalAddress: {
-      regionCode: "US",
-      administrativeArea: "CA",
-      locality: "Mountain View",
-      postalCode: "94043",
-      addressLines: ["1600 Amphitheatre Pkwy"],
-    },
-  },
-}, parsedPlace);
+const normalizedDecision = getGeoapifyValidationDecision(
+  geoapifyResult,
+  parsedSuggestion,
+);
+assert.equal(normalizedDecision.kind, "verified");
+assert.equal(normalizedDecision.needsReview, false);
 
-assert.equal(validationDecision.kind, "review");
-assert.equal(validationDecision.suggestedAddress.address1, "1600 Amphitheatre Pkwy");
+const correctionDecision = getGeoapifyValidationDecision(
+  {
+    ...geoapifyResult,
+    street: "Amphitheatre Pkwy",
+    formatted: "1600 Amphitheatre Pkwy, Mountain View, CA 94043, United States",
+  },
+  parsedSuggestion,
+);
+assert.equal(correctionDecision.kind, "review");
+assert.equal(correctionDecision.suggestedAddress.address1, "1600 Amphitheatre Pkwy");
+
+const mapUrls = buildOpenStreetMapUrls(geoapifyResult);
+assert(mapUrls.embedUrl.startsWith("https://www.openstreetmap.org/export/embed.html?"));
+assert(mapUrls.embedUrl.includes("marker=37.422%2C-122.084"));
+assert(mapUrls.openUrl.includes("#map=17/37.422/-122.084"));
 
 const [component, checkout, envExample, readme] = await Promise.all([
   read("src/components/checkout/AddressAssist.jsx"),
@@ -74,20 +75,23 @@ const [component, checkout, envExample, readme] = await Promise.all([
 ]);
 
 for (const required of [
-  "AutocompleteSuggestion.fetchAutocompleteSuggestions",
-  "AutocompleteSessionToken",
-  "AddressValidation.fetchAddressValidation",
-  'maps.importLibrary("maps")',
+  "api.geoapify.com/v1/geocode/autocomplete",
+  "PUBLIC_GEOAPIFY_API_KEY",
+  "Use recommended",
   "Keep my address",
-  "Powered by Google",
+  "Powered by",
+  "OpenStreetMap preview",
+  "Manual address entry still works",
 ]) {
   assert(component.includes(required), `Address assistance is missing: ${required}`);
 }
 
+assert(!component.includes("google.maps"), "Google Maps must not be loaded by checkout");
 assert(checkout.includes("<AddressAssist"), "Checkout must render the address assistance component");
 assert(checkout.includes("setShippingAddressConfirmed(false)"), "Address edits must clear final confirmation");
-assert(envExample.includes("PUBLIC_GOOGLE_MAPS_API_KEY="), "Maps browser key must be documented");
-assert(readme.includes("Places API (New)"), "Google Cloud setup must document the Places API");
-assert(readme.includes("Address Validation API"), "Google Cloud setup must document address validation");
+assert(envExample.includes("PUBLIC_GEOAPIFY_API_KEY="), "Geoapify browser key must be documented");
+assert(!envExample.includes("PUBLIC_GOOGLE_MAPS_API_KEY="), "Paid Google Maps key should be removed");
+assert(readme.includes("3,000 credits"), "Free daily allowance must be documented");
+assert(readme.includes("does not require a credit card"), "No-card setup must be documented");
 
-console.log("Checkout address suggestions, correction review, map preview, and manual fallback verified.");
+console.log("Free Geoapify suggestions, correction review, OpenStreetMap preview, and manual fallback verified.");
