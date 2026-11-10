@@ -94,6 +94,14 @@ for (const required of [
 }
 
 assert(!component.includes("google.maps"), "Google Maps must not be loaded by checkout");
+assert(
+  component.includes('value={String(form.address1 || "")}'),
+  "The address input must preserve spaces exactly as the customer types them",
+);
+assert(
+  !component.includes("value={address.address1}"),
+  "The controlled address input must not render the trimmed normalized value",
+);
 assert(checkout.includes("<AddressAssist"), "Checkout must render the address assistance component");
 assert(checkout.includes("setShippingAddressConfirmed(false)"), "Address edits must clear final confirmation");
 assert(envExample.includes("PUBLIC_GEOAPIFY_API_KEY="), "Geoapify browser key must be documented");

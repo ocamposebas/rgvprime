@@ -419,7 +419,7 @@ export default function AddressAssist({
           ref={inputRef}
           id="rgvx-shipping-address"
           type="text"
-          value={address.address1}
+          value={String(form.address1 || "")}
           onChange={(event) => {
             onFieldChange("address1", event.target.value);
             setFocused(true);
