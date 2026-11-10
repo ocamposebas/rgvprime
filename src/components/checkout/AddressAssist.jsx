@@ -547,7 +547,6 @@ export default function AddressAssist({
             loading="lazy"
             referrerPolicy="strict-origin-when-cross-origin"
           />
-          <span className="rgvx-address-map__pin" aria-hidden="true"><MapPin size={21} /></span>
           <footer>
             <div>
               <span>OpenStreetMap preview</span>

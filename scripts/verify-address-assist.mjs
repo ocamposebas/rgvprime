@@ -95,6 +95,10 @@ for (const required of [
 
 assert(!component.includes("google.maps"), "Google Maps must not be loaded by checkout");
 assert(
+  !component.includes("rgvx-address-map__pin"),
+  "The map must not render the decorative red pin over the location",
+);
+assert(
   component.includes('value={String(form.address1 || "")}'),
   "The address input must preserve spaces exactly as the customer types them",
 );
