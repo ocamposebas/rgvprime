@@ -750,6 +750,7 @@ function SearchModal({
             <input
               ref={inputRef}
               type="search"
+              data-rgv-store-search
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by product name, SKU, or category..."

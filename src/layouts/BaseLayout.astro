@@ -427,6 +427,103 @@ const webpageSchema = {
 
     <CookieConsent />
 
+    <script is:inline>
+      (() => {
+        if (window.__RGV_STORE_MONITOR__) return;
+        window.__RGV_STORE_MONITOR__ = true;
+
+        const sessionKey = "rgv-store-session-v1";
+        const recent = new Map();
+        let searchTimer = 0;
+
+        const clean = (value, limit) =>
+          String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
+        const sessionId = (() => {
+          try {
+            const stored = window.sessionStorage.getItem(sessionKey);
+            if (stored && /^[a-zA-Z0-9._-]{8,100}$/.test(stored)) return stored;
+            const created = `session-${crypto.randomUUID()}`;
+            window.sessionStorage.setItem(sessionKey, created);
+            return created;
+          } catch {
+            return `session-${crypto.randomUUID()}`;
+          }
+        })();
+        const deviceType = () => {
+          const width = Math.min(window.innerWidth || 9999, window.screen?.width || 9999);
+          if (/iPad|Tablet|PlayBook|Silk/i.test(navigator.userAgent) || (width >= 768 && width < 1100)) return "tablet";
+          if (/Mobi|Android|iPhone|iPod/i.test(navigator.userAgent) || width < 768) return "mobile";
+          return "desktop";
+        };
+        const sourceContext = () => {
+          const params = new URLSearchParams(location.search);
+          let referrerHost = "";
+          try { referrerHost = document.referrer ? new URL(document.referrer).hostname : ""; } catch {}
+          const source = clean(params.get("utm_source"), 64).toLowerCase()
+            || (referrerHost && referrerHost !== location.hostname ? referrerHost.split(".").slice(-2, -1)[0] : "direct")
+            || "direct";
+          return {
+            source,
+            campaign_name: clean(params.get("utm_campaign"), 120),
+            referrer_host: clean(referrerHost, 180).toLowerCase(),
+          };
+        };
+        const send = (eventType, details = {}, dedupeKey = "") => {
+          const now = Date.now();
+          if (dedupeKey && recent.has(dedupeKey) && now - recent.get(dedupeKey) < 2500) return;
+          if (dedupeKey) recent.set(dedupeKey, now);
+
+          const payload = {
+            event_type: eventType,
+            session_id: sessionId,
+            device_type: deviceType(),
+            page_path: `${location.pathname}${location.search}`.slice(0, 500),
+            page_title: clean(document.title.replace(/\s*\|\s*RGVPRIME.*$/i, ""), 180),
+            ...sourceContext(),
+            ...details,
+          };
+
+          fetch("/api/store-activity", {
+            method: "POST",
+            credentials: "same-origin",
+            keepalive: true,
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(payload),
+          }).catch(() => {});
+        };
+        const trackPage = () => {
+          const productMatch = location.pathname.match(/^\/product\/([^/]+)/i);
+          if (location.pathname === "/checkout" || location.pathname === "/checkout/") {
+            send("checkout", {}, `checkout:${location.pathname}`);
+            return;
+          }
+          send(productMatch ? "product_view" : "page_view", productMatch ? {
+            product_id: clean(productMatch[1], 100),
+            product_name: clean(document.querySelector("h1")?.textContent || document.title, 180),
+          } : {}, `page:${location.pathname}${location.search}`);
+        };
+
+        window.addEventListener("rgv-store-activity", (event) => {
+          const detail = event.detail || {};
+          const eventType = clean(detail.event_type, 32);
+          if (!eventType) return;
+          send(eventType, detail, detail.dedupe_key || "");
+        });
+        document.addEventListener("input", (event) => {
+          const input = event.target;
+          if (!(input instanceof HTMLInputElement) || !input.matches("[data-rgv-store-search]")) return;
+          window.clearTimeout(searchTimer);
+          const query = clean(input.value, 160);
+          if (query.length < 2) return;
+          searchTimer = window.setTimeout(() => {
+            send("search", { search_query: query }, `search:${query.toLowerCase()}`);
+          }, 800);
+        }, true);
+        document.addEventListener("astro:page-load", trackPage);
+        trackPage();
+      })();
+    </script>
+
     <button
       id="rgv-theme-toggle"
       class="rgv-theme-toggle"

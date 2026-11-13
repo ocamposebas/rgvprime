@@ -2,8 +2,12 @@
 export const prerender = false;
 
 import "../styles/global.css";
-import { getMaintenanceDurationHours } from "../lib/maintenance-config";
+import {
+  getMaintenanceControl,
+  getMaintenanceDurationHours,
+} from "../lib/maintenance-config";
 
+const control = await getMaintenanceControl();
 const durationHours = getMaintenanceDurationHours();
 const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 ---
@@ -22,9 +26,9 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
     <meta name="googlebot" content="noindex, nofollow, noarchive" />
     <meta
       name="description"
-      content="RGVPRIME is completing scheduled maintenance and will be back shortly."
+      content={control.message}
     />
-    <title>Scheduled Maintenance | RGVPRIME LLC</title>
+    <title>{control.headline} | RGVPRIME LLC</title>
     <link rel="icon" type="image/webp" href="/logo.webp" sizes="any" />
     <link rel="preload" as="image" type="image/webp" href="/logo.webp" />
   </head>
@@ -48,7 +52,7 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
 
           <span class="maintenance-status">
             <span class="maintenance-status__dot" aria-hidden="true"></span>
-            Scheduled service update
+            Store update in progress
           </span>
         </header>
 
@@ -63,13 +67,9 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
           </div>
 
           <p class="maintenance-eyebrow">A brief pause</p>
-          <h1 id="maintenance-title">We’ll be back shortly.</h1>
+          <h1 id="maintenance-title">{control.headline}</h1>
 
-          <p class="maintenance-copy">
-            RGVPRIME is completing scheduled improvements to deliver the
-            dependable experience you expect. Thank you for your patience while
-            we finish up.
-          </p>
+          <p class="maintenance-copy">{control.message}</p>
 
           <div class="maintenance-duration">
             <div class="maintenance-duration__icon" aria-hidden="true">
@@ -83,6 +83,14 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
               <strong>Within {durationLabel}</strong>
             </div>
           </div>
+
+          {
+            control.buttonLabel && control.buttonUrl && (
+              <a class="maintenance-action" href={control.buttonUrl}>
+                {control.buttonLabel}
+              </a>
+            )
+          }
 
           <div class="maintenance-progress" aria-hidden="true">
             <span></span>
@@ -363,6 +371,30 @@ const durationLabel = durationHours === 1 ? "1 hour" : `${durationHours} hours`;
         overflow: hidden;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.08);
+      }
+
+      .maintenance-action {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 26px;
+        padding: 0 22px;
+        border: 1px solid rgba(225, 77, 88, 0.55);
+        border-radius: 12px;
+        background: linear-gradient(135deg, #a72c36, #81212a);
+        box-shadow: 0 16px 42px rgba(141, 29, 39, 0.28);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 750;
+        letter-spacing: 0.01em;
+        text-decoration: none;
+        transition: transform 160ms ease, filter 160ms ease;
+      }
+
+      .maintenance-action:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
       }
 
       .maintenance-progress span {

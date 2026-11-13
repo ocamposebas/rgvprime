@@ -5,9 +5,9 @@ import {
   OPEN_COOKIE_NAME,
 } from "./lib/launch-config";
 import {
+  getMaintenanceControl,
   getMaintenanceBypassToken,
   getMaintenanceRetryAfterSeconds,
-  isMaintenanceModeEnabled,
 } from "./lib/maintenance-config";
 import { requireApprovedSession } from "./lib/complianceSession";
 import {
@@ -180,12 +180,12 @@ function asMaintenanceResponse(response: Response) {
   });
 }
 
-function maintenanceApiResponse() {
+function maintenanceApiResponse(control) {
   return new Response(
     JSON.stringify({
       success: false,
       maintenance: true,
-      message: "RGVPRIME is undergoing scheduled maintenance. Please try again shortly.",
+      message: control.message,
       estimatedDurationHours: getMaintenanceRetryAfterSeconds() / 3600,
     }),
     {
@@ -267,7 +267,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     );
   }
 
-  if (isMaintenanceModeEnabled()) {
+  const maintenanceControl = await getMaintenanceControl();
+
+  if (maintenanceControl.enabled) {
     const configuredBypassToken = getMaintenanceBypassToken();
     const requestedBypassToken = context.url.searchParams.get(
       MAINTENANCE_ACCESS_PARAM,
@@ -307,11 +309,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     if (pathname.startsWith("/api/")) {
-      return secure(maintenanceApiResponse());
+      return secure(maintenanceApiResponse(maintenanceControl));
     }
 
     if (method !== "GET" && method !== "HEAD") {
-      return secure(maintenanceApiResponse());
+      return secure(maintenanceApiResponse(maintenanceControl));
     }
 
     if (pathname === "/maintenance" || pathname === "/maintenance/") {

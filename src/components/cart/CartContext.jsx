@@ -744,6 +744,15 @@ export function CartProvider({ children }) {
         );
       });
 
+      window.dispatchEvent(new CustomEvent("rgv-store-activity", {
+        detail: {
+          event_type: "add_to_cart",
+          product_id: String(verifiedItem.product_id || verifiedItem.id || ""),
+          product_name: String(verifiedItem.name || ""),
+          dedupe_key: `cart:${verifiedItem.id}`,
+        },
+      }));
+
       setCartNotice("");
       if (shouldOpenCart) openCart();
       return { success: true, valid: true, item: verifiedItem };
