@@ -96,12 +96,14 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   const eventType = clean(input.event_type, 32).toLowerCase();
   const sessionId = clean(input.session_id, 100);
+  const visitorId = clean(input.visitor_id, 100) || sessionId;
   const searchQuery = clean(input.search_query, 160);
   const deviceType = clean(input.device_type, 16).toLowerCase();
 
   if (
     !ALLOWED_EVENTS.has(eventType)
     || !/^[a-zA-Z0-9._-]{8,100}$/.test(sessionId)
+    || !/^[a-zA-Z0-9._-]{8,100}$/.test(visitorId)
     || !["desktop", "mobile", "tablet", "unknown"].includes(deviceType)
     || (eventType === "search" && searchQuery.length < 2)
     || !withinRateLimit(sessionId)
@@ -121,6 +123,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       event_type: eventType,
       occurred_at: Math.floor(Date.now() / 1000),
       session_id: sessionId,
+      visitor_id: visitorId,
       source: clean(input.source, 64).toLowerCase() || "direct",
       campaign_name: clean(input.campaign_name, 120),
       product_id: clean(input.product_id, 100),
