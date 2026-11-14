@@ -25,6 +25,7 @@ import {
   isProductAvailable,
 } from "../../lib/inventory";
 import { isProductNew } from "../../lib/productNewness";
+import { getProductSeo, toPlainText } from "../../lib/seo";
 import {
   getFormatMeta,
   isApparelProduct,
@@ -98,7 +99,7 @@ function getStockBadge(product) {
   };
 }
 
-function getProductImage(product) {
+export function getProductImage(product) {
   if (product?.images && product.images.length > 0 && product.images[0]?.src) {
     return product.images[0].src;
   }
@@ -140,7 +141,7 @@ function getRawPrice(item) {
   );
 }
 
-function getPriceOffer(item) {
+export function getPriceOffer(item) {
   const currency = item?.currency || item?.currency_code || "USD";
   const parsePrice = (value) => {
     if (value === null || value === undefined || value === "") return null;
@@ -807,6 +808,12 @@ function mergeProductWithVariation(product, variation) {
   };
 }
 
+export function getInitialProductConfiguration(product) {
+  const variation = getSelectedVariation(product, buildInitialVariantSelection(product));
+  if (product?.type === "variable" && !variation) return null;
+  return mergeProductWithVariation(product, variation);
+}
+
 function renderProductPrice(product) {
   const offer = getPriceOffer(product);
   const isVariableParent =
@@ -1354,6 +1361,12 @@ function ProductVerification({ product, variation }) {
                 ? "Documentation matched to your selected format and strength."
                 : "Find supporting documentation by product, SKU, or lot."}
             </p>
+            <a
+              href="/research-guides/find-a-coa-by-lot-number"
+              className="mt-2 inline-block text-sm font-semibold text-red-700 underline decoration-red-700/25 underline-offset-4"
+            >
+              How to find a COA by lot number
+            </a>
           </div>
         </div>
         <span
@@ -1431,14 +1444,12 @@ function ProductVerification({ product, variation }) {
                 ? "Choose a format and strength to see its certificate."
                 : "No exact certificate match is available here. You can search the full archive by product, SKU, or lot."}
           </p>
-          {status !== "loading" && status !== "selection" && (
-            <a
-              href={archiveUrl}
-              className="font-semibold text-red-700 underline decoration-red-700/25 underline-offset-4"
-            >
-              Search certificate archive
-            </a>
-          )}
+          <a
+            href={archiveUrl}
+            className="font-semibold text-red-700 underline decoration-red-700/25 underline-offset-4"
+          >
+            Search certificate archive
+          </a>
         </div>
       )}
     </section>
@@ -1614,6 +1625,9 @@ export default function ProductDetails({ slug, initialProduct = null }) {
   const stockBadge = displayProduct ? getStockBadge(displayProduct) : null;
 
   const category = product?.categories?.[0]?.name || "Research Compound";
+  const productDescription = [product?.description, product?.short_description]
+    .find((description) => description && toPlainText(description));
+  const productSummary = product && getProductSeo(product).productSummary;
   const isApparel = isApparelProduct(product);
   const isVariableProduct = product?.type === "variable";
   const selectableAttributes = useMemo(
@@ -2378,15 +2392,17 @@ export default function ProductDetails({ slug, initialProduct = null }) {
 
             <div className="rgv-pdp-info-grid grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
               <div className="rgv-product-description rgv-pdp-description min-w-0">
-                <div
-                  className="max-w-3xl space-y-5 text-[15px] leading-7 text-black/65 [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:text-black [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:text-black [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-black [&_a]:text-red-700 [&_strong]:font-semibold [&_strong]:text-black [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5"
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      product.description ||
-                      product.short_description ||
-                      "Product information is currently being updated.",
-                  }}
-                />
+                {(productSummary || !productDescription) && (
+                  <p className="mb-4 max-w-3xl text-[15px] leading-7">
+                    {productSummary || "See the selection details for the listed SKU, format, and availability."}
+                  </p>
+                )}
+                {productDescription && (
+                  <div
+                    className="max-w-3xl space-y-5 text-[15px] leading-7 text-black/65 [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:text-black [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:text-black [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-black [&_a]:text-red-700 [&_strong]:font-semibold [&_strong]:text-black [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5"
+                    dangerouslySetInnerHTML={{ __html: productDescription }}
+                  />
+                )}
 
                 {!isApparel && (
                   <div className="rgv-research-notice mt-10 border-l-2 border-red-700 pl-5 text-xs leading-6 text-white/50">

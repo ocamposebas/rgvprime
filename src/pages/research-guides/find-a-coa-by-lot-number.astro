@@ -1,0 +1,53 @@
+---
+import ResearchGuideLayout from "../../layouts/ResearchGuideLayout.astro";
+---
+
+<ResearchGuideLayout
+  title="How to Find a Certificate of Analysis by Lot Number"
+  description="Find the Certificate of Analysis for your exact lot, check the original report, and know what to do if the lot or report number does not match."
+  eyebrow="LOT LOOKUP GUIDE"
+  heading="How to find a COA by lot number"
+  introduction="Start with the lot or batch code on the label. Use it to find the original Certificate of Analysis (COA) and check that the report covers the material you received."
+  datePublished="2026-11-14"
+  dateModified="2026-11-14"
+>
+  <form action="/coa" method="get" class="rgv-guide-lookup" aria-labelledby="lot-lookup-label">
+    <label id="lot-lookup-label" for="lot-lookup">Search the RGVPRIME certificate library</label>
+    <div>
+      <input id="lot-lookup" name="q" type="search" placeholder="Enter the lot number, SKU, or product name" required />
+      <button type="submit">Find certificates</button>
+    </div>
+  </form>
+
+  <h2>Match the label to the report</h2>
+  <ol class="rgv-guide-steps">
+    <li><div><strong>Copy the lot code from the label.</strong><span>Look for LOT, Batch, or a similar field on the container or its packaging. Copy letters, numbers, and punctuation. Save the product name and SKU separately.</span></div></li>
+    <li><div><strong>Search the library and open the original PDF.</strong><span>If the lot appears in an earlier record, open that version. For a search by SKU or product name, compare the label with each candidate report before choosing one.</span></div></li>
+    <li><div><strong>Check the lot and sample description in the PDF.</strong><span>Compare the lot, product identity, and any format or strength shown. Record the report number and issue date so someone else can retrieve the same document.</span></div></li>
+    <li><div><strong>Check the issuer if you need to verify the source.</strong><span>Use the named laboratory’s own lookup portal if available. If the lab uses a separate verification code, use the code shown on the report. If there is no public lookup, ask the issuer how to confirm the report number.</span></div></li>
+  </ol>
+
+  <h2>Keep the SKU, lot, and report number separate</h2>
+  <dl class="rgv-guide-identifiers">
+    <div><dt>SKU</dt><dd>Identifies the catalog configuration. The same SKU can appear on more than one lot.</dd></div>
+    <div><dt>Lot or batch number</dt><dd>Identifies the batch. Use the code on the label when matching your material to a certificate.</dd></div>
+    <div><dt>Report number</dt><dd>Identifies the document in the issuer’s records. A laboratory may also assign its own sample ID.</dd></div>
+  </dl>
+
+  <h2>What to do when something does not match</h2>
+  <ul>
+    <li><strong>Same product, different lot.</strong> Treat the PDF as documentation for the lot printed on that report. Search the exact code on your label and check earlier reports.</li>
+    <li><strong>Only a lab sample ID appears.</strong> Ask the supplier for a record that connects the sample ID to the lot on your label.</li>
+    <li><strong>Two PDFs show the same report number.</strong> Compare issue dates and revision information. If the difference is unclear, confirm the current version with the issuer before filing it.</li>
+    <li><strong>No matching report appears.</strong> <a href="/contact">Contact RGVPRIME support</a> with the product name, SKU, and exact lot code. Include a photo of the label if requested through the support channel.</li>
+  </ul>
+
+  <div class="rgv-guide-callout">
+    <strong>Example with fictional identifiers</strong>
+    <p>If your label says <code>DEMO-042</code> and the PDF says <code>DEMO-041</code>, the product name alone cannot resolve the mismatch. Keep the two records separate and request the document for <code>DEMO-042</code>.</p>
+  </div>
+
+  <h2>Save a record your team can audit</h2>
+  <p>Keep the original PDF with the product or catalog identifier, lot code, issuer, report number, issue date, and date you retrieved it. For help interpreting individual fields, see <a href="/research-guides/how-to-read-a-certificate-of-analysis">how to read a Certificate of Analysis</a>.</p>
+  <p>For an example of supplier documentation search organized by identifier, see <a href="https://www.thermofisher.com/us/en/home/support/documents-certificates.html">Thermo Fisher Scientific’s document and certificate lookup</a>.</p>
+</ResearchGuideLayout>

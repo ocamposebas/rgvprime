@@ -807,7 +807,12 @@ function CertificateLibrary() {
             : activeList.length === 0 ? <div className="rgv-coa-state"><SearchIcon /><h3>{isSearching || selectedCategory ? "No certificates found" : "No certificates available"}</h3><p>{isSearching || selectedCategory ? "Check the spelling or try the lot number printed on your label." : "Laboratory reports will appear here when they are available."}</p>{(query || selectedCategory) && <button type="button" className="rgv-coa-primary" onClick={() => selectCategory(ALL_ID)}>View all certificates <ArrowIcon /></button>}</div>
             : <><div className="rgv-coa-column-labels" aria-hidden="true"><span>Product / report</span><span>Batch / identifier</span><span>Analysis</span><span>Document</span></div><div className="rgv-coa-records">{paginatedResults.map(file => <COACard key={file.key} file={file} historyKey={file.key} fileHasHistory={hasHistory(file)} isHistoryOpen={Boolean(openHistory[file.key])} onToggleHistory={toggleHistory} onOpen={openCoa} highlightQuery={isSearching ? query : ""} />)}</div><Pagination currentPage={safeCurrentPage} totalPages={totalPages} totalResults={activeList.length} onPageChange={handlePageChange} /></>}
           {resolvedRecentCoas.length > 0 && !isSearching && <section className="rgv-coa-recent" aria-labelledby="rgv-coa-recent-title"><h2 id="rgv-coa-recent-title">Recently viewed</h2><div>{resolvedRecentCoas.map(({ entry, file, versionIndex, version }) => <button key={entry.key} type="button" onClick={() => openCoa(file, versionIndex)}><FileIcon /><span><strong>{file.product || file.code}</strong><small>{versionIndex > 0 ? "Earlier" : "Current"}{version?.lot ? ` · Lot ${version.lot}` : ""}</small></span><ArrowIcon /></button>)}</div></section>}
-          <p className="rgv-coa-note">Certificate records are specific to the tested batch. Use the lot number on your label to select the corresponding report. <a href="/contact">Need help finding a document? <ArrowIcon /></a></p>
+          <p className="rgv-coa-note">
+            Certificate records are specific to the tested batch. Use the lot number on your label to select the corresponding report.
+            <a href="/research-guides/find-a-coa-by-lot-number">How to find a COA by lot number <ArrowIcon /></a>
+            <a href="/research-guides/how-to-read-a-certificate-of-analysis">How to read a Certificate of Analysis <ArrowIcon /></a>
+            <a href="/contact">Need help finding a document? <ArrowIcon /></a>
+          </p>
         </section>
       </div>
     </div>

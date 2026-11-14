@@ -2,10 +2,17 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SingleProductPage from "../../components/app/SingleProductPage.jsx";
 import {
-  buildProductOffers,
+  getInitialProductConfiguration,
+  getPriceOffer,
+  getProductImage,
+} from "../../components/app/ProductDetails.jsx";
+import {
+  buildProductOffer,
   getPermanentProductRedirect,
   getProductSeo,
+  getPublicProductSlug,
   SITE_URL,
+  toPlainText,
 } from "../../lib/seo";
 import { getServerProductsResponse } from "../api/products.js";
 
@@ -55,7 +62,7 @@ if (isUnavailable) {
   Astro.response.headers.set("X-Robots-Tag", "noindex, follow, noarchive");
 }
 
-const productName = product?.name || product?.title || "Product Not Found";
+const productName = toPlainText(product?.name || product?.title || "Product Not Found");
 const productSeo = product
   ? getProductSeo(product)
   : {
@@ -63,34 +70,42 @@ const productSeo = product
       description: "The requested product page is not available.",
       imageAlt: "RGVPRIME LLC logo",
     };
-const productImage =
-  product?.image || product?.images?.[0]?.src || "/logo.webp";
+const productImage = getProductImage(product);
 const productImageAlt = productSeo.imageAlt;
-const canonicalValue = `/product/${product?.slug || routeSlug}`;
+const canonicalValue = `/product/${getPublicProductSlug(product?.slug || routeSlug)}`;
 const canonicalUrl = new URL(canonicalValue, SITE_URL).toString();
-const offers = product ? buildProductOffers(product, canonicalUrl) : null;
-const productCategory = product?.categories?.[0]?.name || "Laboratory Research Products";
+const initialConfiguration = getInitialProductConfiguration(product);
+const offer = initialConfiguration && buildProductOffer(
+  initialConfiguration,
+  getPriceOffer(initialConfiguration),
+  canonicalUrl,
+);
+const productCategory = product?.categories?.find(
+  (category) => category.slug !== "uncategorized",
+)?.name;
 
 const productSchema = {
   "@context": "https://schema.org",
   "@type": "Product",
+  "@id": `${canonicalUrl}#product`,
   name: productName,
-  description: productSeo.description,
+  ...(productSeo.productSummary ? { description: productSeo.productSummary } : {}),
   url: canonicalUrl,
-  image: [new URL(productImage, SITE_URL).toString()],
+  image: [new URL(getProductImage(initialConfiguration || product), SITE_URL).toString()],
   ...(product?.sku ? { sku: String(product.sku) } : {}),
-  ...(product?.sku ? { mpn: String(product.sku) } : {}),
-  category: productCategory,
+  ...(productCategory ? { category: productCategory } : {}),
   brand: {
     "@type": "Brand",
     name: "RGVPRIME",
   },
   itemCondition: "https://schema.org/NewCondition",
-  audience: {
-    "@type": "PeopleAudience",
-    audienceType: "Qualified laboratory and in-vitro researchers",
-  },
-  ...(offers ? { offers } : {}),
+  ...(productSeo.researchUse ? {
+    audience: {
+      "@type": "PeopleAudience",
+      audienceType: "Qualified laboratory and in-vitro researchers",
+    },
+  } : {}),
+  ...(offer ? { offers: offer } : {}),
 };
 
 const breadcrumbSchema = {

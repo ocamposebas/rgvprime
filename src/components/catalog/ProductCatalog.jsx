@@ -11,6 +11,7 @@ import {
 import { useCart } from "../cart/CartContext";
 import { isProductAvailable } from "../../lib/inventory";
 import { calculateLoyaltyPoints, formatPoints } from "../../lib/loyaltyProgram";
+import { CATALOG_PAGE_SIZE, catalogPagePath } from "../../lib/catalogPagination";
 import {
   getProductCreatedTime,
   isProductNew,
@@ -25,18 +26,47 @@ import {
 import "../../styles/storefront.css";
 
 const FALLBACK_IMAGE = "/logo.webp";
-const DESKTOP_PRODUCTS_PER_PAGE = 16;
-const MOBILE_PRODUCTS_PER_PAGE = 14;
 const VARIATION_CACHE_TTL_MS = 60 * 1000;
 const variationRequestCache = new Map();
 const variationSummaryCache = new Map();
 const variationSummaryRequestCache = new Map();
 const INTERNAL_PRODUCT_SKUS = new Set(["RGV-MYSTERY-VIAL"]);
 
-function publicCatalogProducts(products) {
+export function publicCatalogProducts(products) {
   return (Array.isArray(products) ? products : []).filter((product) => {
     const sku = String(product?.sku || "").trim().toUpperCase();
     return !INTERNAL_PRODUCT_SKUS.has(sku);
+  });
+}
+
+export function supportsCatalogFormat(product, format) {
+  const support = getProductFormatSupport(product);
+  return format === PRODUCT_FORMATS.KIT ? support.kits : support.singles;
+}
+
+export function sortCatalogProducts(products, sortBy = "featured") {
+  const now = Date.now();
+
+  return [...products].sort((a, b) => {
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+
+    const newA = isProductNew(a, now);
+    const newB = isProductNew(b, now);
+
+    if (newA !== newB) return newA ? -1 : 1;
+    if (newA && newB) {
+      const createdDifference = getProductCreatedTime(b) - getProductCreatedTime(a);
+      if (createdDifference !== 0) return createdDifference;
+    }
+
+    const orderA = getCustomProductRank(a);
+    const orderB = getCustomProductRank(b);
+
+    if (orderA !== orderB) return orderA - orderB;
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+
+    return a.name.localeCompare(b.name);
   });
 }
 
@@ -570,7 +600,7 @@ export async function requestVariationSummaryBatch(productIds = []) {
         .map((productId) => Number(productId))
         .filter((productId) => Number.isInteger(productId) && productId > 0),
     ),
-  ].slice(0, Math.max(DESKTOP_PRODUCTS_PER_PAGE, MOBILE_PRODUCTS_PER_PAGE));
+  ].slice(0, CATALOG_PAGE_SIZE);
   const summaries = {};
   const missingIds = [];
 
@@ -1981,7 +2011,7 @@ export function ProductCard({
     </article>
   );
 }
-function Pagination({ currentPage, totalPages, onPageChange }) {
+function Pagination({ currentPage, totalPages, onPageChange, linkPages }) {
   if (totalPages <= 1) return null;
 
   const items = getPaginationItems(currentPage, totalPages);
@@ -1992,6 +2022,15 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         <span key={`dots-${index}`} aria-hidden="true">
           …
         </span>
+      ) : linkPages ? (
+        <a
+          key={item}
+          href={catalogPagePath(item)}
+          aria-label={`Page ${item}`}
+          aria-current={currentPage === item ? "page" : undefined}
+        >
+          {item}
+        </a>
       ) : (
         <button
           key={item}
@@ -2005,17 +2044,33 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       ),
     );
 
+  const renderDirection = (page, direction, label, children) => {
+    const className = `rgv-index-pagination__${direction} rgv-index-pagination__direction`;
+    if (linkPages && page >= 1 && page <= totalPages) {
+      return (
+        <a className={className} href={catalogPagePath(page)} aria-label={label}>
+          {children}
+        </a>
+      );
+    }
+    return (
+      <button
+        className={className}
+        type="button"
+        aria-label={label}
+        disabled={page < 1 || page > totalPages}
+        onClick={() => onPageChange(page)}
+      >
+        {children}
+      </button>
+    );
+  };
+
   return (
     <nav className="rgv-index-pagination" aria-label="Product pagination">
-      <button
-        className="rgv-index-pagination__previous rgv-index-pagination__direction"
-        type="button"
-        aria-label="Previous page"
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-      >
+      {renderDirection(currentPage - 1, "previous", "Previous page", <>
         <ChevronLeft size={18} aria-hidden="true" /> <span>Previous</span>
-      </button>
+      </>)}
 
       <div className="rgv-index-pagination__pages rgv-index-pagination__pages--desktop">
         {renderPageItems(items)}
@@ -2028,20 +2083,18 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         Page {currentPage} of {totalPages}
       </small>
 
-      <button
-        className="rgv-index-pagination__next rgv-index-pagination__direction"
-        type="button"
-        aria-label="Next page"
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-      >
+      {renderDirection(currentPage + 1, "next", "Next page", <>
         <span>Next</span> <ChevronRight size={18} aria-hidden="true" />
-      </button>
+      </>)}
     </nav>
   );
 }
 
-export default function ProductCatalog({ initialProducts = [] }) {
+export default function ProductCatalog({
+  initialProducts = [],
+  initialPage = 1,
+  initialFormat = PRODUCT_FORMATS.SINGLE,
+}) {
   const catalogTopRef = useRef(null);
   const publicInitialProducts = publicCatalogProducts(initialProducts);
   const hasInitialProducts = publicInitialProducts.length > 0;
@@ -2052,42 +2105,15 @@ export default function ProductCatalog({ initialProducts = [] }) {
     hasInitialProducts ? "success" : "loading",
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFormat, setActiveFormat] = useState(PRODUCT_FORMATS.SINGLE);
+  const [activeFormat, setActiveFormat] = useState(initialFormat);
   const [activeCategory, setActiveCategory] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [configuredProduct, setConfiguredProduct] = useState(null);
   const [variationSummaries, setVariationSummaries] = useState({});
   const [variationSummaryStatus, setVariationSummaryStatus] = useState({});
-  const [productsPerPage, setProductsPerPage] = useState(
-    DESKTOP_PRODUCTS_PER_PAGE,
-  );
-
-  useEffect(() => {
-    const format = new URLSearchParams(window.location.search).get("format");
-    if (format === PRODUCT_FORMATS.SINGLE || format === PRODUCT_FORMATS.KIT) {
-      setActiveFormat(format);
-    }
-  }, []);
-
-  useEffect(() => {
-    const mobileQuery = window.matchMedia("(max-width: 639px)");
-
-    function updateProductsPerPage(event) {
-      setProductsPerPage(
-        event.matches ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE,
-      );
-    }
-
-    updateProductsPerPage(mobileQuery);
-    mobileQuery.addEventListener("change", updateProductsPerPage);
-
-    return () => {
-      mobileQuery.removeEventListener("change", updateProductsPerPage);
-    };
-  }, []);
 
   useEffect(() => {
     if (hasInitialProducts) return undefined;
@@ -2130,27 +2156,8 @@ export default function ProductCatalog({ initialProducts = [] }) {
     };
   }, [hasInitialProducts]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-    setConfiguredProduct(null);
-  }, [
-    searchTerm,
-    activeFormat,
-    activeCategory,
-    availabilityFilter,
-    sortBy,
-    productsPerPage,
-  ]);
-
   const formatProducts = useMemo(
-    () =>
-      products.filter((product) => {
-        const formatSupport = getProductFormatSupport(product);
-
-        return activeFormat === PRODUCT_FORMATS.KIT
-          ? formatSupport.kits
-          : formatSupport.singles;
-      }),
+    () => products.filter((product) => supportsCatalogFormat(product, activeFormat)),
     [products, activeFormat],
   );
 
@@ -2228,29 +2235,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
       return matchesSearch && matchesCategory && matchesAvailability;
     });
 
-    return [...result].sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-
-      const newA = isProductNew(a);
-      const newB = isProductNew(b);
-
-      if (newA !== newB) return newA ? -1 : 1;
-      if (newA && newB) {
-        const createdDifference =
-          getProductCreatedTime(b) - getProductCreatedTime(a);
-
-        if (createdDifference !== 0) return createdDifference;
-      }
-
-      const orderA = getCustomProductRank(a);
-      const orderB = getCustomProductRank(b);
-
-      if (orderA !== orderB) return orderA - orderB;
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-
-      return a.name.localeCompare(b.name);
-    });
+    return sortCatalogProducts(result, sortBy);
   }, [formatProducts, searchTerm, activeCategory, availabilityFilter, sortBy]);
   const newProductCount = filteredProducts.filter(isProductNew).length;
 
@@ -2267,11 +2252,11 @@ export default function ProductCatalog({ initialProducts = [] }) {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredProducts.length / productsPerPage),
+    Math.ceil(filteredProducts.length / CATALOG_PAGE_SIZE),
   );
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
+  const startIndex = (safeCurrentPage - 1) * CATALOG_PAGE_SIZE;
+  const endIndex = startIndex + CATALOG_PAGE_SIZE;
   const paginatedProducts = useMemo(
     () => filteredProducts.slice(startIndex, endIndex),
     [filteredProducts, startIndex, endIndex],
@@ -2408,9 +2393,28 @@ export default function ProductCatalog({ initialProducts = [] }) {
   }
 
   function handleFormatChange(nextFormat) {
+    if (nextFormat === activeFormat && activeCategory === "all" && availabilityFilter === "all") {
+      return;
+    }
     setActiveFormat(nextFormat);
     setActiveCategory("all");
     setAvailabilityFilter("all");
+    resetCatalogPage(nextFormat);
+  }
+
+  function resetCatalogPage(format = activeFormat) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("page");
+    if (format === PRODUCT_FORMATS.KIT) {
+      url.searchParams.set("format", format);
+    } else {
+      url.searchParams.delete("format");
+    }
+    if (url.href !== window.location.href) {
+      window.history.replaceState(window.history.state, "", url);
+    }
+    setCurrentPage(1);
+    setConfiguredProduct(null);
   }
 
   function clearCatalogFilters() {
@@ -2418,6 +2422,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
     setActiveCategory("all");
     setAvailabilityFilter("all");
     setSortBy("featured");
+    resetCatalogPage();
   }
 
   const handleChoose = useCallback(
@@ -2440,6 +2445,8 @@ export default function ProductCatalog({ initialProducts = [] }) {
     Number(activeCategory !== "all") +
     Number(availabilityFilter !== "all") +
     Number(sortBy !== "featured");
+  const linkPages =
+    activeFormat === PRODUCT_FORMATS.SINGLE && !searchTerm && activeFacetCount === 0;
 
   return (
     <main id="research-catalog" className="rgv-catalog" ref={catalogTopRef}>
@@ -2513,7 +2520,10 @@ export default function ProductCatalog({ initialProducts = [] }) {
             <input
               type="search"
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                resetCatalogPage();
+              }}
               placeholder="Search products"
               aria-label="Search products"
             />
@@ -2535,16 +2545,28 @@ export default function ProductCatalog({ initialProducts = [] }) {
             <CatalogDropdown
               label="Category"
               value={activeCategory}
-              onChange={setActiveCategory}
+              onChange={(value) => {
+                setActiveCategory(value);
+                resetCatalogPage();
+              }}
               options={categoryOptions}
             />
             <CatalogDropdown
               label="Availability"
               value={availabilityFilter}
-              onChange={setAvailabilityFilter}
+              onChange={(value) => {
+                setAvailabilityFilter(value);
+                resetCatalogPage();
+              }}
               options={availabilityOptions}
             />
-            <SortDropdown value={sortBy} onChange={setSortBy} />
+            <SortDropdown
+              value={sortBy}
+              onChange={(value) => {
+                setSortBy(value);
+                resetCatalogPage();
+              }}
+            />
           </div>
         </section>
       </div>
@@ -2662,6 +2684,7 @@ export default function ProductCatalog({ initialProducts = [] }) {
               currentPage={safeCurrentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
+              linkPages={linkPages}
             />
           </div>
         </>

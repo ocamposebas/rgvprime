@@ -15,6 +15,7 @@ const STATIC_PAGES = [
   "/track-order",
   "/research-guides",
   "/research-guides/how-to-read-a-certificate-of-analysis",
+  "/research-guides/find-a-coa-by-lot-number",
   "/research-guides/research-product-documentation",
   "/research-guides/order-processing-and-tracking",
 ];

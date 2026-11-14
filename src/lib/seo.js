@@ -1,3 +1,11 @@
+import { allowsBackorders, isProductAvailable } from "./inventory.js";
+import {
+  getPackSize,
+  getProductFormatSupport,
+  isApparelProduct,
+  isPurchaseFormatAttribute,
+} from "./productFormat.js";
+
 export const SITE_NAME = "RGVPRIME LLC";
 export const SITE_URL = "https://rgvprimellc.com";
 
@@ -120,79 +128,88 @@ export function getProductImageAlt(product = {}) {
 
 export function getProductSeo(product = {}) {
   const name = getProductName(product);
+  const apparel = isApparelProduct(product);
+  const category = apparel ? "apparel" : getProductCategoryLabel(product);
+  const { singleOption, kitOption } = getProductFormatSupport(product);
+  const kitSize = getPackSize(kitOption || "");
+  const kitLabel = kitSize ? `${kitSize}-vial kit` : "multi-vial kit";
+  const formats = apparel
+    ? []
+    : [singleOption && "a single vial", kitOption && `a ${kitLabel}`].filter(Boolean);
+  const strengths = getListedStrengths(product);
+  const strengthsInName = getStrengthLabels(name);
+  const missingStrengths = strengths.filter(
+    (strength) => !strengthsInName.includes(strength),
+  );
+  const titleStrength = !apparel && missingStrengths.length && strengths.length <= 2
+    ? missingStrengths.join(" / ")
+    : "";
+  const titleName = [name, titleStrength].filter(Boolean).join(" ");
+  const titleDetail = formats.length
+    ? "Research Vials"
+    : {
+        apparel: "Apparel",
+        "laboratory supply": "Lab Supply",
+        "research solution": "Lab Solution",
+        "laboratory research product": "Laboratory Research",
+      }[category];
+  const formatsText = formats.length ? `Listed as ${formats.join(" or ")}.` : "";
+  const strengthsText = missingStrengths.length && !apparel
+    ? `Listed strengths: ${strengths.join(", ")}.`
+    : "";
+  const intro = formats.length ? `${name}.` : `${name} | ${titleDetail}.`;
+  const summary = [intro, strengthsText, formatsText].filter(Boolean).join(" ");
+  const description = [
+    !apparel && `${summary} Check price, availability, and any published COA.`,
+    `${summary} Check price and availability.`,
+    summary,
+    intro,
+  ].find((text) => text && text.length <= 150) || name.slice(0, 150).trimEnd();
+  const productSummary = [formatsText, strengthsText].filter(Boolean).join(" ");
 
   return {
-    title: `${name} Research Product — COA & Availability`,
-    description: `${name}: view price, research configurations, inventory status, and COA documentation from RGVPRIME LLC. Laboratory research use only.`,
+    title: `${titleName} | ${titleDetail}`,
+    description,
+    productSummary,
+    researchUse: !apparel,
     imageAlt: getProductImageAlt(product),
   };
 }
 
-function getAvailability(value) {
-  return value === "instock"
-    ? "https://schema.org/InStock"
-    : "https://schema.org/OutOfStock";
+function getStrengthLabels(text) {
+  return (text.toLowerCase().match(/\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|iu)\b/g) || [])
+    .map((label) => label.replace(/\s+/g, ""));
 }
 
-function getValidPrice(value) {
-  const price = Number(value);
-  return Number.isFinite(price) && price > 0 ? price : null;
+function getListedStrengths(product) {
+  const attributes = Array.isArray(product.attributes) ? product.attributes : [];
+  const values = attributes
+    .filter((attribute) => !isPurchaseFormatAttribute(attribute))
+    .flatMap((attribute) => Array.isArray(attribute.options) ? attribute.options : [])
+    .map((value) => String(value).trim().toLowerCase().replace(/\s+/g, ""))
+    .filter((value) => /^\d+(?:\.\d+)?(?:mg|mcg|g|ml|iu)$/.test(value));
+  return [...new Set(values)].sort((a, b) => parseFloat(a) - parseFloat(b));
 }
 
-export function buildProductOffers(product = {}, canonicalUrl) {
-  const variations = Array.isArray(product?.variations)
-    ? product.variations
-    : [];
-  const pricedVariations = variations
-    .map((variation) => ({
-      variation,
-      price: getValidPrice(
-        variation?.price ?? variation?.sale_price ?? variation?.regular_price,
-      ),
-    }))
-    .filter(({ variation, price }) => variation?.purchasable !== false && price);
-
-  if (product?.type === "variable" && pricedVariations.length > 0) {
-    const prices = pricedVariations.map(({ price }) => price);
-    const anyInStock = pricedVariations.some(
-      ({ variation }) => variation?.stock_status === "instock",
-    );
-
-    return {
-      "@type": "AggregateOffer",
-      url: canonicalUrl,
-      priceCurrency: "USD",
-      lowPrice: Math.min(...prices).toFixed(2),
-      highPrice: Math.max(...prices).toFixed(2),
-      offerCount: pricedVariations.length,
-      availability: getAvailability(anyInStock ? "instock" : "outofstock"),
-      offers: pricedVariations.map(({ variation, price }) => ({
-        "@type": "Offer",
-        url: canonicalUrl,
-        priceCurrency: "USD",
-        price: price.toFixed(2),
-        availability: getAvailability(variation?.stock_status),
-        itemCondition: "https://schema.org/NewCondition",
-        seller: SELLER_SCHEMA,
-        ...(variation?.sku ? { sku: String(variation.sku) } : {}),
-      })),
-    };
+function getOfferAvailability(item) {
+  if (!isProductAvailable(item)) return "OutOfStock";
+  if (allowsBackorders(item) && !isProductAvailable({ ...item, backorders_allowed: false })) {
+    return "BackOrder";
   }
+  return "InStock";
+}
 
-  const price = getValidPrice(
-    product?.price ?? product?.sale_price ?? product?.regular_price,
-  );
-
-  if (!price) return null;
+export function buildProductOffer(item, { currentPrice, currency }, canonicalUrl) {
+  if (!item || !Number.isFinite(currentPrice) || currentPrice < 0) return null;
 
   return {
     "@type": "Offer",
     url: canonicalUrl,
-    priceCurrency: "USD",
-    price: price.toFixed(2),
-    availability: getAvailability(product?.stock_status),
+    priceCurrency: currency,
+    price: currentPrice.toFixed(2),
+    availability: `https://schema.org/${getOfferAvailability(item)}`,
     itemCondition: "https://schema.org/NewCondition",
     seller: SELLER_SCHEMA,
-    ...(product?.sku ? { sku: String(product.sku) } : {}),
+    ...(item.sku ? { sku: String(item.sku) } : {}),
   };
 }

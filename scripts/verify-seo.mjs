@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  buildProductOffers,
+  buildProductOffer,
   getPermanentProductRedirect,
   getProductImageAlt,
   getProductSeo,
@@ -61,15 +61,20 @@ function assertHelperBehavior() {
       },
     ],
   };
-  const offers = buildProductOffers(product, `${SITE_URL}/product/ss-31`);
-
-  assert.equal(offers["@type"], "AggregateOffer");
-  assert.equal(offers.lowPrice, "24.00");
-  assert.equal(offers.highPrice, "70.00");
-  assert.equal(offers.offerCount, 2);
-  assert.equal(offers.priceCurrency, "USD");
-  assert.equal(offers.url, `${SITE_URL}/product/ss-31`);
-  assert.equal(offers.offers.length, 2);
+  const productUrl = `${SITE_URL}/product/ss-31`;
+  const price = { currentPrice: 24, currency: "USD" };
+  const offer = buildProductOffer(product.variations[0], price, productUrl);
+  assert.equal(offer["@type"], "Offer");
+  assert.equal(offer.price, "24.00");
+  assert.equal(offer.availability, "https://schema.org/InStock");
+  assert.equal(offer.priceCurrency, "USD");
+  assert.equal(offer.url, productUrl);
+  assert.equal(offer.sku, "SS-31-SINGLE-10MG");
+  assert.equal(
+    buildProductOffer({ ...product.variations[0], stock_quantity: 0, backorders_allowed: true }, price, productUrl).availability,
+    "https://schema.org/BackOrder",
+  );
+  assert.equal(buildProductOffer(product, { currentPrice: null }, productUrl), null);
   assert.equal(getProductImageAlt(product), "SS-31 laboratory research product");
 
   const seo = getProductSeo(product);
@@ -205,6 +210,35 @@ async function assertIntegration() {
     shopCollectionSchema?.mainEntity?.itemListElement?.length > 0,
     "Shop ItemList contains products",
   );
+  assert.match(shop.html, /href="\/shop\?page=2"/i);
+
+  const shopPageTwo = await assertPage("/shop?page=2", {
+    canonical: `${SITE_URL}/shop?page=2`,
+  });
+  assert.ok(
+    /aria-label="Page 2" aria-current="page"/.test(shopPageTwo.html),
+    "Page 2 is marked as the current page",
+  );
+  assert.match(shopPageTwo.html, /href="\/shop" aria-label="Previous page"/i);
+
+  const shopPageTwoSchema = getJsonLdSchemas(shopPageTwo.html).find(
+    (schema) => schema?.["@type"] === "CollectionPage",
+  );
+  const firstPageUrls = new Set(
+    shopCollectionSchema.mainEntity.itemListElement.map(({ url }) => url),
+  );
+  const secondPageItems = shopPageTwoSchema?.mainEntity?.itemListElement;
+  assert.ok(secondPageItems?.length > 0, "Page 2 ItemList contains products");
+  for (const { url } of secondPageItems) {
+    assert.ok(!firstPageUrls.has(url), `Page 2 repeats ${url} from page 1`);
+    assert.ok(shopPageTwo.html.includes(`href="${new URL(url).pathname}"`));
+  }
+
+  const missingShopPage = await fetchManual("/shop?page=999");
+  assert.equal(missingShopPage.status, 404);
+  const coa = await assertPage("/coa", { canonical: `${SITE_URL}/coa` });
+  assert.match(coa.html, /href="\/research-guides\/how-to-read-a-certificate-of-analysis"/i);
+  assert.ok(coa.html.includes('href="/research-guides/find-a-coa-by-lot-number"'));
 
   await assertPage("/track-order", {
     canonical: `${SITE_URL}/track-order`,
@@ -235,6 +269,17 @@ async function assertIntegration() {
     canonical: `${SITE_URL}/research-guides/how-to-read-a-certificate-of-analysis`,
     title: "How to Read a Certificate of Analysis (COA) | RGVPRIME LLC",
   });
+  const lotGuidePath = "/research-guides/find-a-coa-by-lot-number";
+  const lotGuide = await assertPage(lotGuidePath, {
+    canonical: `${SITE_URL}${lotGuidePath}`,
+    title: "How to Find a Certificate of Analysis by Lot Number | RGVPRIME LLC",
+  });
+  assert.ok(lotGuide.html.includes('<form action="/coa" method="get"'));
+  assert.ok(lotGuide.html.includes('name="q"'));
+  assert.equal(
+    getJsonLdSchemas(lotGuide.html).find((schema) => schema?.["@type"] === "Article")?.url,
+    `${SITE_URL}${lotGuidePath}`,
+  );
   await assertPage("/research-guides/research-product-documentation", {
     canonical: `${SITE_URL}/research-guides/research-product-documentation`,
     title:
@@ -253,7 +298,7 @@ async function assertIntegration() {
     "noindex, follow, noarchive",
   );
 
-  for (const slug of ["rg-rt", "rg-tz", "ll-37-5mg", "ss-31"]) {
+  for (const slug of ["rg-rt", "rg-tz", "ll-37-5mg", "ss-31", "elora-10mg"]) {
     const { html } = await assertPage(`/product/${slug}`, {
       canonical: `${SITE_URL}/product/${slug}`,
     });
@@ -264,16 +309,20 @@ async function assertIntegration() {
     assert.equal(schemas[0].url, `${SITE_URL}/product/${slug}`);
     assert.equal(schemas[0].brand?.name, "RGVPRIME");
     assert.equal(schemas[0].itemCondition, "https://schema.org/NewCondition");
-    assert.equal(schemas[0].offers?.["@type"], "AggregateOffer");
-    assert.ok(Number(schemas[0].offers?.offerCount) > 0);
-    assert.ok(Number(schemas[0].offers?.lowPrice) > 0);
-    assert.ok(Number(schemas[0].offers?.highPrice) >= Number(schemas[0].offers?.lowPrice));
+    const offer = schemas[0].offers;
+    assert.equal(offer?.["@type"], "Offer");
+    assert.ok(Number(offer?.price) > 0);
+    assert.equal(offer?.seller?.["@id"], `${SITE_URL}/#organization`);
+    const displayedSku = getTagContent(html, /class="rgv-product-sku">([^<]+)<\/span>/i);
+    assert.equal(offer?.sku, displayedSku, `${slug} offer matches the visible selection`);
     assert.ok(
-      schemas[0].offers?.offers?.every(
-        (offer) => offer?.seller?.["@id"] === `${SITE_URL}/#organization`,
-      ),
-      `${slug} offers identify the seller`,
+      html.includes(`$${offer.price}`),
+      `${slug} structured price appears in the page`,
     );
+    if (slug === "elora-10mg") {
+      assert.ok(html.includes("Listed as a single vial or a 10-vial kit."));
+      assert.ok(html.includes('href="/coa?product='));
+    }
   }
 
   const catalogResponse = await fetchManual("/api/products?limit=100");
@@ -325,21 +374,11 @@ async function assertIntegration() {
     assert.equal(productSchemas[0].offers?.priceCurrency, "USD");
     assert.match(
       productSchemas[0].offers?.availability || "",
-      /^https:\/\/schema\.org\/(?:InStock|OutOfStock)$/,
+      /^https:\/\/schema\.org\/(?:InStock|OutOfStock|BackOrder)$/,
     );
 
-    if (product.type === "variable") {
-      assert.equal(productSchemas[0].offers?.["@type"], "AggregateOffer");
-      assert.ok(Number(productSchemas[0].offers?.offerCount) > 0);
-      assert.ok(Number(productSchemas[0].offers?.lowPrice) > 0);
-      assert.ok(
-        Number(productSchemas[0].offers?.highPrice) >=
-          Number(productSchemas[0].offers?.lowPrice),
-      );
-    } else {
-      assert.equal(productSchemas[0].offers?.["@type"], "Offer");
-      assert.ok(Number(productSchemas[0].offers?.price) > 0);
-    }
+    assert.equal(productSchemas[0].offers?.["@type"], "Offer");
+    assert.ok(Number(productSchemas[0].offers?.price) > 0);
 
     productTitles.add(title);
     productDescriptions.add(description);
@@ -374,6 +413,7 @@ async function assertIntegration() {
   assert.match(sitemapText, /\/product\/ll-37-5mg<\/loc>/);
   assert.match(sitemapText, /\/product\/ss-31<\/loc>/);
   assert.match(sitemapText, /\/research-guides<\/loc>/);
+  assert.ok(sitemapText.includes(`${SITE_URL}${lotGuidePath}</loc>`));
   assert.match(
     sitemapText,
     /\/research-guides\/how-to-read-a-certificate-of-analysis<\/loc>/,

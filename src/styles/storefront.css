@@ -855,7 +855,7 @@
 .rgv-index-pagination > .rgv-index-pagination__pages--mobile {
   display: none;
 }
-.rgv-index-pagination button,
+.rgv-index-pagination :is(button, a),
 .rgv-index-pagination > div > span {
   display: grid;
   min-width: 42px;
@@ -868,8 +868,9 @@
   background: var(--rgv-bg-soft);
   font-size: 0.76rem;
 }
-.rgv-index-pagination button {
+.rgv-index-pagination :is(button, a) {
   cursor: pointer;
+  text-decoration: none;
 }
 .rgv-index-pagination .rgv-index-pagination__direction {
   display: inline-flex;
@@ -877,11 +878,11 @@
   justify-content: center;
   gap: 8px;
 }
-.rgv-index-pagination button:hover:not(:disabled) {
+.rgv-index-pagination :is(button, a):hover:not(:disabled) {
   color: #fff;
   border-color: #787880;
 }
-.rgv-index-pagination button[aria-current="page"] {
+.rgv-index-pagination :is(button, a)[aria-current="page"] {
   color: #fff;
   border-color: #a55050;
   background: #3a2022;
@@ -2179,7 +2180,7 @@
     padding-top: 20px;
     border-top: 1px solid var(--rgv-line);
   }
-  .rgv-index-pagination button,
+  .rgv-index-pagination :is(button, a),
   .rgv-index-pagination > div > span {
     width: 44px;
     min-width: 44px;
@@ -2198,12 +2199,12 @@
     min-width: 0;
     gap: 4px;
   }
-  .rgv-index-pagination__pages--mobile button {
+  .rgv-index-pagination__pages--mobile :is(button, a) {
     flex-shrink: 0;
     border-color: transparent;
     background: transparent;
   }
-  .rgv-index-pagination__pages--mobile button[aria-current="page"] {
+  .rgv-index-pagination__pages--mobile :is(button, a)[aria-current="page"] {
     border-color: #f0434a;
     background: linear-gradient(120deg, #e11728, #be0920);
   }

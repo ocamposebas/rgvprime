@@ -1,10 +1,18 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ShopPage from "../components/app/ShopPage.jsx";
+import {
+  publicCatalogProducts,
+  sortCatalogProducts,
+  supportsCatalogFormat,
+} from "../components/catalog/ProductCatalog.jsx";
+import { CATALOG_PAGE_SIZE, catalogPagePath, readCatalogPage } from "../lib/catalogPagination";
+import { PRODUCT_FORMATS } from "../lib/productFormat";
 import { getPublicProductSlug, SITE_URL } from "../lib/seo";
 import { getServerProductsResponse } from "./api/products.js";
 
 let initialProducts = [];
+let catalogLoaded = false;
 
 try {
   const response = await getServerProductsResponse(
@@ -15,17 +23,34 @@ try {
 
   if (response.ok) {
     const payload = await response.json();
-    initialProducts = Array.isArray(payload?.products) ? payload.products : [];
+    catalogLoaded = Array.isArray(payload?.products);
+    if (catalogLoaded) initialProducts = publicCatalogProducts(payload.products);
   }
 } catch {
   initialProducts = [];
 }
 
-const catalogItems = initialProducts
+const requestedPage = readCatalogPage(Astro.url.searchParams.get("page"));
+const initialFormat = Astro.url.searchParams.get("format") === PRODUCT_FORMATS.KIT
+  ? PRODUCT_FORMATS.KIT
+  : PRODUCT_FORMATS.SINGLE;
+const formatProducts = initialProducts.filter((product) =>
+  supportsCatalogFormat(product, initialFormat),
+);
+const lastPage = Math.max(1, Math.ceil(formatProducts.length / CATALOG_PAGE_SIZE));
+if (requestedPage > lastPage && catalogLoaded) {
+  return new Response(null, { status: 404 });
+}
+
+const canonicalPath = catalogPagePath(initialFormat === PRODUCT_FORMATS.SINGLE ? requestedPage : 1);
+const catalogUrl = new URL(canonicalPath, SITE_URL).toString();
+const firstItem = (requestedPage - 1) * CATALOG_PAGE_SIZE;
+const catalogItems = sortCatalogProducts(formatProducts)
+  .slice(firstItem, firstItem + CATALOG_PAGE_SIZE)
   .filter((product) => product?.slug && product?.name)
   .map((product, index) => ({
     "@type": "ListItem",
-    position: index + 1,
+    position: firstItem + index + 1,
     url: new URL(`/product/${getPublicProductSlug(product.slug)}`, SITE_URL).toString(),
     name: product.name,
   }));
@@ -33,8 +58,8 @@ const catalogItems = initialProducts
 const catalogSchema = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  "@id": `${SITE_URL}/shop#catalog`,
-  url: `${SITE_URL}/shop`,
+  "@id": `${catalogUrl}#catalog`,
+  url: catalogUrl,
   name: "RGVPRIME Research Peptides and Laboratory Product Catalog",
   description:
     "Browse research peptides and laboratory products with current availability, configurations, and Certificate of Analysis access.",
@@ -50,6 +75,7 @@ const catalogSchema = {
 <BaseLayout
   title="Research Peptides and Laboratory Product Catalog | RGVPRIME LLC"
   description="Browse RGVPRIME research peptides and laboratory products by format, availability, price, configuration, and Certificate of Analysis documentation."
+  canonical={canonicalPath}
 >
   <Fragment slot="head">
     <script
@@ -57,5 +83,5 @@ const catalogSchema = {
       set:html={JSON.stringify(catalogSchema).replace(/</g, "\\u003c")}
     />
   </Fragment>
-  <ShopPage initialProducts={initialProducts} client:load />
-  </BaseLayout>
+  <ShopPage initialProducts={initialProducts} initialPage={requestedPage} initialFormat={initialFormat} client:load />
+</BaseLayout>

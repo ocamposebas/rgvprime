@@ -6,19 +6,21 @@ import "../../styles/research-guides.css";
 
 const guides = [
   {
-    number: "01",
+    title: "How to find a COA by lot number",
+    description: "Search the certificate library, verify the label against the original PDF, and handle missing or mismatched records.",
+    href: "/research-guides/find-a-coa-by-lot-number",
+  },
+  {
     title: "How to read a Certificate of Analysis",
     description: "A practical framework for reviewing product identity, lot information, methods, results, and report details.",
     href: "/research-guides/how-to-read-a-certificate-of-analysis",
   },
   {
-    number: "02",
     title: "Research product documentation",
     description: "Understand how product names, SKUs, lots, configurations, labels, and COA records connect.",
     href: "/research-guides/research-product-documentation",
   },
   {
-    number: "03",
     title: "Order processing and tracking",
     description: "Learn what happens after an order is submitted and where to find status and carrier updates.",
     href: "/research-guides/order-processing-and-tracking",
@@ -68,7 +70,6 @@ const collectionSchema = {
     <section class="rgv-guide-shell rgv-guides-grid" aria-label="Research guides">
       {guides.map((guide) => (
         <a class="rgv-guide-card" href={guide.href}>
-          <span>{guide.number} / Guide</span>
           <h2>{guide.title}</h2>
           <p>{guide.description}</p>
           <footer><span>Read the guide</span><b aria-hidden="true">↗</b></footer>
