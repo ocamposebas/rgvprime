@@ -10,6 +10,7 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { useCart } from "../cart/CartContext";
+import CoaIssuerLink from "../coa/CoaIssuerLink";
 import {
   getCachedVariationSummary,
   getProductVariations as getCatalogProductVariations,
@@ -1416,7 +1417,8 @@ function ProductVerification({ product, variation }) {
             </div>
           </dl>
           <div className="rgv-verification-strip__actions flex flex-wrap gap-3 text-sm font-semibold">
-            {(certificate.url || certificate.pdf_url) && (
+            {(certificate.url || certificate.pdf_url) &&
+              certificate.issuer_verification?.url !== (certificate.url || certificate.pdf_url) && (
               <a
                 href={certificate.url || certificate.pdf_url}
                 target="_blank"
@@ -1427,6 +1429,11 @@ function ProductVerification({ product, variation }) {
                 <ArrowUpRight size={15} aria-hidden="true" />
               </a>
             )}
+            <CoaIssuerLink
+              certificate={certificate}
+              className="is-primary"
+              icon={<ArrowUpRight size={15} aria-hidden="true" />}
+            />
             <a
               href={archiveUrl}
               className="border border-black/20 bg-white px-5 py-3 text-black transition hover:border-black"

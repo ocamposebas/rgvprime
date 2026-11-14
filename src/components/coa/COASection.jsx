@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import Navbar from "../nav/Navbar";
 import { CartProvider } from "../cart/CartContext";
 import LazyCartDrawer from "../cart/LazyCartDrawer";
+import CoaIssuerLink from "./CoaIssuerLink";
 import "../../styles/experience.css";
 import "./COASection.css";
 
@@ -513,7 +514,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
     return () => media.removeEventListener("change", update);
   }, []);
   useEffect(() => { setCopiedLot(false); window.clearTimeout(copyTimer.current); return () => window.clearTimeout(copyTimer.current); }, [file, versionIndex]);
-  const versions = useMemo(() => !file ? [] : [file, ...getEarlierCoas(file).map(earlier => ({ ...file, ...earlier, product: earlier.product || file.product }))], [file]);
+  const versions = useMemo(() => !file ? [] : [file, ...getEarlierCoas(file).map(earlier => ({ ...earlier, product: earlier.product || file.product }))], [file]);
   if (!file || typeof document === "undefined") return null;
   const index = Math.min(Math.max(Number(versionIndex) || 0, 0), versions.length - 1);
   const active = versions[index];
@@ -532,11 +533,12 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
     <div className="rgv-coa-viewer" ref={panelRef}>
       <header className="rgv-coa-viewer__header">
         <div><p>{index === 0 ? "Current certificate" : "Earlier certificate"}</p><h2 id={titleId}>{active.product || active.code || "Certificate of analysis"}</h2></div>
-        <div>{pdfUrl && <a className="rgv-coa-original" href={pdfUrl} target="_blank" rel="noreferrer">Open original PDF <ArrowIcon /></a>}
+        <div>{pdfUrl && active.issuer_verification?.url !== pdfUrl && <a className="rgv-coa-original" href={pdfUrl} target="_blank" rel="noreferrer">Open original PDF <ArrowIcon /></a>}
           <button type="button" data-coa-close onClick={onClose} className="rgv-coa-modal__close" aria-label="Close COA viewer"><CloseIcon /></button></div>
       </header>
       <div className="rgv-coa-viewer__body">
         <aside className="rgv-coa-viewer__details">
+          <CoaIssuerLink certificate={active} className="rgv-coa-primary" icon={<ArrowIcon />} />
           <details open={!isMobile} key={`${file.key}-${index}-${isMobile}`}>
             <summary><span>{active.lot ? `Lot ${active.lot}` : "Certificate details"}</span><ChevronIcon /></summary>
             <p className="rgv-coa-viewer__label">Certificate details</p>
@@ -553,7 +555,7 @@ const COAViewer = memo(function COAViewer({ file, versionIndex = 0, onVersionCha
         </aside>
         <div className="rgv-coa-preview">{viewerUrl ? <iframe key={viewerUrl} src={viewerUrl} title={`${active.product || active.code || "COA"} certificate`} loading="eager" /> : <div className="rgv-coa-preview__empty"><FileIcon /><h3>Certificate unavailable</h3><p>This record does not currently have a PDF attached.</p></div>}</div>
       </div>
-      <footer className="rgv-coa-viewer__footer"><button type="button" onClick={onClose}>Back to library</button>{pdfUrl && <a className="rgv-coa-primary" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF <ArrowIcon /></a>}</footer>
+      <footer className="rgv-coa-viewer__footer"><button type="button" onClick={onClose}>Back to library</button>{pdfUrl && active.issuer_verification?.url !== pdfUrl && <a className="rgv-coa-primary" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF <ArrowIcon /></a>}</footer>
     </div>
   </div>, document.body);
 });

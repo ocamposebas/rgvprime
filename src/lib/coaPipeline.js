@@ -677,7 +677,6 @@ export function validateCanonicalRecords(records) {
 export function applySourceTruth(payload, manifest) {
   if (!payload || typeof payload !== "object") return payload;
   const sourceIndex = indexSourceTruth(manifest);
-  const normalizedById = new Map();
 
   const normalizeRecord = (record) => {
     const truth = sourceIndex.get(sourceTruthKey(record));
@@ -712,7 +711,6 @@ export function applySourceTruth(payload, manifest) {
       manual_review: truth.manual_review,
       source: truth.source,
     };
-    normalizedById.set(Number(legacy.id), legacy);
     return legacy;
   };
 
@@ -726,7 +724,7 @@ export function applySourceTruth(payload, manifest) {
               return {
                 ...current,
                 history: Array.isArray(file.history)
-                  ? file.history.map((history) => normalizedById.get(Number(history.id)) || normalizeRecord(history))
+                  ? file.history.map(normalizeRecord)
                   : [],
               };
             })

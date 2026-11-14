@@ -1604,6 +1604,12 @@
 .rgv-verification-strip__actions a:hover {
   border-color: #919199;
 }
+.rgv-verification-strip__actions .rgv-coa-issuer p {
+  margin: 6px 0 0;
+  color: var(--rgv-copy);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
 .rgv-verification-strip__fallback {
   padding: 18px;
   color: var(--rgv-copy);

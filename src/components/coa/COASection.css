@@ -151,6 +151,8 @@
 .rgv-coa-original svg { width: 14px; height: 14px; stroke-width: 1.6; }
 .rgv-coa-viewer__body { display: grid; grid-template-columns: 235px minmax(0,1fr); min-height: 0; flex: 1; }
 .rgv-coa-viewer__details { min-width: 0; overflow-y: auto; padding: 24px 20px; border-right: 1px solid #ffffff1b; background: #101114; scrollbar-width: thin; scrollbar-color: #444652 transparent; }
+.rgv-coa-viewer__details > .rgv-coa-issuer { margin: 0 0 15px; }
+.rgv-coa-viewer__details .rgv-coa-issuer p { margin: 6px 0 0; color: #c9c9cf; font-size: 11px; overflow-wrap: anywhere; }
 .rgv-coa-viewer__details details > summary { display: none; }
 .rgv-coa-viewer__label { margin: 0 0 18px; color: #ae8b7e; font-size: 9px; }
 .rgv-coa-viewer__details dl { display: grid; gap: 17px; margin: 0; }
@@ -243,6 +245,7 @@
   .rgv-coa-original { display: none; }
   .rgv-coa-viewer__body { display: flex; flex-direction: column; }
   .rgv-coa-viewer__details { flex-shrink: 0; max-height: 35dvh; padding: 0 15px; border-right: 0; border-bottom: 1px solid #ffffff1b; }
+  .rgv-coa-viewer__details > .rgv-coa-issuer { margin: 8px 0; }
   .rgv-coa-viewer__details details > summary { display: flex; min-height: 41px; align-items: center; justify-content: space-between; gap: 15px; color: #bbb5b1; font-size: 9px; list-style: none; }
   .rgv-coa-viewer__details summary::-webkit-details-marker { display: none; }
   .rgv-coa-viewer__details summary > span { min-width: 0; overflow-wrap: anywhere; }
